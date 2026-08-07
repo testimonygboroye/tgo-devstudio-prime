@@ -1,0 +1,41 @@
+import { NextRequest } from "next/server";
+import { connectToDatabase } from "@/lib/db";
+import User, { IUser } from "@/models/User";
+import Role, { IRole } from "@/models/Role";
+import { verifyAccessToken } from "@/lib/auth/jwt";
+
+export interface AuthenticatedSession {
+  user: IUser;
+  role: IRole;
+}
+
+export async function getAuthenticatedSession(
+  request: NextRequest
+): Promise<AuthenticatedSession | null> {
+  const accessToken = request.cookies.get("accessToken")?.value;
+
+  if (!accessToken) {
+    return null;
+  }
+
+  let payload;
+  try {
+    payload = verifyAccessToken(accessToken);
+  } catch {
+    return null;
+  }
+
+  await connectToDatabase();
+
+  const user = await User.findById(payload.userId);
+  if (!user || user.refreshTokenVersion !== payload.tokenVersion) {
+    return null;
+  }
+
+  const role = await Role.findById(user.role);
+  if (!role) {
+    return null;
+  }
+
+  return { user, role };
+}

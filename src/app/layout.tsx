@@ -8,7 +8,10 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
+const siteUrl = process.env.SITE_URL || "https://tgo-devstudio-prime.onrender.com";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: "TGO DevStudio Prime",
   description:
     "The flagship brand, portfolio, and command-center site for TGO DevStudio — a full-stack software engineering studio.",

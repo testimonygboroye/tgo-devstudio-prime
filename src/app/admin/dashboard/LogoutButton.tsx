@@ -2,6 +2,11 @@
 
 export default function LogoutButton() {
   async function handleLogout() {
+    const confirmed = window.confirm("Are you sure you want to log out?");
+    if (!confirmed) {
+      return;
+    }
+
     await fetch("/api/auth/logout", { method: "POST" });
     const loginPath = window.location.pathname.replace(/\/dashboard\/?$/, "/login");
     window.location.href = loginPath;

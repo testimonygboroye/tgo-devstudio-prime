@@ -9,6 +9,7 @@ import {
   requireContentPermission,
 } from "@/lib/auth/authorize";
 import { slugify } from "@/lib/utils/slugify";
+import { normalizeProjectStatus } from "@/lib/utils/projectStatus";
 
 const CONTENT_TYPE = "caseStudies";
 
@@ -114,7 +115,7 @@ export async function POST(request: NextRequest) {
     projectUrl,
     repoUrl,
     tags: tags ?? [],
-    status: status ?? "in-progress",
+    status: normalizeProjectStatus(status),
     featured: Boolean(featured),
     publishStatus: resolvedPublishStatus,
     metaTitle,

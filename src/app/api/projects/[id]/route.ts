@@ -9,6 +9,7 @@ import {
   requireContentPermission,
 } from "@/lib/auth/authorize";
 import { slugify } from "@/lib/utils/slugify";
+import { normalizeProjectStatus } from "@/lib/utils/projectStatus";
 
 const CONTENT_TYPE = "caseStudies";
 
@@ -111,7 +112,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   if (projectUrl !== undefined) project.projectUrl = projectUrl;
   if (repoUrl !== undefined) project.repoUrl = repoUrl;
   if (tags !== undefined) project.tags = tags;
-  if (status !== undefined) project.status = status as typeof project.status;
+  if (status !== undefined) project.status = normalizeProjectStatus(status);
   if (featured !== undefined) project.featured = Boolean(featured);
   if (metaTitle !== undefined) project.metaTitle = metaTitle;
   if (metaDescription !== undefined) project.metaDescription = metaDescription;

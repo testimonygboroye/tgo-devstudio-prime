@@ -15,3 +15,7 @@ export function forbiddenResponse(message = "You do not have permission to perfo
 export function requireCanManageRoles(session: AuthenticatedSession): boolean {
   return session.role.canManageRoles === true;
 }
+
+export function requireCanManageUsers(session: AuthenticatedSession): boolean {
+  return session.role.canManageUsers === true;
+}

@@ -19,3 +19,29 @@ export function requireCanManageRoles(session: AuthenticatedSession): boolean {
 export function requireCanManageUsers(session: AuthenticatedSession): boolean {
   return session.role.canManageUsers === true;
 }
+
+export function requireContentPermission(
+  session: AuthenticatedSession,
+  contentType: string,
+  action: "create" | "edit" | "publish" | "delete" | "viewAnalytics"
+): boolean {
+  if (session.role.isFounderRole) {
+    return true;
+  }
+  const permissions = session.role.contentPermissions?.get(contentType);
+  return permissions ? permissions[action] === true : false;
+}
+
+export function requireAnyContentPermission(
+  session: AuthenticatedSession,
+  contentType: string
+): boolean {
+  if (session.role.isFounderRole) {
+    return true;
+  }
+  const permissions = session.role.contentPermissions?.get(contentType);
+  if (!permissions) {
+    return false;
+  }
+  return Object.values(permissions).some(Boolean);
+}

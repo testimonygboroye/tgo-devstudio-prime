@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ status: "error", message: "Invalid 2FA session." }, { status: 401 });
   }
 
-  const isCodeValid = verifyTotpToken(code, user.twoFactorSecret);
+  const isCodeValid = await verifyTotpToken(code, user.twoFactorSecret);
 
   if (!isCodeValid) {
     return NextResponse.json({ status: "error", message: "Invalid authentication code." }, { status: 401 });

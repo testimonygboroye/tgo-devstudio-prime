@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const isCodeValid = verifyTotpToken(code, user.twoFactorTempSecret);
+  const isCodeValid = await verifyTotpToken(code, user.twoFactorTempSecret);
 
   if (!isCodeValid) {
     return NextResponse.json({ status: "error", message: "Invalid authentication code." }, { status: 401 });

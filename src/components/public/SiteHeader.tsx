@@ -37,27 +37,44 @@ export default function SiteHeader() {
         </nav>
 
         <button
-          onClick={() => setIsMenuOpen((prev) => !prev)}
-          aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+          onClick={() => setIsMenuOpen(true)}
+          aria-label="Open menu"
           className="text-neutral-100 sm:hidden"
         >
-          {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          <Menu size={24} />
         </button>
       </div>
 
       {isMenuOpen && (
-        <nav className="flex flex-col gap-1 border-t border-base-800 bg-base-950 px-6 py-4 sm:hidden">
-          {NAV_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              onClick={() => setIsMenuOpen(false)}
-              className="rounded-md px-3 py-2 text-sm text-neutral-100 hover:bg-base-900"
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
+        <div
+          className="fixed inset-0 z-50 bg-black/60 sm:hidden"
+          onClick={() => setIsMenuOpen(false)}
+        >
+          <nav
+            className="fixed right-0 top-0 flex h-full w-64 flex-col gap-1 border-l border-base-800 bg-base-950 px-6 py-6"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mb-4 flex justify-end">
+              <button
+                onClick={() => setIsMenuOpen(false)}
+                aria-label="Close menu"
+                className="text-neutral-100"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            {NAV_LINKS.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setIsMenuOpen(false)}
+                className="rounded-md px-3 py-2 text-sm text-neutral-100 hover:bg-base-900"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+        </div>
       )}
     </header>
   );

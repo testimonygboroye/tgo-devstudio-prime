@@ -58,9 +58,10 @@ export default async function CareersPage() {
         ) : (
           <div className="mt-12 space-y-4">
             {jobs.map((job) => (
-              <div
+              <Link
                 key={job._id.toString()}
-                className="rounded-xl border border-base-800 bg-base-900 p-6"
+                href={`/careers/${job.slug}`}
+                className="block rounded-xl border border-base-800 bg-base-900 p-6 hover:border-brand-cyan-400"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h2 className="text-lg font-semibold text-neutral-100">{job.title}</h2>
@@ -77,47 +78,7 @@ export default async function CareersPage() {
                   <p className="mt-1 text-sm text-brand-cyan-300">{job.department}</p>
                 )}
                 <p className="mt-3 text-sm text-neutral-400">{job.summary}</p>
-
-                {job.responsibilities && (
-                  <div className="mt-4">
-                    <p className="text-sm font-semibold text-neutral-100">Responsibilities</p>
-                    <p className="mt-1 whitespace-pre-line text-sm text-neutral-400">
-                      {job.responsibilities}
-                    </p>
-                  </div>
-                )}
-                {job.requirements && (
-                  <div className="mt-4">
-                    <p className="text-sm font-semibold text-neutral-100">Requirements</p>
-                    <p className="mt-1 whitespace-pre-line text-sm text-neutral-400">
-                      {job.requirements}
-                    </p>
-                  </div>
-                )}
-
-                <div className="mt-5 flex gap-3">
-                  {job.applyUrl && (
-                    <a
-                      href={job.applyUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="rounded-md brand-gradient-bg px-4 py-2 text-sm font-semibold text-base-950"
-                    >
-                      Apply Now
-                    </a>
-                  )}
-                  {job.applyEmail && (
-                    <a
-                      href={`mailto:${job.applyEmail}?subject=${encodeURIComponent(
-                        `Application: ${job.title}`
-                      )}`}
-                      className="rounded-md border border-base-800 px-4 py-2 text-sm text-neutral-100 hover:bg-base-950"
-                    >
-                      Apply via Email
-                    </a>
-                  )}
-                </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}

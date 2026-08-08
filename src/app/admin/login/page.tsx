@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
 
 type LoginStep = "credentials" | "twoFactor";
 
@@ -77,83 +79,97 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-6">
-      <div className="w-full max-w-sm">
-        <p className="text-center font-mono text-xs uppercase tracking-widest text-neutral-400">
-          TGO DevStudio Prime
+    <div className="flex min-h-screen flex-col">
+      <main className="flex flex-1 items-center justify-center px-6">
+        <div className="w-full max-w-sm">
+          <div className="flex justify-center">
+            <Image src="/logo.png" alt="TGO DevStudio logo" width={64} height={64} priority />
+          </div>
+          <p className="mt-4 text-center font-mono text-xs uppercase tracking-widest text-neutral-400">
+            TGO DevStudio Prime
+          </p>
+          <h1 className="mt-1 text-center text-2xl font-bold brand-gradient-text">
+            Admin Sign In
+          </h1>
+
+          {step === "credentials" && (
+            <form onSubmit={handleCredentialsSubmit} className="mt-8 space-y-4">
+              <div>
+                <label htmlFor="email" className="block text-sm text-neutral-400">
+                  Email
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
+                />
+              </div>
+              <div>
+                <label htmlFor="password" className="block text-sm text-neutral-400">
+                  Password
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
+                />
+              </div>
+              {error && <p className="text-sm text-red-400">{error}</p>}
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full rounded-md brand-gradient-bg px-4 py-2 font-semibold text-base-950 disabled:opacity-60"
+              >
+                {isSubmitting ? "Signing in..." : "Sign in"}
+              </button>
+            </form>
+          )}
+
+          {step === "twoFactor" && (
+            <form onSubmit={handleTwoFactorSubmit} className="mt-8 space-y-4">
+              <div>
+                <label htmlFor="code" className="block text-sm text-neutral-400">
+                  Authentication code
+                </label>
+                <input
+                  id="code"
+                  type="text"
+                  inputMode="numeric"
+                  autoFocus
+                  required
+                  value={code}
+                  onChange={(event) => setCode(event.target.value)}
+                  className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-center text-lg tracking-widest text-neutral-100 outline-none focus:border-brand-cyan-400"
+                  placeholder="000000"
+                />
+              </div>
+              {error && <p className="text-sm text-red-400">{error}</p>}
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full rounded-md brand-gradient-bg px-4 py-2 font-semibold text-base-950 disabled:opacity-60"
+              >
+                {isSubmitting ? "Verifying..." : "Verify"}
+              </button>
+            </form>
+          )}
+        </div>
+      </main>
+
+      <footer className="border-t border-base-800 px-6 py-6 text-center">
+        <Link href="/" className="text-xs text-neutral-400 hover:text-brand-cyan-300">
+          ← Back to site
+        </Link>
+        <p className="mt-2 text-xs text-neutral-400">
+          © {new Date().getFullYear()} TGO DevStudio. All rights reserved.
         </p>
-        <h1 className="mt-1 text-center text-2xl font-bold brand-gradient-text">
-          Admin Sign In
-        </h1>
-
-        {step === "credentials" && (
-          <form onSubmit={handleCredentialsSubmit} className="mt-8 space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-sm text-neutral-400">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                required
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="block text-sm text-neutral-400">
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                required
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
-              />
-            </div>
-            {error && <p className="text-sm text-red-400">{error}</p>}
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full rounded-md brand-gradient-bg px-4 py-2 font-semibold text-base-950 disabled:opacity-60"
-            >
-              {isSubmitting ? "Signing in..." : "Sign in"}
-            </button>
-          </form>
-        )}
-
-        {step === "twoFactor" && (
-          <form onSubmit={handleTwoFactorSubmit} className="mt-8 space-y-4">
-            <div>
-              <label htmlFor="code" className="block text-sm text-neutral-400">
-                Authentication code
-              </label>
-              <input
-                id="code"
-                type="text"
-                inputMode="numeric"
-                autoFocus
-                required
-                value={code}
-                onChange={(event) => setCode(event.target.value)}
-                className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-center text-lg tracking-widest text-neutral-100 outline-none focus:border-brand-cyan-400"
-                placeholder="000000"
-              />
-            </div>
-            {error && <p className="text-sm text-red-400">{error}</p>}
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full rounded-md brand-gradient-bg px-4 py-2 font-semibold text-base-950 disabled:opacity-60"
-            >
-              {isSubmitting ? "Verifying..." : "Verify"}
-            </button>
-          </form>
-        )}
-      </div>
-    </main>
+      </footer>
+    </div>
   );
 }

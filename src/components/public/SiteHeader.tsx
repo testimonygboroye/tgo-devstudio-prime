@@ -17,32 +17,34 @@ export default function SiteHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-base-800 bg-base-950/90 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 sm:px-12">
-        <Link href="/" className="flex items-center gap-2" onClick={() => setIsMenuOpen(false)}>
-          <Image src="/logo.png" alt="TGO DevStudio logo" width={36} height={36} priority />
-          <span className="font-display text-lg font-bold text-neutral-100">TGO DevStudio</span>
-        </Link>
+    <header className="sticky top-0 z-50">
+      <div className="border-b border-base-800 bg-base-950/90 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 sm:px-12">
+          <Link href="/" className="flex items-center gap-2" onClick={() => setIsMenuOpen(false)}>
+            <Image src="/logo.png" alt="TGO DevStudio logo" width={36} height={36} priority />
+            <span className="font-display text-lg font-bold leading-9 text-neutral-100">TGO DevStudio</span>
+          </Link>
 
-        <nav className="hidden items-center gap-8 sm:flex">
-          {NAV_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="text-sm text-neutral-100/80 hover:text-brand-cyan-300"
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
+          <nav className="hidden items-center gap-8 sm:flex">
+            {NAV_LINKS.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="text-sm text-neutral-100/80 hover:text-brand-cyan-300"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
 
-        <button
-          onClick={() => setIsMenuOpen(true)}
-          aria-label="Open menu"
-          className="text-neutral-100 sm:hidden"
-        >
-          <Menu size={24} />
-        </button>
+          <button
+            onClick={() => setIsMenuOpen(true)}
+            aria-label="Open menu"
+            className="text-neutral-100 sm:hidden"
+          >
+            <Menu size={24} />
+          </button>
+        </div>
       </div>
 
       {isMenuOpen && (
@@ -51,7 +53,7 @@ export default function SiteHeader() {
           onClick={() => setIsMenuOpen(false)}
         >
           <nav
-            className="fixed right-0 top-0 flex h-full w-64 flex-col gap-1 border-l border-base-800 bg-base-950 px-6 py-6"
+            className="fixed right-0 top-0 h-screen w-2/5 min-w-[240px] max-w-xs flex-col gap-1 border-l border-base-800 bg-base-950 px-6 py-6 flex"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="mb-4 flex justify-end">

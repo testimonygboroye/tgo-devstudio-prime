@@ -24,7 +24,7 @@ export default function SiteFooter() {
           <div>
             <div className="flex items-center gap-2">
               <Image src="/logo.png" alt="TGO DevStudio logo" width={32} height={32} />
-              <span className="font-display text-lg font-bold text-neutral-100">TGO DevStudio</span>
+              <span className="font-display text-lg font-bold leading-8 text-neutral-100">TGO DevStudio</span>
             </div>
             <p className="mt-3 max-w-xs text-sm text-neutral-400">
               A full-stack software engineering studio building premium, production-grade

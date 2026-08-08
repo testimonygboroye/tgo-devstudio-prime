@@ -13,6 +13,7 @@ interface AdminSidebarProps {
 const NAV_ITEMS = [
   { label: "Dashboard", hrefSuffix: "/dashboard" },
   { label: "Case Studies", hrefSuffix: "/case-studies" },
+  { label: "Team", hrefSuffix: "/team" },
 ];
 
 export default function AdminSidebar({ userName, userEmail, roleName }: AdminSidebarProps) {

@@ -67,13 +67,13 @@ export default async function CaseStudyDetailPage({ params }: PageProps) {
         )}
 
         {project.images?.[0] && (
-          <div className="relative mt-8 h-72 w-full overflow-hidden rounded-xl sm:h-96">
+          <div className="relative mt-8 h-72 w-full overflow-hidden rounded-xl bg-base-900 sm:h-96">
             <Image
               src={project.images[0].url}
               alt={project.images[0].altText}
               fill
               sizes="100vw"
-              className="object-cover"
+              className="object-contain"
               priority
             />
           </div>
@@ -103,13 +103,13 @@ export default async function CaseStudyDetailPage({ params }: PageProps) {
         {project.images.length > 1 && (
           <div className="mt-10 grid gap-4 sm:grid-cols-2">
             {project.images.slice(1).map((image: { url: string; altText: string; publicId: string }) => (
-              <div key={image.publicId} className="relative h-56 w-full overflow-hidden rounded-lg">
+              <div key={image.publicId} className="relative h-56 w-full overflow-hidden rounded-lg bg-base-900">
                 <Image
                   src={image.url}
                   alt={image.altText}
                   fill
                   sizes="(max-width: 640px) 100vw, 50vw"
-                  className="object-cover"
+                  className="object-contain"
                 />
               </div>
             ))}

@@ -12,6 +12,7 @@ import { slugify } from "@/lib/utils/slugify";
 import { validateTextLength } from "@/lib/utils/validateTextLength";
 import { TEXT_LIMITS } from "@/lib/constants/textLimits";
 import { normalizeLocationType, normalizeEmploymentType } from "@/lib/utils/jobEnums";
+import { normalizeUrl } from "@/lib/utils/normalizeUrl";
 
 const CONTENT_TYPE = "jobOpenings";
 
@@ -114,7 +115,7 @@ export async function POST(request: NextRequest) {
     responsibilities: responsibilities ?? "",
     requirements: requirements ?? "",
     applyEmail,
-    applyUrl,
+    applyUrl: normalizeUrl(applyUrl),
     publishStatus: resolvedPublishStatus,
     createdBy: session.user._id,
   });

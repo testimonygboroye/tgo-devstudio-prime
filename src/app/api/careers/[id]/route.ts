@@ -12,6 +12,7 @@ import { slugify } from "@/lib/utils/slugify";
 import { validateTextLength } from "@/lib/utils/validateTextLength";
 import { TEXT_LIMITS } from "@/lib/constants/textLimits";
 import { normalizeLocationType, normalizeEmploymentType } from "@/lib/utils/jobEnums";
+import { normalizeUrl } from "@/lib/utils/normalizeUrl";
 
 const CONTENT_TYPE = "jobOpenings";
 
@@ -104,7 +105,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   if (responsibilities !== undefined) job.responsibilities = responsibilities;
   if (requirements !== undefined) job.requirements = requirements;
   if (applyEmail !== undefined) job.applyEmail = applyEmail;
-  if (applyUrl !== undefined) job.applyUrl = applyUrl;
+  if (applyUrl !== undefined) job.applyUrl = normalizeUrl(applyUrl);
 
   if (publishStatus !== undefined) {
     if (publishStatus === "published") {

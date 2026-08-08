@@ -9,4 +9,9 @@ export const TEXT_LIMITS = {
     summary: 250,
     narrativeSection: 1500,
   },
+  blog: {
+    title: 150,
+    excerpt: 300,
+    contentHtml: 50000,
+  },
 } as const;

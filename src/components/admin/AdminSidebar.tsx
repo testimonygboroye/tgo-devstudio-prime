@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LayoutDashboard, Briefcase, Users, Newspaper, DoorOpen, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface AdminSidebarProps {
   userName: string;
@@ -11,11 +12,11 @@ interface AdminSidebarProps {
 }
 
 const NAV_ITEMS = [
-  { label: "Dashboard", hrefSuffix: "/dashboard" },
-  { label: "Case Studies", hrefSuffix: "/case-studies" },
-  { label: "Team", hrefSuffix: "/team" },
-  { label: "Blog", hrefSuffix: "/blog" },
-  { label: "Careers", hrefSuffix: "/careers" },
+  { label: "Dashboard", hrefSuffix: "/dashboard", icon: LayoutDashboard },
+  { label: "Case Studies", hrefSuffix: "/case-studies", icon: Briefcase },
+  { label: "Team", hrefSuffix: "/team", icon: Users },
+  { label: "Blog", hrefSuffix: "/blog", icon: Newspaper },
+  { label: "Careers", hrefSuffix: "/careers", icon: DoorOpen },
 ];
 
 export default function AdminSidebar({ userName, userEmail, roleName }: AdminSidebarProps) {
@@ -51,7 +52,7 @@ export default function AdminSidebar({ userName, userEmail, roleName }: AdminSid
             aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             className="rounded-md p-1 text-neutral-400 hover:bg-base-800 hover:text-neutral-100"
           >
-            {isCollapsed ? "»" : "«"}
+            {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
           </button>
         </div>
 
@@ -59,17 +60,20 @@ export default function AdminSidebar({ userName, userEmail, roleName }: AdminSid
           {NAV_ITEMS.map((item) => {
             const href = `${basePathSegment}${item.hrefSuffix}`;
             const isActive = pathname === href;
+            const Icon = item.icon;
             return (
               <Link
                 key={item.hrefSuffix}
                 href={href}
-                className={`block rounded-md px-3 py-2 text-sm ${
+                title={item.label}
+                className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm ${
                   isActive
                     ? "brand-gradient-bg font-semibold text-base-950"
                     : "text-neutral-100 hover:bg-base-800"
                 }`}
               >
-                {isCollapsed ? item.label.charAt(0) : item.label}
+                <Icon size={18} className="flex-shrink-0" />
+                {!isCollapsed && <span>{item.label}</span>}
               </Link>
             );
           })}
@@ -86,9 +90,11 @@ export default function AdminSidebar({ userName, userEmail, roleName }: AdminSid
         )}
         <button
           onClick={handleLogout}
-          className="w-full rounded-md border border-base-800 px-3 py-2 text-sm text-neutral-100 hover:bg-base-800"
+          title="Log out"
+          className="flex w-full items-center gap-3 rounded-md border border-base-800 px-3 py-2 text-sm text-neutral-100 hover:bg-base-800"
         >
-          {isCollapsed ? "⎋" : "Log out"}
+          <LogOut size={18} className="flex-shrink-0" />
+          {!isCollapsed && <span>Log out</span>}
         </button>
       </div>
     </aside>

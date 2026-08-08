@@ -6,6 +6,12 @@ import { TextStyleKit } from "@tiptap/extension-text-style";
 import TextAlign from "@tiptap/extension-text-align";
 import Underline from "@tiptap/extension-underline";
 import Link from "@tiptap/extension-link";
+import { Table, TableRow, TableCell, TableHeader } from "@tiptap/extension-table";
+import { Image } from "@tiptap/extension-image";
+import { CodeBlockLowlight } from "@tiptap/extension-code-block-lowlight";
+import { common, createLowlight } from "lowlight";
+
+const lowlight = createLowlight(common);
 
 interface RichTextEditorProps {
   content: string;
@@ -36,7 +42,7 @@ const FONT_SIZES = [
 export default function RichTextEditor({ content, onChange }: RichTextEditorProps) {
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({ codeBlock: false }),
       TextStyleKit.configure({
         fontSize: {},
         fontFamily: {},
@@ -46,6 +52,12 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
       Underline,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Link.configure({ openOnClick: false }),
+      Table.configure({ resizable: true }),
+      TableRow,
+      TableHeader,
+      TableCell,
+      Image,
+      CodeBlockLowlight.configure({ lowlight }),
     ],
     content,
     immediatelyRender: false,
@@ -73,6 +85,42 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
       return;
     }
     editor?.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+  }
+
+  async function insertImage() {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/jpeg,image/png,image/webp";
+
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+
+      const altText = window.prompt("Describe this image for accessibility (required):", "");
+      if (!altText || !altText.trim()) {
+        window.alert("Alt text is required for every image.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        const response = await fetch("/api/media/upload", { method: "POST", body: formData });
+        const data = await response.json();
+
+        if (!response.ok) {
+          window.alert(data.message || "Image upload failed.");
+          return;
+        }
+
+        editor?.chain().focus().setImage({ src: data.url, alt: altText.trim() }).run();
+      } catch {
+        window.alert("Image upload failed. Please try again.");
+      }
+    };
+
+    input.click();
   }
 
   return (
@@ -122,6 +170,9 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
         <ToolbarButton active={editor.isActive("strike")} onClick={() => editor.chain().focus().toggleStrike().run()}>
           S
         </ToolbarButton>
+        <ToolbarButton active={editor.isActive("code")} onClick={() => editor.chain().focus().toggleCode().run()}>
+          Code
+        </ToolbarButton>
 
         <Divider />
 
@@ -146,6 +197,9 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
         <ToolbarButton active={editor.isActive("blockquote")} onClick={() => editor.chain().focus().toggleBlockquote().run()}>
           Quote
         </ToolbarButton>
+        <ToolbarButton active={editor.isActive("codeBlock")} onClick={() => editor.chain().focus().toggleCodeBlock().run()}>
+          Code Block
+        </ToolbarButton>
 
         <Divider />
 
@@ -167,11 +221,38 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
         <ToolbarButton active={editor.isActive("link")} onClick={setLink}>
           Link
         </ToolbarButton>
+        <ToolbarButton active={false} onClick={insertImage}>
+          Image
+        </ToolbarButton>
         <ToolbarButton
           active={false}
           onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()}
         >
           Clear
+        </ToolbarButton>
+
+        <Divider />
+
+        <ToolbarButton
+          active={false}
+          onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+        >
+          Insert Table
+        </ToolbarButton>
+        <ToolbarButton active={false} onClick={() => editor.chain().focus().addColumnAfter().run()}>
+          +Col
+        </ToolbarButton>
+        <ToolbarButton active={false} onClick={() => editor.chain().focus().deleteColumn().run()}>
+          -Col
+        </ToolbarButton>
+        <ToolbarButton active={false} onClick={() => editor.chain().focus().addRowAfter().run()}>
+          +Row
+        </ToolbarButton>
+        <ToolbarButton active={false} onClick={() => editor.chain().focus().deleteRow().run()}>
+          -Row
+        </ToolbarButton>
+        <ToolbarButton active={false} onClick={() => editor.chain().focus().deleteTable().run()}>
+          Del Table
         </ToolbarButton>
 
         <Divider />

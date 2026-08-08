@@ -14,4 +14,10 @@ export const TEXT_LIMITS = {
     excerpt: 300,
     contentHtml: 50000,
   },
+  job: {
+    title: 120,
+    summary: 250,
+    responsibilities: 2000,
+    requirements: 2000,
+  },
 } as const;

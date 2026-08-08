@@ -15,6 +15,7 @@ const NAV_ITEMS = [
   { label: "Case Studies", hrefSuffix: "/case-studies" },
   { label: "Team", hrefSuffix: "/team" },
   { label: "Blog", hrefSuffix: "/blog" },
+  { label: "Careers", hrefSuffix: "/careers" },
 ];
 
 export default function AdminSidebar({ userName, userEmail, roleName }: AdminSidebarProps) {

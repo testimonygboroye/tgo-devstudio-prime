@@ -11,6 +11,7 @@ import {
 import { slugify } from "@/lib/utils/slugify";
 import { validateTextLength } from "@/lib/utils/validateTextLength";
 import { TEXT_LIMITS } from "@/lib/constants/textLimits";
+import { normalizeLocationType, normalizeEmploymentType } from "@/lib/utils/jobEnums";
 
 const CONTENT_TYPE = "jobOpenings";
 
@@ -97,8 +98,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     job.slug = slugify(title);
   }
   if (department !== undefined) job.department = department;
-  if (locationType !== undefined) job.locationType = locationType as typeof job.locationType;
-  if (employmentType !== undefined) job.employmentType = employmentType as typeof job.employmentType;
+  if (locationType !== undefined) job.locationType = normalizeLocationType(locationType);
+  if (employmentType !== undefined) job.employmentType = normalizeEmploymentType(employmentType);
   if (summary !== undefined) job.summary = summary.trim();
   if (responsibilities !== undefined) job.responsibilities = responsibilities;
   if (requirements !== undefined) job.requirements = requirements;

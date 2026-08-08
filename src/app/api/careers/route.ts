@@ -11,6 +11,7 @@ import {
 import { slugify } from "@/lib/utils/slugify";
 import { validateTextLength } from "@/lib/utils/validateTextLength";
 import { TEXT_LIMITS } from "@/lib/constants/textLimits";
+import { normalizeLocationType, normalizeEmploymentType } from "@/lib/utils/jobEnums";
 
 const CONTENT_TYPE = "jobOpenings";
 
@@ -107,8 +108,8 @@ export async function POST(request: NextRequest) {
     title: title.trim(),
     slug,
     department,
-    locationType: locationType ?? "remote",
-    employmentType: employmentType ?? "full-time",
+    locationType: normalizeLocationType(locationType),
+    employmentType: normalizeEmploymentType(employmentType),
     summary: summary.trim(),
     responsibilities: responsibilities ?? "",
     requirements: requirements ?? "",

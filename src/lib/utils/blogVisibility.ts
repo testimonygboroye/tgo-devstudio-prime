@@ -1,7 +1,7 @@
-import type { FilterQuery } from "mongoose";
+import type { QueryFilter } from "mongoose";
 import type { IBlogPost } from "@/models/BlogPost";
 
-export function getPubliclyVisibleFilter(): FilterQuery<IBlogPost> {
+export function getPubliclyVisibleFilter(): QueryFilter<IBlogPost> {
   const now = new Date();
   return {
     $or: [

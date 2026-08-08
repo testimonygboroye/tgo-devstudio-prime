@@ -38,16 +38,17 @@ export default function JobApplicationForm({ jobId }: JobApplicationFormProps) {
       return;
     }
 
+    if (!photoFile) {
+      setError("Please attach a profile photo.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
       const resumeData = await uploadFile(resumeFile, "/api/media/upload-document");
-      let profilePhotoUrl: string | undefined;
-
-      if (photoFile) {
-        const photoData = await uploadFile(photoFile, "/api/media/upload");
-        profilePhotoUrl = photoData.url;
-      }
+      const photoData = await uploadFile(photoFile, "/api/media/upload");
+      const profilePhotoUrl = photoData.url;
 
       const response = await fetch(`/api/careers/${jobId}/applications`, {
         method: "POST",
@@ -153,10 +154,11 @@ export default function JobApplicationForm({ jobId }: JobApplicationFormProps) {
       </div>
 
       <div>
-        <label className="block text-sm text-neutral-400">Profile Photo (optional)</label>
+        <label className="block text-sm text-neutral-400">Profile Photo (required)</label>
         <input
           type="file"
           accept="image/jpeg,image/png,image/webp"
+          required
           onChange={(event) => setPhotoFile(event.target.files?.[0] ?? null)}
           className="mt-1 text-sm text-neutral-400"
         />

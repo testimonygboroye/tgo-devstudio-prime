@@ -40,9 +40,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ status: "ok", message: "Application received." });
   }
 
-  if (!applicantName || !applicantEmail || !coverMessage || !resumeUrl || !resumePublicId) {
+  if (!applicantName || !applicantEmail || !coverMessage || !resumeUrl || !resumePublicId || !profilePhotoUrl) {
     return NextResponse.json(
-      { status: "error", message: "Name, email, cover message, and resume are all required." },
+      { status: "error", message: "Name, email, cover message, profile photo, and resume are all required." },
       { status: 400 }
     );
   }

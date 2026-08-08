@@ -35,10 +35,10 @@ const TeamMemberPhotoSchema = new Schema<ITeamMemberPhoto>(
 
 const TeamMemberSchema = new Schema<ITeamMember>(
   {
-    name: { type: String, required: true, trim: true },
+    name: { type: String, required: true, trim: true, maxlength: 100 },
     slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    jobTitle: { type: String, required: true, trim: true },
-    bio: { type: String, required: true, trim: true },
+    jobTitle: { type: String, required: true, trim: true, maxlength: 100 },
+    bio: { type: String, required: true, trim: true, maxlength: 400 },
     photo: { type: TeamMemberPhotoSchema },
     linkedinUrl: { type: String },
     githubUrl: { type: String },

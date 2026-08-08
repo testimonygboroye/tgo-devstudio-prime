@@ -9,6 +9,8 @@ import {
   requireContentPermission,
 } from "@/lib/auth/authorize";
 import { slugify } from "@/lib/utils/slugify";
+import { validateTextLength } from "@/lib/utils/validateTextLength";
+import { TEXT_LIMITS } from "@/lib/constants/textLimits";
 
 const CONTENT_TYPE = "team";
 
@@ -60,6 +62,15 @@ export async function POST(request: NextRequest) {
     displayOrder?: number;
     publishStatus?: string;
   };
+
+  const lengthError =
+    validateTextLength(name, "Name", TEXT_LIMITS.team.name) ||
+    validateTextLength(jobTitle, "Job title", TEXT_LIMITS.team.jobTitle) ||
+    validateTextLength(bio, "Bio", TEXT_LIMITS.team.bio);
+
+  if (lengthError) {
+    return NextResponse.json({ status: "error", message: lengthError }, { status: 400 });
+  }
 
   if (!name || !jobTitle || !bio) {
     return NextResponse.json(

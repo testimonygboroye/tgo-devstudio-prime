@@ -10,6 +10,8 @@ import {
 } from "@/lib/auth/authorize";
 import { slugify } from "@/lib/utils/slugify";
 import { normalizeProjectStatus } from "@/lib/utils/projectStatus";
+import { validateTextLength } from "@/lib/utils/validateTextLength";
+import { TEXT_LIMITS } from "@/lib/constants/textLimits";
 
 const CONTENT_TYPE = "caseStudies";
 
@@ -88,6 +90,17 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     metaTitle?: string;
     metaDescription?: string;
   };
+
+  const lengthError =
+    validateTextLength(title, "Title", TEXT_LIMITS.project.title) ||
+    validateTextLength(summary, "Summary", TEXT_LIMITS.project.summary) ||
+    validateTextLength(problemStatement, "Problem statement", TEXT_LIMITS.project.narrativeSection) ||
+    validateTextLength(approach, "Approach", TEXT_LIMITS.project.narrativeSection) ||
+    validateTextLength(outcome, "Outcome", TEXT_LIMITS.project.narrativeSection);
+
+  if (lengthError) {
+    return NextResponse.json({ status: "error", message: lengthError }, { status: 400 });
+  }
 
   if (Array.isArray(images)) {
     for (const image of images) {

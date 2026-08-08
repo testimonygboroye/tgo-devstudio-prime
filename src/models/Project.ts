@@ -41,12 +41,12 @@ const ProjectImageSchema = new Schema<IProjectImage>(
 
 const ProjectSchema = new Schema<IProject>(
   {
-    title: { type: String, required: true, trim: true },
+    title: { type: String, required: true, trim: true, maxlength: 120 },
     slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    summary: { type: String, required: true, trim: true },
-    problemStatement: { type: String, default: "" },
-    approach: { type: String, default: "" },
-    outcome: { type: String, default: "" },
+    summary: { type: String, required: true, trim: true, maxlength: 250 },
+    problemStatement: { type: String, default: "", maxlength: 1500 },
+    approach: { type: String, default: "", maxlength: 1500 },
+    outcome: { type: String, default: "", maxlength: 1500 },
     images: { type: [ProjectImageSchema], default: [] },
     projectUrl: { type: String },
     repoUrl: { type: String },

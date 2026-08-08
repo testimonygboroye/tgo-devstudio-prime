@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import CharacterCounter from "@/components/admin/CharacterCounter";
+import { TEXT_LIMITS } from "@/lib/constants/textLimits";
 
 interface Photo {
   url: string;
@@ -151,6 +153,7 @@ export default function TeamMemberForm({ mode, memberId, initialData }: TeamMemb
           onChange={(event) => setName(event.target.value)}
           className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
         />
+        <CharacterCounter current={name.length} max={TEXT_LIMITS.team.name} />
       </div>
 
       <div>
@@ -161,6 +164,7 @@ export default function TeamMemberForm({ mode, memberId, initialData }: TeamMemb
           onChange={(event) => setJobTitle(event.target.value)}
           className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
         />
+        <CharacterCounter current={jobTitle.length} max={TEXT_LIMITS.team.jobTitle} />
       </div>
 
       <div>
@@ -172,6 +176,7 @@ export default function TeamMemberForm({ mode, memberId, initialData }: TeamMemb
           onChange={(event) => setBio(event.target.value)}
           className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
         />
+        <CharacterCounter current={bio.length} max={TEXT_LIMITS.team.bio} />
       </div>
 
       <div className="grid grid-cols-3 gap-4">

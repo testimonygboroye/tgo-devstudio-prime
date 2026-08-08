@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import CharacterCounter from "@/components/admin/CharacterCounter";
+import { TEXT_LIMITS } from "@/lib/constants/textLimits";
 
 interface ProjectImage {
   url: string;
@@ -176,6 +178,7 @@ export default function CaseStudyForm({ mode, projectId, initialData }: CaseStud
           onChange={(event) => setTitle(event.target.value)}
           className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
         />
+        <CharacterCounter current={title.length} max={TEXT_LIMITS.project.title} />
       </div>
 
       <div>
@@ -187,6 +190,7 @@ export default function CaseStudyForm({ mode, projectId, initialData }: CaseStud
           onChange={(event) => setSummary(event.target.value)}
           className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
         />
+        <CharacterCounter current={summary.length} max={TEXT_LIMITS.project.summary} />
       </div>
 
       <div>
@@ -197,6 +201,7 @@ export default function CaseStudyForm({ mode, projectId, initialData }: CaseStud
           onChange={(event) => setProblemStatement(event.target.value)}
           className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
         />
+        <CharacterCounter current={problemStatement.length} max={TEXT_LIMITS.project.narrativeSection} />
       </div>
 
       <div>
@@ -207,6 +212,7 @@ export default function CaseStudyForm({ mode, projectId, initialData }: CaseStud
           onChange={(event) => setApproach(event.target.value)}
           className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
         />
+        <CharacterCounter current={approach.length} max={TEXT_LIMITS.project.narrativeSection} />
       </div>
 
       <div>
@@ -217,6 +223,7 @@ export default function CaseStudyForm({ mode, projectId, initialData }: CaseStud
           onChange={(event) => setOutcome(event.target.value)}
           className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
         />
+        <CharacterCounter current={outcome.length} max={TEXT_LIMITS.project.narrativeSection} />
       </div>
 
       <div className="grid grid-cols-2 gap-4">

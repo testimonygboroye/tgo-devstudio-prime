@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
-import ContactSubmission from "@/models/ContactSubmission";
+import ContactSubmission, { ContactSubject } from "@/models/ContactSubmission";
 import { getAuthenticatedSession } from "@/lib/auth/session";
 import { unauthorizedResponse, forbiddenResponse, requireContentPermission } from "@/lib/auth/authorize";
 import { notifyNewContact } from "@/lib/email/notifyNewContact";
@@ -8,6 +8,7 @@ import { notifyNewContact } from "@/lib/email/notifyNewContact";
 const CONTENT_TYPE = "contactSubmissions";
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const RATE_LIMIT_MAX_SUBMISSIONS = 3;
+const ALLOWED_SUBJECTS: ContactSubject[] = ["general", "project", "careers", "other"];
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -34,8 +35,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ status: "error", message: "Invalid email format." }, { status: 400 });
   }
 
-  const allowedSubjects = ["general", "project", "careers", "other"];
-  const resolvedSubject = subject && allowedSubjects.includes(subject) ? subject : "general";
+  const resolvedSubject: ContactSubject = ALLOWED_SUBJECTS.includes(subject as ContactSubject)
+    ? (subject as ContactSubject)
+    : "general";
 
   await connectToDatabase();
 

@@ -3,14 +3,14 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Home, Briefcase, Users, Newspaper, DoorOpen } from "lucide-react";
 
 const NAV_LINKS = [
-  { label: "Home", href: "/" },
-  { label: "Portfolio", href: "/portfolio" },
-  { label: "Team", href: "/team" },
-  { label: "Blog", href: "/blog" },
-  { label: "Careers", href: "/careers" },
+  { label: "Home", href: "/", icon: Home },
+  { label: "Portfolio", href: "/portfolio", icon: Briefcase },
+  { label: "Team", href: "/team", icon: Users },
+  { label: "Blog", href: "/blog", icon: Newspaper },
+  { label: "Careers", href: "/careers", icon: DoorOpen },
 ];
 
 export default function SiteHeader() {
@@ -53,28 +53,37 @@ export default function SiteHeader() {
           onClick={() => setIsMenuOpen(false)}
         >
           <nav
-            className="fixed right-0 top-0 h-screen w-2/5 min-w-[240px] max-w-xs flex-col gap-1 border-l border-base-800 bg-base-950 px-6 py-6 flex"
+            className="fixed right-0 top-0 flex h-screen w-2/5 min-w-[240px] max-w-xs flex-col border-l border-base-800 bg-base-950 px-4 py-6"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="mb-4 flex justify-end">
+            <div className="mb-6 flex items-center justify-between px-2">
+              <span className="font-mono text-xs uppercase tracking-widest text-neutral-500">
+                Menu
+              </span>
               <button
                 onClick={() => setIsMenuOpen(false)}
                 aria-label="Close menu"
                 className="text-neutral-100"
               >
-                <X size={24} />
+                <X size={22} />
               </button>
             </div>
-            {NAV_LINKS.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setIsMenuOpen(false)}
-                className="rounded-md px-3 py-2 text-sm text-neutral-100 hover:bg-base-900"
-              >
-                {link.label}
-              </Link>
-            ))}
+            <div className="flex flex-col divide-y divide-base-800 overflow-hidden rounded-lg border border-base-800">
+              {NAV_LINKS.map((link) => {
+                const Icon = link.icon;
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setIsMenuOpen(false)}
+                    className="flex items-center gap-3 bg-base-900 px-4 py-3.5 text-sm text-neutral-100 transition-colors hover:bg-base-800 hover:text-brand-cyan-300"
+                  >
+                    <Icon size={18} className="text-brand-cyan-400" />
+                    {link.label}
+                  </Link>
+                );
+              })}
+            </div>
           </nav>
         </div>
       )}

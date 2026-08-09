@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import { connectToDatabase } from "@/lib/db";
 import BlogPost from "@/models/BlogPost";
+import { getServerSession } from "@/lib/auth/serverSession";
+import { guardCanEdit } from "@/lib/auth/pageGuards";
 import BlogPostForm from "@/components/admin/BlogPostForm";
 
 interface PageProps {
@@ -8,6 +10,8 @@ interface PageProps {
 }
 
 export default async function EditBlogPostPage({ params }: PageProps) {
+  const session = await getServerSession();
+  guardCanEdit(session!, "blogPosts");
   const { id } = await params;
   await connectToDatabase();
   const post = await BlogPost.findById(id).lean();

@@ -1,6 +1,10 @@
 import TeamMemberForm from "@/components/admin/TeamMemberForm";
+import { getServerSession } from "@/lib/auth/serverSession";
+import { guardCanCreate } from "@/lib/auth/pageGuards";
 
-export default function NewTeamMemberPage() {
+export default async function NewTeamMemberPage() {
+  const session = await getServerSession();
+  guardCanCreate(session!, "team");
   return (
     <div>
       <p className="font-mono text-xs uppercase tracking-widest text-neutral-400">Content</p>

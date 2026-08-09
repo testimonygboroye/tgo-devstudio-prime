@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import { connectToDatabase } from "@/lib/db";
 import TeamMember from "@/models/TeamMember";
+import { getServerSession } from "@/lib/auth/serverSession";
+import { guardCanEdit } from "@/lib/auth/pageGuards";
 import TeamMemberForm from "@/components/admin/TeamMemberForm";
 
 interface PageProps {
@@ -8,6 +10,8 @@ interface PageProps {
 }
 
 export default async function EditTeamMemberPage({ params }: PageProps) {
+  const session = await getServerSession();
+  guardCanEdit(session!, "team");
   const { id } = await params;
   await connectToDatabase();
   const member = await TeamMember.findById(id).lean();

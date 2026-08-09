@@ -1,9 +1,13 @@
 import Link from "next/link";
 import { connectToDatabase } from "@/lib/db";
 import Project from "@/models/Project";
+import { getServerSession } from "@/lib/auth/serverSession";
+import { guardCanView } from "@/lib/auth/pageGuards";
 import { getAdminBasePath } from "@/lib/adminPath";
 
 export default async function CaseStudiesListPage() {
+  const session = await getServerSession();
+  guardCanView(session!, "caseStudies");
   await connectToDatabase();
   const projects = await Project.find().sort({ createdAt: -1 }).lean();
   const basePath = getAdminBasePath();

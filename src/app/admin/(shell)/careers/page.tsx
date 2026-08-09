@@ -1,9 +1,13 @@
 import Link from "next/link";
 import { connectToDatabase } from "@/lib/db";
 import JobOpening from "@/models/JobOpening";
+import { getServerSession } from "@/lib/auth/serverSession";
+import { guardCanView } from "@/lib/auth/pageGuards";
 import { getAdminBasePath } from "@/lib/adminPath";
 
 export default async function CareersListPage() {
+  const session = await getServerSession();
+  guardCanView(session!, "jobOpenings");
   await connectToDatabase();
   const jobs = await JobOpening.find().sort({ createdAt: -1 }).lean();
   const basePath = getAdminBasePath();

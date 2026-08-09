@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import { connectToDatabase } from "@/lib/db";
 import Project from "@/models/Project";
+import { getServerSession } from "@/lib/auth/serverSession";
+import { guardCanEdit } from "@/lib/auth/pageGuards";
 import CaseStudyForm from "@/components/admin/CaseStudyForm";
 
 interface PageProps {
@@ -8,6 +10,8 @@ interface PageProps {
 }
 
 export default async function EditCaseStudyPage({ params }: PageProps) {
+  const session = await getServerSession();
+  guardCanEdit(session!, "caseStudies");
   const { id } = await params;
   await connectToDatabase();
   const project = await Project.findById(id).lean();

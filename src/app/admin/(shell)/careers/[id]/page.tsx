@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import { connectToDatabase } from "@/lib/db";
 import JobOpening from "@/models/JobOpening";
+import { getServerSession } from "@/lib/auth/serverSession";
+import { guardCanEdit } from "@/lib/auth/pageGuards";
 import JobOpeningForm from "@/components/admin/JobOpeningForm";
 
 interface PageProps {
@@ -8,6 +10,8 @@ interface PageProps {
 }
 
 export default async function EditJobOpeningPage({ params }: PageProps) {
+  const session = await getServerSession();
+  guardCanEdit(session!, "jobOpenings");
   const { id } = await params;
   await connectToDatabase();
   const job = await JobOpening.findById(id).lean();

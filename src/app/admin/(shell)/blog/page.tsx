@@ -1,9 +1,13 @@
 import Link from "next/link";
 import { connectToDatabase } from "@/lib/db";
 import BlogPost from "@/models/BlogPost";
+import { getServerSession } from "@/lib/auth/serverSession";
+import { guardCanView } from "@/lib/auth/pageGuards";
 import { getAdminBasePath } from "@/lib/adminPath";
 
 export default async function BlogListPage() {
+  const session = await getServerSession();
+  guardCanView(session!, "blogPosts");
   await connectToDatabase();
   const posts = await BlogPost.find().sort({ createdAt: -1 }).lean();
   const basePath = getAdminBasePath();

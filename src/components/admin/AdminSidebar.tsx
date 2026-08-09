@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Briefcase, Users, Newspaper, DoorOpen, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
+import { LayoutDashboard, Briefcase, Users, Newspaper, DoorOpen, Inbox, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface AdminSidebarProps {
   userName: string;
@@ -17,6 +17,7 @@ const NAV_ITEMS = [
   { label: "Team", hrefSuffix: "/team", icon: Users },
   { label: "Blog", hrefSuffix: "/blog", icon: Newspaper },
   { label: "Careers", hrefSuffix: "/careers", icon: DoorOpen },
+  { label: "Applications", hrefSuffix: "/applications", icon: Inbox },
 ];
 
 export default function AdminSidebar({ userName, userEmail, roleName }: AdminSidebarProps) {

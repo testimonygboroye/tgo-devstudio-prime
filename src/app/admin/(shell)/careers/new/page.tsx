@@ -1,6 +1,10 @@
 import JobOpeningForm from "@/components/admin/JobOpeningForm";
+import { getServerSession } from "@/lib/auth/serverSession";
+import { guardCanCreate } from "@/lib/auth/pageGuards";
 
-export default function NewJobOpeningPage() {
+export default async function NewJobOpeningPage() {
+  const session = await getServerSession();
+  guardCanCreate(session!, "jobOpenings");
   return (
     <div>
       <p className="font-mono text-xs uppercase tracking-widest text-neutral-400">Content</p>

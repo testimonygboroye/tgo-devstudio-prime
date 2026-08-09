@@ -10,6 +10,27 @@ interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
+export async function GET(request: NextRequest, { params }: RouteParams) {
+  const session = await getAuthenticatedSession(request);
+  if (!session) {
+    return unauthorizedResponse();
+  }
+
+  if (!requireContentPermission(session, CONTENT_TYPE, "viewAnalytics")) {
+    return forbiddenResponse("You do not have permission to view applications.");
+  }
+
+  const { id } = await params;
+  await connectToDatabase();
+  const application = await JobApplication.findById(id).populate("jobOpening", "title").lean();
+
+  if (!application) {
+    return NextResponse.json({ status: "error", message: "Application not found." }, { status: 404 });
+  }
+
+  return NextResponse.json({ status: "ok", application });
+}
+
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   const session = await getAuthenticatedSession(request);
   if (!session) {

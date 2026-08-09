@@ -1,9 +1,13 @@
 import Link from "next/link";
 import { connectToDatabase } from "@/lib/db";
 import TeamMember from "@/models/TeamMember";
+import { getServerSession } from "@/lib/auth/serverSession";
+import { guardCanView } from "@/lib/auth/pageGuards";
 import { getAdminBasePath } from "@/lib/adminPath";
 
 export default async function TeamListPage() {
+  const session = await getServerSession();
+  guardCanView(session!, "team");
   await connectToDatabase();
   const teamMembers = await TeamMember.find().sort({ displayOrder: 1, createdAt: 1 }).lean();
   const basePath = getAdminBasePath();

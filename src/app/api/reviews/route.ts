@@ -8,6 +8,7 @@ import JobOpening from "@/models/JobOpening";
 import { getAuthenticatedSession } from "@/lib/auth/session";
 import { unauthorizedResponse, forbiddenResponse, requireContentPermission } from "@/lib/auth/authorize";
 import { notifyNewReview } from "@/lib/email/notifyNewReview";
+import { verifyTurnstileToken } from "@/lib/turnstile";
 import {
   REVIEW_TARGET_TYPES,
   REVIEW_TARGET_MODEL,
@@ -58,6 +59,7 @@ export async function POST(request: NextRequest) {
     targetId,
     customLabel,
     companyWebsite,
+    turnstileToken,
   } = body as {
     submitterName?: string;
     submitterEmail?: string;
@@ -67,6 +69,7 @@ export async function POST(request: NextRequest) {
     targetId?: string;
     customLabel?: string;
     companyWebsite?: string;
+    turnstileToken?: string;
   };
 
   if (companyWebsite) {
@@ -90,6 +93,15 @@ export async function POST(request: NextRequest) {
 
   if (!REVIEW_TARGET_TYPES.includes(targetType as ReviewTargetType)) {
     return NextResponse.json({ status: "error", message: "Invalid review topic." }, { status: 400 });
+  }
+
+  const remoteIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  const isHuman = await verifyTurnstileToken(turnstileToken || "", remoteIp);
+  if (!isHuman) {
+    return NextResponse.json(
+      { status: "error", message: "Verification failed. Please try again." },
+      { status: 400 }
+    );
   }
 
   const resolvedTargetType = targetType as ReviewTargetType;

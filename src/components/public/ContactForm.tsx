@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import TurnstileWidget from "@/components/public/TurnstileWidget";
 
 const SUBJECT_OPTIONS = [
   { value: "general", label: "General Inquiry" },
@@ -15,6 +16,7 @@ export default function ContactForm() {
   const [subject, setSubject] = useState("general");
   const [message, setMessage] = useState("");
   const [companyWebsite, setCompanyWebsite] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -22,13 +24,19 @@ export default function ContactForm() {
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError("");
+
+    if (!turnstileToken) {
+      setError("Please complete the verification challenge.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
       const response = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, subject, message, companyWebsite }),
+        body: JSON.stringify({ name, email, subject, message, companyWebsite, turnstileToken }),
       });
       const data = await response.json();
 
@@ -113,6 +121,8 @@ export default function ContactForm() {
           className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
         />
       </div>
+
+      <TurnstileWidget onVerify={setTurnstileToken} onExpire={() => setTurnstileToken("")} />
 
       {error && <p className="text-sm text-red-400">{error}</p>}
 

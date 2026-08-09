@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import TurnstileWidget from "@/components/public/TurnstileWidget";
 
 interface JobApplicationFormProps {
   jobId: string;
@@ -14,6 +15,7 @@ export default function JobApplicationForm({ jobId }: JobApplicationFormProps) {
   const [companyWebsite, setCompanyWebsite] = useState("");
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -43,12 +45,16 @@ export default function JobApplicationForm({ jobId }: JobApplicationFormProps) {
       return;
     }
 
+    if (!turnstileToken) {
+      setError("Please complete the verification challenge.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
       const resumeData = await uploadFile(resumeFile, "/api/media/upload-document");
       const photoData = await uploadFile(photoFile, "/api/media/upload");
-      const profilePhotoUrl = photoData.url;
 
       const response = await fetch(`/api/careers/${jobId}/applications`, {
         method: "POST",
@@ -58,10 +64,11 @@ export default function JobApplicationForm({ jobId }: JobApplicationFormProps) {
           applicantEmail,
           applicantPhone: applicantPhone || undefined,
           coverMessage,
-          profilePhotoUrl,
+          profilePhotoUrl: photoData.url,
           resumeUrl: resumeData.url,
           resumePublicId: resumeData.publicId,
           companyWebsite,
+          turnstileToken,
         }),
       });
       const data = await response.json();
@@ -156,13 +163,15 @@ export default function JobApplicationForm({ jobId }: JobApplicationFormProps) {
       <div>
         <label className="block text-sm text-neutral-400">Profile Photo (required)</label>
         <input
+          required
           type="file"
           accept="image/jpeg,image/png,image/webp"
-          required
           onChange={(event) => setPhotoFile(event.target.files?.[0] ?? null)}
           className="mt-1 text-sm text-neutral-400"
         />
       </div>
+
+      <TurnstileWidget onVerify={setTurnstileToken} onExpire={() => setTurnstileToken("")} />
 
       {error && <p className="text-sm text-red-400">{error}</p>}
 

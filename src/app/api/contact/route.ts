@@ -4,6 +4,7 @@ import ContactSubmission, { ContactSubject } from "@/models/ContactSubmission";
 import { getAuthenticatedSession } from "@/lib/auth/session";
 import { unauthorizedResponse, forbiddenResponse, requireContentPermission } from "@/lib/auth/authorize";
 import { notifyNewContact } from "@/lib/email/notifyNewContact";
+import { verifyTurnstileToken } from "@/lib/turnstile";
 
 const CONTENT_TYPE = "contactSubmissions";
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
@@ -12,12 +13,13 @@ const ALLOWED_SUBJECTS: ContactSubject[] = ["general", "project", "careers", "ot
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { name, email, subject, message, companyWebsite } = body as {
+  const { name, email, subject, message, companyWebsite, turnstileToken } = body as {
     name?: string;
     email?: string;
     subject?: string;
     message?: string;
     companyWebsite?: string;
+    turnstileToken?: string;
   };
 
   if (companyWebsite) {
@@ -33,6 +35,15 @@ export async function POST(request: NextRequest) {
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return NextResponse.json({ status: "error", message: "Invalid email format." }, { status: 400 });
+  }
+
+  const remoteIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  const isHuman = await verifyTurnstileToken(turnstileToken || "", remoteIp);
+  if (!isHuman) {
+    return NextResponse.json(
+      { status: "error", message: "Verification failed. Please try again." },
+      { status: 400 }
+    );
   }
 
   const resolvedSubject: ContactSubject = ALLOWED_SUBJECTS.includes(subject as ContactSubject)

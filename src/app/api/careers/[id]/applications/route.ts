@@ -5,6 +5,7 @@ import JobApplication from "@/models/JobApplication";
 import { getAuthenticatedSession } from "@/lib/auth/session";
 import { unauthorizedResponse, forbiddenResponse, requireContentPermission } from "@/lib/auth/authorize";
 import { notifyNewApplication } from "@/lib/email/notifyNewApplication";
+import { verifyTurnstileToken } from "@/lib/turnstile";
 
 const CONTENT_TYPE = "jobApplications";
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
@@ -26,6 +27,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     resumeUrl,
     resumePublicId,
     companyWebsite,
+    turnstileToken,
   } = body as {
     applicantName?: string;
     applicantEmail?: string;
@@ -35,6 +37,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     resumeUrl?: string;
     resumePublicId?: string;
     companyWebsite?: string;
+    turnstileToken?: string;
   };
 
   if (companyWebsite) {
@@ -50,6 +53,15 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(applicantEmail)) {
     return NextResponse.json({ status: "error", message: "Invalid email format." }, { status: 400 });
+  }
+
+  const remoteIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  const isHuman = await verifyTurnstileToken(turnstileToken || "", remoteIp);
+  if (!isHuman) {
+    return NextResponse.json(
+      { status: "error", message: "Verification failed. Please try again." },
+      { status: 400 }
+    );
   }
 
   await connectToDatabase();

@@ -6,11 +6,12 @@ export default async function AdminDashboardPage() {
   const session = await getServerSession();
   const canManageRoles = session!.role.canManageRoles;
 
-  let roles: Awaited<ReturnType<typeof Role.find>> = [];
   if (canManageRoles) {
     await connectToDatabase();
-    roles = await Role.find().sort({ createdAt: 1 }).lean();
   }
+  const roles = canManageRoles
+    ? await Role.find().sort({ createdAt: 1 }).lean()
+    : [];
 
   const currentRoleId = session!.role._id?.toString();
 

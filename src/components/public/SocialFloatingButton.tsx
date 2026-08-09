@@ -43,9 +43,59 @@ const SOCIAL_LINKS: SocialLink[] = [
   },
 ];
 
+const BUTTON_SIZE = 56;
+const EDGE_MARGIN = 16;
+const DRAG_THRESHOLD_PX = 6;
+const STORAGE_KEY = "tgo-social-button-position";
+
+interface Position {
+  x: number;
+  y: number;
+}
+
+function getDefaultPosition(): Position {
+  return {
+    x: window.innerWidth - BUTTON_SIZE - EDGE_MARGIN,
+    y: window.innerHeight - BUTTON_SIZE - EDGE_MARGIN,
+  };
+}
+
+function clampPosition(pos: Position): Position {
+  const maxX = window.innerWidth - BUTTON_SIZE - EDGE_MARGIN;
+  const maxY = window.innerHeight - BUTTON_SIZE - EDGE_MARGIN;
+  return {
+    x: Math.min(Math.max(pos.x, EDGE_MARGIN), Math.max(maxX, EDGE_MARGIN)),
+    y: Math.min(Math.max(pos.y, EDGE_MARGIN), Math.max(maxY, EDGE_MARGIN)),
+  };
+}
+
 export default function SocialFloatingButton() {
   const [isOpen, setIsOpen] = useState(false);
+  const [position, setPosition] = useState<Position | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const dragStateRef = useRef({ startX: 0, startY: 0, startPosX: 0, startPosY: 0, moved: false });
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        setPosition(clampPosition(JSON.parse(stored) as Position));
+        return;
+      }
+    } catch {
+      // fall through
+    }
+    setPosition(getDefaultPosition());
+  }, []);
+
+  useEffect(() => {
+    function handleResize() {
+      setPosition((prev) => (prev ? clampPosition(prev) : prev));
+    }
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -53,17 +103,85 @@ export default function SocialFloatingButton() {
         setIsOpen(false);
       }
     }
-
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     }
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
 
+  function handlePointerDown(event: React.PointerEvent<HTMLButtonElement>) {
+    if (!position) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragStateRef.current = {
+      startX: event.clientX,
+      startY: event.clientY,
+      startPosX: position.x,
+      startPosY: position.y,
+      moved: false,
+    };
+    setIsDragging(true);
+  }
+
+  function handlePointerMove(event: React.PointerEvent<HTMLButtonElement>) {
+    if (!isDragging) return;
+
+    const dx = event.clientX - dragStateRef.current.startX;
+    const dy = event.clientY - dragStateRef.current.startY;
+
+    if (Math.abs(dx) > DRAG_THRESHOLD_PX || Math.abs(dy) > DRAG_THRESHOLD_PX) {
+      dragStateRef.current.moved = true;
+    }
+
+    if (dragStateRef.current.moved) {
+      setPosition(
+        clampPosition({
+          x: dragStateRef.current.startPosX + dx,
+          y: dragStateRef.current.startPosY + dy,
+        })
+      );
+    }
+  }
+
+  function handlePointerUp(event: React.PointerEvent<HTMLButtonElement>) {
+    event.currentTarget.releasePointerCapture(event.pointerId);
+    setIsDragging(false);
+
+    setPosition((prev) => {
+      if (prev) {
+        try {
+          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(prev));
+        } catch {
+          // ignore storage errors
+        }
+      }
+      return prev;
+    });
+  }
+
+  function handleButtonClick() {
+    if (dragStateRef.current.moved) {
+      dragStateRef.current.moved = false;
+      return;
+    }
+    setIsOpen((prev) => !prev);
+  }
+
+  if (!position) return null;
+
+  const popupAboveButton = position.y > window.innerHeight / 2;
+
   return (
-    <div ref={containerRef} className="fixed bottom-6 right-6 z-50">
+    <div
+      ref={containerRef}
+      className="fixed z-50"
+      style={{ left: position.x, top: position.y, touchAction: "none" }}
+    >
       {isOpen && (
-        <div className="mb-3 w-64 overflow-hidden rounded-xl border border-base-800 bg-base-900 shadow-2xl">
+        <div
+          className={`absolute w-64 overflow-hidden rounded-xl border border-base-800 bg-base-900 shadow-2xl ${
+            popupAboveButton ? "bottom-[64px] right-0" : "top-[64px] right-0"
+          }`}
+        >
           <div className="border-b border-base-800 px-4 py-3">
             <p className="font-mono text-xs uppercase tracking-widest text-neutral-400">
               Get in Touch
@@ -100,9 +218,14 @@ export default function SocialFloatingButton() {
       )}
 
       <button
-        onClick={() => setIsOpen((prev) => !prev)}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onClick={handleButtonClick}
         aria-label={isOpen ? "Close social links" : "Open social links"}
-        className="flex h-14 w-14 items-center justify-center rounded-full brand-gradient-bg text-base-950 shadow-lg transition-transform hover:scale-105 active:scale-95"
+        className={`flex h-14 w-14 items-center justify-center rounded-full brand-gradient-bg text-base-950 shadow-lg transition-transform ${
+          isDragging ? "scale-110 cursor-grabbing" : "cursor-grab hover:scale-105 active:scale-95"
+        }`}
       >
         {isOpen ? <X size={24} /> : <MessageCircle size={24} />}
       </button>

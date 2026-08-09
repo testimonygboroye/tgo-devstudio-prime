@@ -25,8 +25,18 @@ export default async function TestimonialsPage() {
   return (
     <main className="min-h-screen px-6 py-16 sm:px-12">
       <div className="mx-auto max-w-4xl">
-        <p className="font-mono text-xs uppercase tracking-widest text-neutral-400">Testimonials</p>
-        <h1 className="mt-2 text-4xl font-bold brand-gradient-text sm:text-5xl">What People Say</h1>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="font-mono text-xs uppercase tracking-widest text-neutral-400">Testimonials</p>
+            <h1 className="mt-2 text-4xl font-bold brand-gradient-text sm:text-5xl">What People Say</h1>
+          </div>
+          <a
+            href="#review-form"
+            className="mt-2 whitespace-nowrap rounded-md border border-brand-cyan-400/50 px-4 py-2 text-sm font-semibold text-brand-cyan-300 hover:bg-brand-cyan-400/10"
+          >
+            Skip to Review Form ↓
+          </a>
+        </div>
 
         {reviews.length === 0 ? (
           <p className="mt-8 text-neutral-400">No reviews yet — be the first to share your experience.</p>
@@ -60,7 +70,7 @@ export default async function TestimonialsPage() {
           </div>
         )}
 
-        <div className="mt-16 border-t border-base-800 pt-10">
+        <div id="review-form" className="mt-16 scroll-mt-20 border-t border-base-800 pt-10">
           <h2 className="text-2xl font-semibold text-neutral-100">Share Your Experience</h2>
           <div className="mt-6">
             <ReviewForm />

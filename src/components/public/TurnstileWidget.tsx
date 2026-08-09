@@ -25,11 +25,18 @@ interface TurnstileWidgetProps {
   onExpire?: () => void;
 }
 
+const TURNSTILE_ENABLED = process.env.NEXT_PUBLIC_TURNSTILE_ENABLED !== "false";
+
 export default function TurnstileWidget({ onVerify, onExpire }: TurnstileWidgetProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
 
   useEffect(() => {
+    if (!TURNSTILE_ENABLED) {
+      onVerify("turnstile-disabled");
+      return;
+    }
+
     const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
     if (!siteKey || !containerRef.current) return;
 
@@ -59,6 +66,8 @@ export default function TurnstileWidget({ onVerify, onExpire }: TurnstileWidgetP
       }
     };
   }, [onVerify, onExpire]);
+
+  if (!TURNSTILE_ENABLED) return null;
 
   return <div ref={containerRef} />;
 }

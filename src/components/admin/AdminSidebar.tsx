@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Briefcase, Users, Newspaper, DoorOpen, Inbox, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
+import { LayoutDashboard, Briefcase, Users, Newspaper, DoorOpen, Inbox, Mail, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface AdminSidebarProps {
   userName: string;
@@ -12,20 +12,40 @@ interface AdminSidebarProps {
 }
 
 const NAV_ITEMS = [
-  { label: "Dashboard", hrefSuffix: "/dashboard", icon: LayoutDashboard },
-  { label: "Case Studies", hrefSuffix: "/case-studies", icon: Briefcase },
-  { label: "Team", hrefSuffix: "/team", icon: Users },
-  { label: "Blog", hrefSuffix: "/blog", icon: Newspaper },
-  { label: "Careers", hrefSuffix: "/careers", icon: DoorOpen },
-  { label: "Applications", hrefSuffix: "/applications", icon: Inbox },
-];
+  { label: "Dashboard", hrefSuffix: "/dashboard", icon: LayoutDashboard, badgeKey: null },
+  { label: "Case Studies", hrefSuffix: "/case-studies", icon: Briefcase, badgeKey: null },
+  { label: "Team", hrefSuffix: "/team", icon: Users, badgeKey: null },
+  { label: "Blog", hrefSuffix: "/blog", icon: Newspaper, badgeKey: null },
+  { label: "Careers", hrefSuffix: "/careers", icon: DoorOpen, badgeKey: null },
+  { label: "Applications", hrefSuffix: "/applications", icon: Inbox, badgeKey: "jobApplications" },
+  { label: "Contact", hrefSuffix: "/contact", icon: Mail, badgeKey: "contactSubmissions" },
+] as const;
 
 export default function AdminSidebar({ userName, userEmail, roleName }: AdminSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [counts, setCounts] = useState<Record<string, number>>({});
   const pathname = usePathname();
 
   const segments = pathname.split("/").filter(Boolean);
   const basePathSegment = segments[0] ? `/${segments[0]}` : "";
+
+  const loadCounts = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/notification-counts");
+      const data = await res.json();
+      if (data.status === "ok") {
+        setCounts(data.counts);
+      }
+    } catch {
+      // Silently ignore — badges just won't update this cycle.
+    }
+  }, []);
+
+  useEffect(() => {
+    loadCounts();
+    const interval = setInterval(loadCounts, 30000);
+    return () => clearInterval(interval);
+  }, [loadCounts]);
 
   async function handleLogout() {
     const confirmed = window.confirm("Are you sure you want to log out?");
@@ -62,6 +82,8 @@ export default function AdminSidebar({ userName, userEmail, roleName }: AdminSid
             const href = `${basePathSegment}${item.hrefSuffix}`;
             const isActive = pathname === href;
             const Icon = item.icon;
+            const count = item.badgeKey ? counts[item.badgeKey] || 0 : 0;
+
             return (
               <Link
                 key={item.hrefSuffix}
@@ -73,10 +95,14 @@ export default function AdminSidebar({ userName, userEmail, roleName }: AdminSid
                     : "bg-base-900 text-neutral-100 hover:bg-base-800"
                 }`}
               >
-                <Icon
-                  size={18}
-                  className={`flex-shrink-0 ${isActive ? "text-base-950" : "text-brand-cyan-400"}`}
-                />
+                <span className="relative flex-shrink-0">
+                  <Icon size={18} className={isActive ? "text-base-950" : "text-brand-cyan-400"} />
+                  {count > 0 && (
+                    <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white">
+                      {count > 9 ? "9+" : count}
+                    </span>
+                  )}
+                </span>
                 {!isCollapsed && <span>{item.label}</span>}
               </Link>
             );

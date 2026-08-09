@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import JobApplication from "@/models/JobApplication";
 import ContactSubmission from "@/models/ContactSubmission";
+import Review from "@/models/Review";
 import { getAuthenticatedSession } from "@/lib/auth/session";
 import { unauthorizedResponse, requireContentPermission } from "@/lib/auth/authorize";
 
@@ -20,6 +21,10 @@ export async function GET(request: NextRequest) {
 
   if (requireContentPermission(session, "contactSubmissions", "viewAnalytics")) {
     counts.contactSubmissions = await ContactSubmission.countDocuments({ status: "new" });
+  }
+
+  if (requireContentPermission(session, "reviews", "viewAnalytics")) {
+    counts.reviews = await Review.countDocuments({ status: "pending" });
   }
 
   return NextResponse.json({ status: "ok", counts });

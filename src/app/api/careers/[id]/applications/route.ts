@@ -4,6 +4,7 @@ import JobOpening from "@/models/JobOpening";
 import JobApplication from "@/models/JobApplication";
 import { getAuthenticatedSession } from "@/lib/auth/session";
 import { unauthorizedResponse, forbiddenResponse, requireContentPermission } from "@/lib/auth/authorize";
+import { notifyNewApplication } from "@/lib/email/notifyNewApplication";
 
 const CONTENT_TYPE = "jobApplications";
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
@@ -58,7 +59,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ status: "error", message: "Job opening not found." }, { status: 404 });
   }
 
-  const ipAddress = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
   const recentCount = await JobApplication.countDocuments({
     createdAt: { $gte: new Date(Date.now() - RATE_LIMIT_WINDOW_MS) },
     applicantEmail: applicantEmail.toLowerCase(),
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     );
   }
 
-  await JobApplication.create({
+  const application = await JobApplication.create({
     jobOpening: job._id,
     applicantName: applicantName.trim(),
     applicantEmail: applicantEmail.toLowerCase(),
@@ -81,6 +81,13 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     resumeUrl,
     resumePublicId,
   });
+
+  notifyNewApplication({
+    applicantName: application.applicantName,
+    applicantEmail: application.applicantEmail,
+    jobTitle: job.title,
+    applicationId: application._id.toString(),
+  }).catch((err) => console.error("notifyNewApplication failed:", err));
 
   return NextResponse.json({ status: "ok", message: "Application received." }, { status: 201 });
 }

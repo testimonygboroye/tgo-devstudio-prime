@@ -21,12 +21,31 @@ const CONTENT_TYPE = "reviews";
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const RATE_LIMIT_MAX_SUBMISSIONS = 3;
 
-const TARGET_MODEL_MAP: Record<string, typeof Project | typeof TeamMember | typeof BlogPost | typeof JobOpening> = {
-  Project,
-  TeamMember,
-  BlogPost,
-  JobOpening,
-};
+async function findTargetLabel(
+  resolvedTargetModel: string,
+  targetId: string
+): Promise<string | null> {
+  switch (resolvedTargetModel) {
+    case "Project": {
+      const doc = await Project.findById(targetId).select("title");
+      return doc ? doc.title : null;
+    }
+    case "TeamMember": {
+      const doc = await TeamMember.findById(targetId).select("name");
+      return doc ? doc.name : null;
+    }
+    case "BlogPost": {
+      const doc = await BlogPost.findById(targetId).select("title");
+      return doc ? doc.title : null;
+    }
+    case "JobOpening": {
+      const doc = await JobOpening.findById(targetId).select("title");
+      return doc ? doc.title : null;
+    }
+    default:
+      return null;
+  }
+}
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -104,15 +123,11 @@ export async function POST(request: NextRequest) {
       }
       targetLabelSnapshot = `${targetReview.submitterName}'s review`;
     } else if (resolvedTargetModel) {
-      const Model = TARGET_MODEL_MAP[resolvedTargetModel];
-      const targetDoc = await Model.findById(targetId);
-      if (!targetDoc) {
+      const label = await findTargetLabel(resolvedTargetModel, targetId);
+      if (!label) {
         return NextResponse.json({ status: "error", message: "Selected item not found." }, { status: 404 });
       }
-      targetLabelSnapshot =
-        (targetDoc as { title?: string; name?: string }).title ||
-        (targetDoc as { title?: string; name?: string }).name ||
-        REVIEW_TARGET_LABELS[resolvedTargetType];
+      targetLabelSnapshot = label;
     }
   } else {
     targetLabelSnapshot = REVIEW_TARGET_LABELS[resolvedTargetType];

@@ -55,27 +55,32 @@ export default function AdminSidebar({ userName, userEmail, roleName }: AdminSid
         </button>
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto px-2">
-        {NAV_ITEMS.map((item) => {
-          const href = `${basePathSegment}${item.hrefSuffix}`;
-          const isActive = pathname === href;
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.hrefSuffix}
-              href={href}
-              title={item.label}
-              className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm ${
-                isActive
-                  ? "brand-gradient-bg font-semibold text-base-950"
-                  : "text-neutral-100 hover:bg-base-800"
-              }`}
-            >
-              <Icon size={18} className="flex-shrink-0" />
-              {!isCollapsed && <span>{item.label}</span>}
-            </Link>
-          );
-        })}
+      <nav className="flex-1 overflow-y-auto px-2">
+        <div className="flex flex-col divide-y divide-base-800 overflow-hidden rounded-lg border border-base-800">
+          {NAV_ITEMS.map((item) => {
+            const href = `${basePathSegment}${item.hrefSuffix}`;
+            const isActive = pathname === href;
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.hrefSuffix}
+                href={href}
+                title={item.label}
+                className={`flex items-center gap-3 px-3 py-3 text-sm transition-colors ${
+                  isActive
+                    ? "brand-gradient-bg font-semibold text-base-950"
+                    : "bg-base-900 text-neutral-100 hover:bg-base-800"
+                }`}
+              >
+                <Icon
+                  size={18}
+                  className={`flex-shrink-0 ${isActive ? "text-base-950" : "text-brand-cyan-400"}`}
+                />
+                {!isCollapsed && <span>{item.label}</span>}
+              </Link>
+            );
+          })}
+        </div>
       </nav>
 
       <div className="flex-shrink-0 border-t border-base-800 px-4 py-4">
@@ -91,7 +96,7 @@ export default function AdminSidebar({ userName, userEmail, roleName }: AdminSid
           title="Log out"
           className="flex w-full items-center gap-3 rounded-md border border-base-800 px-3 py-2 text-sm text-neutral-100 hover:bg-base-800"
         >
-          <LogOut size={18} className="flex-shrink-0" />
+          <LogOut size={18} className="flex-shrink-0 text-brand-cyan-400" />
           {!isCollapsed && <span>Log out</span>}
         </button>
       </div>

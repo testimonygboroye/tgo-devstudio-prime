@@ -5,6 +5,7 @@ import JobApplication from "@/models/JobApplication";
 import { getAuthenticatedSession } from "@/lib/auth/session";
 import { unauthorizedResponse, forbiddenResponse, requireContentPermission } from "@/lib/auth/authorize";
 import { notifyNewApplication } from "@/lib/email/notifyNewApplication";
+import { confirmApplicationReceived } from "@/lib/email/confirmApplicationReceived";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 
 const CONTENT_TYPE = "jobApplications";
@@ -100,6 +101,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     jobTitle: job.title,
     applicationId: application._id.toString(),
   }).catch((err) => console.error("notifyNewApplication failed:", err));
+
+  confirmApplicationReceived({
+    applicantName: application.applicantName,
+    applicantEmail: application.applicantEmail,
+    jobTitle: job.title,
+  }).catch((err) => console.error("confirmApplicationReceived failed:", err));
 
   return NextResponse.json({ status: "ok", message: "Application received." }, { status: 201 });
 }

@@ -7,19 +7,24 @@ import { sanitizeBlogHtml } from "@/lib/sanitizeHtml";
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | TGO DevStudio Prime",
-  description: "How TGO DevStudio collects, uses, and protects your data.",
+  title: "About | TGO DevStudio Prime",
+  description: "The story, mission, and people behind TGO DevStudio.",
+  openGraph: {
+    title: "About | TGO DevStudio Prime",
+    description: "The story, mission, and people behind TGO DevStudio.",
+    type: "website",
+  },
 };
 
-export default async function PrivacyPolicyPage() {
+export default async function AboutPage() {
   await connectToDatabase();
-  const saved = await PageContent.findOne({ type: "privacy-policy" }).lean();
-  const page = saved || PAGE_DEFAULTS["privacy-policy"];
+  const saved = await PageContent.findOne({ type: "about" }).lean();
+  const page = saved || PAGE_DEFAULTS.about;
 
   return (
     <main className="min-h-screen px-6 py-16 sm:px-12">
       <div className="mx-auto max-w-3xl">
-        <p className="font-mono text-xs uppercase tracking-widest text-neutral-400">Legal</p>
+        <p className="font-mono text-xs uppercase tracking-widest text-neutral-400">About</p>
         <h1 className="mt-2 text-4xl font-bold brand-gradient-text sm:text-5xl">{page.title}</h1>
         <div
           className="prose prose-invert mt-10 max-w-none"

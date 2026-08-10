@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
-import LegalDocument, { LegalDocumentType } from "@/models/LegalDocument";
+import PageContent, { PageContentType } from "@/models/PageContent";
 import { getAuthenticatedSession } from "@/lib/auth/session";
 import { unauthorizedResponse, forbiddenResponse, requireContentPermission } from "@/lib/auth/authorize";
 import { sanitizeBlogHtml } from "@/lib/sanitizeHtml";
+import { PAGE_DEFAULTS } from "@/lib/constants/pageDefaults";
 
-const CONTENT_TYPE = "legalDocuments";
-const VALID_TYPES: LegalDocumentType[] = ["privacy-policy", "terms-of-service"];
+const CONTENT_TYPE = "pageContent";
+const VALID_TYPES: PageContentType[] = ["about", "privacy-policy", "terms-of-service"];
 
 interface RouteParams {
   params: Promise<{ type: string }>;
@@ -15,18 +16,23 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   const { type } = await params;
 
-  if (!VALID_TYPES.includes(type as LegalDocumentType)) {
-    return NextResponse.json({ status: "error", message: "Invalid document type." }, { status: 400 });
+  if (!VALID_TYPES.includes(type as PageContentType)) {
+    return NextResponse.json({ status: "error", message: "Invalid page type." }, { status: 400 });
   }
 
   await connectToDatabase();
-  const document = await LegalDocument.findOne({ type }).lean();
+  const saved = await PageContent.findOne({ type }).lean();
 
-  if (!document) {
-    return NextResponse.json({ status: "ok", document: null });
+  if (saved) {
+    return NextResponse.json({ status: "ok", page: saved, isDefault: false });
   }
 
-  return NextResponse.json({ status: "ok", document });
+  const fallback = PAGE_DEFAULTS[type as PageContentType];
+  return NextResponse.json({
+    status: "ok",
+    page: { type, title: fallback.title, content: fallback.content },
+    isDefault: true,
+  });
 }
 
 export async function PUT(request: NextRequest, { params }: RouteParams) {
@@ -36,13 +42,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   }
 
   if (!requireContentPermission(session, CONTENT_TYPE, "edit")) {
-    return forbiddenResponse("You do not have permission to edit legal documents.");
+    return forbiddenResponse("You do not have permission to edit this page.");
   }
 
   const { type } = await params;
 
-  if (!VALID_TYPES.includes(type as LegalDocumentType)) {
-    return NextResponse.json({ status: "error", message: "Invalid document type." }, { status: 400 });
+  if (!VALID_TYPES.includes(type as PageContentType)) {
+    return NextResponse.json({ status: "error", message: "Invalid page type." }, { status: 400 });
   }
 
   const body = await request.json();
@@ -56,7 +62,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
   const sanitizedContent = sanitizeBlogHtml(content);
 
-  const document = await LegalDocument.findOneAndUpdate(
+  const page = await PageContent.findOneAndUpdate(
     { type },
     {
       type,
@@ -67,5 +73,5 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     { new: true, upsert: true }
   );
 
-  return NextResponse.json({ status: "ok", document });
+  return NextResponse.json({ status: "ok", page });
 }

@@ -4,6 +4,7 @@ import ContactSubmission, { ContactSubject } from "@/models/ContactSubmission";
 import { getAuthenticatedSession } from "@/lib/auth/session";
 import { unauthorizedResponse, forbiddenResponse, requireContentPermission } from "@/lib/auth/authorize";
 import { notifyNewContact } from "@/lib/email/notifyNewContact";
+import { confirmContactReceived } from "@/lib/email/confirmContactReceived";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 
 const CONTENT_TYPE = "contactSubmissions";
@@ -78,6 +79,11 @@ export async function POST(request: NextRequest) {
     message: submission.message,
     submissionId: submission._id.toString(),
   }).catch((err) => console.error("notifyNewContact failed:", err));
+
+  confirmContactReceived({
+    name: submission.name,
+    email: submission.email,
+  }).catch((err) => console.error("confirmContactReceived failed:", err));
 
   return NextResponse.json({ status: "ok", message: "Message received." }, { status: 201 });
 }

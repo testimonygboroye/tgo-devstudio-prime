@@ -22,7 +22,7 @@ const NAV_ITEMS = [
   { label: "Applications", hrefSuffix: "/applications", icon: Inbox, badgeKey: "jobApplications" },
   { label: "Contact", hrefSuffix: "/contact", icon: Mail, badgeKey: "contactSubmissions" },
   { label: "Reviews", hrefSuffix: "/reviews", icon: Star, badgeKey: "reviews" },
-  { label: "Legal", hrefSuffix: "/legal", icon: FileText, badgeKey: null },
+  { label: "Site Pages", hrefSuffix: "/pages", icon: FileText, badgeKey: null },
 ] as const;
 
 export default function AdminSidebar({ userName, userEmail, roleName }: AdminSidebarProps) {

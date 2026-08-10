@@ -8,6 +8,7 @@ import JobOpening from "@/models/JobOpening";
 import { getAuthenticatedSession } from "@/lib/auth/session";
 import { unauthorizedResponse, forbiddenResponse, requireContentPermission } from "@/lib/auth/authorize";
 import { notifyNewReview } from "@/lib/email/notifyNewReview";
+import { confirmReviewReceived } from "@/lib/email/confirmReviewReceived";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 import {
   REVIEW_TARGET_TYPES,
@@ -179,6 +180,11 @@ export async function POST(request: NextRequest) {
     targetLabel: finalLabel,
     reviewId: review._id.toString(),
   }).catch((err) => console.error("notifyNewReview failed:", err));
+
+  confirmReviewReceived({
+    submitterName: review.submitterName,
+    submitterEmail: review.submitterEmail,
+  }).catch((err) => console.error("confirmReviewReceived failed:", err));
 
   return NextResponse.json({ status: "ok", message: "Review received." }, { status: 201 });
 }

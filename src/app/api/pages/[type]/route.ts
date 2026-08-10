@@ -20,17 +20,19 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ status: "error", message: "Invalid page type." }, { status: 400 });
   }
 
+  const resolvedType = type as PageContentType;
+
   await connectToDatabase();
-  const saved = await PageContent.findOne({ type }).lean();
+  const saved = await PageContent.findOne({ type: resolvedType }).lean();
 
   if (saved) {
     return NextResponse.json({ status: "ok", page: saved, isDefault: false });
   }
 
-  const fallback = PAGE_DEFAULTS[type as PageContentType];
+  const fallback = PAGE_DEFAULTS[resolvedType];
   return NextResponse.json({
     status: "ok",
-    page: { type, title: fallback.title, content: fallback.content },
+    page: { type: resolvedType, title: fallback.title, content: fallback.content },
     isDefault: true,
   });
 }
@@ -51,6 +53,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ status: "error", message: "Invalid page type." }, { status: 400 });
   }
 
+  const resolvedType = type as PageContentType;
+
   const body = await request.json();
   const { title, content } = body as { title?: string; content?: string };
 
@@ -63,9 +67,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   const sanitizedContent = sanitizeBlogHtml(content);
 
   const page = await PageContent.findOneAndUpdate(
-    { type },
+    { type: resolvedType },
     {
-      type,
+      type: resolvedType,
       title: title.trim(),
       content: sanitizedContent,
       lastUpdatedBy: session.user._id,

@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
     twitterUrl,
     displayOrder,
     publishStatus,
+    featured,
   } = body as {
     name?: string;
     jobTitle?: string;
@@ -61,6 +62,7 @@ export async function POST(request: NextRequest) {
     twitterUrl?: string;
     displayOrder?: number;
     publishStatus?: string;
+    featured?: boolean;
   };
 
   const lengthError =
@@ -111,6 +113,7 @@ export async function POST(request: NextRequest) {
     twitterUrl,
     displayOrder: typeof displayOrder === "number" ? displayOrder : 0,
     publishStatus: resolvedPublishStatus,
+    featured: featured === true,
     createdBy: session.user._id,
   });
 

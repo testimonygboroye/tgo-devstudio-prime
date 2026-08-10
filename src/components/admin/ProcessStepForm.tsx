@@ -11,6 +11,7 @@ interface ProcessStepFormProps {
     description: string;
     displayOrder: number;
     publishStatus: string;
+    featured?: boolean;
   };
 }
 
@@ -20,6 +21,7 @@ export default function ProcessStepForm({ mode, stepId, initialData }: ProcessSt
   const [description, setDescription] = useState(initialData?.description || "");
   const [displayOrder, setDisplayOrder] = useState(initialData?.displayOrder ?? 0);
   const [publishStatus, setPublishStatus] = useState(initialData?.publishStatus || "draft");
+  const [featured, setFeatured] = useState(initialData?.featured ?? false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -35,7 +37,7 @@ export default function ProcessStepForm({ mode, stepId, initialData }: ProcessSt
       const response = await fetch(endpoint, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, description, displayOrder, publishStatus }),
+        body: JSON.stringify({ title, description, displayOrder, publishStatus, featured }),
       });
       const data = await response.json();
 
@@ -98,6 +100,19 @@ export default function ProcessStepForm({ mode, stepId, initialData }: ProcessSt
             <option value="published">Published</option>
           </select>
         </div>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          id="featured"
+          checked={featured}
+          onChange={(e) => setFeatured(e.target.checked)}
+          className="h-4 w-4 rounded border-base-800 bg-base-900"
+        />
+        <label htmlFor="featured" className="text-sm text-neutral-400">
+          Feature on homepage
+        </label>
       </div>
 
       {error && <p className="text-sm text-red-400">{error}</p>}

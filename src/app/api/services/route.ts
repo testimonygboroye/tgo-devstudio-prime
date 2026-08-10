@@ -17,12 +17,13 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { title, summary, icon, displayOrder, publishStatus } = body as {
+  const { title, summary, icon, displayOrder, publishStatus, featured } = body as {
     title?: string;
     summary?: string;
     icon?: string;
     displayOrder?: number;
     publishStatus?: string;
+    featured?: boolean;
   };
 
   if (!title || !summary) {
@@ -37,6 +38,7 @@ export async function POST(request: NextRequest) {
     icon: icon || "Code",
     displayOrder: displayOrder ?? 0,
     publishStatus: publishStatus === "published" ? "published" : "draft",
+    featured: featured === true,
     createdBy: session.user._id,
   });
 

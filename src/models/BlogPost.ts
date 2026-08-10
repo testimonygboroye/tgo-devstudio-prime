@@ -14,6 +14,7 @@ export interface IBlogPost extends Document {
   };
   tags: string[];
   publishStatus: BlogPublishStatus;
+  featured: boolean;
   scheduledFor?: Date;
   metaTitle?: string;
   metaDescription?: string;
@@ -35,6 +36,7 @@ const BlogPostSchema = new Schema<IBlogPost>(
     },
     tags: { type: [String], default: [] },
     publishStatus: { type: String, enum: ["draft", "scheduled", "published"], default: "draft" },
+    featured: { type: Boolean, default: false },
     scheduledFor: { type: Date },
     metaTitle: { type: String },
     metaDescription: { type: String },

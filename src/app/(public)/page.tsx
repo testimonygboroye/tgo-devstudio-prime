@@ -32,10 +32,10 @@ export default async function HomePage() {
   ] = await Promise.all([
     HomeSettings.findOne().lean(),
     Project.find({ featured: true, publishStatus: "published" }).sort({ createdAt: -1 }).limit(3).lean(),
-    Service.find({ publishStatus: "published" }).sort({ displayOrder: 1 }).limit(3).lean(),
-    ProcessStep.find({ publishStatus: "published" }).sort({ displayOrder: 1 }).limit(4).lean(),
-    TeamMember.find({ publishStatus: "published" }).sort({ displayOrder: 1 }).limit(4).lean(),
-    BlogPost.find(getPubliclyVisibleFilter()).sort({ createdAt: -1 }).limit(3).lean(),
+    Service.find({ publishStatus: "published" }).sort({ featured: -1, displayOrder: 1 }).limit(3).lean(),
+    ProcessStep.find({ publishStatus: "published" }).sort({ displayOrder: 1 }).limit(6).lean(),
+    TeamMember.find({ publishStatus: "published" }).sort({ featured: -1, displayOrder: 1 }).limit(4).lean(),
+    BlogPost.find(getPubliclyVisibleFilter()).sort({ featured: -1, createdAt: -1 }).limit(3).lean(),
     JobOpening.countDocuments({ publishStatus: "published" }),
     Review.find({ status: "approved", featured: true }).sort({ createdAt: -1 }).limit(3).lean(),
   ]);

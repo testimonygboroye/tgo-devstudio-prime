@@ -8,6 +8,7 @@ export interface IService extends Document {
   icon: string;
   displayOrder: number;
   publishStatus: PublishStatus;
+  featured: boolean;
   createdBy: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -20,6 +21,7 @@ const ServiceSchema = new Schema<IService>(
     icon: { type: String, required: true, trim: true, default: "Code" },
     displayOrder: { type: Number, default: 0 },
     publishStatus: { type: String, enum: ["draft", "published"], default: "draft" },
+    featured: { type: Boolean, default: false },
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
   },
   { timestamps: true }

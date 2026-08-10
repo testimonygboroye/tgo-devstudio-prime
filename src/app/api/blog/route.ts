@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
     scheduledFor,
     metaTitle,
     metaDescription,
+    featured,
   } = body as {
     title?: string;
     excerpt?: string;
@@ -61,6 +62,7 @@ export async function POST(request: NextRequest) {
     scheduledFor?: string;
     metaTitle?: string;
     metaDescription?: string;
+    featured?: boolean;
   };
 
   if (!title || !excerpt || !contentHtml) {
@@ -120,6 +122,7 @@ export async function POST(request: NextRequest) {
     scheduledFor: resolvedScheduledFor,
     metaTitle,
     metaDescription,
+    featured: featured === true,
     createdBy: session.user._id,
   });
 

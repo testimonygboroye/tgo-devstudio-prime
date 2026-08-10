@@ -7,6 +7,7 @@ export interface IProcessStep extends Document {
   description: string;
   displayOrder: number;
   publishStatus: PublishStatus;
+  featured: boolean;
   createdBy: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -18,6 +19,7 @@ const ProcessStepSchema = new Schema<IProcessStep>(
     description: { type: String, required: true, trim: true, maxlength: 400 },
     displayOrder: { type: Number, default: 0 },
     publishStatus: { type: String, enum: ["draft", "published"], default: "draft" },
+    featured: { type: Boolean, default: false },
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
   },
   { timestamps: true }

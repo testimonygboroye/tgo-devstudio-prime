@@ -18,6 +18,7 @@ export interface ITeamMember extends Document {
   githubUrl?: string;
   twitterUrl?: string;
   displayOrder: number;
+  featured: boolean;
   publishStatus: PublishStatus;
   createdBy: Types.ObjectId;
   createdAt: Date;
@@ -44,6 +45,7 @@ const TeamMemberSchema = new Schema<ITeamMember>(
     githubUrl: { type: String },
     twitterUrl: { type: String },
     displayOrder: { type: Number, default: 0 },
+    featured: { type: Boolean, default: false },
     publishStatus: { type: String, enum: ["draft", "published"], default: "draft" },
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
   },

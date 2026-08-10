@@ -40,6 +40,7 @@ export default function TeamMemberForm({ mode, memberId, initialData }: TeamMemb
   const [twitterUrl, setTwitterUrl] = useState(initialData?.twitterUrl ?? "");
   const [displayOrder, setDisplayOrder] = useState(initialData?.displayOrder ?? 0);
   const [publishStatus, setPublishStatus] = useState(initialData?.publishStatus ?? "draft");
+  const [featured, setFeatured] = useState(initialData?.featured ?? false);
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
@@ -94,6 +95,7 @@ export default function TeamMemberForm({ mode, memberId, initialData }: TeamMemb
       twitterUrl: twitterUrl || undefined,
       displayOrder,
       publishStatus,
+      featured,
     };
 
     try {
@@ -228,6 +230,19 @@ export default function TeamMemberForm({ mode, memberId, initialData }: TeamMemb
             <option value="draft">Draft</option>
             <option value="published">Published</option>
           </select>
+        </div>
+
+        <div className="flex items-center gap-2 pt-6">
+          <input
+            type="checkbox"
+            id="featured"
+            checked={featured}
+            onChange={(event) => setFeatured(event.target.checked)}
+            className="h-4 w-4 rounded border-base-800 bg-base-900"
+          />
+          <label htmlFor="featured" className="text-sm text-neutral-400">
+            Feature on homepage
+          </label>
         </div>
       </div>
 

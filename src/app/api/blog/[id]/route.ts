@@ -68,6 +68,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     scheduledFor,
     metaTitle,
     metaDescription,
+    featured,
   } = body as {
     title?: string;
     excerpt?: string;
@@ -78,6 +79,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     scheduledFor?: string;
     metaTitle?: string;
     metaDescription?: string;
+    featured?: boolean;
   };
 
   const lengthError =
@@ -106,6 +108,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   if (tags !== undefined) post.tags = tags;
   if (metaTitle !== undefined) post.metaTitle = metaTitle;
   if (metaDescription !== undefined) post.metaDescription = metaDescription;
+  if (typeof featured === "boolean") post.featured = featured;
 
   if (publishStatus !== undefined) {
     const canPublish = requireContentPermission(session, CONTENT_TYPE, "publish");

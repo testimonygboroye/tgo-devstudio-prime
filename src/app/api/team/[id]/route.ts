@@ -68,6 +68,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     twitterUrl,
     displayOrder,
     publishStatus,
+    featured,
   } = body as {
     name?: string;
     jobTitle?: string;
@@ -78,6 +79,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     twitterUrl?: string;
     displayOrder?: number;
     publishStatus?: string;
+    featured?: boolean;
   };
 
   const lengthError =
@@ -107,6 +109,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   if (githubUrl !== undefined) teamMember.githubUrl = githubUrl;
   if (twitterUrl !== undefined) teamMember.twitterUrl = twitterUrl;
   if (typeof displayOrder === "number") teamMember.displayOrder = displayOrder;
+  if (typeof featured === "boolean") teamMember.featured = featured;
 
   if (publishStatus !== undefined) {
     if (publishStatus === "published") {

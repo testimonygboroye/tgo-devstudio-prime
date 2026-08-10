@@ -44,6 +44,7 @@ export default function BlogPostForm({ mode, postId, initialData }: BlogPostForm
   const [pendingAltText, setPendingAltText] = useState("");
   const [tagsInput, setTagsInput] = useState(initialData?.tags?.join(", ") ?? "");
   const [publishStatus, setPublishStatus] = useState(initialData?.publishStatus ?? "draft");
+  const [featured, setFeatured] = useState(initialData?.featured ?? false);
   const [scheduledFor, setScheduledFor] = useState(toDatetimeLocalValue(initialData?.scheduledFor));
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -102,6 +103,7 @@ export default function BlogPostForm({ mode, postId, initialData }: BlogPostForm
       coverImage: coverImage ?? undefined,
       tags: tagsInput.split(",").map((tag) => tag.trim()).filter(Boolean),
       publishStatus,
+      featured,
       scheduledFor: publishStatus === "scheduled" ? new Date(scheduledFor).toISOString() : undefined,
     };
 
@@ -206,6 +208,18 @@ export default function BlogPostForm({ mode, postId, initialData }: BlogPostForm
             <option value="scheduled">Scheduled</option>
             <option value="published">Published</option>
           </select>
+        </div>
+        <div className="flex items-center gap-2 pt-6">
+          <input
+            type="checkbox"
+            id="featured"
+            checked={featured}
+            onChange={(event) => setFeatured(event.target.checked)}
+            className="h-4 w-4 rounded border-base-800 bg-base-900"
+          />
+          <label htmlFor="featured" className="text-sm text-neutral-400">
+            Feature on homepage
+          </label>
         </div>
         {publishStatus === "scheduled" && (
           <div>

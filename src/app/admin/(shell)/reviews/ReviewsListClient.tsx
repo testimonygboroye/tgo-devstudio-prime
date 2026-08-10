@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Star } from "lucide-react";
 
 interface ReviewListItem {
   _id: string;
@@ -30,6 +31,7 @@ export default function ReviewsListClient() {
   const [statusFilter, setStatusFilter] = useState("pending");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const loadReviews = useCallback(async () => {
     setIsLoading(true);
@@ -53,6 +55,28 @@ export default function ReviewsListClient() {
   useEffect(() => {
     loadReviews();
   }, [loadReviews]);
+
+  async function handleToggleFeatured(event: React.MouseEvent, review: ReviewListItem) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (review.status !== "approved") return;
+
+    setTogglingId(review._id);
+    const res = await fetch(`/api/reviews/${review._id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "setFeatured", featured: !review.featured }),
+    });
+    const data = await res.json();
+
+    if (data.status === "ok") {
+      setReviews((prev) =>
+        prev.map((r) => (r._id === review._id ? { ...r, featured: data.review.featured } : r))
+      );
+    }
+    setTogglingId(null);
+  }
 
   return (
     <div>
@@ -91,10 +115,19 @@ export default function ReviewsListClient() {
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-neutral-100">{review.submitterName}</span>
                 <div className="flex items-center gap-2">
-                  {review.featured && (
-                    <span className="rounded-full bg-brand-violet-600/20 px-2 py-0.5 text-xs text-brand-cyan-300">
-                      Featured
-                    </span>
+                  {review.status === "approved" && (
+                    <button
+                      onClick={(e) => handleToggleFeatured(e, review)}
+                      disabled={togglingId === review._id}
+                      title={review.featured ? "Unfeature from homepage" : "Feature on homepage"}
+                      className={`rounded-full p-1.5 transition-colors ${
+                        review.featured
+                          ? "text-brand-cyan-300 hover:bg-brand-cyan-400/10"
+                          : "text-neutral-500 hover:bg-base-800 hover:text-neutral-300"
+                      }`}
+                    >
+                      <Star size={16} fill={review.featured ? "currentColor" : "none"} />
+                    </button>
                   )}
                   <span className={`rounded-full px-2 py-0.5 text-xs ${STATUS_STYLES[review.status] || ""}`}>
                     {review.status}

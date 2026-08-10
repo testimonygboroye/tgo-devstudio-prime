@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Briefcase, Users, Newspaper, DoorOpen, Inbox, Mail, Star, Layers, Workflow, FileText, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
+import { LayoutDashboard, Briefcase, Users, Newspaper, DoorOpen, Inbox, Mail, Star, Layers, Workflow, FileText, Home, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface AdminSidebarProps {
   userName: string;
@@ -13,6 +13,7 @@ interface AdminSidebarProps {
 
 const NAV_ITEMS = [
   { label: "Dashboard", hrefSuffix: "/dashboard", icon: LayoutDashboard, badgeKey: null },
+  { label: "Homepage", hrefSuffix: "/home-settings", icon: Home, badgeKey: null },
   { label: "Case Studies", hrefSuffix: "/case-studies", icon: Briefcase, badgeKey: null },
   { label: "Services", hrefSuffix: "/services", icon: Layers, badgeKey: null },
   { label: "Process", hrefSuffix: "/process", icon: Workflow, badgeKey: null },

@@ -24,6 +24,7 @@ interface TeamMemberFormProps {
     twitterUrl?: string;
     displayOrder: number;
     publishStatus: string;
+    featured?: boolean;
   };
 }
 

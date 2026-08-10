@@ -23,6 +23,7 @@ interface BlogPostFormProps {
     tags: string[];
     publishStatus: string;
     scheduledFor?: string;
+    featured?: boolean;
   };
 }
 

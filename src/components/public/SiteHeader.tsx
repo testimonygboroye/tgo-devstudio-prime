@@ -3,14 +3,28 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Menu, X, Home, Briefcase, Users, Newspaper, DoorOpen } from "lucide-react";
+import { Menu, X, Home, Layers, Briefcase, Newspaper, DoorOpen, Mail, Info, Workflow, Users, Star } from "lucide-react";
 
-const NAV_LINKS = [
+const DESKTOP_NAV_LINKS = [
+  { label: "Home", href: "/" },
+  { label: "Services", href: "/services" },
+  { label: "Portfolio", href: "/portfolio" },
+  { label: "Blog", href: "/blog" },
+  { label: "Careers", href: "/careers" },
+  { label: "Contact", href: "/contact" },
+];
+
+const DRAWER_NAV_LINKS = [
   { label: "Home", href: "/", icon: Home },
+  { label: "About", href: "/about", icon: Info },
+  { label: "Services", href: "/services", icon: Layers },
+  { label: "Process", href: "/process", icon: Workflow },
   { label: "Portfolio", href: "/portfolio", icon: Briefcase },
   { label: "Team", href: "/team", icon: Users },
   { label: "Blog", href: "/blog", icon: Newspaper },
   { label: "Careers", href: "/careers", icon: DoorOpen },
+  { label: "Testimonials", href: "/testimonials", icon: Star },
+  { label: "Contact", href: "/contact", icon: Mail },
 ];
 
 export default function SiteHeader() {
@@ -26,7 +40,7 @@ export default function SiteHeader() {
           </Link>
 
           <nav className="hidden items-center gap-8 sm:flex">
-            {NAV_LINKS.map((link) => (
+            {DESKTOP_NAV_LINKS.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
@@ -53,7 +67,7 @@ export default function SiteHeader() {
           onClick={() => setIsMenuOpen(false)}
         >
           <nav
-            className="fixed right-0 top-0 flex h-screen w-2/5 min-w-[240px] max-w-xs flex-col border-l border-base-800 bg-base-950 px-4 py-6"
+            className="fixed right-0 top-0 flex h-screen w-2/5 min-w-[240px] max-w-xs flex-col overflow-y-auto border-l border-base-800 bg-base-950 px-4 py-6"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="mb-6 flex items-center justify-between px-2">
@@ -69,7 +83,7 @@ export default function SiteHeader() {
               </button>
             </div>
             <div className="flex flex-col divide-y divide-base-800 overflow-hidden rounded-lg border border-base-800">
-              {NAV_LINKS.map((link) => {
+              {DRAWER_NAV_LINKS.map((link) => {
                 const Icon = link.icon;
                 return (
                   <Link

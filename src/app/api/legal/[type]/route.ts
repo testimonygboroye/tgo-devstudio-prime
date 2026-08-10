@@ -3,7 +3,7 @@ import { connectToDatabase } from "@/lib/db";
 import LegalDocument, { LegalDocumentType } from "@/models/LegalDocument";
 import { getAuthenticatedSession } from "@/lib/auth/session";
 import { unauthorizedResponse, forbiddenResponse, requireContentPermission } from "@/lib/auth/authorize";
-import { sanitizeHtml } from "@/lib/sanitizeHtml";
+import { sanitizeBlogHtml } from "@/lib/sanitizeHtml";
 
 const CONTENT_TYPE = "legalDocuments";
 const VALID_TYPES: LegalDocumentType[] = ["privacy-policy", "terms-of-service"];
@@ -54,7 +54,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
   await connectToDatabase();
 
-  const sanitizedContent = sanitizeHtml(content);
+  const sanitizedContent = sanitizeBlogHtml(content);
 
   const document = await LegalDocument.findOneAndUpdate(
     { type },

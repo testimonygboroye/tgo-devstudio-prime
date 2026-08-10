@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { connectToDatabase } from "@/lib/db";
 import LegalDocument from "@/models/LegalDocument";
-import { sanitizeHtml } from "@/lib/sanitizeHtml";
+import { sanitizeBlogHtml } from "@/lib/sanitizeHtml";
 
 export const revalidate = 300;
 
@@ -25,7 +25,7 @@ export default async function PrivacyPolicyPage() {
         {document ? (
           <div
             className="prose prose-invert mt-10 max-w-none"
-            dangerouslySetInnerHTML={{ __html: sanitizeHtml(document.content) }}
+            dangerouslySetInnerHTML={{ __html: sanitizeBlogHtml(document.content) }}
           />
         ) : (
           <p className="mt-10 text-neutral-400">This page is being finalized. Check back soon.</p>

@@ -43,10 +43,11 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
   const { id } = await params;
   const body = await request.json();
-  const { action, editedBody, featured, note } = body as {
-    action?: "approve" | "reject" | "edit" | "setFeatured";
+  const { action, editedBody, featured, featuredOnHomepage, note } = body as {
+    action?: "approve" | "reject" | "edit" | "setFeatured" | "setFeaturedOnHomepage";
     editedBody?: string;
     featured?: boolean;
+    featuredOnHomepage?: boolean;
     note?: string;
   };
 
@@ -85,6 +86,14 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       );
     }
     review.featured = featured === true;
+  } else if (action === "setFeaturedOnHomepage") {
+    if (review.status !== "approved") {
+      return NextResponse.json(
+        { status: "error", message: "Only approved reviews can be featured on the homepage." },
+        { status: 400 }
+      );
+    }
+    review.featuredOnHomepage = featuredOnHomepage === true;
   } else {
     return NextResponse.json({ status: "error", message: "Invalid action." }, { status: 400 });
   }

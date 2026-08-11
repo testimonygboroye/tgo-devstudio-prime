@@ -18,6 +18,7 @@ interface ReviewDetail {
   body: string;
   status: string;
   featured: boolean;
+  featuredOnHomepage: boolean;
   targetLabelSnapshot?: string;
   customLabel?: string;
   moderationHistory: ModerationLogEntry[];
@@ -171,13 +172,26 @@ export default function ReviewDetailClient({ id }: { id: string }) {
         )}
 
         {review.status === "approved" && (
-          <button
-            onClick={() => performAction("setFeatured", { featured: !review.featured })}
-            disabled={isSaving}
-            className="rounded-md border border-brand-cyan-400/50 px-4 py-2 text-sm text-brand-cyan-300 hover:bg-brand-cyan-400/10 disabled:opacity-50"
-          >
-            {review.featured ? "Unfeature" : "Feature"}
-          </button>
+          <>
+            <button
+              onClick={() => performAction("setFeatured", { featured: !review.featured })}
+              disabled={isSaving}
+              className="rounded-md border border-brand-cyan-400/50 px-4 py-2 text-sm text-brand-cyan-300 hover:bg-brand-cyan-400/10 disabled:opacity-50"
+            >
+              {review.featured ? "Unfeature (Testimonials Page)" : "Feature (Testimonials Page)"}
+            </button>
+            <button
+              onClick={() =>
+                performAction("setFeaturedOnHomepage", {
+                  featuredOnHomepage: !review.featuredOnHomepage,
+                })
+              }
+              disabled={isSaving}
+              className="rounded-md border border-brand-violet-500/50 px-4 py-2 text-sm text-brand-cyan-300 hover:bg-brand-violet-500/10 disabled:opacity-50"
+            >
+              {review.featuredOnHomepage ? "Remove from Homepage" : "Show on Homepage"}
+            </button>
+          </>
         )}
 
         <button

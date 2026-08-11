@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { MessageCircle, X } from "lucide-react";
+import { MessageCircle, X, Mail } from "lucide-react";
 import { GitHubIcon, WhatsAppIcon, FacebookIcon, InstagramIcon } from "@/components/public/SocialIcons";
 
 interface SocialLink {
@@ -19,6 +19,13 @@ const SOCIAL_LINKS: SocialLink[] = [
     href: "https://wa.me/message/LUJ6PXE3ISDZF1",
     icon: WhatsAppIcon,
     iconBg: "bg-[#25D366]",
+  },
+  {
+    label: "Email",
+    description: "Send us a message",
+    href: "mailto:testimonygboroye.dev@gmail.com",
+    icon: (props) => <Mail {...props} />,
+    iconBg: "bg-neutral-700",
   },
   {
     label: "GitHub",
@@ -194,8 +201,8 @@ export default function SocialFloatingButton() {
                 <a
                   key={social.label}
                   href={social.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  target={social.href.startsWith("mailto:") ? undefined : "_blank"}
+                  rel={social.href.startsWith("mailto:") ? undefined : "noopener noreferrer"}
                   onClick={() => setIsOpen(false)}
                   className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-base-800"
                 >

@@ -37,7 +37,7 @@ export default async function HomePage() {
     TeamMember.find({ publishStatus: "published" }).sort({ featured: -1, displayOrder: 1 }).limit(4).lean(),
     BlogPost.find(getPubliclyVisibleFilter()).sort({ featured: -1, createdAt: -1 }).limit(3).lean(),
     JobOpening.countDocuments({ publishStatus: "published" }),
-    Review.find({ status: "approved", featured: true }).sort({ createdAt: -1 }).limit(3).lean(),
+    Review.find({ status: "approved", featuredOnHomepage: true }).sort({ createdAt: -1 }).limit(3).lean(),
   ]);
 
   const hero = settings || HOME_DEFAULTS;

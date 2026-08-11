@@ -23,6 +23,7 @@ export interface IReview extends Document {
   customLabel?: string;
   status: ReviewStatus;
   featured: boolean;
+  featuredOnHomepage: boolean;
   moderationHistory: IModerationLogEntry[];
   createdAt: Date;
   updatedAt: Date;
@@ -54,6 +55,7 @@ const ReviewSchema = new Schema<IReview>(
     customLabel: { type: String, trim: true, maxlength: 200 },
     status: { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
     featured: { type: Boolean, default: false },
+    featuredOnHomepage: { type: Boolean, default: false },
     moderationHistory: { type: [ModerationLogSchema], default: [] },
   },
   { timestamps: true }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import ContactForm from "@/components/public/ContactForm";
+import AvailabilityBadge from "@/components/public/AvailabilityBadge";
 
 export const metadata: Metadata = {
   title: "Contact | TGO DevStudio Prime",
@@ -17,6 +18,7 @@ export default function ContactPage() {
       <div className="mx-auto max-w-xl">
         <p className="font-mono text-xs uppercase tracking-widest text-neutral-400">Contact</p>
         <h1 className="mt-2 text-4xl font-bold brand-gradient-text sm:text-5xl">Let's Talk</h1>
+        <div className="mt-4"><AvailabilityBadge /></div>
         <p className="mt-4 text-neutral-100/70">
           Have a project in mind, a question, or just want to say hello? Send us a message and
           we'll respond as soon as we can.

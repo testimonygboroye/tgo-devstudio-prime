@@ -14,6 +14,7 @@ import { SERVICE_ICON_MAP } from "@/lib/constants/serviceIcons";
 import { Code } from "lucide-react";
 import { getPubliclyVisibleFilter } from "@/lib/utils/blogVisibility";
 import ScrollReveal from "@/components/public/ScrollReveal";
+import AvailabilityBadge from "@/components/public/AvailabilityBadge";
 
 export const revalidate = 300;
 
@@ -47,6 +48,9 @@ export default async function HomePage() {
       {/* Hero */}
       <section className="flex min-h-[85vh] flex-col items-center justify-center px-6 text-center sm:px-12">
         <ScrollReveal>
+          <div className="mb-4 flex justify-center">
+            <AvailabilityBadge />
+          </div>
           <p className="font-mono text-sm uppercase tracking-widest text-neutral-400">
             TGO DevStudio
           </p>

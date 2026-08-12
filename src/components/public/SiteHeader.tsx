@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Menu, X, Home, Layers, Briefcase, Newspaper, DoorOpen, Mail, Info, Workflow, Users, Star } from "lucide-react";
+import { Menu, X, Home, Layers, Briefcase, Newspaper, DoorOpen, Mail, Info, Workflow, Users, Star, PhoneCall, Boxes } from "lucide-react";
 
 const DESKTOP_NAV_LINKS = [
   { label: "Home", href: "/" },
@@ -12,6 +12,7 @@ const DESKTOP_NAV_LINKS = [
   { label: "Blog", href: "/blog" },
   { label: "Careers", href: "/careers" },
   { label: "Contact", href: "/contact" },
+  { label: "Book a Call", href: "/book-a-call" },
 ];
 
 const DRAWER_NAV_LINKS = [
@@ -25,6 +26,8 @@ const DRAWER_NAV_LINKS = [
   { label: "Careers", href: "/careers", icon: DoorOpen },
   { label: "Testimonials", href: "/testimonials", icon: Star },
   { label: "Contact", href: "/contact", icon: Mail },
+  { label: "Book a Call", href: "/book-a-call", icon: PhoneCall },
+  { label: "Stack", href: "/stack", icon: Boxes },
 ];
 
 export default function SiteHeader() {

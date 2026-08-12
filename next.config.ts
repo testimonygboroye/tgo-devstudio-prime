@@ -7,7 +7,7 @@ const ContentSecurityPolicy = `
   img-src 'self' data: https://res.cloudinary.com;
   font-src 'self' https://api.fontshare.com https://cdn.fontshare.com;
   connect-src 'self' https://challenges.cloudflare.com;
-  frame-src https://challenges.cloudflare.com;
+  frame-src https://challenges.cloudflare.com https://calendly.com;
   frame-ancestors 'none';
   base-uri 'self';
   form-action 'self';

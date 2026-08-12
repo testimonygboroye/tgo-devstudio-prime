@@ -14,6 +14,7 @@ const COMPANY_LINKS = [
   { label: "Services", href: "/services" },
   { label: "Process", href: "/process" },
   { label: "Team", href: "/team" },
+  { label: "Stack", href: "/stack" },
 ];
 
 const WORK_LINKS = [
@@ -25,6 +26,7 @@ const WORK_LINKS = [
 
 const LEGAL_LINKS = [
   { label: "Contact", href: "/contact" },
+  { label: "Book a Call", href: "/book-a-call" },
   { label: "Privacy Policy", href: "/privacy-policy" },
   { label: "Terms of Service", href: "/terms-of-service" },
 ];

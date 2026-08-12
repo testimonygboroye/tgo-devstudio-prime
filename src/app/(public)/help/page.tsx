@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import { Search } from "lucide-react";
 
 interface Article {
@@ -11,6 +11,8 @@ interface Article {
 }
 
 export default function HelpIndexPage() {
+  const router = useRouter();
+  const pathname = usePathname();
   const [query, setQuery] = useState("");
   const [articles, setArticles] = useState<Article[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -29,6 +31,15 @@ export default function HelpIndexPage() {
     const timeout = setTimeout(() => load(query), 250);
     return () => clearTimeout(timeout);
   }, [query, load]);
+
+  function handleOpenArticle(id: string) {
+    try {
+      window.sessionStorage.setItem("help-return-path", pathname);
+    } catch {
+      // ignore
+    }
+    router.push(`/help/${id}`);
+  }
 
   const grouped = articles.reduce<Record<string, Article[]>>((acc, article) => {
     if (!acc[article.category]) acc[article.category] = [];
@@ -69,13 +80,13 @@ export default function HelpIndexPage() {
                 </h2>
                 <div className="mt-3 space-y-2">
                   {items.map((article) => (
-                    <Link
+                    <button
                       key={article._id}
-                      href={`/help/${article._id}`}
-                      className="block rounded-lg border border-base-800 bg-base-900 p-4 text-neutral-100 hover:border-brand-cyan-400"
+                      onClick={() => handleOpenArticle(article._id)}
+                      className="block w-full rounded-lg border border-base-800 bg-base-900 p-4 text-left text-neutral-100 hover:border-brand-cyan-400"
                     >
                       {article.title}
-                    </Link>
+                    </button>
                   ))}
                 </div>
               </div>

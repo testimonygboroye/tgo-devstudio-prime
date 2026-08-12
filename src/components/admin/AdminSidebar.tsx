@@ -24,7 +24,8 @@ const NAV_ITEMS = [
   { label: "Contact", hrefSuffix: "/contact", icon: Mail, badgeKey: "contactSubmissions" },
   { label: "Reviews", hrefSuffix: "/reviews", icon: Star, badgeKey: "reviews" },
   { label: "Site Pages", hrefSuffix: "/pages", icon: FileText, badgeKey: null },
-  { label: "Help Articles", hrefSuffix: "/help-articles", icon: HelpCircle, badgeKey: null },
+  { label: "Help & Guide", hrefSuffix: "/help", icon: HelpCircle, badgeKey: null },
+  { label: "Manage Articles", hrefSuffix: "/help-articles", icon: FileText, badgeKey: null },
   { label: "Book a Call", hrefSuffix: "/book-a-call", icon: PhoneCall, badgeKey: null },
   { label: "Stack Items", hrefSuffix: "/stack-items", icon: Boxes, badgeKey: null },
 ] as const;

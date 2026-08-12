@@ -3,10 +3,15 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import PasswordInput from "@/components/shared/PasswordInput";
 
 type LoginStep = "credentials" | "twoFactor";
 
 export default function AdminLoginPage() {
+  const pathname = usePathname();
+  const forgotPasswordPath = pathname.replace(/\/login\/?$/, "/forgot-password");
+
   const [step, setStep] = useState<LoginStep>("credentials");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -108,16 +113,20 @@ export default function AdminLoginPage() {
                 />
               </div>
               <div>
-                <label htmlFor="password" className="block text-sm text-neutral-400">
-                  Password
-                </label>
-                <input
+                <div className="flex items-center justify-between">
+                  <label htmlFor="password" className="block text-sm text-neutral-400">
+                    Password
+                  </label>
+                  <Link href={forgotPasswordPath} className="text-xs text-brand-cyan-300 hover:underline">
+                    Forgot password?
+                  </Link>
+                </div>
+                <PasswordInput
                   id="password"
-                  type="password"
-                  required
                   value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
+                  onChange={setPassword}
+                  required
+                  autoComplete="current-password"
                 />
               </div>
               {error && <p className="text-sm text-red-400">{error}</p>}

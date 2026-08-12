@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Menu, X, Home, Layers, Briefcase, Newspaper, DoorOpen, Mail, Info, Workflow, Users, Star, PhoneCall, Boxes } from "lucide-react";
+import HelpSearchPopup from "@/components/shared/HelpSearchPopup";
 
 const DESKTOP_NAV_LINKS = [
   { label: "Home", href: "/" },
@@ -54,13 +55,16 @@ export default function SiteHeader() {
             ))}
           </nav>
 
-          <button
-            onClick={() => setIsMenuOpen(true)}
-            aria-label="Open menu"
-            className="text-neutral-100 sm:hidden"
-          >
-            <Menu size={24} />
-          </button>
+          <div className="flex items-center gap-2">
+            <HelpSearchPopup />
+            <button
+              onClick={() => setIsMenuOpen(true)}
+              aria-label="Open menu"
+              className="text-neutral-100 sm:hidden"
+            >
+              <Menu size={24} />
+            </button>
+          </div>
         </div>
       </div>
 

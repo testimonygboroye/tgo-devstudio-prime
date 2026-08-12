@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Briefcase, Users, Newspaper, DoorOpen, Inbox, Mail, Star, Layers, Workflow, FileText, Home, HelpCircle, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
+import { LayoutDashboard, Briefcase, Users, Newspaper, DoorOpen, Inbox, Mail, Star, Layers, Workflow, FileText, Home, HelpCircle, PhoneCall, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface AdminSidebarProps {
   userName: string;
@@ -25,6 +25,7 @@ const NAV_ITEMS = [
   { label: "Reviews", hrefSuffix: "/reviews", icon: Star, badgeKey: "reviews" },
   { label: "Site Pages", hrefSuffix: "/pages", icon: FileText, badgeKey: null },
   { label: "Help Articles", hrefSuffix: "/help-articles", icon: HelpCircle, badgeKey: null },
+  { label: "Book a Call", hrefSuffix: "/book-a-call", icon: PhoneCall, badgeKey: null },
 ] as const;
 
 export default function AdminSidebar({ userName, userEmail, roleName }: AdminSidebarProps) {

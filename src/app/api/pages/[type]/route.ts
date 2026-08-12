@@ -7,7 +7,7 @@ import { sanitizeBlogHtml } from "@/lib/sanitizeHtml";
 import { PAGE_DEFAULTS } from "@/lib/constants/pageDefaults";
 
 const CONTENT_TYPE = "pageContent";
-const VALID_TYPES: PageContentType[] = ["about", "privacy-policy", "terms-of-service", "stack"];
+const VALID_TYPES: PageContentType[] = ["about", "privacy-policy", "terms-of-service"];
 
 interface RouteParams {
   params: Promise<{ type: string }>;

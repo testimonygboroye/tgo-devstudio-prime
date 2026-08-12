@@ -39,7 +39,8 @@ export async function GET() {
   const saved = await HomeSettings.findOne().lean();
 
   if (saved) {
-    return NextResponse.json({ status: "ok", settings: saved, isDefault: false });
+    const merged = { ...HOME_DEFAULTS, ...saved };
+    return NextResponse.json({ status: "ok", settings: merged, isDefault: false });
   }
 
   return NextResponse.json({ status: "ok", settings: HOME_DEFAULTS, isDefault: true });

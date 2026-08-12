@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Menu, X, Home, Layers, Briefcase, Newspaper, DoorOpen, Mail, Info, Workflow, Users, Star, PhoneCall, Boxes } from "lucide-react";
+import { Menu, X, Home, Layers, Briefcase, Newspaper, DoorOpen, Mail, Info, Workflow, Users, Star, PhoneCall, Boxes, HelpCircle } from "lucide-react";
 import HelpSearchPopup from "@/components/shared/HelpSearchPopup";
 
 const DESKTOP_NAV_LINKS = [
@@ -29,6 +29,7 @@ const DRAWER_NAV_LINKS = [
   { label: "Contact", href: "/contact", icon: Mail },
   { label: "Book a Call", href: "/book-a-call", icon: PhoneCall },
   { label: "Stack", href: "/stack", icon: Boxes },
+  { label: "Help & Guide", href: "/help", icon: HelpCircle },
 ];
 
 export default function SiteHeader() {

@@ -27,6 +27,7 @@ const WORK_LINKS = [
 const LEGAL_LINKS = [
   { label: "Contact", href: "/contact" },
   { label: "Book a Call", href: "/book-a-call" },
+  { label: "Help & Guide", href: "/help" },
   { label: "Privacy Policy", href: "/privacy-policy" },
   { label: "Terms of Service", href: "/terms-of-service" },
 ];

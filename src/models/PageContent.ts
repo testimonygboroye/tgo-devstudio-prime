@@ -1,6 +1,6 @@
 import { Schema, model, models, Document, Model, Types } from "mongoose";
 
-export type PageContentType = "about" | "privacy-policy" | "terms-of-service" | "stack" | "book-a-call";
+export type PageContentType = "about" | "privacy-policy" | "terms-of-service" | "stack";
 
 export interface IPageContent extends Document {
   type: PageContentType;
@@ -15,7 +15,7 @@ const PageContentSchema = new Schema<IPageContent>(
   {
     type: {
       type: String,
-      enum: ["about", "privacy-policy", "terms-of-service", "stack", "book-a-call"],
+      enum: ["about", "privacy-policy", "terms-of-service", "stack"],
       required: true,
       unique: true,
     },

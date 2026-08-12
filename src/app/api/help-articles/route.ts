@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     title: title.trim(),
     slug,
     bodyHtml,
-    visibility: visibility || "anyAuthenticated",
+    visibility: (visibility as "public" | "preLogin" | "anyAuthenticated" | "permission") || "anyAuthenticated",
     requiredContentType: requiredContentType || undefined,
     category: category?.trim() || "General",
     createdBy: session.user._id,

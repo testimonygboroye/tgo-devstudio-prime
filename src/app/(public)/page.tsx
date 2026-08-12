@@ -41,7 +41,7 @@ export default async function HomePage() {
     Review.find({ status: "approved", featuredOnHomepage: true }).sort({ createdAt: -1 }).limit(3).lean(),
   ]);
 
-  const hero = settings || HOME_DEFAULTS;
+  const hero = { ...HOME_DEFAULTS, ...(settings || {}) };
 
   return (
     <main>
@@ -84,10 +84,10 @@ export default async function HomePage() {
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
                 <p className="font-mono text-xs uppercase tracking-widest text-neutral-400">
-                  Selected Work
+                  {hero.caseStudiesLabel}
                 </p>
                 <h2 className="mt-2 text-3xl font-bold text-neutral-100 sm:text-4xl">
-                  Featured Case Studies
+                  {hero.caseStudiesHeading}
                 </h2>
               </div>
               <Link href="/portfolio" className="flex items-center gap-1 text-brand-cyan-300 hover:underline">
@@ -123,9 +123,11 @@ export default async function HomePage() {
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
                 <p className="font-mono text-xs uppercase tracking-widest text-neutral-400">
-                  Capabilities
+                  {hero.servicesLabel}
                 </p>
-                <h2 className="mt-2 text-3xl font-bold text-neutral-100 sm:text-4xl">What We Do</h2>
+                <h2 className="mt-2 text-3xl font-bold text-neutral-100 sm:text-4xl">
+                  {hero.servicesHeading}
+                </h2>
               </div>
               <Link href="/services" className="flex items-center gap-1 text-brand-cyan-300 hover:underline">
                 View all services <ArrowRight size={16} />
@@ -161,8 +163,12 @@ export default async function HomePage() {
         <section className="border-t border-base-800 px-6 py-20 sm:px-12">
           <div className="mx-auto max-w-3xl">
             <ScrollReveal>
-              <p className="font-mono text-xs uppercase tracking-widest text-neutral-400">Approach</p>
-              <h2 className="mt-2 text-3xl font-bold text-neutral-100 sm:text-4xl">How We Work</h2>
+              <p className="font-mono text-xs uppercase tracking-widest text-neutral-400">
+                {hero.processLabel}
+              </p>
+              <h2 className="mt-2 text-3xl font-bold text-neutral-100 sm:text-4xl">
+                {hero.processHeading}
+              </h2>
             </ScrollReveal>
 
             <div className="mt-10 space-y-0">
@@ -199,8 +205,12 @@ export default async function HomePage() {
           <ScrollReveal>
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
-                <p className="font-mono text-xs uppercase tracking-widest text-neutral-400">People</p>
-                <h2 className="mt-2 text-3xl font-bold text-neutral-100 sm:text-4xl">The Team</h2>
+                <p className="font-mono text-xs uppercase tracking-widest text-neutral-400">
+                  {hero.teamLabel}
+                </p>
+                <h2 className="mt-2 text-3xl font-bold text-neutral-100 sm:text-4xl">
+                  {hero.teamHeading}
+                </h2>
               </div>
               <Link href="/team" className="flex items-center gap-1 text-brand-cyan-300 hover:underline">
                 Meet everyone <ArrowRight size={16} />
@@ -243,10 +253,10 @@ export default async function HomePage() {
               <div className="flex flex-wrap items-end justify-between gap-4">
                 <div>
                   <p className="font-mono text-xs uppercase tracking-widest text-neutral-400">
-                    Testimonials
+                    {hero.testimonialsLabel}
                   </p>
                   <h2 className="mt-2 text-3xl font-bold text-neutral-100 sm:text-4xl">
-                    What People Say
+                    {hero.testimonialsHeading}
                   </h2>
                 </div>
                 <Link href="/testimonials" className="flex items-center gap-1 text-brand-cyan-300 hover:underline">
@@ -281,10 +291,10 @@ export default async function HomePage() {
               <div className="flex flex-wrap items-end justify-between gap-4">
                 <div>
                   <p className="font-mono text-xs uppercase tracking-widest text-neutral-400">
-                    Insights
+                    {hero.blogLabel}
                   </p>
                   <h2 className="mt-2 text-3xl font-bold text-neutral-100 sm:text-4xl">
-                    From the Blog
+                    {hero.blogHeading}
                   </h2>
                 </div>
                 <Link href="/blog" className="flex items-center gap-1 text-brand-cyan-300 hover:underline">
@@ -314,14 +324,16 @@ export default async function HomePage() {
       <section className="border-t border-base-800 px-6 py-20 sm:px-12">
         <div className="mx-auto max-w-3xl text-center">
           <ScrollReveal>
-            <p className="font-mono text-xs uppercase tracking-widest text-neutral-400">Careers</p>
+            <p className="font-mono text-xs uppercase tracking-widest text-neutral-400">
+              {hero.careersLabel}
+            </p>
             <h2 className="mt-2 text-3xl font-bold text-neutral-100 sm:text-4xl">
-              We're Building Something Worth Joining
+              {hero.careersHeading}
             </h2>
             <p className="mt-4 text-neutral-100/70">
               {openRolesCount > 0
                 ? `We currently have ${openRolesCount} open role${openRolesCount === 1 ? "" : "s"}.`
-                : "No open roles right now — but we're always building our culture and team."}
+                : hero.careersNoRolesMessage}
             </p>
             <Link
               href="/careers"
@@ -337,17 +349,16 @@ export default async function HomePage() {
       <section className="border-t border-base-800 px-6 py-24 text-center sm:px-12">
         <ScrollReveal>
           <h2 className="text-4xl font-bold brand-gradient-text sm:text-5xl">
-            Ready to Build Something Real?
+            {hero.finalCtaHeading}
           </h2>
           <p className="mx-auto mt-4 max-w-lg text-neutral-100/70">
-            Let's talk about what you're building and how TGO DevStudio can help bring it to
-            life.
+            {hero.finalCtaDescription}
           </p>
           <Link
             href="/contact"
             className="mt-8 inline-block rounded-md brand-gradient-bg px-8 py-4 text-lg font-semibold text-base-950"
           >
-            Start a Conversation
+            {hero.finalCtaButtonLabel}
           </Link>
         </ScrollReveal>
       </section>

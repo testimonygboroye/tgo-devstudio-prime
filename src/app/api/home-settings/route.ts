@@ -7,6 +7,33 @@ import { HOME_DEFAULTS } from "@/lib/constants/pageDefaults";
 
 const CONTENT_TYPE = "homeSettings";
 
+const FIELDS = [
+  "heroHeadline",
+  "heroSubheadline",
+  "primaryCtaLabel",
+  "primaryCtaHref",
+  "secondaryCtaLabel",
+  "secondaryCtaHref",
+  "caseStudiesLabel",
+  "caseStudiesHeading",
+  "servicesLabel",
+  "servicesHeading",
+  "processLabel",
+  "processHeading",
+  "teamLabel",
+  "teamHeading",
+  "testimonialsLabel",
+  "testimonialsHeading",
+  "blogLabel",
+  "blogHeading",
+  "careersLabel",
+  "careersHeading",
+  "careersNoRolesMessage",
+  "finalCtaHeading",
+  "finalCtaDescription",
+  "finalCtaButtonLabel",
+];
+
 export async function GET() {
   await connectToDatabase();
   const saved = await HomeSettings.findOne().lean();
@@ -29,39 +56,33 @@ export async function PUT(request: NextRequest) {
   }
 
   const body = await request.json();
-  const {
-    heroHeadline,
-    heroSubheadline,
-    primaryCtaLabel,
-    primaryCtaHref,
-    secondaryCtaLabel,
-    secondaryCtaHref,
-  } = body as Record<string, string>;
 
-  if (
-    !heroHeadline ||
-    !heroSubheadline ||
-    !primaryCtaLabel ||
-    !primaryCtaHref ||
-    !secondaryCtaLabel ||
-    !secondaryCtaHref
-  ) {
-    return NextResponse.json({ status: "error", message: "All fields are required." }, { status: 400 });
+  const update: Record<string, string> = {};
+  for (const field of FIELDS) {
+    if (typeof body[field] === "string") {
+      update[field] = body[field].trim();
+    }
+  }
+
+  const requiredFields = [
+    "heroHeadline",
+    "heroSubheadline",
+    "primaryCtaLabel",
+    "primaryCtaHref",
+    "secondaryCtaLabel",
+    "secondaryCtaHref",
+  ];
+  for (const field of requiredFields) {
+    if (!update[field]) {
+      return NextResponse.json({ status: "error", message: `${field} is required.` }, { status: 400 });
+    }
   }
 
   await connectToDatabase();
 
   const settings = await HomeSettings.findOneAndUpdate(
     {},
-    {
-      heroHeadline: heroHeadline.trim(),
-      heroSubheadline: heroSubheadline.trim(),
-      primaryCtaLabel: primaryCtaLabel.trim(),
-      primaryCtaHref: primaryCtaHref.trim(),
-      secondaryCtaLabel: secondaryCtaLabel.trim(),
-      secondaryCtaHref: secondaryCtaHref.trim(),
-      lastUpdatedBy: session.user._id,
-    },
+    { ...update, lastUpdatedBy: session.user._id },
     { new: true, upsert: true }
   );
 

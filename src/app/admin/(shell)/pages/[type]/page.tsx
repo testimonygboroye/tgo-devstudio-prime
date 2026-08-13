@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { getServerSession } from "@/lib/auth/serverSession";
 import { guardCanEdit } from "@/lib/auth/pageGuards";
 import PageContentEditClient from "./PageContentEditClient";
-import FounderSettingsClient from "./about/FounderSettingsClient";
+import FounderSettingsClient from "../about/FounderSettingsClient";
 
 interface PageProps {
   params: Promise<{ type: string }>;

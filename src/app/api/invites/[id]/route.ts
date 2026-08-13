@@ -4,11 +4,11 @@ import Invite from "@/models/Invite";
 import { hashToken } from "@/lib/auth/tokens";
 
 interface RouteParams {
-  params: Promise<{ token: string }>;
+  params: Promise<{ id: string }>;
 }
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
-  const { token } = await params;
+  const { id: token } = await params;
   await connectToDatabase();
 
   const tokenHash = hashToken(token);

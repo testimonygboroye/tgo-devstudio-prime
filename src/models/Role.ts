@@ -18,6 +18,7 @@ export interface IRole extends Document {
   name: string;
   slug: string;
   isFounderRole: boolean;
+  hierarchyLevel: number;
   isSystemRole: boolean;
   canManageRoles: boolean;
   canManageUsers: boolean;
@@ -44,6 +45,7 @@ const RoleSchema = new Schema<IRole>(
     name: { type: String, required: true, unique: true, trim: true },
     slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
     isFounderRole: { type: Boolean, default: false },
+    hierarchyLevel: { type: Number, required: true, default: 100 },
     isSystemRole: { type: Boolean, default: false },
     canManageRoles: { type: Boolean, default: false },
     canManageUsers: { type: Boolean, default: false },

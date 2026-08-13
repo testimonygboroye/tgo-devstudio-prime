@@ -5,12 +5,15 @@ import { useState, useEffect, useCallback } from "react";
 interface RoleOption {
   _id: string;
   name: string;
+  hierarchyLevel: number;
 }
 
 interface InviteItem {
   _id: string;
   email: string;
   role: { name: string } | string;
+  invitedBy: { name: string } | string;
+  approvalStatus: "pending" | "approved" | "rejected";
   usedAt?: string;
   expiresAt: string;
 }
@@ -24,6 +27,7 @@ export default function InvitesClient() {
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [decidingId, setDecidingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -58,12 +62,31 @@ export default function InvitesClient() {
       return;
     }
 
-    setSuccessMessage(`Invite sent to ${email}.`);
+    setSuccessMessage(data.message || `Invite submitted for ${email}.`);
     setEmail("");
     setRoleId("");
     setIsSending(false);
     load();
   }
+
+  async function handleDecision(inviteId: string, decision: "approve" | "reject") {
+    setDecidingId(inviteId);
+    const res = await fetch(`/api/invites/${inviteId}/decision`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ decision }),
+    });
+    if (res.ok) {
+      load();
+    }
+    setDecidingId(null);
+  }
+
+  const STATUS_STYLES: Record<string, string> = {
+    pending: "bg-brand-cyan-400/20 text-brand-cyan-300",
+    approved: "bg-green-500/20 text-green-300",
+    rejected: "bg-red-500/20 text-red-300",
+  };
 
   return (
     <div className="max-w-xl">
@@ -93,6 +116,10 @@ export default function InvitesClient() {
               </option>
             ))}
           </select>
+          <p className="mt-1 text-xs text-neutral-500">
+            You can only invite people into roles below your own in the hierarchy. All invites
+            require approval before being sent.
+          </p>
         </div>
         {error && <p className="text-sm text-red-400">{error}</p>}
         {successMessage && <p className="text-sm text-brand-cyan-300">{successMessage}</p>}
@@ -101,29 +128,47 @@ export default function InvitesClient() {
           disabled={isSending}
           className="rounded-md brand-gradient-bg px-4 py-2 text-sm font-semibold text-base-950 disabled:opacity-60"
         >
-          {isSending ? "Sending..." : "Send Invite"}
+          {isSending ? "Submitting..." : "Submit Invite for Approval"}
         </button>
       </form>
 
       <div className="mt-8">
-        <h2 className="text-sm font-semibold uppercase tracking-widest text-neutral-500">Sent Invites</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-widest text-neutral-500">Invites</h2>
         {isLoading && <p className="mt-2 text-sm text-neutral-400">Loading...</p>}
-        {!isLoading && invites.length === 0 && <p className="mt-2 text-sm text-neutral-400">No invites sent yet.</p>}
+        {!isLoading && invites.length === 0 && <p className="mt-2 text-sm text-neutral-400">No invites yet.</p>}
         <div className="mt-3 space-y-2">
           {invites.map((invite) => {
             const roleName = typeof invite.role === "string" ? invite.role : invite.role.name;
-            const status = invite.usedAt
-              ? "Used"
-              : new Date(invite.expiresAt).getTime() < Date.now()
-              ? "Expired"
-              : "Pending";
+            const inviterName = typeof invite.invitedBy === "string" ? invite.invitedBy : invite.invitedBy.name;
             return (
               <div key={invite._id} className="rounded-md border border-base-800 bg-base-900 p-3 text-sm">
                 <div className="flex items-center justify-between">
                   <span className="text-neutral-100">{invite.email}</span>
-                  <span className="text-xs text-neutral-500">{status}</span>
+                  <span className={`rounded-full px-2 py-0.5 text-xs ${STATUS_STYLES[invite.approvalStatus]}`}>
+                    {invite.approvalStatus}
+                  </span>
                 </div>
-                <p className="text-xs text-neutral-500">{roleName}</p>
+                <p className="text-xs text-neutral-500">
+                  {roleName} · invited by {inviterName}
+                </p>
+                {invite.approvalStatus === "pending" && (
+                  <div className="mt-2 flex gap-2">
+                    <button
+                      onClick={() => handleDecision(invite._id, "approve")}
+                      disabled={decidingId === invite._id}
+                      className="rounded-md border border-brand-cyan-400/50 px-3 py-1 text-xs text-brand-cyan-300 hover:bg-brand-cyan-400/10 disabled:opacity-50"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      onClick={() => handleDecision(invite._id, "reject")}
+                      disabled={decidingId === invite._id}
+                      className="rounded-md border border-red-500/50 px-3 py-1 text-xs text-red-300 hover:bg-red-500/10 disabled:opacity-50"
+                    >
+                      Reject
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })}

@@ -5,8 +5,6 @@ import Role from "@/models/Role";
 import { getAuthenticatedSession } from "@/lib/auth/session";
 import { unauthorizedResponse, forbiddenResponse, requireCanManageUsers } from "@/lib/auth/authorize";
 import { generateRawToken, hashToken } from "@/lib/auth/tokens";
-import { sendInviteEmail } from "@/lib/email/sendInvite";
-import { getAdminBasePath } from "@/lib/adminPath";
 
 const INVITE_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -18,16 +16,13 @@ export async function GET(request: NextRequest) {
   }
 
   await connectToDatabase();
-  const invites = await Invite.find().populate("role", "name").sort({ createdAt: -1 }).lean();
+  const invites = await Invite.find().populate("role", "name hierarchyLevel").populate("invitedBy", "name").sort({ createdAt: -1 }).lean();
   return NextResponse.json({ status: "ok", invites });
 }
 
 export async function POST(request: NextRequest) {
   const session = await getAuthenticatedSession(request);
   if (!session) return unauthorizedResponse();
-  if (!requireCanManageUsers(session)) {
-    return forbiddenResponse("You do not have permission to create invites.");
-  }
 
   const body = await request.json();
   const { email, roleId } = body as { email?: string; roleId?: string };
@@ -42,9 +37,17 @@ export async function POST(request: NextRequest) {
 
   await connectToDatabase();
 
-  const role = await Role.findById(roleId);
-  if (!role) {
+  const targetRole = await Role.findById(roleId);
+  if (!targetRole) {
     return NextResponse.json({ status: "error", message: "Role not found." }, { status: 404 });
+  }
+
+  const inviterLevel = session.role.hierarchyLevel;
+  if (targetRole.hierarchyLevel <= inviterLevel) {
+    return NextResponse.json(
+      { status: "error", message: "You can only invite people into a role below your own hierarchy level." },
+      { status: 403 }
+    );
   }
 
   const rawToken = generateRawToken();
@@ -52,17 +55,19 @@ export async function POST(request: NextRequest) {
 
   const invite = await Invite.create({
     email: email.toLowerCase().trim(),
-    role: role._id,
+    role: targetRole._id,
     tokenHash,
     invitedBy: session.user._id,
     expiresAt: new Date(Date.now() + INVITE_EXPIRY_MS),
+    approvalStatus: "pending",
   });
 
-  const basePath = getAdminBasePath();
-  const siteUrl = process.env.SITE_URL || "";
-  const inviteUrl = `${siteUrl}${basePath}/signup?token=${rawToken}`;
-
-  await sendInviteEmail({ toEmail: invite.email, roleName: role.name, inviteUrl });
-
-  return NextResponse.json({ status: "ok", message: "Invite sent." }, { status: 201 });
+  return NextResponse.json(
+    {
+      status: "ok",
+      message: "Invite submitted for approval. It will only be sent once approved.",
+      invite,
+    },
+    { status: 201 }
+  );
 }

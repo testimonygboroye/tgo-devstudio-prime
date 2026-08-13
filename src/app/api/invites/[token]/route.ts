@@ -17,6 +17,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   if (!invite) {
     return NextResponse.json({ status: "error", message: "Invite not found or invalid." }, { status: 404 });
   }
+  if (invite.approvalStatus !== "approved") {
+    return NextResponse.json({ status: "error", message: "This invite has not been approved yet." }, { status: 403 });
+  }
   if (invite.usedAt) {
     return NextResponse.json({ status: "error", message: "This invite has already been used." }, { status: 410 });
   }

@@ -7,6 +7,9 @@ export interface IInvite extends Document {
   invitedBy: Types.ObjectId;
   expiresAt: Date;
   usedAt?: Date;
+  approvalStatus: "pending" | "approved" | "rejected";
+  approvedBy?: Types.ObjectId;
+  approvedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -19,6 +22,9 @@ const InviteSchema = new Schema<IInvite>(
     invitedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
     expiresAt: { type: Date, required: true },
     usedAt: { type: Date },
+    approvalStatus: { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
+    approvedBy: { type: Schema.Types.ObjectId, ref: "User" },
+    approvedAt: { type: Date },
   },
   { timestamps: true }
 );

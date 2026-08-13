@@ -77,7 +77,7 @@ export default function HelpSearchPopup() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-11 z-50 w-[calc(100vw-2rem)] max-w-80 rounded-lg border border-base-800 bg-base-900 shadow-2xl">
+        <div className="fixed left-4 right-4 top-16 z-50 rounded-lg border border-base-800 bg-base-900 shadow-2xl sm:absolute sm:left-auto sm:right-0 sm:top-11 sm:w-80">
           <div className="flex items-center gap-2 border-b border-base-800 p-3">
             <Search size={16} className="text-neutral-500" />
             <input

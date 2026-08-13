@@ -32,9 +32,23 @@ export default function HelpIndexPage() {
     return () => clearTimeout(timeout);
   }, [query, load]);
 
+  useEffect(() => {
+    if (isLoading) return;
+    try {
+      const savedScroll = window.sessionStorage.getItem("help-return-scroll");
+      if (savedScroll) {
+        window.scrollTo({ top: parseInt(savedScroll, 10), behavior: "instant" as ScrollBehavior });
+        window.sessionStorage.removeItem("help-return-scroll");
+      }
+    } catch {
+      // ignore
+    }
+  }, [isLoading]);
+
   function handleOpenArticle(id: string) {
     try {
       window.sessionStorage.setItem("help-return-path", pathname);
+      window.sessionStorage.setItem("help-return-scroll", String(window.scrollY));
     } catch {
       // ignore
     }

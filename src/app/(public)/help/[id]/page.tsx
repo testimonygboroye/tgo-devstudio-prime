@@ -20,15 +20,20 @@ export default function HelpArticleViewerPage() {
 
   useEffect(() => {
     async function load() {
-      const res = await fetch(`/api/help-articles/${params.id}`);
-      const data = await res.json();
-      if (data.status !== "ok") {
-        setError(data.message || "Article not found.");
+      try {
+        const res = await fetch(`/api/help-articles/${params.id}`);
+        const data = await res.json();
+        if (data.status !== "ok") {
+          setError(data.message || "Article not found.");
+          setIsLoading(false);
+          return;
+        }
+        setArticle(data.article);
+      } catch {
+        setError("Failed to load article.");
+      } finally {
         setIsLoading(false);
-        return;
       }
-      setArticle(data.article);
-      setIsLoading(false);
     }
     load();
   }, [params.id]);

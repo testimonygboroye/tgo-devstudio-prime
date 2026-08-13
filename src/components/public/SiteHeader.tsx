@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Menu, X, Home, Layers, Briefcase, Newspaper, DoorOpen, Mail, Info, Workflow, Users, Star, PhoneCall, Boxes, HelpCircle } from "lucide-react";
+import { Menu, X, Home, Layers, Briefcase, Newspaper, DoorOpen, Mail, Info, Workflow, Users, Star, PhoneCall, Boxes, HelpCircle, ChevronDown } from "lucide-react";
 import HelpSearchPopup from "@/components/shared/HelpSearchPopup";
 
 const DESKTOP_NAV_LINKS = [
@@ -14,6 +14,15 @@ const DESKTOP_NAV_LINKS = [
   { label: "Careers", href: "/careers" },
   { label: "Contact", href: "/contact" },
   { label: "Book a Call", href: "/book-a-call" },
+];
+
+const MORE_LINKS = [
+  { label: "About", href: "/about", icon: Info },
+  { label: "Process", href: "/process", icon: Workflow },
+  { label: "Team", href: "/team", icon: Users },
+  { label: "Testimonials", href: "/testimonials", icon: Star },
+  { label: "Stack", href: "/stack", icon: Boxes },
+  { label: "Help & Guide", href: "/help", icon: HelpCircle },
 ];
 
 const DRAWER_NAV_LINKS = [
@@ -34,6 +43,20 @@ const DRAWER_NAV_LINKS = [
 
 export default function SiteHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const moreRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (moreRef.current && !moreRef.current.contains(event.target as Node)) {
+        setIsMoreOpen(false);
+      }
+    }
+    if (isMoreOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isMoreOpen]);
 
   return (
     <header className="sticky top-0 z-50">
@@ -54,6 +77,34 @@ export default function SiteHeader() {
                 {link.label}
               </Link>
             ))}
+
+            <div ref={moreRef} className="relative">
+              <button
+                onClick={() => setIsMoreOpen((prev) => !prev)}
+                className="flex items-center gap-1 text-sm text-neutral-100/80 hover:text-brand-cyan-300"
+              >
+                More <ChevronDown size={14} />
+              </button>
+
+              {isMoreOpen && (
+                <div className="absolute right-0 top-8 w-56 overflow-hidden rounded-lg border border-base-800 bg-base-900 shadow-2xl">
+                  {MORE_LINKS.map((link) => {
+                    const Icon = link.icon;
+                    return (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        onClick={() => setIsMoreOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-100 hover:bg-base-800 hover:text-brand-cyan-300"
+                      >
+                        <Icon size={16} className="text-brand-cyan-400" />
+                        {link.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </nav>
 
           <div className="flex items-center gap-2">

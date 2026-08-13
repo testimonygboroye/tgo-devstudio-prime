@@ -12,6 +12,10 @@ export async function GET(request: NextRequest) {
   await connectToDatabase();
 
   await Role.updateOne({ isFounderRole: true }, { hierarchyLevel: 0 });
+  await Role.updateMany(
+    { isFounderRole: { $ne: true }, hierarchyLevel: { $exists: false } },
+    { hierarchyLevel: 100 }
+  );
 
   const roles = await Role.find().select("name hierarchyLevel isFounderRole").lean();
 

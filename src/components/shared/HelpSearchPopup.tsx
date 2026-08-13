@@ -55,6 +55,7 @@ export default function HelpSearchPopup() {
   function handleOpenArticle(article: ArticleResult) {
     try {
       window.sessionStorage.setItem("help-return-path", pathname);
+      window.sessionStorage.setItem("help-return-scroll", String(window.scrollY));
     } catch {
       // ignore storage errors
     }
@@ -76,7 +77,7 @@ export default function HelpSearchPopup() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-11 z-50 w-80 rounded-lg border border-base-800 bg-base-900 shadow-2xl">
+        <div className="absolute right-0 top-11 z-50 w-[calc(100vw-2rem)] max-w-80 rounded-lg border border-base-800 bg-base-900 shadow-2xl">
           <div className="flex items-center gap-2 border-b border-base-800 p-3">
             <Search size={16} className="text-neutral-500" />
             <input

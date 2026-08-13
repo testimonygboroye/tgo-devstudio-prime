@@ -30,15 +30,20 @@ function SignupForm() {
         setIsValidating(false);
         return;
       }
-      const res = await fetch(`/api/invites/${token}`);
-      const data = await res.json();
-      if (!res.ok) {
-        setValidationError(data.message || "Invalid invite.");
+      try {
+        const res = await fetch(`/api/invites/${token}`);
+        const data = await res.json();
+        if (!res.ok) {
+          setValidationError(data.message || "Invalid invite.");
+          setIsValidating(false);
+          return;
+        }
+        setInviteInfo(data.invite);
+      } catch {
+        setValidationError("Something went wrong loading this invite. Please try refreshing the page.");
+      } finally {
         setIsValidating(false);
-        return;
       }
-      setInviteInfo(data.invite);
-      setIsValidating(false);
     }
     validate();
   }, [token]);

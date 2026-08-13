@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { GitHubIcon, WhatsAppIcon, FacebookIcon, InstagramIcon } from "./SocialIcons";
+import NewsletterForm from "./NewsletterForm";
 
 const SOCIAL_LINKS = [
   { label: "WhatsApp", href: "https://wa.me/message/LUJ6PXE3ISDZF1", Icon: WhatsAppIcon },
@@ -47,6 +48,13 @@ export default function SiteFooter() {
               products from the ground up.
             </p>
             <p className="mt-3 text-xs text-neutral-400">Akure, Ondo State, Nigeria</p>
+
+            <div className="mt-5">
+              <p className="text-xs font-semibold uppercase tracking-widest text-neutral-500">Stay Updated</p>
+              <div className="mt-2">
+                <NewsletterForm />
+              </div>
+            </div>
 
             <div className="mt-4 flex gap-4">
               {SOCIAL_LINKS.map(({ label, href, Icon }) => (

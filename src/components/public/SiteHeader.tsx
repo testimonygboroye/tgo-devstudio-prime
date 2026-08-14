@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Menu, X, Home, Layers, Briefcase, Newspaper, DoorOpen, Mail, Info, Workflow, Users, Star, PhoneCall, Boxes, HelpCircle, ChevronDown } from "lucide-react";
+import { Menu, X, Home, Layers, Briefcase, Newspaper, DoorOpen, Mail, Info, Workflow, Users, Star, PhoneCall, Boxes, HelpCircle, ChevronDown, MessageCircleQuestion } from "lucide-react";
 import HelpSearchPopup from "@/components/shared/HelpSearchPopup";
 
 const DESKTOP_NAV_LINKS = [
@@ -21,6 +21,7 @@ const MORE_LINKS = [
   { label: "Process", href: "/process", icon: Workflow },
   { label: "Team", href: "/team", icon: Users },
   { label: "Testimonials", href: "/testimonials", icon: Star },
+  { label: "FAQ", href: "/faq", icon: MessageCircleQuestion },
   { label: "Stack", href: "/stack", icon: Boxes },
   { label: "Help & Guide", href: "/help", icon: HelpCircle },
 ];
@@ -35,6 +36,7 @@ const DRAWER_NAV_LINKS = [
   { label: "Blog", href: "/blog", icon: Newspaper },
   { label: "Careers", href: "/careers", icon: DoorOpen },
   { label: "Testimonials", href: "/testimonials", icon: Star },
+  { label: "FAQ", href: "/faq", icon: MessageCircleQuestion },
   { label: "Contact", href: "/contact", icon: Mail },
   { label: "Book a Call", href: "/book-a-call", icon: PhoneCall },
   { label: "Stack", href: "/stack", icon: Boxes },

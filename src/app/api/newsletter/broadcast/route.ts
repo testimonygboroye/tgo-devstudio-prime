@@ -11,6 +11,10 @@ const CONTENT_TYPE = "newsletterSubscribers";
 export async function POST(request: NextRequest) {
   const session = await getAuthenticatedSession(request);
   if (!session) return unauthorizedResponse();
+  if (process.env.NEWSLETTER_BROADCAST_ENABLED === "false") {
+    return NextResponse.json({ status: "error", message: "Newsletter broadcasts are currently disabled." }, { status: 403 });
+  }
+
   if (!requireContentPermission(session, CONTENT_TYPE, "publish")) {
     return forbiddenResponse("You do not have permission to send newsletter broadcasts.");
   }

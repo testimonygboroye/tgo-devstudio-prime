@@ -10,6 +10,8 @@ interface Subscriber {
   createdAt: string;
 }
 
+const BROADCAST_ENABLED = process.env.NEXT_PUBLIC_NEWSLETTER_BROADCAST_ENABLED !== "false";
+
 export default function NewsletterClient() {
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [statusFilter, setStatusFilter] = useState("subscribed");
@@ -95,7 +97,8 @@ export default function NewsletterClient() {
           Export CSV
         </button>
         <button
-          onClick={() => setShowCompose((prev) => !prev)}
+          onClick={() => BROADCAST_ENABLED && setShowCompose((prev) => !prev)}
+          disabled={!BROADCAST_ENABLED}
           className="rounded-md brand-gradient-bg px-3 py-2 text-sm font-semibold text-base-950"
         >
           {showCompose ? "Cancel" : "Compose Broadcast"}

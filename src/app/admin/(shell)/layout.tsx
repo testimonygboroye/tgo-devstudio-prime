@@ -18,7 +18,7 @@ export default async function AdminShellLayout({
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-dvh overflow-hidden">
       <AdminSidebar
         userName={session.user.name}
         userEmail={session.user.email}

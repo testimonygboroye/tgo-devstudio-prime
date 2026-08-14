@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import RichTextEditor from "@/components/admin/RichTextEditor";
 
 interface Subscriber {
   _id: string;
@@ -13,6 +14,13 @@ export default function NewsletterClient() {
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [statusFilter, setStatusFilter] = useState("subscribed");
   const [isLoading, setIsLoading] = useState(true);
+
+  const [showCompose, setShowCompose] = useState(false);
+  const [subject, setSubject] = useState("");
+  const [bodyHtml, setBodyHtml] = useState("<p>Write your update here...</p>");
+  const [isSending, setIsSending] = useState(false);
+  const [sendResult, setSendResult] = useState("");
+  const [sendError, setSendError] = useState("");
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -41,6 +49,33 @@ export default function NewsletterClient() {
     URL.revokeObjectURL(url);
   }
 
+  async function handleSendBroadcast() {
+    setSendError("");
+    setSendResult("");
+
+    const confirmed = window.confirm(
+      "This will send an email to every active subscriber right now. This cannot be undone. Continue?"
+    );
+    if (!confirmed) return;
+
+    setIsSending(true);
+    const res = await fetch("/api/newsletter/broadcast", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ subject, bodyHtml }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      setSendError(data.message || "Failed to send broadcast.");
+      setIsSending(false);
+      return;
+    }
+
+    setSendResult(data.message);
+    setIsSending(false);
+  }
+
   return (
     <div>
       <div className="flex flex-wrap items-center gap-3">
@@ -59,8 +94,42 @@ export default function NewsletterClient() {
         >
           Export CSV
         </button>
+        <button
+          onClick={() => setShowCompose((prev) => !prev)}
+          className="rounded-md brand-gradient-bg px-3 py-2 text-sm font-semibold text-base-950"
+        >
+          {showCompose ? "Cancel" : "Compose Broadcast"}
+        </button>
         <span className="text-sm text-neutral-500">{subscribers.length} total</span>
       </div>
+
+      {showCompose && (
+        <div className="mt-6 max-w-2xl space-y-4 rounded-lg border border-base-800 bg-base-900 p-4">
+          <div>
+            <label className="block text-sm text-neutral-400">Subject</label>
+            <input
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              className="mt-1 w-full rounded-md border border-base-800 bg-base-950 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-neutral-400">Message</label>
+            <div className="mt-1">
+              <RichTextEditor content={bodyHtml} onChange={setBodyHtml} />
+            </div>
+          </div>
+          {sendError && <p className="text-sm text-red-400">{sendError}</p>}
+          {sendResult && <p className="text-sm text-brand-cyan-300">{sendResult}</p>}
+          <button
+            onClick={handleSendBroadcast}
+            disabled={isSending || !subject || !bodyHtml}
+            className="rounded-md brand-gradient-bg px-5 py-2 text-sm font-semibold text-base-950 disabled:opacity-60"
+          >
+            {isSending ? "Sending..." : "Send to All Subscribers"}
+          </button>
+        </div>
+      )}
 
       <div className="mt-6 space-y-2">
         {isLoading && <p className="text-neutral-400">Loading...</p>}

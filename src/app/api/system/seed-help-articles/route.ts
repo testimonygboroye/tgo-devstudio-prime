@@ -12,6 +12,21 @@ const DEFAULT_ARTICLES: {
   bodyHtml: string;
 }[] = [
   {
+    title: "Understanding the Audit Log",
+    category: "Admin",
+    visibility: "anyAuthenticated",
+    bodyHtml:
+      "<p>The Audit Log records every state-changing admin action automatically \u2014 who did what, and when. It is visible only to the Founder and cannot be edited or deleted by anyone.</p>",
+    requiredContentType: undefined,
+  },
+  {
+    title: "Understanding Visitor Analytics",
+    category: "Admin",
+    visibility: "anyAuthenticated",
+    bodyHtml:
+      "<p>Visitor Analytics tracks anonymous public site activity \u2014 which pages are visited, roughly what device type, and where visitors came from. No personal information is collected; visitors are identified only by an anonymous ID stored in their browser. Visible only to the Founder.</p>",
+  },
+  {
     title: "Using the Media Library",
     category: "Admin",
     visibility: "anyAuthenticated",

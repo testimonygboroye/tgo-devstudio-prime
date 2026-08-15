@@ -4,6 +4,7 @@ import SocialFloatingButton from "@/components/public/SocialFloatingButton";
 import BackToTopButton from "@/components/shared/BackToTopButton";
 import CookieConsentBanner from "@/components/public/CookieConsentBanner";
 import HelpDiscoveryPrompt from "@/components/shared/HelpDiscoveryPrompt";
+import AnalyticsTracker from "@/components/public/AnalyticsTracker";
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -15,6 +16,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       <BackToTopButton position="left" />
       <CookieConsentBanner />
       <HelpDiscoveryPrompt />
+      <AnalyticsTracker />
     </>
   );
 }

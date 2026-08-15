@@ -6,18 +6,35 @@ import cloudinary from "@/lib/cloudinary";
 const MAX_FILE_SIZE_BYTES = 8 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
+const ALLOWED_FOLDERS = [
+  "case-studies",
+  "team",
+  "about",
+  "blog",
+  "job-applications",
+] as const;
+
 export async function POST(request: NextRequest) {
-  const session = await getAuthenticatedSession(request);
-  if (!session) {
-    return unauthorizedResponse();
-  }
-
-  if (!requireAnyContentPermission(session, "caseStudies")) {
-    return forbiddenResponse("You do not have permission to upload media.");
-  }
-
   const formData = await request.formData();
   const file = formData.get("file");
+  const requestedFolder = formData.get("folder");
+
+  const folder =
+    typeof requestedFolder === "string" && ALLOWED_FOLDERS.includes(requestedFolder as (typeof ALLOWED_FOLDERS)[number])
+      ? requestedFolder
+      : "case-studies";
+
+  // Job application photos are submitted by unauthenticated public applicants — every other
+  // folder requires an authenticated admin session with content permission.
+  if (folder !== "job-applications") {
+    const session = await getAuthenticatedSession(request);
+    if (!session) {
+      return unauthorizedResponse();
+    }
+    if (!requireAnyContentPermission(session, "caseStudies")) {
+      return forbiddenResponse("You do not have permission to upload media.");
+    }
+  }
 
   if (!(file instanceof File)) {
     return NextResponse.json({ status: "error", message: "No file provided." }, { status: 400 });
@@ -43,7 +60,7 @@ export async function POST(request: NextRequest) {
   const uploadResult = await new Promise<{ secure_url: string; public_id: string }>(
     (resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
-        { folder: "tgo-devstudio-prime/case-studies" },
+        { folder: `tgo-devstudio-prime/${folder}` },
         (error, result) => {
           if (error || !result) {
             reject(error);

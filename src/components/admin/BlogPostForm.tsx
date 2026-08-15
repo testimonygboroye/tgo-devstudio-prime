@@ -67,6 +67,7 @@ export default function BlogPostForm({ mode, postId, initialData }: BlogPostForm
     try {
       const formData = new FormData();
       formData.append("file", file);
+    formData.append("folder", "blog");
 
       const response = await fetch("/api/media/upload", { method: "POST", body: formData });
       const data = await response.json();

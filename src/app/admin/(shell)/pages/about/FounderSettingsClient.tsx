@@ -40,6 +40,7 @@ export default function FounderSettingsClient() {
 
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("folder", "about");
 
     try {
       const res = await fetch("/api/media/upload", { method: "POST", body: formData });

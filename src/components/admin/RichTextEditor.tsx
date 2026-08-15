@@ -104,6 +104,7 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
 
       const formData = new FormData();
       formData.append("file", file);
+    formData.append("folder", "blog");
 
       try {
         const response = await fetch("/api/media/upload", { method: "POST", body: formData });

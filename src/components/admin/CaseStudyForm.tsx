@@ -66,6 +66,7 @@ export default function CaseStudyForm({ mode, projectId, initialData }: CaseStud
     try {
       const formData = new FormData();
       formData.append("file", file);
+      formData.append("folder", "case-studies");
 
       const response = await fetch("/api/media/upload", {
         method: "POST",

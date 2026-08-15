@@ -23,6 +23,7 @@ export default function JobApplicationForm({ jobId }: JobApplicationFormProps) {
   async function uploadFile(file: File, endpoint: string) {
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("folder", "job-applications");
     const response = await fetch(endpoint, { method: "POST", body: formData });
     const data = await response.json();
     if (!response.ok) {

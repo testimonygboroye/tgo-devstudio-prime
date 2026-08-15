@@ -62,6 +62,7 @@ export default function TeamMemberForm({ mode, memberId, initialData }: TeamMemb
     try {
       const formData = new FormData();
       formData.append("file", file);
+    formData.append("folder", "team");
 
       const response = await fetch("/api/media/upload", { method: "POST", body: formData });
       const data = await response.json();

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Briefcase, Users, Newspaper, DoorOpen, Inbox, Mail, Star, Layers, Workflow, FileText, Home, HelpCircle, PhoneCall, Boxes, UserPlus, Send, BookOpen, MessageCircleQuestion, UserCog, MessageSquare, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
+import { LayoutDashboard, Briefcase, Users, Newspaper, DoorOpen, Inbox, Mail, Star, Layers, Workflow, FileText, Home, HelpCircle, PhoneCall, Boxes, UserPlus, Send, BookOpen, MessageCircleQuestion, UserCog, MessageSquare, ShieldCheck, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface AdminSidebarProps {
   userName: string;
@@ -15,6 +15,7 @@ const NAV_ITEMS = [
   { label: "Dashboard", hrefSuffix: "/dashboard", icon: LayoutDashboard, badgeKey: null },
   { label: "Invites", hrefSuffix: "/invites", icon: UserPlus, badgeKey: null },
   { label: "Users & Roles", hrefSuffix: "/users", icon: UserCog, badgeKey: null },
+  { label: "Manage Roles", hrefSuffix: "/roles", icon: ShieldCheck, badgeKey: null },
   { label: "Messages", hrefSuffix: "/messages", icon: MessageSquare, badgeKey: "messages" },
   { label: "Homepage", hrefSuffix: "/home-settings", icon: Home, badgeKey: null },
   { label: "Case Studies", hrefSuffix: "/case-studies", icon: Briefcase, badgeKey: null },
@@ -45,16 +46,18 @@ export default function AdminSidebar({ userName, userEmail, roleName }: AdminSid
 
   const loadCounts = useCallback(async () => {
     try {
-      const res = await fetch("/api/admin/notification-counts");
-      const messagesRes = await fetch("/api/messages/unread-count");
+      const [countsRes, messagesRes] = await Promise.all([
+        fetch("/api/admin/notification-counts"),
+        fetch("/api/messages/unread-count"),
+      ]);
+      const countsData = await countsRes.json();
       const messagesData = await messagesRes.json();
-      if (messagesData.status === "ok") {
-        setCounts((prev) => ({ ...prev, messages: messagesData.count }));
-      }
-      const data = await res.json();
-      if (data.status === "ok") {
-        setCounts(data.counts);
-      }
+
+      setCounts((prev) => ({
+        ...prev,
+        ...(countsData.status === "ok" ? countsData.counts : {}),
+        ...(messagesData.status === "ok" ? { messages: messagesData.count } : {}),
+      }));
     } catch {
       // Silently ignore — badges just won't update this cycle.
     }
@@ -99,7 +102,8 @@ export default function AdminSidebar({ userName, userEmail, roleName }: AdminSid
         <div className="flex flex-col divide-y divide-base-800 overflow-hidden rounded-lg border border-base-800">
           {NAV_ITEMS.map((item) => {
             const href = `${basePathSegment}${item.hrefSuffix}`;
-            const isActive = pathname === href;
+            const isActive =
+              item.hrefSuffix === "/dashboard" ? pathname === href : pathname.startsWith(href);
             const Icon = item.icon;
             const count = item.badgeKey ? counts[item.badgeKey] || 0 : 0;
 

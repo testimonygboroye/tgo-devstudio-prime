@@ -40,6 +40,13 @@ export async function POST(request: NextRequest) {
 
   const isPasswordValid = await verifyPassword(password, user.passwordHash);
 
+  if (user.isBanned) {
+    return NextResponse.json(
+      { status: "error", message: "This account has been suspended. Contact the Founder if you believe this is a mistake." },
+      { status: 403 }
+    );
+  }
+
   if (!isPasswordValid) {
     user.failedLoginAttempts += 1;
 

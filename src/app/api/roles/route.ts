@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
   }
 
   await connectToDatabase();
-  const roles = await Role.find().sort({ createdAt: 1 });
+  const roles = await Role.find().sort({ hierarchyLevel: 1 });
 
   return NextResponse.json({ status: "ok", roles });
 }
@@ -31,13 +31,19 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const {
     name,
+    hierarchyLevel,
     canManageUsers,
+    canBanUsers,
+    canDeleteUsers,
     requiresTwoFactor,
     contentPermissions,
     analyticsPermissions,
   } = body as {
     name?: string;
+    hierarchyLevel?: number;
     canManageUsers?: boolean;
+    canBanUsers?: boolean;
+    canDeleteUsers?: boolean;
     requiresTwoFactor?: boolean;
     contentPermissions?: unknown;
     analyticsPermissions?: unknown;
@@ -46,6 +52,13 @@ export async function POST(request: NextRequest) {
   if (!name || typeof name !== "string" || name.trim().length === 0) {
     return NextResponse.json(
       { status: "error", message: "A role name is required." },
+      { status: 400 }
+    );
+  }
+
+  if (typeof hierarchyLevel !== "number" || hierarchyLevel <= session.role.hierarchyLevel) {
+    return NextResponse.json(
+      { status: "error", message: "The new role's hierarchy level must be lower authority (a higher number) than your own." },
       { status: 400 }
     );
   }
@@ -66,8 +79,11 @@ export async function POST(request: NextRequest) {
     slug,
     isFounderRole: false,
     isSystemRole: false,
+    hierarchyLevel,
     canManageRoles: false,
     canManageUsers: Boolean(canManageUsers),
+    canBanUsers: Boolean(canBanUsers),
+    canDeleteUsers: Boolean(canDeleteUsers),
     requiresTwoFactor: Boolean(requiresTwoFactor),
     contentPermissions: sanitizeContentPermissions(contentPermissions),
     analyticsPermissions: sanitizeAnalyticsPermissions(analyticsPermissions),

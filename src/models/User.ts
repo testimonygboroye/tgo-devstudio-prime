@@ -11,6 +11,8 @@ export interface IUser extends Document {
   refreshTokenVersion: number;
   failedLoginAttempts: number;
   lockUntil?: Date;
+  isBanned: boolean;
+  bannedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -27,6 +29,8 @@ const UserSchema = new Schema<IUser>(
     refreshTokenVersion: { type: Number, default: 0 },
     failedLoginAttempts: { type: Number, default: 0 },
     lockUntil: { type: Date },
+    isBanned: { type: Boolean, default: false },
+    bannedAt: { type: Date },
   },
   { timestamps: true }
 );

@@ -51,16 +51,26 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     return forbiddenResponse("The Founder role cannot be modified.");
   }
 
+  if (role.hierarchyLevel <= session.role.hierarchyLevel && !session.role.isFounderRole) {
+    return forbiddenResponse("You cannot modify a role at or above your own hierarchy level.");
+  }
+
   const body = await request.json();
   const {
     name,
+    hierarchyLevel,
     canManageUsers,
+    canBanUsers,
+    canDeleteUsers,
     requiresTwoFactor,
     contentPermissions,
     analyticsPermissions,
   } = body as {
     name?: string;
+    hierarchyLevel?: number;
     canManageUsers?: boolean;
+    canBanUsers?: boolean;
+    canDeleteUsers?: boolean;
     requiresTwoFactor?: boolean;
     contentPermissions?: unknown;
     analyticsPermissions?: unknown;
@@ -69,8 +79,23 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   if (name && typeof name === "string" && name.trim().length > 0) {
     role.name = name.trim();
   }
+  if (typeof hierarchyLevel === "number") {
+    if (hierarchyLevel <= session.role.hierarchyLevel && !session.role.isFounderRole) {
+      return NextResponse.json(
+        { status: "error", message: "You cannot set a hierarchy level at or above your own." },
+        { status: 400 }
+      );
+    }
+    role.hierarchyLevel = hierarchyLevel;
+  }
   if (typeof canManageUsers === "boolean") {
     role.canManageUsers = canManageUsers;
+  }
+  if (typeof canBanUsers === "boolean") {
+    role.canBanUsers = canBanUsers;
+  }
+  if (typeof canDeleteUsers === "boolean") {
+    role.canDeleteUsers = canDeleteUsers;
   }
   if (typeof requiresTwoFactor === "boolean") {
     role.requiresTwoFactor = requiresTwoFactor;

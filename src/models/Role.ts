@@ -22,6 +22,8 @@ export interface IRole extends Document {
   isSystemRole: boolean;
   canManageRoles: boolean;
   canManageUsers: boolean;
+  canBanUsers: boolean;
+  canDeleteUsers: boolean;
   requiresTwoFactor: boolean;
   contentPermissions: Map<string, IPermissionSet>;
   analyticsPermissions: IAnalyticsPermissions;
@@ -49,6 +51,8 @@ const RoleSchema = new Schema<IRole>(
     isSystemRole: { type: Boolean, default: false },
     canManageRoles: { type: Boolean, default: false },
     canManageUsers: { type: Boolean, default: false },
+    canBanUsers: { type: Boolean, default: false },
+    canDeleteUsers: { type: Boolean, default: false },
     requiresTwoFactor: { type: Boolean, default: false },
     contentPermissions: {
       type: Map,

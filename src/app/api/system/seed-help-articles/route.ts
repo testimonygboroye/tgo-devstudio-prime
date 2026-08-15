@@ -12,6 +12,13 @@ const DEFAULT_ARTICLES: {
   bodyHtml: string;
 }[] = [
   {
+    title: "Using Your Messages Page",
+    category: "Getting Started",
+    visibility: "anyAuthenticated",
+    bodyHtml:
+      "<p>Your Messages page shows notifications addressed specifically to you \u2014 role changes offered to you, account status changes, and similar personal notices. It never shows general site activity like reviews or job applications; those live in their own dedicated admin sections.</p><p>Filter by New, Unread, Read, or Archived. You can mark a message back to unread at any time, or archive it to move it out of your main view without deleting it.</p>",
+  },
+  {
     title: "Logging In to the Admin Panel",
     category: "Getting Started",
     visibility: "preLogin",

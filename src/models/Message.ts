@@ -8,7 +8,7 @@ export interface IMessage extends Document {
   title: string;
   body: string;
   relatedId?: Types.ObjectId;
-  isRead: boolean;
+  status: "new" | "read" | "unread" | "archived";
   createdAt: Date;
   updatedAt: Date;
 }
@@ -20,7 +20,7 @@ const MessageSchema = new Schema<IMessage>(
     title: { type: String, required: true, trim: true, maxlength: 200 },
     body: { type: String, required: true, trim: true, maxlength: 1000 },
     relatedId: { type: Schema.Types.ObjectId },
-    isRead: { type: Boolean, default: false },
+    status: { type: String, enum: ["new", "read", "unread", "archived"], default: "new" },
   },
   { timestamps: true }
 );

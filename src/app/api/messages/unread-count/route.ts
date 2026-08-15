@@ -9,7 +9,10 @@ export async function GET(request: NextRequest) {
   if (!session) return unauthorizedResponse();
 
   await connectToDatabase();
-  const count = await Message.countDocuments({ recipient: session.user._id, isRead: false });
+  const count = await Message.countDocuments({
+    recipient: session.user._id,
+    status: { $in: ["new", "unread"] },
+  });
 
   return NextResponse.json({ status: "ok", count });
 }

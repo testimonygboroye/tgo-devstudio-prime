@@ -79,7 +79,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     if (targetRole.hierarchyLevel > user.role.hierarchyLevel) {
       // Downgrade (lower authority) — applies immediately
-      user.role = targetRole._id;
+      user.role = targetRole._id as unknown as IRole;
       roleChangeOutcome = "applied";
     } else {
       // Upgrade (more authority than they currently have) — requires their acceptance

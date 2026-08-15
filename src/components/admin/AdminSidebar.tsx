@@ -46,6 +46,11 @@ export default function AdminSidebar({ userName, userEmail, roleName }: AdminSid
   const loadCounts = useCallback(async () => {
     try {
       const res = await fetch("/api/admin/notification-counts");
+      const messagesRes = await fetch("/api/messages/unread-count");
+      const messagesData = await messagesRes.json();
+      if (messagesData.status === "ok") {
+        setCounts((prev) => ({ ...prev, messages: messagesData.count }));
+      }
       const data = await res.json();
       if (data.status === "ok") {
         setCounts(data.counts);

@@ -12,6 +12,13 @@ const DEFAULT_ARTICLES: {
   bodyHtml: string;
 }[] = [
   {
+    title: "Using the Media Library",
+    category: "Admin",
+    visibility: "anyAuthenticated",
+    bodyHtml:
+      "<p>The Media Library shows every file already uploaded to Cloudinary across the whole site \u2014 case study images, team photos, blog covers, resumes, and more \u2014 in one place. Filter by folder, copy a file.s URL, or delete files you know are no longer used.</p><p>Important: deleting a file here does not update any page still referencing it. If you delete an image still used by a team member or case study, that image will simply stop showing. Only delete files you are certain are unused.</p>",
+  },
+  {
     title: "Using Your Messages Page",
     category: "Getting Started",
     visibility: "anyAuthenticated",

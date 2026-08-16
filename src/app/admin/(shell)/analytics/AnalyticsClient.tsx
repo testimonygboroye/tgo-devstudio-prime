@@ -22,17 +22,25 @@ export default function AnalyticsClient() {
   const [totalCount, setTotalCount] = useState(0);
   const [uniqueVisitorCount, setUniqueVisitorCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     async function load() {
-      const res = await fetch("/api/analytics/page-views");
-      const data = await res.json();
-      if (data.status === "ok") {
-        setViews(data.views);
-        setTotalCount(data.totalCount);
-        setUniqueVisitorCount(data.uniqueVisitorCount);
+      try {
+        const res = await fetch("/api/analytics/page-views");
+        const data = await res.json();
+        if (data.status === "ok") {
+          setViews(data.views);
+          setTotalCount(data.totalCount);
+          setUniqueVisitorCount(data.uniqueVisitorCount);
+        } else {
+          setError(data.message || "Failed to load analytics.");
+        }
+      } catch {
+        setError("Failed to load analytics. The server may still be starting up — try refreshing in a moment.");
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     }
     load();
   }, []);
@@ -50,10 +58,19 @@ export default function AnalyticsClient() {
         </div>
       </div>
 
+      {error && (
+        <p className="mt-4 rounded-md border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-300">
+          {error}
+        </p>
+      )}
+
       <h2 className="mt-8 text-sm font-semibold uppercase tracking-widest text-neutral-500">
         Recent Activity
       </h2>
       {isLoading && <p className="mt-2 text-neutral-400">Loading...</p>}
+      {!isLoading && !error && views.length === 0 && (
+        <p className="mt-2 text-neutral-400">No page views recorded yet.</p>
+      )}
       <div className="mt-3 space-y-2">
         {views.map((view) => (
           <div key={view._id} className="rounded-md border border-base-800 bg-base-900 p-3 text-sm">

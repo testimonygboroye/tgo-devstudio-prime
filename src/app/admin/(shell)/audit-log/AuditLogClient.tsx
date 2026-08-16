@@ -14,21 +14,36 @@ interface LogEntry {
 export default function AuditLogClient() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     async function load() {
-      const res = await fetch("/api/audit-log");
-      const data = await res.json();
-      if (data.status === "ok") setLogs(data.logs);
-      setIsLoading(false);
+      try {
+        const res = await fetch("/api/audit-log");
+        const data = await res.json();
+        if (data.status === "ok") {
+          setLogs(data.logs);
+        } else {
+          setError(data.message || "Failed to load audit log.");
+        }
+      } catch {
+        setError("Failed to load audit log. The server may still be starting up — try refreshing in a moment.");
+      } finally {
+        setIsLoading(false);
+      }
     }
     load();
   }, []);
 
   return (
     <div>
+      {error && (
+        <p className="mb-4 rounded-md border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-300">
+          {error}
+        </p>
+      )}
       {isLoading && <p className="text-neutral-400">Loading...</p>}
-      {!isLoading && logs.length === 0 && <p className="text-neutral-400">No actions logged yet.</p>}
+      {!isLoading && !error && logs.length === 0 && <p className="text-neutral-400">No actions logged yet.</p>}
       <div className="space-y-2">
         {logs.map((log) => (
           <div key={log._id} className="rounded-md border border-base-800 bg-base-900 p-3 text-sm">

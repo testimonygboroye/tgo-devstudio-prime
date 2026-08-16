@@ -17,7 +17,6 @@ const DEFAULT_ARTICLES: {
     visibility: "anyAuthenticated",
     bodyHtml:
       "<p>The Audit Log records every state-changing admin action automatically \u2014 who did what, and when. It is visible only to the Founder and cannot be edited or deleted by anyone.</p>",
-    requiredContentType: undefined,
   },
   {
     title: "Understanding Visitor Analytics",

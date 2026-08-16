@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import OrganizationSchema from "@/components/shared/OrganizationSchema";
+import ServiceWorkerRegistration from "@/components/shared/ServiceWorkerRegistration";
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
@@ -27,6 +28,9 @@ export default function RootLayout({
     <html lang="en" className={jetbrainsMono.variable}>
       <head>
         <meta name="google-site-verification" content="g7RX7-eoPACihWjJckfBIfFsgo8jnXz2iTpegqH56nA" />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+        <meta name="theme-color" content="#0A0A0F" />
         <link rel="preconnect" href="https://api.fontshare.com" />
         <link
           href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@800,700,500&f[]=satoshi@400,500,700&display=swap"
@@ -35,6 +39,7 @@ export default function RootLayout({
       </head>
       <body>
         <OrganizationSchema />
+        <ServiceWorkerRegistration />
         {children}
       </body>
     </html>

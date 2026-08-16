@@ -1,0 +1,21 @@
+{
+  "name": "TGO DevStudio Prime",
+  "short_name": "TGO DevStudio",
+  "description": "The flagship brand, portfolio, and command-center site for TGO DevStudio — a full-stack software engineering studio.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0A0A0F",
+  "theme_color": "#0A0A0F",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

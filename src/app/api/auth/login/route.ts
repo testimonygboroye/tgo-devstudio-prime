@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
   user.lockUntil = undefined;
   await user.save();
 
-  if (user.twoFactorEnabled) {
+  if (user.twoFactorEnabled && process.env.TWO_FACTOR_ENABLED !== "false") {
     const tempToken = signTemp2FAToken({ userId: user._id.toString() });
     return NextResponse.json({
       status: "2fa_required",

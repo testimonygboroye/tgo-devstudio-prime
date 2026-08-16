@@ -6,6 +6,8 @@ import Project from "@/models/Project";
 
 export const revalidate = 300;
 
+const siteUrl = process.env.SITE_URL || "https://tgo-devstudio-prime.onrender.com";
+
 interface PageProps {
   params: Promise<{ slug: string }>;
 }
@@ -46,8 +48,26 @@ export default async function CaseStudyDetailPage({ params }: PageProps) {
     notFound();
   }
 
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "CreativeWork",
+    name: project.title,
+    description: project.summary,
+    url: `${siteUrl}/portfolio/${project.slug}`,
+    image: project.images?.[0]?.url,
+    creator: {
+      "@type": "Organization",
+      name: "TGO DevStudio",
+    },
+    keywords: project.tags?.join(", "),
+  };
+
   return (
     <main className="min-h-screen px-6 py-16 sm:px-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      />
       <article className="mx-auto max-w-3xl">
         <p className="font-mono text-xs uppercase tracking-widest text-neutral-400">Case Study</p>
         <h1 className="mt-2 text-4xl font-bold brand-gradient-text sm:text-5xl">{project.title}</h1>

@@ -12,6 +12,13 @@ const DEFAULT_ARTICLES: {
   bodyHtml: string;
 }[] = [
   {
+    title: "SEO: Structured Data and Search Console",
+    category: "Admin",
+    visibility: "anyAuthenticated",
+    bodyHtml:
+      "<p>The site automatically includes Schema.org structured data (Organization info sitewide, plus specific data on each case study page) to help search engines understand and richly display the site in results. The site is also verified with Google Search Console for sitemap submission and indexing monitoring.</p>",
+  },
+  {
     title: "Understanding the Audit Log",
     category: "Admin",
     visibility: "anyAuthenticated",

@@ -60,7 +60,7 @@ export default async function TeamListPage({ searchParams }: PageProps) {
       </div>
 
       <div className="mt-6">
-        <AdminSearchBar placeholder="Search by name or job title..." defaultValue={q} />
+        <AdminSearchBar placeholder="Search by name or job title..." defaultValue={q} basePath={`${basePath}/team`} />
         {q && <p className="mt-2 text-xs text-neutral-500">Showing results for "{q}"</p>}
       </div>
 

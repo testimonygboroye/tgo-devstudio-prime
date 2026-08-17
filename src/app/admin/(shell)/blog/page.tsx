@@ -58,7 +58,7 @@ export default async function BlogListPage({ searchParams }: PageProps) {
       </div>
 
       <div className="mt-6">
-        <AdminSearchBar placeholder="Search by title..." defaultValue={q} />
+        <AdminSearchBar placeholder="Search by title..." defaultValue={q} basePath={`${basePath}/blog`} />
         {q && <p className="mt-2 text-xs text-neutral-500">Showing results for "{q}"</p>}
       </div>
 

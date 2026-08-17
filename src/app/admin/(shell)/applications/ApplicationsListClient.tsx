@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -26,6 +26,8 @@ const STATUS_STYLES: Record<string, string> = {
   hired: "bg-green-500/20 text-green-300",
 };
 
+const PAGE_SIZE = 10;
+
 export default function ApplicationsListClient() {
   const pathname = usePathname();
   const basePathSegment = `/${pathname.split("/").filter(Boolean)[0]}`;
@@ -34,6 +36,8 @@ export default function ApplicationsListClient() {
   const [jobs, setJobs] = useState<JobOption[]>([]);
   const [jobFilter, setJobFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -62,12 +66,39 @@ export default function ApplicationsListClient() {
     loadApplications();
   }, [loadApplications]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [jobFilter, statusFilter, searchQuery]);
+
+  const filteredApplications = useMemo(() => {
+    if (!searchQuery.trim()) return applications;
+    const term = searchQuery.toLowerCase();
+    return applications.filter(
+      (app) =>
+        app.applicantName.toLowerCase().includes(term) ||
+        app.applicantEmail.toLowerCase().includes(term)
+    );
+  }, [applications, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredApplications.length / PAGE_SIZE));
+  const pageItems = filteredApplications.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE
+  );
+
   return (
     <div>
       <p className="font-mono text-xs uppercase tracking-widest text-neutral-400">Content</p>
       <h1 className="mt-1 text-3xl font-bold brand-gradient-text">Job Applications</h1>
 
       <div className="mt-6 flex flex-wrap gap-3">
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search by name or email..."
+          className="w-full max-w-xs rounded-md border border-base-800 bg-base-900 px-3 py-2 text-sm text-neutral-100 outline-none focus:border-brand-cyan-400"
+        />
         <select
           value={jobFilter}
           onChange={(e) => setJobFilter(e.target.value)}
@@ -95,17 +126,21 @@ export default function ApplicationsListClient() {
         </select>
       </div>
 
+      {searchQuery && (
+        <p className="mt-2 text-xs text-neutral-500">Showing results for "{searchQuery}"</p>
+      )}
+
       {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
 
       <div className="mt-6 space-y-3">
         {isLoading && <p className="text-neutral-400">Loading applications...</p>}
 
-        {!isLoading && applications.length === 0 && (
+        {!isLoading && pageItems.length === 0 && (
           <p className="text-neutral-400">No applications match these filters.</p>
         )}
 
         {!isLoading &&
-          applications.map((app) => (
+          pageItems.map((app) => (
             <Link
               key={app._id}
               href={`${basePathSegment}/applications/${app._id}`}
@@ -125,6 +160,28 @@ export default function ApplicationsListClient() {
             </Link>
           ))}
       </div>
+
+      {totalPages > 1 && (
+        <div className="mt-6 flex items-center justify-between text-sm">
+          <button
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            disabled={currentPage <= 1}
+            className="rounded-md border border-base-800 px-3 py-1.5 text-neutral-100 hover:bg-base-900 disabled:pointer-events-none disabled:text-neutral-600"
+          >
+            ← Previous
+          </button>
+          <span className="text-neutral-500">
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            disabled={currentPage >= totalPages}
+            className="rounded-md border border-base-800 px-3 py-1.5 text-neutral-100 hover:bg-base-900 disabled:pointer-events-none disabled:text-neutral-600"
+          >
+            Next →
+          </button>
+        </div>
+      )}
     </div>
   );
 }

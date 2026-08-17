@@ -59,6 +59,7 @@ export default async function CaseStudiesListPage({ searchParams }: PageProps) {
 
       <div className="mt-6">
         <AdminSearchBar placeholder="Search by title..." defaultValue={q} />
+        {q && <p className="mt-2 text-xs text-neutral-500">Showing results for "{q}"</p>}
       </div>
 
       <div className="mt-6 space-y-3">

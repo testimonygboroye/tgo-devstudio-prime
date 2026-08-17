@@ -4,17 +4,49 @@ import TeamMember from "@/models/TeamMember";
 import { getServerSession } from "@/lib/auth/serverSession";
 import { guardCanView } from "@/lib/auth/pageGuards";
 import { getAdminBasePath } from "@/lib/adminPath";
+import AdminSearchBar from "@/components/admin/AdminSearchBar";
+import AdminPagination from "@/components/admin/AdminPagination";
 
-export default async function TeamListPage() {
+const PAGE_SIZE = 10;
+
+interface PageProps {
+  searchParams: Promise<{ q?: string; page?: string }>;
+}
+
+export default async function TeamListPage({ searchParams }: PageProps) {
   const session = await getServerSession();
   guardCanView(session!, "team");
   await connectToDatabase();
-  const teamMembers = await TeamMember.find().sort({ displayOrder: 1, createdAt: 1 }).lean();
+
+  const { q = "", page: pageParam } = await searchParams;
+  const currentPage = Math.max(1, parseInt(pageParam || "1", 10) || 1);
   const basePath = getAdminBasePath();
+
+  const filter = q
+    ? { $or: [{ name: { $regex: q, $options: "i" } }, { jobTitle: { $regex: q, $options: "i" } }] }
+    : {};
+
+  const [teamMembers, totalCount] = await Promise.all([
+    TeamMember.find(filter)
+      .sort({ displayOrder: 1, createdAt: 1 })
+      .skip((currentPage - 1) * PAGE_SIZE)
+      .limit(PAGE_SIZE)
+      .lean(),
+    TeamMember.countDocuments(filter),
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+
+  function buildHref(page: number) {
+    const params = new URLSearchParams();
+    if (q) params.set("q", q);
+    params.set("page", String(page));
+    return `${basePath}/team?${params.toString()}`;
+  }
 
   return (
     <div>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="font-mono text-xs uppercase tracking-widest text-neutral-400">Content</p>
           <h1 className="mt-1 text-3xl font-bold brand-gradient-text">Team</h1>
@@ -27,9 +59,16 @@ export default async function TeamListPage() {
         </Link>
       </div>
 
-      <div className="mt-8 space-y-3">
+      <div className="mt-6">
+        <AdminSearchBar placeholder="Search by name or job title..." defaultValue={q} />
+        {q && <p className="mt-2 text-xs text-neutral-500">Showing results for "{q}"</p>}
+      </div>
+
+      <div className="mt-6 space-y-3">
         {teamMembers.length === 0 && (
-          <p className="text-neutral-400">No team members yet. Add your first one.</p>
+          <p className="text-neutral-400">
+            {q ? `No team members match "${q}".` : "No team members yet. Add your first one."}
+          </p>
         )}
         {teamMembers.map((member) => (
           <Link
@@ -55,6 +94,8 @@ export default async function TeamListPage() {
           </Link>
         ))}
       </div>
+
+      <AdminPagination currentPage={currentPage} totalPages={totalPages} buildHref={buildHref} />
     </div>
   );
 }

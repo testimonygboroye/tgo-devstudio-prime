@@ -15,6 +15,7 @@ import { Code } from "lucide-react";
 import { getPubliclyVisibleFilter } from "@/lib/utils/blogVisibility";
 import ScrollReveal from "@/components/public/ScrollReveal";
 import AvailabilityBadge from "@/components/public/AvailabilityBadge";
+import HeroMoment from "@/components/public/HeroMoment";
 
 export const revalidate = 300;
 
@@ -46,7 +47,9 @@ export default async function HomePage() {
   return (
     <main>
       {/* Hero */}
-      <section className="flex min-h-[85vh] flex-col items-center justify-center px-6 text-center sm:px-12">
+      <section className="relative flex min-h-[85vh] flex-col items-center justify-center overflow-hidden px-6 text-center sm:px-12">
+        <HeroMoment />
+        <div className="relative z-10">
         <ScrollReveal>
           <div className="mb-4 flex justify-center">
             <AvailabilityBadge />
@@ -75,6 +78,7 @@ export default async function HomePage() {
             </Link>
           </div>
         </ScrollReveal>
+        </div>
       </section>
 
       {/* Featured Case Studies */}

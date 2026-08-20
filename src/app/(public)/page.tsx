@@ -50,34 +50,34 @@ export default async function HomePage() {
       <section className="relative flex min-h-[85vh] flex-col items-center justify-center overflow-hidden px-6 text-center sm:px-12">
         <HeroMoment />
         <div className="relative z-10">
-        <ScrollReveal>
-          <div className="mb-4 flex justify-center">
-            <AvailabilityBadge />
-          </div>
-          <p className="font-mono text-sm uppercase tracking-widest text-neutral-400">
-            TGO DevStudio
-          </p>
-          <h1 className="mt-4 text-5xl font-bold brand-gradient-text sm:text-7xl">
-            {hero.heroHeadline}
-          </h1>
-          <p className="mx-auto mt-6 max-w-xl text-lg text-neutral-100/80">
-            {hero.heroSubheadline}
-          </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-4">
-            <Link
-              href={hero.primaryCtaHref}
-              className="rounded-md brand-gradient-bg px-6 py-3 font-semibold text-base-950"
-            >
-              {hero.primaryCtaLabel}
-            </Link>
-            <Link
-              href={hero.secondaryCtaHref}
-              className="rounded-md border border-base-800 px-6 py-3 font-semibold text-neutral-100 hover:bg-base-900"
-            >
-              {hero.secondaryCtaLabel}
-            </Link>
-          </div>
-        </ScrollReveal>
+          <ScrollReveal>
+            <div className="mb-4 flex justify-center">
+              <AvailabilityBadge />
+            </div>
+            <p className="font-mono text-sm uppercase tracking-widest text-neutral-400">
+              TGO DevStudio
+            </p>
+            <h1 className="mt-4 text-5xl font-bold brand-gradient-text sm:text-7xl">
+              {hero.heroHeadline}
+            </h1>
+            <p className="mx-auto mt-6 max-w-xl text-lg text-neutral-100/80">
+              {hero.heroSubheadline}
+            </p>
+            <div className="mt-8 flex flex-wrap justify-center gap-4">
+              <Link
+                href={hero.primaryCtaHref}
+                className="rounded-md brand-gradient-bg px-6 py-3 font-semibold text-base-950"
+              >
+                {hero.primaryCtaLabel}
+              </Link>
+              <Link
+                href={hero.secondaryCtaHref}
+                className="rounded-md border border-base-800 px-6 py-3 font-semibold text-neutral-100 hover:bg-base-900"
+              >
+                {hero.secondaryCtaLabel}
+              </Link>
+            </div>
+          </ScrollReveal>
         </div>
       </section>
 

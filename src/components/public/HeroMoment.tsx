@@ -31,7 +31,7 @@ export default function HeroMoment() {
     let particles: Particle[] = [];
     let pointerX = -9999;
     let pointerY = -9999;
-    let animationFrame: number;
+    let animationFrame: number = 0;
 
     function resize() {
       const parent = canvas!.parentElement;

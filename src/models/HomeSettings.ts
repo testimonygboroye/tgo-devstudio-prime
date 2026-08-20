@@ -26,6 +26,12 @@ export interface IHomeSettings extends Document {
   finalCtaHeading: string;
   finalCtaDescription: string;
   finalCtaButtonLabel: string;
+  statOneValue: string;
+  statOneLabel: string;
+  statTwoValue: string;
+  statTwoLabel: string;
+  statThreeValue: string;
+  statThreeLabel: string;
   lastUpdatedBy: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -65,6 +71,12 @@ const HomeSettingsSchema = new Schema<IHomeSettings>(
       maxlength: 300,
     },
     finalCtaButtonLabel: { type: String, default: "Start a Conversation", maxlength: 50 },
+    statOneValue: { type: String, default: "1+", maxlength: 20 },
+    statOneLabel: { type: String, default: "Years Active", maxlength: 50 },
+    statTwoValue: { type: String, default: "5+", maxlength: 20 },
+    statTwoLabel: { type: String, default: "Projects Shipped", maxlength: 50 },
+    statThreeValue: { type: String, default: "10+", maxlength: 20 },
+    statThreeLabel: { type: String, default: "Technologies Mastered", maxlength: 50 },
     lastUpdatedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
   },
   { timestamps: true }

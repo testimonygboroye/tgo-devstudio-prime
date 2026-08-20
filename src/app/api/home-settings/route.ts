@@ -32,6 +32,12 @@ const FIELDS = [
   "finalCtaHeading",
   "finalCtaDescription",
   "finalCtaButtonLabel",
+  "statOneValue",
+  "statOneLabel",
+  "statTwoValue",
+  "statTwoLabel",
+  "statThreeValue",
+  "statThreeLabel",
 ];
 
 export async function GET() {

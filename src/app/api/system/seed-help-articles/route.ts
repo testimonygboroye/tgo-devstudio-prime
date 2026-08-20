@@ -12,6 +12,14 @@ const DEFAULT_ARTICLES: {
   bodyHtml: string;
 }[] = [
   {
+    title: "Editing the Trust Bar (Homepage Stats)",
+    category: "Content",
+    visibility: "permission",
+    requiredContentType: "homeSettings",
+    bodyHtml:
+      "<p>The three stats shown just below the hero (e.g. Years Active, Projects Shipped, Technologies Mastered) are editable from Homepage Settings, under the Trust Bar (Stats) section. Update the numbers as your studio grows \u2014 there is no automatic counting, these are manually entered values.</p>",
+  },
+  {
     title: "SEO: Structured Data and Search Console",
     category: "Admin",
     visibility: "anyAuthenticated",

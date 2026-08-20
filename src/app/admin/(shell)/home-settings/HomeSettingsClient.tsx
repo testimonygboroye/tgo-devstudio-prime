@@ -65,6 +65,17 @@ const FIELD_GROUPS = [
     ],
   },
   {
+    title: "Trust Bar (Stats)",
+    fields: [
+      { key: "statOneValue", label: "Stat 1 Value (e.g. 1+)", type: "input" },
+      { key: "statOneLabel", label: "Stat 1 Label (e.g. Years Active)", type: "input" },
+      { key: "statTwoValue", label: "Stat 2 Value", type: "input" },
+      { key: "statTwoLabel", label: "Stat 2 Label", type: "input" },
+      { key: "statThreeValue", label: "Stat 3 Value", type: "input" },
+      { key: "statThreeLabel", label: "Stat 3 Label", type: "input" },
+    ],
+  },
+  {
     title: "Final Call-to-Action Section",
     fields: [
       { key: "finalCtaHeading", label: "Heading", type: "input" },

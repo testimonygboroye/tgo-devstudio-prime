@@ -81,6 +81,32 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* Trust Bar */}
+      <section className="border-t border-base-800 px-6 py-10 sm:px-12">
+        <ScrollReveal>
+          <div className="mx-auto grid max-w-3xl grid-cols-3 gap-4 text-center">
+            <div>
+              <p className="text-3xl font-bold brand-gradient-text sm:text-4xl">{hero.statOneValue}</p>
+              <p className="mt-1 text-xs uppercase tracking-widest text-neutral-500 sm:text-sm">
+                {hero.statOneLabel}
+              </p>
+            </div>
+            <div>
+              <p className="text-3xl font-bold brand-gradient-text sm:text-4xl">{hero.statTwoValue}</p>
+              <p className="mt-1 text-xs uppercase tracking-widest text-neutral-500 sm:text-sm">
+                {hero.statTwoLabel}
+              </p>
+            </div>
+            <div>
+              <p className="text-3xl font-bold brand-gradient-text sm:text-4xl">{hero.statThreeValue}</p>
+              <p className="mt-1 text-xs uppercase tracking-widest text-neutral-500 sm:text-sm">
+                {hero.statThreeLabel}
+              </p>
+            </div>
+          </div>
+        </ScrollReveal>
+      </section>
+
       {/* Featured Case Studies */}
       <section className="border-t border-base-800 px-6 py-20 sm:px-12">
         <div className="mx-auto max-w-6xl">

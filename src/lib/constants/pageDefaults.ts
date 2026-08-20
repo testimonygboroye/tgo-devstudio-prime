@@ -46,6 +46,12 @@ export const HOME_DEFAULTS = {
   finalCtaHeading: "Ready to Build Something Real?",
   finalCtaDescription: "Let's talk about what you're building and how TGO DevStudio can help bring it to life.",
   finalCtaButtonLabel: "Start a Conversation",
+  statOneValue: "1+",
+  statOneLabel: "Years Active",
+  statTwoValue: "5+",
+  statTwoLabel: "Projects Shipped",
+  statThreeValue: "10+",
+  statThreeLabel: "Technologies Mastered",
 };
 
 export const AVAILABILITY_LABELS: Record<string, { label: string; color: string }> = {

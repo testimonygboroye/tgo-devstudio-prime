@@ -12,6 +12,13 @@ const DEFAULT_ARTICLES: {
   bodyHtml: string;
 }[] = [
   {
+    title: "Team Member Detail Pages",
+    category: "Public Site",
+    visibility: "public",
+    bodyHtml:
+      "<p>Each team member now has their own dedicated page with a full bio and social links, reachable by clicking their card on the Team page.</p>",
+  },
+  {
     title: "Blog Reading Time and Related Posts",
     category: "Public Site",
     visibility: "public",

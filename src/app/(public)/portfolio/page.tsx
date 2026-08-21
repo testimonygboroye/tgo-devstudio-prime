@@ -18,11 +18,21 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function PortfolioPage() {
+interface PageProps {
+  searchParams: Promise<{ tag?: string }>;
+}
+
+export default async function PortfolioPage({ searchParams }: PageProps) {
   await connectToDatabase();
-  const projects = await Project.find({ publishStatus: "published" })
+  const { tag } = await searchParams;
+
+  const allProjects = await Project.find({ publishStatus: "published" })
     .sort({ featured: -1, createdAt: -1 })
     .lean();
+
+  const allTags = Array.from(new Set(allProjects.flatMap((p) => p.tags || []))).sort();
+
+  const projects = tag ? allProjects.filter((p) => p.tags?.includes(tag)) : allProjects;
 
   return (
     <main className="min-h-screen px-6 py-16 sm:px-12">
@@ -33,8 +43,38 @@ export default async function PortfolioPage() {
           A look at the products, platforms, and tools we&apos;ve built — from problem to launch.
         </p>
 
+        {allTags.length > 0 && (
+          <div className="mt-6 flex flex-wrap gap-2">
+            <Link
+              href="/portfolio"
+              className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+                !tag
+                  ? "border-brand-cyan-400 bg-brand-cyan-400/10 text-brand-cyan-300"
+                  : "border-base-800 text-neutral-400 hover:border-neutral-600"
+              }`}
+            >
+              All
+            </Link>
+            {allTags.map((t) => (
+              <Link
+                key={t}
+                href={`/portfolio?tag=${encodeURIComponent(t)}`}
+                className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+                  tag === t
+                    ? "border-brand-cyan-400 bg-brand-cyan-400/10 text-brand-cyan-300"
+                    : "border-base-800 text-neutral-400 hover:border-neutral-600"
+                }`}
+              >
+                {t}
+              </Link>
+            ))}
+          </div>
+        )}
+
         {projects.length === 0 && (
-          <p className="mt-12 text-neutral-400">Case studies are on the way. Check back soon.</p>
+          <p className="mt-12 text-neutral-400">
+            {tag ? `No case studies tagged "${tag}".` : "Case studies are on the way. Check back soon."}
+          </p>
         )}
 
         <div className="mt-12 grid gap-6 sm:grid-cols-2">
@@ -67,12 +107,12 @@ export default async function PortfolioPage() {
                 <p className="mt-2 text-sm text-neutral-400">{project.summary}</p>
                 {project.tags.length > 0 && (
                   <div className="mt-3 flex flex-wrap gap-2">
-                    {project.tags.map((tag: string) => (
+                    {project.tags.map((t: string) => (
                       <span
-                        key={tag}
+                        key={t}
                         className="rounded-full border border-base-800 px-2 py-0.5 text-xs text-neutral-400"
                       >
-                        {tag}
+                        {t}
                       </span>
                     ))}
                   </div>

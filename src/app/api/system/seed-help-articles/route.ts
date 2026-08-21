@@ -12,6 +12,13 @@ const DEFAULT_ARTICLES: {
   bodyHtml: string;
 }[] = [
   {
+    title: "Filtering Case Studies by Tag",
+    category: "Public Site",
+    visibility: "public",
+    bodyHtml:
+      "<p>The Portfolio page shows tag filters automatically generated from your published case studies. Click a tag to see only matching projects, or click All to clear the filter. Tags come directly from each case study.s own tags field \u2014 no separate setup needed.</p>",
+  },
+  {
     title: "Editing the Trust Bar (Homepage Stats)",
     category: "Content",
     visibility: "permission",

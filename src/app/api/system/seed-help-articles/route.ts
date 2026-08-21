@@ -12,6 +12,14 @@ const DEFAULT_ARTICLES: {
   bodyHtml: string;
 }[] = [
   {
+    title: "Adding Metrics and Tech Stack to Case Studies",
+    category: "Content",
+    visibility: "permission",
+    requiredContentType: "caseStudies",
+    bodyHtml:
+      "<p>Each case study can now include Results/Metrics (e.g. label \"Faster Load Times\", value \"40%\") shown as stat callouts, and a Tech Stack list shown as badges. Both are optional \u2014 add as many metrics as relevant using the Add Metric button, and list tech stack items comma-separated.</p>",
+  },
+  {
     title: "Team Member Detail Pages",
     category: "Public Site",
     visibility: "public",

@@ -41,6 +41,8 @@ export default async function EditCaseStudyPage({ params }: PageProps) {
             featured: project.featured,
             publishStatus: project.publishStatus,
             images: project.images,
+            metrics: project.metrics,
+            techStack: project.techStack,
           }}
         />
       </div>

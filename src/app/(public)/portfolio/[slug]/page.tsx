@@ -73,6 +73,30 @@ export default async function CaseStudyDetailPage({ params }: PageProps) {
         <h1 className="mt-2 text-4xl font-bold brand-gradient-text sm:text-5xl">{project.title}</h1>
         <p className="mt-4 text-lg text-neutral-100/80">{project.summary}</p>
 
+        {project.metrics && project.metrics.length > 0 && (
+          <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3">
+            {project.metrics.map((metric: { label: string; value: string }, index: number) => (
+              <div key={index} className="rounded-lg border border-base-800 bg-base-900 p-4 text-center">
+                <p className="text-2xl font-bold brand-gradient-text">{metric.value}</p>
+                <p className="mt-1 text-xs text-neutral-500">{metric.label}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {project.techStack && project.techStack.length > 0 && (
+          <div className="mt-6 flex flex-wrap gap-2">
+            {project.techStack.map((tech: string) => (
+              <span
+                key={tech}
+                className="rounded-full border border-brand-cyan-400/40 bg-brand-cyan-400/10 px-3 py-1 text-xs text-brand-cyan-300"
+              >
+                {tech}
+              </span>
+            ))}
+          </div>
+        )}
+
         {project.tags.length > 0 && (
           <div className="mt-4 flex flex-wrap gap-2">
             {project.tags.map((tag: string) => (

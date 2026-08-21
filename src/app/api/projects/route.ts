@@ -52,6 +52,8 @@ export async function POST(request: NextRequest) {
     projectUrl,
     repoUrl,
     tags,
+    metrics,
+    techStack,
     status,
     featured,
     publishStatus,
@@ -67,6 +69,8 @@ export async function POST(request: NextRequest) {
     projectUrl?: string;
     repoUrl?: string;
     tags?: string[];
+    metrics?: { label: string; value: string }[];
+    techStack?: string[];
     status?: string;
     featured?: boolean;
     publishStatus?: string;
@@ -128,6 +132,8 @@ export async function POST(request: NextRequest) {
     projectUrl,
     repoUrl,
     tags: tags ?? [],
+    metrics: metrics ?? [],
+    techStack: techStack ?? [],
     status: normalizeProjectStatus(status),
     featured: Boolean(featured),
     publishStatus: resolvedPublishStatus,

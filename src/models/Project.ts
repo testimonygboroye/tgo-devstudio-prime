@@ -20,6 +20,8 @@ export interface IProject extends Document {
   projectUrl?: string;
   repoUrl?: string;
   tags: string[];
+  metrics: { label: string; value: string }[];
+  techStack: string[];
   status: ProjectStatus;
   featured: boolean;
   publishStatus: PublishStatus;
@@ -51,6 +53,8 @@ const ProjectSchema = new Schema<IProject>(
     projectUrl: { type: String },
     repoUrl: { type: String },
     tags: { type: [String], default: [] },
+    metrics: { type: [{ label: String, value: String, _id: false }], default: [] },
+    techStack: { type: [String], default: [] },
     status: { type: String, enum: ["live", "in-progress", "concept"], default: "in-progress" },
     featured: { type: Boolean, default: false },
     publishStatus: { type: String, enum: ["draft", "published"], default: "draft" },

@@ -11,6 +11,11 @@ interface ProjectImage {
   altText: string;
 }
 
+interface Metric {
+  label: string;
+  value: string;
+}
+
 interface CaseStudyFormProps {
   mode: "create" | "edit";
   projectId?: string;
@@ -23,6 +28,8 @@ interface CaseStudyFormProps {
     projectUrl?: string;
     repoUrl?: string;
     tags: string[];
+    metrics: Metric[];
+    techStack: string[];
     status: string;
     featured: boolean;
     publishStatus: string;
@@ -41,6 +48,8 @@ export default function CaseStudyForm({ mode, projectId, initialData }: CaseStud
   const [projectUrl, setProjectUrl] = useState(initialData?.projectUrl ?? "");
   const [repoUrl, setRepoUrl] = useState(initialData?.repoUrl ?? "");
   const [tagsInput, setTagsInput] = useState(initialData?.tags?.join(", ") ?? "");
+  const [metrics, setMetrics] = useState<Metric[]>(initialData?.metrics ?? []);
+  const [techStackInput, setTechStackInput] = useState(initialData?.techStack?.join(", ") ?? "");
   const [status, setStatus] = useState(initialData?.status ?? "in-progress");
   const [featured, setFeatured] = useState(initialData?.featured ?? false);
   const [publishStatus, setPublishStatus] = useState(initialData?.publishStatus ?? "draft");
@@ -96,6 +105,18 @@ export default function CaseStudyForm({ mode, projectId, initialData }: CaseStud
     setImages((prev) => prev.filter((image) => image.publicId !== publicId));
   }
 
+  function addMetric() {
+    setMetrics((prev) => [...prev, { label: "", value: "" }]);
+  }
+
+  function updateMetric(index: number, field: "label" | "value", value: string) {
+    setMetrics((prev) => prev.map((m, i) => (i === index ? { ...m, [field]: value } : m)));
+  }
+
+  function removeMetric(index: number) {
+    setMetrics((prev) => prev.filter((_, i) => i !== index));
+  }
+
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError("");
@@ -117,6 +138,11 @@ export default function CaseStudyForm({ mode, projectId, initialData }: CaseStud
       featured,
       publishStatus,
       images,
+      metrics: metrics.filter((m) => m.label.trim() && m.value.trim()),
+      techStack: techStackInput
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean),
     };
 
     try {
@@ -253,6 +279,58 @@ export default function CaseStudyForm({ mode, projectId, initialData }: CaseStud
           onChange={(event) => setTagsInput(event.target.value)}
           className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
         />
+      </div>
+
+      <div>
+        <label className="block text-sm text-neutral-400">Tech Stack (comma-separated)</label>
+        <input
+          value={techStackInput}
+          onChange={(event) => setTechStackInput(event.target.value)}
+          placeholder="e.g. Next.js, MongoDB, Cloudinary"
+          className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
+        />
+      </div>
+
+      <div className="rounded-lg border border-base-800 bg-base-900 p-4">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold text-neutral-100">Results / Metrics</p>
+          <button
+            type="button"
+            onClick={addMetric}
+            className="rounded-md border border-base-800 px-3 py-1 text-xs text-neutral-100 hover:bg-base-800"
+          >
+            + Add Metric
+          </button>
+        </div>
+        <p className="mt-1 text-xs text-neutral-500">
+          e.g. Label "Faster Load Times", Value "40%"
+        </p>
+
+        <div className="mt-3 space-y-2">
+          {metrics.map((metric, index) => (
+            <div key={index} className="flex gap-2">
+              <input
+                value={metric.label}
+                onChange={(e) => updateMetric(index, "label", e.target.value)}
+                placeholder="Label"
+                className="flex-1 rounded-md border border-base-800 bg-base-950 px-3 py-2 text-sm text-neutral-100 outline-none focus:border-brand-cyan-400"
+              />
+              <input
+                value={metric.value}
+                onChange={(e) => updateMetric(index, "value", e.target.value)}
+                placeholder="Value"
+                className="w-28 rounded-md border border-base-800 bg-base-950 px-3 py-2 text-sm text-neutral-100 outline-none focus:border-brand-cyan-400"
+              />
+              <button
+                type="button"
+                onClick={() => removeMetric(index)}
+                className="rounded-md border border-red-500/40 px-3 text-xs text-red-400 hover:bg-red-500/10"
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">

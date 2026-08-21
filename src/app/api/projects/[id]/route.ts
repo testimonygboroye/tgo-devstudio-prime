@@ -69,6 +69,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     projectUrl,
     repoUrl,
     tags,
+    metrics,
+    techStack,
     status,
     featured,
     publishStatus,
@@ -84,6 +86,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     projectUrl?: string;
     repoUrl?: string;
     tags?: string[];
+    metrics?: { label: string; value: string }[];
+    techStack?: string[];
     status?: string;
     featured?: boolean;
     publishStatus?: string;
@@ -125,6 +129,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   if (projectUrl !== undefined) project.projectUrl = projectUrl;
   if (repoUrl !== undefined) project.repoUrl = repoUrl;
   if (tags !== undefined) project.tags = tags;
+  if (metrics !== undefined) project.metrics = metrics;
+  if (techStack !== undefined) project.techStack = techStack;
   if (status !== undefined) project.status = normalizeProjectStatus(status);
   if (featured !== undefined) project.featured = Boolean(featured);
   if (metaTitle !== undefined) project.metaTitle = metaTitle;

@@ -12,6 +12,13 @@ const DEFAULT_ARTICLES: {
   bodyHtml: string;
 }[] = [
   {
+    title: "Blog Reading Time and Related Posts",
+    category: "Public Site",
+    visibility: "public",
+    bodyHtml:
+      "<p>Every blog post automatically shows an estimated reading time based on word count, and displays up to 3 related posts sharing at least one tag with the current post. Both are computed automatically \u2014 no manual setup needed, just make sure your posts have relevant tags.</p>",
+  },
+  {
     title: "Filtering Case Studies by Tag",
     category: "Public Site",
     visibility: "public",

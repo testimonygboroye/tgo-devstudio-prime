@@ -12,6 +12,13 @@ const DEFAULT_ARTICLES: {
   bodyHtml: string;
 }[] = [
   {
+    title: "Dynamic Social Share Images",
+    category: "Admin",
+    visibility: "anyAuthenticated",
+    bodyHtml:
+      "<p>Every blog post and case study automatically generates its own social share image (used when links are shared on WhatsApp, Twitter, LinkedIn, etc.) showing that page.s real title and description, instead of one generic image for the whole site. This happens automatically \u2014 no manual upload needed.</p>",
+  },
+  {
     title: "Adding Metrics and Tech Stack to Case Studies",
     category: "Content",
     visibility: "permission",

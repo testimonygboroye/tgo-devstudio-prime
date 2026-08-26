@@ -12,6 +12,7 @@ export default async function PagesHubPage() {
     { type: "about", label: "About Page", description: "Edit the studio's About page content." },
     { type: "privacy-policy", label: "Privacy Policy", description: "Edit the site's privacy policy." },
     { type: "terms-of-service", label: "Terms of Service", description: "Edit the site's terms of service." },
+    { type: "accessibility", label: "Accessibility Statement", description: "Edit the accessibility statement." },
   ];
 
   return (

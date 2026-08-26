@@ -12,6 +12,22 @@ const DEFAULT_ARTICLES: {
   bodyHtml: string;
 }[] = [
   {
+    title: "Editing the Accessibility Statement",
+    category: "Content",
+    visibility: "permission",
+    requiredContentType: "pageContent",
+    bodyHtml:
+      "<p>Edit this page from Site Pages \u2192 Accessibility Statement, same rich-text editor as About, Privacy Policy, and Terms of Service.</p>",
+  },
+  {
+    title: "Editing the Accessibility Statement",
+    category: "Content",
+    visibility: "permission",
+    requiredContentType: "pageContent",
+    bodyHtml:
+      "<p>Edit this page from Site Pages \u2192 Accessibility Statement, same rich-text editor as About, Privacy Policy, and Terms of Service.</p>",
+  },
+  {
     title: "Dynamic Social Share Images",
     category: "Admin",
     visibility: "anyAuthenticated",

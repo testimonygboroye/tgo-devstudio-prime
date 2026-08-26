@@ -12,6 +12,7 @@ const TYPE_LABELS: Record<string, string> = {
   about: "About Page",
   "privacy-policy": "Privacy Policy",
   "terms-of-service": "Terms of Service",
+  accessibility: "Accessibility Statement",
 };
 
 export default async function PageContentEditPage({ params }: PageProps) {

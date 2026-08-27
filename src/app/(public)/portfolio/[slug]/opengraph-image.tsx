@@ -6,6 +6,10 @@ export const size = { width: 1200, height: 630 };
 export const revalidate = 3600;
 export const contentType = "image/png";
 
+function isOgEnabled() {
+  return process.env.OG_IMAGES_ENABLED !== "false";
+}
+
 export default async function Image({ params }: { params: { slug: string } }) {
   await connectToDatabase();
   const project = await Project.findOne({ slug: params.slug, publishStatus: "published" })

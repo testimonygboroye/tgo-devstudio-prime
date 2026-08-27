@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { connectToDatabase } from "@/lib/db";
 import TeamMember from "@/models/TeamMember";
-import { Github, Linkedin, Twitter, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 export const revalidate = 300;
 
@@ -68,23 +68,25 @@ export default async function TeamMemberDetailPage({ params }: PageProps) {
             <h1 className="text-3xl font-bold text-neutral-100 sm:text-4xl">{member.name}</h1>
             <p className="mt-1 text-brand-cyan-300">{member.jobTitle}</p>
 
-            <div className="mt-3 flex justify-center gap-3 sm:justify-start">
-              {member.githubUrl && (
-                <a href={member.githubUrl} target="_blank" rel="noopener noreferrer" className="text-neutral-400 hover:text-brand-cyan-300">
-                  <Github size={20} />
-                </a>
-              )}
-              {member.linkedinUrl && (
-                <a href={member.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-neutral-400 hover:text-brand-cyan-300">
-                  <Linkedin size={20} />
-                </a>
-              )}
-              {member.twitterUrl && (
-                <a href={member.twitterUrl} target="_blank" rel="noopener noreferrer" className="text-neutral-400 hover:text-brand-cyan-300">
-                  <Twitter size={20} />
-                </a>
-              )}
-            </div>
+            {(member.linkedinUrl || member.githubUrl || member.twitterUrl) && (
+              <div className="mt-3 flex justify-center gap-4 text-sm text-neutral-400 sm:justify-start">
+                {member.linkedinUrl && (
+                  <a href={member.linkedinUrl} target="_blank" rel="noopener noreferrer" className="hover:text-brand-cyan-300">
+                    LinkedIn
+                  </a>
+                )}
+                {member.githubUrl && (
+                  <a href={member.githubUrl} target="_blank" rel="noopener noreferrer" className="hover:text-brand-cyan-300">
+                    GitHub
+                  </a>
+                )}
+                {member.twitterUrl && (
+                  <a href={member.twitterUrl} target="_blank" rel="noopener noreferrer" className="hover:text-brand-cyan-300">
+                    X
+                  </a>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

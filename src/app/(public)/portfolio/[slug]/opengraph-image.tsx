@@ -3,6 +3,7 @@ import { connectToDatabase } from "@/lib/db";
 import Project from "@/models/Project";
 
 export const size = { width: 1200, height: 630 };
+export const revalidate = 3600;
 export const contentType = "image/png";
 
 export default async function Image({ params }: { params: { slug: string } }) {

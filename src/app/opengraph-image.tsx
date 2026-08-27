@@ -2,12 +2,13 @@ import { ImageResponse } from "next/og";
 
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
-
-function isOgEnabled() {
-  return process.env.OG_IMAGES_ENABLED !== "false";
-}
+export const revalidate = 3600;
 
 export default async function Image() {
+  if (process.env.OG_IMAGES_ENABLED === "false") {
+    return new Response(null, { status: 404 });
+  }
+
   return new ImageResponse(
     (
       <div
@@ -23,26 +24,10 @@ export default async function Image() {
           textAlign: "center",
         }}
       >
-        <div
-          style={{
-            fontSize: 20,
-            letterSpacing: 4,
-            textTransform: "uppercase",
-            color: "#2EC5F0",
-            display: "flex",
-          }}
-        >
+        <div style={{ fontSize: 20, letterSpacing: 4, textTransform: "uppercase", color: "#2EC5F0", display: "flex" }}>
           TGO DevStudio
         </div>
-        <div
-          style={{
-            fontSize: 72,
-            fontWeight: 700,
-            color: "#F5F5F8",
-            marginTop: 24,
-            display: "flex",
-          }}
-        >
+        <div style={{ fontSize: 72, fontWeight: 700, color: "#F5F5F8", marginTop: 24, display: "flex" }}>
           Software Built Like It Matters
         </div>
         <div

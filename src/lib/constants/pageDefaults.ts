@@ -57,11 +57,11 @@ export const HOME_DEFAULTS = {
   statTwoLabel: "Projects Shipped",
   statThreeValue: "10+",
   statThreeLabel: "Technologies Mastered",
+};
 
 export const ACCESSIBILITY_DEFAULT = {
   title: "Accessibility Statement",
   content: "<p>TGO DevStudio is committed to making this website usable by as many people as possible, including people with disabilities.</p><h2>Our Commitments</h2><ul><li>Semantic HTML structure and proper heading hierarchy throughout the site</li><li>Sufficient color contrast between text and background</li><li>Full keyboard navigation support \u2014 all interactive elements are reachable and usable without a mouse</li><li>Descriptive alt text required on every uploaded image</li><li>Clear, readable typography at appropriate sizes</li></ul><h2>Ongoing Work</h2><p>Accessibility is an ongoing process, not a one-time task. We continue to review and improve this site as it grows.</p><h2>Feedback</h2><p>If you encounter any accessibility barriers on this site, please contact us at testimonygboroye.dev@gmail.com so we can address them.</p>"
-};
 };
 
 export const AVAILABILITY_LABELS: Record<string, { label: string; color: string }> = {

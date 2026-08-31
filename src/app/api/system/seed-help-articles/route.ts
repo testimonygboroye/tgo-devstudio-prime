@@ -12,6 +12,14 @@ const DEFAULT_ARTICLES: {
   bodyHtml: string;
 }[] = [
   {
+    title: "Managing FAQ Items",
+    category: "Content",
+    visibility: "permission",
+    requiredContentType: "faqItems",
+    bodyHtml:
+      "<p>Add, edit, or remove frequently asked questions from the FAQ Items page. Each item has a category, which groups related questions together on the public FAQ page automatically.</p>",
+  },
+  {
     title: "Editing the Accessibility Statement",
     category: "Content",
     visibility: "permission",

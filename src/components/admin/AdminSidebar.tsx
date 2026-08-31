@@ -33,6 +33,7 @@ const NAV_ITEMS = [
   { label: "FAQ", hrefSuffix: "/faq-items", icon: MessageCircleQuestion, badgeKey: null },
   { label: "Reviews", hrefSuffix: "/reviews", icon: Star, badgeKey: "reviews" },
   { label: "Site Pages", hrefSuffix: "/pages", icon: FileText, badgeKey: null },
+  { label: "Accessibility Statement", hrefSuffix: "/pages/accessibility", icon: FileText, badgeKey: null },
   { label: "Help & Guide", hrefSuffix: "/help", icon: HelpCircle, badgeKey: null },
   { label: "Manage Articles", hrefSuffix: "/help-articles", icon: BookOpen, badgeKey: null },
   { label: "Book a Call", hrefSuffix: "/book-a-call", icon: PhoneCall, badgeKey: null },

@@ -11,11 +11,13 @@ type LoginStep = "credentials" | "twoFactor";
 export default function AdminLoginPage() {
   const pathname = usePathname();
   const forgotPasswordPath = pathname.replace(/\/login\/?$/, "/forgot-password");
+  const recover2FAPath = pathname.replace(/\/login\/?$/, "/recover-2fa");
 
   const [step, setStep] = useState<LoginStep>("credentials");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
+  const [useBackupCode, setUseBackupCode] = useState(false);
   const [tempToken, setTempToken] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -66,7 +68,7 @@ export default function AdminLoginPage() {
       const response = await fetch("/api/auth/verify-2fa", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tempToken, code }),
+        body: JSON.stringify({ tempToken, code, isBackupCode: useBackupCode }),
       });
       const data = await response.json();
 
@@ -144,18 +146,18 @@ export default function AdminLoginPage() {
             <form onSubmit={handleTwoFactorSubmit} className="mt-8 space-y-4">
               <div>
                 <label htmlFor="code" className="block text-sm text-neutral-400">
-                  Authentication code
+                  {useBackupCode ? "Backup code" : "Authentication code"}
                 </label>
                 <input
                   id="code"
                   type="text"
-                  inputMode="numeric"
+                  inputMode={useBackupCode ? "text" : "numeric"}
                   autoFocus
                   required
                   value={code}
                   onChange={(event) => setCode(event.target.value)}
                   className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-center text-lg tracking-widest text-neutral-100 outline-none focus:border-brand-cyan-400"
-                  placeholder="000000"
+                  placeholder={useBackupCode ? "XXXXX-XXXXX" : "000000"}
                 />
               </div>
               {error && <p className="text-sm text-red-400">{error}</p>}
@@ -166,6 +168,23 @@ export default function AdminLoginPage() {
               >
                 {isSubmitting ? "Verifying..." : "Verify"}
               </button>
+
+              <div className="flex items-center justify-between text-xs">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUseBackupCode((prev) => !prev);
+                    setCode("");
+                    setError("");
+                  }}
+                  className="text-neutral-400 hover:text-brand-cyan-300"
+                >
+                  {useBackupCode ? "Use authenticator code instead" : "Use a backup code instead"}
+                </button>
+                <Link href={recover2FAPath} className="text-red-300 hover:underline">
+                  Lost access?
+                </Link>
+              </div>
             </form>
           )}
         </div>

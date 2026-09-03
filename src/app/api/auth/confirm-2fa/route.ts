@@ -3,6 +3,7 @@ import { connectToDatabase } from "@/lib/db";
 import User from "@/models/User";
 import { getAuthenticatedSession } from "@/lib/auth/session";
 import { verifyTotpToken } from "@/lib/auth/totp";
+import { generateBackupCodes, hashBackupCodes } from "@/lib/auth/backupCodes";
 
 export async function POST(request: NextRequest) {
   const session = await getAuthenticatedSession(request);
@@ -35,10 +36,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ status: "error", message: "Invalid authentication code." }, { status: 401 });
   }
 
+  const backupCodes = generateBackupCodes();
+  const backupCodeHashes = await hashBackupCodes(backupCodes);
+
   user.twoFactorSecret = user.twoFactorTempSecret;
   user.twoFactorTempSecret = undefined;
   user.twoFactorEnabled = true;
+  user.backupCodeHashes = backupCodeHashes;
   await user.save();
 
-  return NextResponse.json({ status: "ok", message: "Two-factor authentication enabled." });
+  return NextResponse.json({
+    status: "ok",
+    message: "Two-factor authentication enabled.",
+    backupCodes,
+  });
 }

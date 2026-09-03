@@ -8,6 +8,7 @@ export interface IUser extends Document {
   twoFactorEnabled: boolean;
   twoFactorSecret?: string;
   twoFactorTempSecret?: string;
+  backupCodeHashes: string[];
   refreshTokenVersion: number;
   failedLoginAttempts: number;
   lockUntil?: Date;
@@ -26,6 +27,7 @@ const UserSchema = new Schema<IUser>(
     twoFactorEnabled: { type: Boolean, default: false },
     twoFactorSecret: { type: String, select: false },
     twoFactorTempSecret: { type: String, select: false },
+    backupCodeHashes: { type: [String], select: false, default: [] },
     refreshTokenVersion: { type: Number, default: 0 },
     failedLoginAttempts: { type: Number, default: 0 },
     lockUntil: { type: Date },

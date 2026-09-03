@@ -3,11 +3,16 @@ import { connectToDatabase } from "@/lib/db";
 import User from "@/models/User";
 import { verifyTemp2FAToken, signAccessToken, signRefreshToken } from "@/lib/auth/jwt";
 import { verifyTotpToken } from "@/lib/auth/totp";
+import { verifyAndConsumeBackupCode } from "@/lib/auth/backupCodes";
 import { setAuthCookies } from "@/lib/auth/cookies";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { tempToken, code } = body as { tempToken?: string; code?: string };
+  const { tempToken, code, isBackupCode } = body as {
+    tempToken?: string;
+    code?: string;
+    isBackupCode?: boolean;
+  };
 
   if (!tempToken || !code) {
     return NextResponse.json(
@@ -28,13 +33,24 @@ export async function POST(request: NextRequest) {
 
   await connectToDatabase();
 
-  const user = await User.findById(payload.userId).select("+twoFactorSecret");
+  const user = await User.findById(payload.userId).select("+twoFactorSecret +backupCodeHashes");
 
   if (!user || !user.twoFactorEnabled || !user.twoFactorSecret) {
     return NextResponse.json({ status: "error", message: "Invalid 2FA session." }, { status: 401 });
   }
 
-  const isCodeValid = await verifyTotpToken(code, user.twoFactorSecret);
+  let isCodeValid = false;
+
+  if (isBackupCode) {
+    const result = await verifyAndConsumeBackupCode(code, user.backupCodeHashes || []);
+    isCodeValid = result.valid;
+    if (isCodeValid) {
+      user.backupCodeHashes = result.remainingHashes;
+      await user.save();
+    }
+  } else {
+    isCodeValid = await verifyTotpToken(code, user.twoFactorSecret);
+  }
 
   if (!isCodeValid) {
     return NextResponse.json({ status: "error", message: "Invalid authentication code." }, { status: 401 });

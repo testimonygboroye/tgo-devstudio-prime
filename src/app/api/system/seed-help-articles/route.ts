@@ -12,6 +12,13 @@ const DEFAULT_ARTICLES: {
   bodyHtml: string;
 }[] = [
   {
+    title: "Setting Up and Managing Two-Factor Authentication",
+    category: "Getting Started",
+    visibility: "anyAuthenticated",
+    bodyHtml:
+      "<p>From Security (2FA) in the sidebar, any admin can set up their own two-factor authentication \u2014 scan the QR code or enter the secret manually into an authenticator app, confirm with a 6-digit code, then save the 6 single-use backup codes shown. Disabling requires your password. Re-running setup generates a completely new secret and backup codes, replacing the old ones.</p><p>If you lose both your authenticator and backup codes, use \"Lost access?\" on the 2FA login screen \u2014 confirming your email and password there emails you a fresh secret and new backup codes.</p>",
+  },
+  {
     title: "Managing FAQ Items",
     category: "Content",
     visibility: "permission",

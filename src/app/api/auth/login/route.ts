@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import User from "@/models/User";
+import Role from "@/models/Role";
 import { verifyPassword } from "@/lib/auth/passwords";
 import { signAccessToken, signRefreshToken, signTemp2FAToken } from "@/lib/auth/jwt";
 import { setAuthCookies } from "@/lib/auth/cookies";
@@ -27,6 +28,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ status: "error", message: "Invalid credentials." }, { status: 401 });
   }
 
+  if (user.isBanned) {
+    return NextResponse.json(
+      { status: "error", message: "This account has been suspended. Contact the Founder if you believe this is a mistake." },
+      { status: 403 }
+    );
+  }
+
   if (user.lockUntil && user.lockUntil.getTime() > Date.now()) {
     const minutesRemaining = Math.ceil((user.lockUntil.getTime() - Date.now()) / 60000);
     return NextResponse.json(
@@ -39,13 +47,6 @@ export async function POST(request: NextRequest) {
   }
 
   const isPasswordValid = await verifyPassword(password, user.passwordHash);
-
-  if (user.isBanned) {
-    return NextResponse.json(
-      { status: "error", message: "This account has been suspended. Contact the Founder if you believe this is a mistake." },
-      { status: 403 }
-    );
-  }
 
   if (!isPasswordValid) {
     user.failedLoginAttempts += 1;
@@ -64,12 +65,21 @@ export async function POST(request: NextRequest) {
   user.lockUntil = undefined;
   await user.save();
 
-  if (user.twoFactorEnabled && process.env.TWO_FACTOR_ENABLED !== "false") {
-    const tempToken = signTemp2FAToken({ userId: user._id.toString() });
-    return NextResponse.json({
-      status: "2fa_required",
-      tempToken,
-    });
+  if (user.twoFactorEnabled) {
+    let skipTwoFactor = false;
+
+    if (process.env.TWO_FACTOR_ENABLED === "false") {
+      const role = await Role.findById(user.role).select("isFounderRole");
+      skipTwoFactor = Boolean(role?.isFounderRole);
+    }
+
+    if (!skipTwoFactor) {
+      const tempToken = signTemp2FAToken({ userId: user._id.toString() });
+      return NextResponse.json({
+        status: "2fa_required",
+        tempToken,
+      });
+    }
   }
 
   const accessToken = signAccessToken({

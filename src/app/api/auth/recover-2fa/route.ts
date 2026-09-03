@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import User from "@/models/User";
+import TwoFactorDisableToken from "@/models/TwoFactorDisableToken";
 import { verifyPassword } from "@/lib/auth/passwords";
-import { generateTotpSecret } from "@/lib/auth/totp";
-import { generateBackupCodes, hashBackupCodes } from "@/lib/auth/backupCodes";
+import { generateRawToken, hashToken } from "@/lib/auth/tokens";
 import { send2FARecoveryEmail } from "@/lib/email/send2FARecovery";
+import { getAdminBasePath } from "@/lib/adminPath";
+
+const DISABLE_TOKEN_EXPIRY_MS = 30 * 60 * 1000;
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -13,7 +16,7 @@ export async function POST(request: NextRequest) {
   const genericSuccess = NextResponse.json({
     status: "ok",
     message:
-      "If the details are correct and two-factor authentication is enabled on that account, new recovery details have been emailed.",
+      "If the details are correct and two-factor authentication is enabled on that account, a disable link has been emailed.",
   });
 
   if (!email || !password) {
@@ -36,22 +39,20 @@ export async function POST(request: NextRequest) {
     return genericSuccess;
   }
 
-  const newSecret = generateTotpSecret();
-  const backupCodes = generateBackupCodes();
-  const backupCodeHashes = await hashBackupCodes(backupCodes);
+  const rawToken = generateRawToken();
+  const tokenHash = hashToken(rawToken);
 
-  user.twoFactorSecret = newSecret;
-  user.twoFactorTempSecret = undefined;
-  user.backupCodeHashes = backupCodeHashes;
-  user.refreshTokenVersion += 1;
-  await user.save();
-
-  await send2FARecoveryEmail({
-    toEmail: user.email,
-    toName: user.name,
-    secret: newSecret,
-    backupCodes,
+  await TwoFactorDisableToken.create({
+    user: user._id,
+    tokenHash,
+    expiresAt: new Date(Date.now() + DISABLE_TOKEN_EXPIRY_MS),
   });
+
+  const basePath = getAdminBasePath();
+  const siteUrl = process.env.SITE_URL || "";
+  const disableUrl = `${siteUrl}${basePath}/disable-2fa-confirm?token=${rawToken}`;
+
+  await send2FARecoveryEmail({ toEmail: user.email, toName: user.name, disableUrl });
 
   return genericSuccess;
 }

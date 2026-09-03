@@ -4,13 +4,24 @@ import { useState, useEffect } from "react";
 import RichTextEditor from "@/components/admin/RichTextEditor";
 
 interface PageContentEditClientProps {
-  type: "about" | "privacy-policy" | "terms-of-service";
+  type: "about" | "privacy-policy" | "terms-of-service" | "accessibility";
+  defaultTitle: string;
 }
 
-export default function PageContentEditClient({ type }: PageContentEditClientProps) {
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [isDefault, setIsDefault] = useState(false);
+async function authFetch(url: string, options?: RequestInit): Promise<Response> {
+  let res = await fetch(url, options);
+  if (res.status === 401) {
+    const refreshRes = await fetch("/api/auth/refresh", { method: "POST" });
+    if (refreshRes.ok) {
+      res = await fetch(url, options);
+    }
+  }
+  return res;
+}
+
+export default function PageContentEditClient({ type, defaultTitle }: PageContentEditClientProps) {
+  const [title, setTitle] = useState(defaultTitle);
+  const [content, setContent] = useState("<p>Start writing here...</p>");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
@@ -18,12 +29,11 @@ export default function PageContentEditClient({ type }: PageContentEditClientPro
 
   useEffect(() => {
     async function load() {
-      const res = await fetch(`/api/pages/${type}`);
+      const res = await authFetch(`/api/pages/${type}`);
       const data = await res.json();
-      if (data.status === "ok") {
+      if (data.status === "ok" && data.page) {
         setTitle(data.page.title);
         setContent(data.page.content);
-        setIsDefault(data.isDefault);
       }
       setIsLoading(false);
     }
@@ -35,7 +45,7 @@ export default function PageContentEditClient({ type }: PageContentEditClientPro
     setError("");
     setSavedMessage("");
 
-    const res = await fetch(`/api/pages/${type}`, {
+    const res = await authFetch(`/api/pages/${type}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title, content }),
@@ -43,29 +53,21 @@ export default function PageContentEditClient({ type }: PageContentEditClientPro
     const data = await res.json();
 
     if (data.status !== "ok") {
-      setError(data.message || "Failed to save.");
+      setError(data.message || "Failed to save. If this keeps happening, try logging in again.");
       setIsSaving(false);
       return;
     }
 
-    setIsDefault(false);
     setSavedMessage("Saved successfully.");
     setIsSaving(false);
   }
 
   if (isLoading) {
-    return <p className="text-neutral-400">Loading page content...</p>;
+    return <p className="text-neutral-400">Loading document...</p>;
   }
 
   return (
     <div>
-      {isDefault && (
-        <div className="mb-6 rounded-md border border-brand-cyan-400/40 bg-brand-cyan-400/10 p-3 text-sm text-brand-cyan-300">
-          This page is showing pre-written starter content that hasn't been saved yet. Edit it
-          below and click Save to make it official — until then, this is what visitors see.
-        </div>
-      )}
-
       <div>
         <label className="block text-sm text-neutral-400">Page Title</label>
         <input
@@ -90,7 +92,7 @@ export default function PageContentEditClient({ type }: PageContentEditClientPro
         disabled={isSaving}
         className="mt-6 rounded-md brand-gradient-bg px-5 py-2 font-semibold text-base-950 disabled:opacity-60"
       >
-        {isSaving ? "Saving..." : "Save Page"}
+        {isSaving ? "Saving..." : "Save Document"}
       </button>
     </div>
   );

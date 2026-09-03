@@ -21,7 +21,7 @@ export default function GlobalError({
           </p>
           <div className="mt-4 flex gap-4">
             <button
-              onClick={reset}
+              onClick={() => window.location.reload()}
               className="rounded-md border border-neutral-700 px-6 py-3 font-semibold text-neutral-100"
             >
               Try Again

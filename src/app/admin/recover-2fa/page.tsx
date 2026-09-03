@@ -60,7 +60,7 @@ export default function Recover2FAPage() {
             <form onSubmit={handleSubmit} className="mt-8 space-y-4">
               <p className="text-sm text-neutral-400">
                 Lost your authenticator and backup codes? Confirm your email and password, and
-                we&apos;ll email you a fresh secret key and new backup codes.
+                we&apos;ll email you a link to disable two-factor authentication on your account.
               </p>
               <div>
                 <label htmlFor="email" className="block text-sm text-neutral-400">Email</label>
@@ -83,7 +83,7 @@ export default function Recover2FAPage() {
                 disabled={isSubmitting}
                 className="w-full rounded-md brand-gradient-bg px-4 py-2 font-semibold text-base-950 disabled:opacity-60"
               >
-                {isSubmitting ? "Submitting..." : "Send New 2FA Details"}
+                {isSubmitting ? "Submitting..." : "Send Disable Link"}
               </button>
             </form>
           ) : (

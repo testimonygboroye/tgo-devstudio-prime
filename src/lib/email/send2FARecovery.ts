@@ -3,22 +3,24 @@ import { sendNotificationEmail } from "@/lib/email/sendEmail";
 interface Params {
   toEmail: string;
   toName: string;
-  secret: string;
-  backupCodes: string[];
+  disableUrl: string;
 }
 
-export async function send2FARecoveryEmail({ toEmail, toName, secret, backupCodes }: Params): Promise<void> {
-  const codesHtml = backupCodes.map((c) => `<li style="font-family: monospace;">${c}</li>`).join("");
-
+export async function send2FARecoveryEmail({ toEmail, toName, disableUrl }: Params): Promise<void> {
   const htmlContent = `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-      <h2 style="color: #6C3CE9;">Two-Factor Authentication Reset</h2>
+      <h2 style="color: #6C3CE9;">Two-Factor Authentication Recovery</h2>
       <p>Hi ${toName},</p>
-      <p>Your two-factor authentication has been reset as requested. Your old authenticator entry and backup codes no longer work.</p>
-      <p><strong>New Secret Key (enter manually in your authenticator app):</strong></p>
-      <p style="font-family: monospace; background: #111; color: #2EC5F0; padding: 10px; border-radius: 6px;">${secret}</p>
-      <p><strong>New Backup Codes</strong> (each works once, save them somewhere safe):</p>
-      <ul>${codesHtml}</ul>
+      <p>We received a request to disable two-factor authentication on your account because access was lost.</p>
+      <p style="margin-top: 24px;">
+        <a href="${disableUrl}" style="background: #2EC5F0; color: #0A0A0F; padding: 10px 18px; border-radius: 6px; text-decoration: none; font-weight: 600;">
+          Disable Two-Factor Authentication
+        </a>
+      </p>
+      <p style="margin-top: 16px; color: #888; font-size: 12px;">
+        You'll need to confirm your email and password again on that page. This link expires in 30 minutes.
+        Once disabled, you can set up two-factor authentication again anytime from your Security page.
+      </p>
       <p style="margin-top: 16px; color: #888; font-size: 12px;">If you did not request this, contact the Founder immediately.</p>
     </div>
   `;
@@ -26,7 +28,7 @@ export async function send2FARecoveryEmail({ toEmail, toName, secret, backupCode
   const result = await sendNotificationEmail({
     toEmail,
     toName,
-    subject: "Your two-factor authentication has been reset",
+    subject: "Disable your two-factor authentication",
     htmlContent,
   });
 

@@ -5,7 +5,7 @@ import RichTextEditor from "@/components/admin/RichTextEditor";
 
 interface PageContentEditClientProps {
   type: "about" | "privacy-policy" | "terms-of-service" | "accessibility";
-  defaultTitle: string;
+  defaultTitle?: string;
 }
 
 async function authFetch(url: string, options?: RequestInit): Promise<Response> {
@@ -20,7 +20,7 @@ async function authFetch(url: string, options?: RequestInit): Promise<Response> 
 }
 
 export default function PageContentEditClient({ type, defaultTitle }: PageContentEditClientProps) {
-  const [title, setTitle] = useState(defaultTitle);
+  const [title, setTitle] = useState(defaultTitle ?? "");
   const [content, setContent] = useState("<p>Start writing here...</p>");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);

@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     "The flagship brand, portfolio, and command-center site for TGO DevStudio — a full-stack software engineering studio.",
   openGraph: {
     url: siteUrl,
-    siteName: "TGO DevStudio Prime",
+    siteName: "TGO DevStudio",
     type: "website",
   },
 };
@@ -33,6 +33,7 @@ export default function RootLayout({
     <html lang="en" className={jetbrainsMono.variable}>
       <head>
         <meta name="google-site-verification" content="g7RX7-eoPACihWjJckfBIfFsgo8jnXz2iTpegqH56nA" />
+        <meta property="fb:app_id" content="2134239190472228" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <meta name="theme-color" content="#0A0A0F" />

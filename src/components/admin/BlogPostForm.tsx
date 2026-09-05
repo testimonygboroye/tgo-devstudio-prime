@@ -148,9 +148,12 @@ export default function BlogPostForm({ mode, postId, initialData }: BlogPostForm
         return;
       }
 
-      const listPath = window.location.pathname.replace(/\/blog\/[^/]+\/?$/, "/blog");
-      router.push(listPath);
-      router.refresh();
+      if (window.history.length > 1) {
+        router.back();
+      } else {
+        const listPath = window.location.pathname.replace(/\/[^/]+\/?$/, "");
+        router.push(listPath);
+      }
     } catch {
       setError("Something went wrong. Please try again.");
     }

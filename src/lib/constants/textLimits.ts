@@ -2,12 +2,12 @@ export const TEXT_LIMITS = {
   team: {
     name: 100,
     jobTitle: 100,
-    bio: 400,
+    bio: 800,
   },
   project: {
     title: 120,
     summary: 250,
-    narrativeSection: 1500,
+    narrativeSection: 2000,
   },
   blog: {
     title: 150,

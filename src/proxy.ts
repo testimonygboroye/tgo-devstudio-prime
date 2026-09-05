@@ -22,6 +22,9 @@ const PUBLIC_SUBMISSION_PATTERNS = [
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  const currentPathHeader = new Headers();
+  currentPathHeader.set("x-current-path", pathname + request.nextUrl.search);
+
   if (pathname.startsWith("/api/")) {
     if (STATE_CHANGING_METHODS.includes(request.method) && !verifyRequestOrigin(request)) {
       return csrfRejectionResponse();
@@ -69,10 +72,14 @@ export function proxy(request: NextRequest) {
     const remainder = pathname.slice(normalizedAdminPath.length);
     const url = request.nextUrl.clone();
     url.pathname = `/${INTERNAL_ADMIN_SEGMENT}${remainder}`;
-    return NextResponse.rewrite(url);
+    const response = NextResponse.rewrite(url);
+    response.headers.set("x-current-path", pathname + request.nextUrl.search);
+    return response;
   }
 
-  return NextResponse.next();
+  const passthroughResponse = NextResponse.next();
+  passthroughResponse.headers.set("x-current-path", pathname + request.nextUrl.search);
+  return passthroughResponse;
 }
 
 export const config = {

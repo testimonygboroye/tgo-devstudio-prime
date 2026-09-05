@@ -3,15 +3,17 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import PasswordInput from "@/components/shared/PasswordInput";
 
 type LoginStep = "credentials" | "twoFactor";
 
 export default function AdminLoginPage() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const forgotPasswordPath = pathname.replace(/\/login\/?$/, "/forgot-password");
   const recover2FAPath = pathname.replace(/\/login\/?$/, "/recover-2fa");
+  const redirectTarget = searchParams.get("redirect");
 
   const [step, setStep] = useState<LoginStep>("credentials");
   const [email, setEmail] = useState("");
@@ -22,7 +24,11 @@ export default function AdminLoginPage() {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function goToDashboard() {
+  function goToDestination() {
+    if (redirectTarget && redirectTarget.startsWith(pathname.replace(/\/login\/?$/, ""))) {
+      window.location.href = redirectTarget;
+      return;
+    }
     const dashboardPath = window.location.pathname.replace(/\/login\/?$/, "/dashboard");
     window.location.href = dashboardPath;
   }
@@ -51,7 +57,7 @@ export default function AdminLoginPage() {
         return;
       }
 
-      goToDashboard();
+      goToDestination();
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
@@ -77,7 +83,7 @@ export default function AdminLoginPage() {
         return;
       }
 
-      goToDashboard();
+      goToDestination();
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {

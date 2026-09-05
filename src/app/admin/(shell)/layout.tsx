@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { getServerSession } from "@/lib/auth/serverSession";
 import { getAdminBasePath } from "@/lib/adminPath";
 import AdminSidebar from "@/components/admin/AdminSidebar";
@@ -14,7 +15,10 @@ export default async function AdminShellLayout({
   const basePath = getAdminBasePath();
 
   if (!session) {
-    redirect(`${basePath}/login`);
+    const headersList = await headers();
+    const currentPath = headersList.get("x-current-path") || "";
+    const redirectParam = currentPath ? `?redirect=${encodeURIComponent(currentPath)}` : "";
+    redirect(`${basePath}/login${redirectParam}`);
   }
 
   return (

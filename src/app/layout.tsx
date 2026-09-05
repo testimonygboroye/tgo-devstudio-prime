@@ -17,6 +17,11 @@ export const metadata: Metadata = {
   title: "TGO DevStudio Prime",
   description:
     "The flagship brand, portfolio, and command-center site for TGO DevStudio — a full-stack software engineering studio.",
+  openGraph: {
+    url: siteUrl,
+    siteName: "TGO DevStudio Prime",
+    type: "website",
+  },
 };
 
 export default function RootLayout({

@@ -103,7 +103,7 @@ export default function AdminSidebar({ userName, userEmail, roleName }: AdminSid
         </button>
       </div>
 
-      <nav className="min-h-0 flex-1 overflow-y-auto px-2">
+      <nav className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2">
         <div className="flex flex-col divide-y divide-base-800 overflow-hidden rounded-lg border border-base-800">
           {NAV_ITEMS.map((item) => {
             const href = `${basePathSegment}${item.hrefSuffix}`;

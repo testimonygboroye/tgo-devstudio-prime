@@ -128,7 +128,7 @@ export default function SiteHeader() {
           onClick={() => setIsMenuOpen(false)}
         >
           <nav
-            className="fixed right-0 top-0 flex h-screen w-2/5 min-w-[240px] max-w-xs flex-col overflow-y-auto border-l border-base-800 bg-base-950 px-4 py-6"
+            className="fixed right-0 top-0 flex h-screen w-2/5 min-w-[240px] max-w-xs flex-col overflow-y-auto overscroll-contain border-l border-base-800 bg-base-950 px-4 py-6"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="mb-6 flex items-center justify-between px-2">

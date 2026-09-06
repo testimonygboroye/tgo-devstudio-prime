@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import OrganizationSchema from "@/components/shared/OrganizationSchema";
+import { ThemeProvider } from "@/components/shared/ThemeProvider";
 import ServiceWorkerRegistration from "@/components/shared/ServiceWorkerRegistration";
 
 const jetbrainsMono = JetBrains_Mono({
@@ -30,23 +31,30 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={jetbrainsMono.variable}>
+    <html lang="en" className={jetbrainsMono.variable} suppressHydrationWarning>
       <head>
         <meta name="google-site-verification" content="g7RX7-eoPACihWjJckfBIfFsgo8jnXz2iTpegqH56nA" />
         <meta property="fb:app_id" content="2134239190472228" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <meta name="theme-color" content="#0A0A0F" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('tgo-theme')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`,
+          }}
+        />
         <link rel="preconnect" href="https://api.fontshare.com" />
         <link
           href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@800,700,500&f[]=satoshi@400,500,700&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body>
+      <body suppressHydrationWarning>
+        <ThemeProvider>
         <OrganizationSchema />
         <ServiceWorkerRegistration />
         {children}
+        </ThemeProvider>
       </body>
     </html>
   );

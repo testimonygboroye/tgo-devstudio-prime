@@ -61,3 +61,33 @@
   background-color: var(--color-base-900);
   font-weight: 600;
 }
+
+/* === Light/Dark theme variables (additive — brand gradients unaffected) === */
+:root,
+[data-theme="dark"] {
+  --bg-page: #0B0E14;
+  --bg-surface: #131722;
+  --bg-surface-2: #1A1F2E;
+  --surface-hover: #202638;
+  --border-subtle: #262C3D;
+  --text-primary: #F1F3F8;
+  --text-secondary: #A8B0C3;
+  --text-muted: #6B7280;
+}
+
+[data-theme="light"] {
+  --bg-page: #FAFAFC;
+  --bg-surface: #FFFFFF;
+  --bg-surface-2: #F3F4F8;
+  --surface-hover: #ECEDF3;
+  --border-subtle: #E2E4EC;
+  --text-primary: #14161F;
+  --text-secondary: #4B5163;
+  --text-muted: #8A8F9E;
+}
+
+body {
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}

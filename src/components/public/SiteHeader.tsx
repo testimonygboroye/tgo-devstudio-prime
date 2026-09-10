@@ -131,7 +131,7 @@ export default function SiteHeader() {
             className="fixed right-0 top-0 flex h-screen w-2/5 min-w-[240px] max-w-xs flex-col border-l border-base-800 bg-base-950"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="mb-6 flex items-center justify-between px-2">
+            <div className="flex flex-shrink-0 items-center justify-between border-b border-base-800 px-4 py-5">
               <span className="font-mono text-xs uppercase tracking-widest text-neutral-500">
                 Menu
               </span>
@@ -143,21 +143,28 @@ export default function SiteHeader() {
                 <X size={22} />
               </button>
             </div>
-            <div className="flex flex-col divide-y divide-base-800 overflow-hidden rounded-lg border border-base-800">
-              {DRAWER_NAV_LINKS.map((link) => {
-                const Icon = link.icon;
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    onClick={() => setIsMenuOpen(false)}
-                    className="flex items-center gap-3 bg-base-900 px-4 py-3.5 text-sm text-neutral-100 transition-colors hover:bg-base-800 hover:text-brand-cyan-300"
-                  >
-                    <Icon size={18} className="text-brand-cyan-400" />
-                    {link.label}
-                  </Link>
-                );
-              })}
+
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 py-3">
+              <div className="flex flex-col divide-y divide-base-800 overflow-hidden rounded-lg border border-base-800">
+                {DRAWER_NAV_LINKS.map((link) => {
+                  const Icon = link.icon;
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      onClick={() => setIsMenuOpen(false)}
+                      className="flex items-center gap-3 bg-base-900 px-4 py-3.5 text-sm text-neutral-100 transition-colors hover:bg-base-800 hover:text-brand-cyan-300"
+                    >
+                      <Icon size={18} className="text-brand-cyan-400" />
+                      {link.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex-shrink-0 border-t border-base-800 px-4 py-4 text-center">
+              <p className="text-xs text-neutral-500">© {new Date().getFullYear()} TGO DevStudio</p>
             </div>
           </nav>
         </div>

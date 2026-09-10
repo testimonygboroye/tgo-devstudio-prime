@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { connectToDatabase } from "@/lib/db";
 import Review from "@/models/Review";
@@ -43,12 +44,11 @@ export default async function TestimonialsPage() {
         ) : (
           <div className="mt-12 grid gap-4 sm:grid-cols-2">
             {reviews.map((review) => (
-              <div
+              <Link
                 key={review._id.toString()}
-                className={`rounded-xl border p-6 ${
-                  review.featured
-                    ? "border-brand-cyan-400/50 bg-base-900"
-                    : "border-base-800 bg-base-900"
+                href={`/testimonials/${review._id.toString()}`}
+                className={`block rounded-xl border p-6 transition-colors hover:border-brand-cyan-400 ${
+                  review.featured ? "border-brand-cyan-400/50 bg-base-900" : "border-base-800 bg-base-900"
                 }`}
               >
                 {review.featured && (
@@ -60,12 +60,11 @@ export default async function TestimonialsPage() {
                   {"★".repeat(review.rating)}
                   <span className="text-base-800">{"★".repeat(5 - review.rating)}</span>
                 </div>
-                <p className="mt-3 text-neutral-100/90">{review.body}</p>
+                <p className="mt-3 line-clamp-3 text-neutral-100/90">{review.body}</p>
                 <p className="mt-4 text-sm font-semibold text-neutral-100">{review.submitterName}</p>
-                <p className="text-xs text-neutral-500">
-                  {review.customLabel || review.targetLabelSnapshot}
-                </p>
-              </div>
+                <p className="text-xs text-neutral-500">{review.customLabel || review.targetLabelSnapshot}</p>
+                <p className="mt-3 text-xs font-semibold text-brand-cyan-300">Read full review →</p>
+              </Link>
             ))}
           </div>
         )}

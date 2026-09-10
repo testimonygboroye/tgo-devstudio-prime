@@ -303,7 +303,7 @@ export default async function HomePage() {
                       {"★".repeat(review.rating)}
                       <span className="text-base-800">{"★".repeat(5 - review.rating)}</span>
                     </div>
-                    <p className="mt-3 text-sm text-neutral-100/90">{review.body}</p>
+                    <p className="mt-3 line-clamp-3 text-sm text-neutral-100/90">{review.body}</p>
                     <p className="mt-4 text-sm font-semibold text-neutral-100">{review.submitterName}</p>
                   </div>
                 </ScrollReveal>

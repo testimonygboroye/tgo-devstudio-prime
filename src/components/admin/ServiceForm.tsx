@@ -28,6 +28,10 @@ export default function ServiceForm({ mode, serviceId, initialData }: ServiceFor
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
 
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError("");
@@ -56,6 +60,24 @@ export default function ServiceForm({ mode, serviceId, initialData }: ServiceFor
     } finally {
       setIsSaving(false);
     }
+  }
+
+  async function handleDelete() {
+    if (confirmText !== "DELETE") {
+      setError('You must type DELETE exactly to confirm.');
+      return;
+    }
+    setIsDeleting(true);
+    setError("");
+    const res = await fetch(`/api/services/${serviceId}`, { method: "DELETE" });
+    const data = await res.json();
+    if (!res.ok) {
+      setError(data.message || "Failed to delete service.");
+      setIsDeleting(false);
+      return;
+    }
+    router.push("../services");
+    router.refresh();
   }
 
   return (
@@ -143,13 +165,63 @@ export default function ServiceForm({ mode, serviceId, initialData }: ServiceFor
 
       {error && <p className="text-sm text-red-400">{error}</p>}
 
-      <button
-        type="submit"
-        disabled={isSaving}
-        className="rounded-md brand-gradient-bg px-5 py-2 font-semibold text-base-950 disabled:opacity-60"
-      >
-        {isSaving ? "Saving..." : mode === "create" ? "Create Service" : "Save Changes"}
-      </button>
+      <div className="flex items-center gap-3">
+        <button
+          type="submit"
+          disabled={isSaving}
+          className="rounded-md brand-gradient-bg px-5 py-2 font-semibold text-base-950 disabled:opacity-60"
+        >
+          {isSaving ? "Saving..." : mode === "create" ? "Create Service" : "Save Changes"}
+        </button>
+
+        {mode === "edit" && (
+          <button
+            type="button"
+            onClick={() => setShowConfirm(true)}
+            className="rounded-md border border-red-500/50 px-5 py-2 text-sm text-red-300 hover:bg-red-500/10"
+          >
+            Delete
+          </button>
+        )}
+      </div>
+
+      {showConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 px-4">
+          <div className="w-full max-w-sm rounded-xl border border-base-800 bg-base-950 p-6">
+            <p className="font-semibold text-neutral-100">Delete this service?</p>
+            <p className="mt-2 text-sm text-neutral-400">
+              Type <span className="font-mono font-bold text-red-300">DELETE</span> below to confirm.
+            </p>
+            <input
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              className="mt-3 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
+            />
+            {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="rounded-md bg-red-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                {isDeleting ? "Deleting..." : "Confirm Delete"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowConfirm(false);
+                  setConfirmText("");
+                  setError("");
+                }}
+                className="rounded-md border border-base-800 px-4 py-2 text-sm text-neutral-100 hover:bg-base-900"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   );
 }

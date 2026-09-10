@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import User from "@/models/User";
+import Role from "@/models/Role";
 import TeamMember from "@/models/TeamMember";
 import Project from "@/models/Project";
 import Service from "@/models/Service";
@@ -17,9 +18,10 @@ export async function GET(request: NextRequest) {
 
   await connectToDatabase();
 
-  const founder = await User.findOne().sort({ createdAt: 1 });
+  const founderRole = await Role.findOne({ isFounderRole: true });
+  const founder = founderRole ? await User.findOne({ role: founderRole._id }) : null;
   if (!founder) {
-    return NextResponse.json({ status: "error", message: "No users found." }, { status: 500 });
+    return NextResponse.json({ status: "error", message: "No founder account found." }, { status: 500 });
   }
 
   const results: Record<string, string> = {};

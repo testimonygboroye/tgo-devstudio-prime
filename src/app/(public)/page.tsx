@@ -298,14 +298,18 @@ export default async function HomePage() {
             <div className="mt-10 grid gap-6 sm:grid-cols-3">
               {featuredReviews.map((review, index) => (
                 <ScrollReveal key={review._id.toString()} delay={index * 100}>
-                  <div className="rounded-xl border border-brand-cyan-400/50 bg-base-900 p-6">
+                  <Link
+                    href={`/testimonials/${review._id.toString()}`}
+                    className="block rounded-xl border border-brand-cyan-400/50 bg-base-900 p-6 transition-colors hover:border-brand-cyan-300"
+                  >
                     <div className="flex gap-1 text-brand-cyan-300">
                       {"★".repeat(review.rating)}
                       <span className="text-base-800">{"★".repeat(5 - review.rating)}</span>
                     </div>
                     <p className="mt-3 line-clamp-3 text-sm text-neutral-100/90">{review.body}</p>
                     <p className="mt-4 text-sm font-semibold text-neutral-100">{review.submitterName}</p>
-                  </div>
+                    <p className="mt-2 text-xs font-semibold text-brand-cyan-300">Read full review →</p>
+                  </Link>
                 </ScrollReveal>
               ))}
             </div>

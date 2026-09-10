@@ -182,8 +182,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const existingServicesCount = await Service.countDocuments();
-    if (existingServicesCount === 0) {
+    const existingRealService = await Service.findOne({ title: "Web Application Development" });
+    if (!existingRealService) {
       const services = [
         { title: "Web Application Development", icon: "Code", summary: "Full, custom-built websites and web apps designed around exactly what your business needs — not a generic template." },
         { title: "Custom CMS & Admin Panel Development", icon: "Layers", summary: "A private dashboard built just for you, so you can update your own website's content without needing a developer every time." },
@@ -210,8 +210,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const existingStepsCount = await ProcessStep.countDocuments();
-    if (existingStepsCount === 0) {
+    const existingRealStep = await ProcessStep.findOne({ title: "Discovery" });
+    if (!existingRealStep) {
       const steps = [
         { title: "Discovery", description: "We start by listening. We talk with you about what you need, what problem you're trying to solve, and what success looks like for your project." },
         { title: "Planning & Architecture", description: "We decide exactly how the project should be built — what tools to use, how the different parts will fit together, and what order things should be built in." },

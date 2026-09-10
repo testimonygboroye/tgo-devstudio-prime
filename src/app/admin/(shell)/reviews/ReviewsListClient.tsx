@@ -31,7 +31,7 @@ export default function ReviewsListClient() {
   const basePathSegment = `/${pathname.split("/").filter(Boolean)[0]}`;
 
   const [reviews, setReviews] = useState<ReviewListItem[]>([]);
-  const [statusFilter, setStatusFilter] = useState("pending");
+  const [statusFilter, setStatusFilter] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);

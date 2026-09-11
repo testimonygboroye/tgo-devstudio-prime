@@ -42,7 +42,7 @@ const NAV_ITEMS = [
 ] as const;
 
 export default function AdminSidebar({ userName, userEmail, roleName }: AdminSidebarProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const pathname = usePathname();
 

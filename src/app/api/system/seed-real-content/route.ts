@@ -184,8 +184,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const existingRealService = await Service.findOne({ title: "Web Application Development" });
-    if (!existingRealService) {
+    if (true) {
       const services = [
         { title: "Web Application Development", icon: "Code", summary: "Full, custom-built websites and web apps designed around exactly what your business needs — not a generic template." },
         { title: "Custom CMS & Admin Panel Development", icon: "Layers", summary: "A private dashboard built just for you, so you can update your own website's content without needing a developer every time." },
@@ -212,11 +211,39 @@ export async function GET(request: NextRequest) {
         { title: "Legacy System Modernization", icon: "RefreshCw", summary: "Upgrading or rebuilding outdated systems so they run on modern, secure, and maintainable technology, without losing what already works." },
         { title: "Custom Automation & Workflow Tools", icon: "Bot", summary: "Automating repetitive manual tasks in your business with custom-built tools, saving time and reducing human error." },
         { title: "Multi-Tenant & SaaS Platform Development", icon: "Network", summary: "Building platforms that serve multiple separate customers or organizations securely from one shared system, each with their own isolated data." },
+        { title: "Mobile App Development", icon: "Smartphone", summary: "Native or cross-platform mobile apps for iOS and Android, built to work seamlessly with your existing web platform and backend." },
+        { title: "Progressive Web App (PWA) Development", icon: "Monitor", summary: "Websites that behave like installable apps — working offline, sending notifications, and living on a user's home screen without an app-store download." },
+        { title: "AI & Machine Learning Integration", icon: "Bot", summary: "Adding practical AI-powered features to your platform, such as smart recommendations, automated content, or intelligent data processing." },
+        { title: "Data Migration & System Upgrades", icon: "RefreshCw", summary: "Safely moving your existing data and systems to new, modern infrastructure without losing information or disrupting your business." },
+        { title: "Monitoring, Logging & Error Tracking", icon: "BarChart", summary: "Systems that watch your platform continuously, alerting you to problems before your users notice them, and giving you clear visibility into what's happening behind the scenes." },
+        { title: "Accessibility (a11y) Implementation", icon: "Users", summary: "Making sure your website or app is genuinely usable by people with disabilities, following real accessibility standards, not just checkbox compliance." },
+        { title: "Internationalization & Multi-Language Support", icon: "Globe", summary: "Building your platform to properly support multiple languages and regions from the start, so expanding to new markets doesn't require a rebuild." },
+        { title: "File Storage & Document Management Systems", icon: "HardDrive", summary: "Secure, organized systems for uploading, storing, and managing documents and files at scale, built around how your team actually works." },
+        { title: "Booking & Scheduling Systems", icon: "Bell", summary: "Custom appointment, reservation, or scheduling tools built around your business's exact booking rules and availability." },
+        { title: "Content Migration Services", icon: "FileCode", summary: "Moving your existing website's content — pages, images, blog posts, and more — safely into a new platform without losing anything in the process." },
+        { title: "White-Label & Reseller Platform Development", icon: "Layers", summary: "Building platforms designed to be rebranded and resold by other businesses, with the flexibility to support multiple brands from one system." },
+        { title: "Browser Extension Development", icon: "Cpu", summary: "Custom browser extensions that add real functionality directly into a user's browsing experience, connected to your platform." },
+        { title: "System Architecture Review & Audit", icon: "Search", summary: "An honest, thorough review of your existing system's structure, security, and performance, with clear recommendations for improvement." },
+        { title: "Ongoing Technical Partnership", icon: "LifeBuoy", summary: "A long-term working relationship where we act as your dedicated technical team, available for new features, fixes, and strategic guidance as your business grows." },
       ];
-      await Service.insertMany(
-        services.map((s, i) => ({ ...s, displayOrder: i, publishStatus: "published", featured: i < 3, createdBy: founder._id }))
-      );
-      results.services = `created ${services.length}`;
+      let servicesCreated = 0;
+      let servicesSkipped = 0;
+      for (let i = 0; i < services.length; i++) {
+        const existing = await Service.findOne({ title: services[i].title });
+        if (existing) {
+          servicesSkipped++;
+          continue;
+        }
+        await Service.create({
+          ...services[i],
+          displayOrder: i,
+          publishStatus: "published",
+          featured: servicesCreated < 3,
+          createdBy: founder._id,
+        });
+        servicesCreated++;
+      }
+      results.services = `created ${servicesCreated}, skipped ${servicesSkipped}`;
     } else {
       results.services = "skipped (already exist)";
     }
@@ -225,8 +252,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const existingRealStep = await ProcessStep.findOne({ title: "Discovery" });
-    if (!existingRealStep) {
+    if (true) {
       const steps = [
         { title: "Discovery", description: "We start by listening. We talk with you about what you need, what problem you're trying to solve, and what success looks like for your project." },
         { title: "Planning & Architecture", description: "We decide exactly how the project should be built — what tools to use, how the different parts will fit together, and what order things should be built in." },
@@ -236,10 +262,24 @@ export async function GET(request: NextRequest) {
         { title: "Launch", description: "We take the finished project live, so real users and customers can start using it." },
         { title: "Support & Maintenance", description: "We stay available after launch to fix issues, make updates, and help your project keep running smoothly as time goes on." },
       ];
-      await ProcessStep.insertMany(
-        steps.map((s, i) => ({ ...s, displayOrder: i, publishStatus: "published", featured: true, createdBy: founder._id }))
-      );
-      results.process = `created ${steps.length}`;
+      let stepsCreated = 0;
+      let stepsSkipped = 0;
+      for (let i = 0; i < steps.length; i++) {
+        const existing = await ProcessStep.findOne({ title: steps[i].title });
+        if (existing) {
+          stepsSkipped++;
+          continue;
+        }
+        await ProcessStep.create({
+          ...steps[i],
+          displayOrder: i,
+          publishStatus: "published",
+          featured: true,
+          createdBy: founder._id,
+        });
+        stepsCreated++;
+      }
+      results.process = `created ${stepsCreated}, skipped ${stepsSkipped}`;
     } else {
       results.process = "skipped (already exist)";
     }

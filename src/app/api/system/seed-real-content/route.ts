@@ -225,6 +225,26 @@ export async function GET(request: NextRequest) {
         { title: "Browser Extension Development", icon: "Cpu", summary: "Custom browser extensions that add real functionality directly into a user's browsing experience, connected to your platform." },
         { title: "System Architecture Review & Audit", icon: "Search", summary: "An honest, thorough review of your existing system's structure, security, and performance, with clear recommendations for improvement." },
         { title: "Ongoing Technical Partnership", icon: "LifeBuoy", summary: "A long-term working relationship where we act as your dedicated technical team, available for new features, fixes, and strategic guidance as your business grows." },
+        { title: "Landing Page Design & Development", icon: "Layout", summary: "Focused, high-converting single pages built for a specific campaign, product launch, or marketing goal." },
+        { title: "Website Redesign", icon: "Sparkles", summary: "Modernizing an existing website's look, structure, and performance without necessarily rebuilding everything from scratch." },
+        { title: "Custom Reporting Tools", icon: "TrendingUp", summary: "Purpose-built tools that generate exactly the reports your business needs, pulled directly from your own real data." },
+        { title: "Inventory & Stock Management Systems", icon: "Package", summary: "Custom systems for tracking products, stock levels, and supply chains, built around how your business actually operates." },
+        { title: "Customer Relationship Management (CRM) Tools", icon: "Handshake", summary: "Custom-built tools for tracking leads, customers, and business relationships, tailored to your actual sales process instead of a generic template." },
+        { title: "Identity Verification & KYC Systems", icon: "Fingerprint", summary: "Secure systems for verifying user identities and documents, built with real compliance and data-handling standards in mind." },
+        { title: "Webhooks & Event-Driven System Design", icon: "Link2", summary: "Building systems that automatically react to events in real time — a payment received, a form submitted — triggering the right actions instantly." },
+        { title: "Rate Limiting & Abuse Prevention", icon: "AlertTriangle", summary: "Protecting your platform's forms, APIs, and login systems from spam, bots, and abuse, without making things harder for real users." },
+        { title: "Plugin & Extension Development", icon: "Puzzle", summary: "Custom plugins or add-ons that extend the functionality of an existing platform or piece of software you already use." },
+        { title: "Compliance-Focused Development (GDPR, Data Privacy)", icon: "ClipboardCheck", summary: "Building your platform's data handling practices around real privacy regulations from the ground up, not bolted on as an afterthought." },
+        { title: "Custom Calendar & Availability Systems", icon: "Calendar", summary: "Tools for managing schedules, availability, and time-based bookings, built around your business's specific rules." },
+        { title: "Document Generation & E-Signature Integration", icon: "FolderOpen", summary: "Automatically generating contracts, invoices, or reports, with secure digital signature capability built in." },
+        { title: "Localization Beyond Translation", icon: "Languages", summary: "Adapting your platform for different regions properly — currencies, date formats, and cultural context, not just translated text." },
+        { title: "API Design for External Developers", icon: "Code", summary: "Building clean, well-documented APIs that let other developers or businesses securely connect to your platform." },
+        { title: "Server & Infrastructure Management", icon: "Server", summary: "Ongoing management of your servers and infrastructure, keeping them secure, updated, and running reliably." },
+        { title: "Load & Stress Testing", icon: "Gauge", summary: "Testing how your platform performs under heavy real-world traffic, before your actual users find out the hard way." },
+        { title: "Custom Admin Dashboards", icon: "Monitor", summary: "Purpose-built internal tools that give your team exactly the controls and visibility they need to manage the business day to day." },
+        { title: "Email Deliverability & Transactional Email Setup", icon: "Bell", summary: "Making sure the emails your platform sends — receipts, confirmations, alerts — actually reach your users' inboxes reliably." },
+        { title: "Version Control & Code Collaboration Setup", icon: "GitBranch", summary: "Setting up proper systems for how your development team writes, reviews, and manages code together safely over time." },
+        { title: "Technical Due Diligence for Investors & Acquisitions", icon: "Search", summary: "An independent, honest technical assessment of a software product or codebase, for investment, acquisition, or partnership decisions." },
       ];
       let servicesCreated = 0;
       let servicesSkipped = 0;
@@ -254,13 +274,22 @@ export async function GET(request: NextRequest) {
   try {
     if (true) {
       const steps = [
-        { title: "Discovery", description: "We start by listening. We talk with you about what you need, what problem you're trying to solve, and what success looks like for your project." },
-        { title: "Planning & Architecture", description: "We decide exactly how the project should be built — what tools to use, how the different parts will fit together, and what order things should be built in." },
-        { title: "Design", description: "We plan how the website or app will look and feel, making sure it's easy to use and represents your brand well." },
-        { title: "Development", description: "We build the real, working product — writing the actual code that makes everything function." },
-        { title: "Testing", description: "We check everything carefully before launch, looking for problems and fixing them, so what you receive actually works the way it should." },
-        { title: "Launch", description: "We take the finished project live, so real users and customers can start using it." },
-        { title: "Support & Maintenance", description: "We stay available after launch to fix issues, make updates, and help your project keep running smoothly as time goes on." },
+        { title: "Initial Consultation", description: "We start with a real conversation — understanding your business, your goals, and the problem you're actually trying to solve, before talking about any solution." },
+        { title: "Requirements Gathering", description: "We dig into the specific details of what the project needs to do, who will use it, and what success genuinely looks like, so nothing important gets assumed or missed." },
+        { title: "Proposal & Scoping", description: "We define exactly what will be built, in what order, and what it will cost — a clear, honest scope both sides agree on before any work begins." },
+        { title: "Technical Architecture & Planning", description: "We decide how the project will actually be built — what technologies to use, how the different parts will fit together, and what the long-term structure should look like." },
+        { title: "UI/UX Design", description: "We design how the product will look and feel, focused on making it genuinely easy and pleasant to use, not just visually attractive." },
+        { title: "Design Review & Approval", description: "We walk through the design with you, gather real feedback, and refine it until it's something you're confident moving forward with." },
+        { title: "Development", description: "We build the real, working product — writing the actual code that makes every planned feature function correctly." },
+        { title: "Internal Code Review", description: "Every piece of code is reviewed by the team before being considered done, catching issues early rather than after launch." },
+        { title: "Quality Assurance & Testing", description: "We test everything thoroughly — normal use, edge cases, and things that could realistically go wrong — before anything is called finished." },
+        { title: "Security Review", description: "We check the project specifically for security weaknesses, since this is treated as a required step, not an afterthought." },
+        { title: "Client Review & Feedback", description: "You get to use and test the real product yourself, and we make adjustments based on your genuine feedback before launch." },
+        { title: "Deployment & Launch", description: "We take the finished, tested project live, so real users and customers can start using it." },
+        { title: "Post-Launch Monitoring", description: "We closely watch the live product in its first days and weeks, catching and fixing anything unexpected quickly." },
+        { title: "Documentation & Handover", description: "We provide clear documentation on how the system works, so you and your team genuinely understand what you now own." },
+        { title: "Ongoing Support & Maintenance", description: "We stay available after launch to fix issues, apply updates, and help keep the product running smoothly over time." },
+        { title: "Iteration & Scaling", description: "As your business grows, we help the product grow with it — new features, more capacity, and continued improvement based on real usage." },
       ];
       let stepsCreated = 0;
       let stepsSkipped = 0;

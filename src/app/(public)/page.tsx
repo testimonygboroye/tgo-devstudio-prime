@@ -132,9 +132,11 @@ export default async function HomePage() {
             <div className="mt-12 grid gap-6 sm:grid-cols-3">
               {featuredProjects.map((project, index) => (
                 <ScrollReveal key={project._id.toString()} delay={index * 100}>
-                  <Link href={`/portfolio/${project.slug}`} className="surface-card block rounded-2xl p-7">
-                    <h3 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>{project.title}</h3>
-                    <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{project.summary}</p>
+                  <Link href={`/portfolio/${project.slug}`} className="surface-card block">
+                    <div className="surface-card-inner p-7">
+                      <h3 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>{project.title}</h3>
+                      <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{project.summary}</p>
+                    </div>
                   </Link>
                 </ScrollReveal>
               ))}
@@ -168,12 +170,14 @@ export default async function HomePage() {
                 const IconComp = SERVICE_ICON_MAP[service.icon] || Code;
                 return (
                   <ScrollReveal key={service._id.toString()} delay={index * 100}>
-                    <div className="surface-card rounded-2xl p-7">
-                      <span className="icon-badge-premium flex h-12 w-12 items-center justify-center rounded-xl brand-gradient-bg text-base-950">
-                        <IconComp size={22} />
-                      </span>
-                      <h3 className="mt-5 text-lg font-semibold" style={{ color: "var(--text-primary)" }}>{service.title}</h3>
-                      <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{service.summary}</p>
+                    <div className="surface-card">
+                      <div className="surface-card-inner p-7">
+                        <span className="icon-badge-premium flex h-12 w-12 items-center justify-center rounded-xl brand-gradient-bg text-base-950">
+                          <IconComp size={22} />
+                        </span>
+                        <h3 className="mt-5 text-lg font-semibold" style={{ color: "var(--text-primary)" }}>{service.title}</h3>
+                        <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{service.summary}</p>
+                      </div>
                     </div>
                   </ScrollReveal>
                 );
@@ -288,14 +292,16 @@ export default async function HomePage() {
             <div className="mt-12 grid gap-6 sm:grid-cols-3">
               {featuredReviews.map((review, index) => (
                 <ScrollReveal key={review._id.toString()} delay={index * 100}>
-                  <Link href={`/testimonials/${review._id.toString()}`} className="surface-card block rounded-2xl p-7">
-                    <div className="flex gap-1 text-brand-cyan-300">
-                      {"★".repeat(review.rating)}
-                      <span style={{ color: "var(--border-subtle)" }}>{"★".repeat(5 - review.rating)}</span>
+                  <Link href={`/testimonials/${review._id.toString()}`} className="surface-card block">
+                    <div className="surface-card-inner p-7">
+                      <div className="flex gap-1 text-brand-cyan-300">
+                        {"★".repeat(review.rating)}
+                        <span style={{ color: "var(--border-subtle)" }}>{"★".repeat(5 - review.rating)}</span>
+                      </div>
+                      <p className="mt-4 line-clamp-3 text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{review.body}</p>
+                      <p className="mt-4 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{review.submitterName}</p>
+                      <p className="mt-2 text-xs font-semibold text-brand-cyan-300">Read full review →</p>
                     </div>
-                    <p className="mt-4 line-clamp-3 text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{review.body}</p>
-                    <p className="mt-4 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{review.submitterName}</p>
-                    <p className="mt-2 text-xs font-semibold text-brand-cyan-300">Read full review →</p>
                   </Link>
                 </ScrollReveal>
               ))}
@@ -325,9 +331,11 @@ export default async function HomePage() {
             <div className="mt-12 grid gap-6 sm:grid-cols-3">
               {latestPosts.map((post, index) => (
                 <ScrollReveal key={post._id.toString()} delay={index * 100}>
-                  <Link href={`/blog/${post.slug}`} className="surface-card block rounded-2xl p-7">
-                    <h3 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>{post.title}</h3>
-                    <p className="mt-2 line-clamp-2 text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{post.excerpt}</p>
+                  <Link href={`/blog/${post.slug}`} className="surface-card block">
+                    <div className="surface-card-inner p-7">
+                      <h3 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>{post.title}</h3>
+                      <p className="mt-2 line-clamp-2 text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{post.excerpt}</p>
+                    </div>
                   </Link>
                 </ScrollReveal>
               ))}

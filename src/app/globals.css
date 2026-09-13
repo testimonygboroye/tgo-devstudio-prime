@@ -279,3 +279,87 @@ body {
   filter: blur(80px);
   pointer-events: none;
 }
+
+/* ============================================
+   CRITICAL FIX: horizontal overflow causing split-screen on mobile
+   ============================================ */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+.ambient-glow {
+  overflow: hidden;
+}
+
+[data-theme="dark"] body,
+[data-theme="light"] body {
+  background-attachment: scroll;
+}
+
+/* ============================================
+   PREMIUM DESIGN SYSTEM — v4 (stronger, always-visible glow)
+   ============================================ */
+
+.surface-card {
+  position: relative;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--bg-surface) 100%, transparent) 0%, color-mix(in srgb, var(--bg-surface-2) 100%, transparent) 100%);
+  border-radius: 1.25rem;
+  padding: 2px;
+  box-shadow:
+    0 0 0 1px rgba(46, 197, 240, 0.08),
+    0 20px 50px -20px rgba(91, 46, 232, 0.25),
+    0 8px 24px -10px rgba(0, 0, 0, 0.5);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease;
+  isolation: isolate;
+}
+
+.surface-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  background: linear-gradient(135deg, rgba(91, 46, 232, 1) 0%, rgba(108, 60, 233, 0.7) 30%, rgba(46, 197, 240, 0.6) 65%, rgba(34, 211, 238, 1) 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.75;
+  transition: opacity 0.35s ease;
+}
+
+.surface-card:hover {
+  transform: translateY(-8px) scale(1.01);
+  box-shadow:
+    0 0 0 1px rgba(46, 197, 240, 0.2),
+    0 40px 80px -20px rgba(46, 197, 240, 0.35),
+    0 25px 60px -15px rgba(91, 46, 232, 0.3);
+}
+
+.surface-card:hover::before {
+  opacity: 1;
+}
+
+.surface-card-inner {
+  position: relative;
+  z-index: 1;
+  background: color-mix(in srgb, var(--bg-surface) 97%, transparent);
+  border-radius: calc(1.25rem - 2px);
+  height: 100%;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  overflow: hidden;
+}
+
+/* Glossy sheen highlight — top-left premium light catch */
+.surface-card-inner::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, transparent 100%);
+  pointer-events: none;
+}

@@ -245,6 +245,11 @@ export async function GET(request: NextRequest) {
         { title: "Email Deliverability & Transactional Email Setup", icon: "Bell", summary: "Making sure the emails your platform sends — receipts, confirmations, alerts — actually reach your users' inboxes reliably." },
         { title: "Version Control & Code Collaboration Setup", icon: "GitBranch", summary: "Setting up proper systems for how your development team writes, reviews, and manages code together safely over time." },
         { title: "Technical Due Diligence for Investors & Acquisitions", icon: "Search", summary: "An independent, honest technical assessment of a software product or codebase, for investment, acquisition, or partnership decisions." },
+        { title: "Custom Design Systems & Component Libraries", icon: "Layout", summary: "Building a reusable set of design components and rules, so your product stays visually consistent as it grows and as more people work on it." },
+        { title: "Two-Factor & Advanced Authentication Systems", icon: "Fingerprint", summary: "Adding extra layers of login security, such as two-factor authentication and backup recovery codes, without making sign-in frustrating for real users." },
+        { title: "Background Job & Task Scheduling Systems", icon: "RefreshCw", summary: "Building systems that reliably run tasks automatically in the background — cleanups, reminders, recurring reports — without manual effort." },
+        { title: "Feature Flagging & Gradual Rollout Systems", icon: "ClipboardCheck", summary: "Releasing new features safely to a small group of users first, so problems are caught early before reaching everyone." },
+        { title: "Custom API Rate Plans & Usage Metering", icon: "BarChart", summary: "Building systems that track and limit how much of your platform's resources or API different users or customers can consume." },
       ];
       let servicesCreated = 0;
       let servicesSkipped = 0;

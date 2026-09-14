@@ -132,10 +132,18 @@ export default async function HomePage() {
             <div className="mt-12 grid gap-6 sm:grid-cols-3">
               {featuredProjects.map((project, index) => (
                 <ScrollReveal key={project._id.toString()} delay={index * 100}>
-                  <Link href={`/portfolio/${project.slug}`} className="surface-card block">
-                    <div className="surface-card-inner p-7">
-                      <h3 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>{project.title}</h3>
-                      <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{project.summary}</p>
+                  <Link href={`/portfolio/${project.slug}`} className="surface-card group block">
+                    <div className="surface-card-inner">
+                      {project.images?.[0] && (
+                        <div className="relative h-44 w-full overflow-hidden rounded-t-2xl">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={project.images[0].url} alt={project.images[0].altText} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                        </div>
+                      )}
+                      <div className="p-7">
+                        <h3 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>{project.title}</h3>
+                        <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{project.summary}</p>
+                      </div>
                     </div>
                   </Link>
                 </ScrollReveal>
@@ -331,10 +339,18 @@ export default async function HomePage() {
             <div className="mt-12 grid gap-6 sm:grid-cols-3">
               {latestPosts.map((post, index) => (
                 <ScrollReveal key={post._id.toString()} delay={index * 100}>
-                  <Link href={`/blog/${post.slug}`} className="surface-card block">
-                    <div className="surface-card-inner p-7">
-                      <h3 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>{post.title}</h3>
-                      <p className="mt-2 line-clamp-2 text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{post.excerpt}</p>
+                  <Link href={`/blog/${post.slug}`} className="surface-card group block">
+                    <div className="surface-card-inner">
+                      {post.coverImage?.url && (
+                        <div className="relative h-44 w-full overflow-hidden rounded-t-2xl">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={post.coverImage.url} alt={post.coverImage.altText} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                        </div>
+                      )}
+                      <div className="p-7">
+                        <h3 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>{post.title}</h3>
+                        <p className="mt-2 line-clamp-2 text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{post.excerpt}</p>
+                      </div>
                     </div>
                   </Link>
                 </ScrollReveal>

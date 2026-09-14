@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Briefcase, Users, Newspaper, DoorOpen, Inbox, Mail, Star, Layers, Workflow, FileText, Home, HelpCircle, PhoneCall, Boxes, UserPlus, Send, BookOpen, MessageCircleQuestion, UserCog, MessageSquare, ShieldCheck, Image, ScrollText, BarChart3, KeyRound, BadgeCheck, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
+import { LayoutDashboard, Briefcase, Users, Newspaper, DoorOpen, Inbox, Mail, Star, Layers, Workflow, FileText, Home, HelpCircle, PhoneCall, Boxes, UserPlus, Send, BookOpen, MessageCircleQuestion, UserCog, MessageSquare, ShieldCheck, Image, ScrollText, BarChart3, KeyRound, BadgeCheck, Zap, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface AdminSidebarProps {
   userName: string;
@@ -21,6 +21,7 @@ const NAV_ITEMS = [
   { label: "Visitor Analytics", hrefSuffix: "/analytics", icon: BarChart3, badgeKey: null },
   { label: "Messages", hrefSuffix: "/messages", icon: MessageSquare, badgeKey: "messages" },
   { label: "Homepage", hrefSuffix: "/home-settings", icon: Home, badgeKey: null },
+  { label: "Availability", hrefSuffix: "/availability", icon: Zap, badgeKey: null },
   { label: "Media Library", hrefSuffix: "/media", icon: Image, badgeKey: null },
   { label: "Case Studies", hrefSuffix: "/case-studies", icon: Briefcase, badgeKey: null },
   { label: "Services", hrefSuffix: "/services", icon: Layers, badgeKey: null },
@@ -34,7 +35,6 @@ const NAV_ITEMS = [
   { label: "FAQ", hrefSuffix: "/faq-items", icon: MessageCircleQuestion, badgeKey: null },
   { label: "Reviews", hrefSuffix: "/reviews", icon: Star, badgeKey: "reviews" },
   { label: "Site Pages", hrefSuffix: "/pages", icon: FileText, badgeKey: null },
-  { label: "Accessibility Statement", hrefSuffix: "/pages/accessibility", icon: BadgeCheck, badgeKey: null },
   { label: "Help & Guide", hrefSuffix: "/help", icon: HelpCircle, badgeKey: null },
   { label: "Manage Articles", hrefSuffix: "/help-articles", icon: BookOpen, badgeKey: null },
   { label: "Book a Call", hrefSuffix: "/book-a-call", icon: PhoneCall, badgeKey: null },
@@ -108,7 +108,9 @@ export default function AdminSidebar({ userName, userEmail, roleName }: AdminSid
           {NAV_ITEMS.map((item) => {
             const href = `${basePathSegment}${item.hrefSuffix}`;
             const isActive =
-              item.hrefSuffix === "/dashboard" ? pathname === href : pathname.startsWith(href);
+              item.hrefSuffix === "/dashboard" || item.hrefSuffix === "/help"
+                ? pathname === href
+                : pathname.startsWith(href);
             const Icon = item.icon;
             const count = item.badgeKey ? counts[item.badgeKey] || 0 : 0;
 

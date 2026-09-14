@@ -49,7 +49,7 @@ export default function BackToTopButton({
     <button
       onClick={handleClick}
       aria-label="Back to top"
-      className={`fixed bottom-6 z-40 flex h-12 w-12 items-center justify-center rounded-full border border-base-800 bg-base-900 text-brand-cyan-300 shadow-lg transition-transform hover:scale-105 hover:border-brand-cyan-400 active:scale-95 ${
+      className={`fixed bottom-24 z-40 flex h-12 w-12 items-center justify-center rounded-full border border-base-800 bg-base-900 text-brand-cyan-300 shadow-lg transition-transform hover:scale-105 hover:border-brand-cyan-400 active:scale-95 ${
         position === "left" ? "left-6" : "right-6"
       }`}
     >

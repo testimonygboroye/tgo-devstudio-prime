@@ -45,6 +45,7 @@ export default function TeamMemberForm({ mode, memberId, initialData }: TeamMemb
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
+  const [savedMessage, setSavedMessage] = useState("");
 
   async function handlePhotoUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -113,9 +114,13 @@ export default function TeamMemberForm({ mode, memberId, initialData }: TeamMemb
         return;
       }
 
-      const listPath = window.location.pathname.replace(/\/team\/(new|[^/]+)\/?$/, "/team");
-      router.push(listPath);
       router.refresh();
+      setError("");
+      setSavedMessage("Saved successfully.");
+      if (mode === "create" && data.teamMember?._id) {
+        const newPath = window.location.pathname.replace(/\/team\/new\/?$/, `/team/${data.teamMember._id}`);
+        router.push(newPath);
+      }
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
@@ -293,6 +298,7 @@ export default function TeamMemberForm({ mode, memberId, initialData }: TeamMemb
       </div>
 
       {error && <p className="text-sm text-red-400">{error}</p>}
+      {savedMessage && <p className="text-sm text-brand-cyan-300">{savedMessage}</p>}
 
       <div className="flex items-center gap-3">
         <button

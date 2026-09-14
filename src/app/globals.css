@@ -372,3 +372,11 @@ body {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, transparent 100%);
   pointer-events: none;
 }
+
+/* Theme-aware prose content (blog posts, help articles, legal pages) */
+.prose {
+  --tw-prose-body: var(--text-secondary);
+  --tw-prose-headings: var(--text-primary);
+  --tw-prose-bold: var(--text-primary);
+  --tw-prose-links: var(--color-brand-cyan-400);
+}

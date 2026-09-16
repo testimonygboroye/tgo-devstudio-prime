@@ -380,3 +380,55 @@ body {
   --tw-prose-bold: var(--text-primary);
   --tw-prose-links: var(--color-brand-cyan-400);
 }
+
+/* About page — "What We Stand For" values grid styling */
+.values-grid ul {
+  display: grid;
+  list-style: none;
+  padding: 0;
+  gap: 1.25rem;
+}
+@media (min-width: 640px) {
+  .values-grid ul {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.values-grid li {
+  position: relative;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--bg-surface) 100%, transparent) 0%, color-mix(in srgb, var(--bg-surface-2) 100%, transparent) 100%);
+  border: 1px solid var(--border-subtle);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  margin: 0;
+}
+.values-grid li strong {
+  color: var(--color-brand-cyan-400);
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+/* About page — "What We Stand For" values grid styling */
+.values-grid ul {
+  display: grid;
+  list-style: none;
+  padding: 0;
+  gap: 1.25rem;
+}
+@media (min-width: 640px) {
+  .values-grid ul {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.values-grid li {
+  position: relative;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--bg-surface) 100%, transparent) 0%, color-mix(in srgb, var(--bg-surface-2) 100%, transparent) 100%);
+  border: 1px solid var(--border-subtle);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  margin: 0;
+}
+.values-grid li strong {
+  color: var(--color-brand-cyan-400);
+  display: block;
+  margin-bottom: 0.5rem;
+}

@@ -24,6 +24,7 @@ export default function ProcessStepForm({ mode, stepId, initialData }: ProcessSt
   const [featured, setFeatured] = useState(initialData?.featured ?? false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
+  const [savedMessage, setSavedMessage] = useState("");
 
   const [showConfirm, setShowConfirm] = useState(false);
   const [confirmText, setConfirmText] = useState("");
@@ -32,6 +33,7 @@ export default function ProcessStepForm({ mode, stepId, initialData }: ProcessSt
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError("");
+    setSavedMessage("");
     setIsSaving(true);
 
     const endpoint = mode === "create" ? "/api/process-steps" : `/api/process-steps/${stepId}`;
@@ -50,8 +52,8 @@ export default function ProcessStepForm({ mode, stepId, initialData }: ProcessSt
         return;
       }
 
-      router.push("../process");
       router.refresh();
+      setSavedMessage("Saved successfully.");
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
@@ -73,8 +75,8 @@ export default function ProcessStepForm({ mode, stepId, initialData }: ProcessSt
       setIsDeleting(false);
       return;
     }
-    router.push("../process");
     router.refresh();
+      setSavedMessage("Saved successfully.");
   }
 
   return (
@@ -138,6 +140,7 @@ export default function ProcessStepForm({ mode, stepId, initialData }: ProcessSt
       </div>
 
       {error && <p className="text-sm text-red-400">{error}</p>}
+      {savedMessage && <p className="text-sm text-brand-cyan-300">{savedMessage}</p>}
 
       <div className="flex items-center gap-3">
         <button

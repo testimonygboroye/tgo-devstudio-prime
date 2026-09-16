@@ -58,6 +58,7 @@ export default function CaseStudyForm({ mode, projectId, initialData }: CaseStud
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
+  const [savedMessage, setSavedMessage] = useState("");
 
   async function handleImageUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -120,6 +121,7 @@ export default function CaseStudyForm({ mode, projectId, initialData }: CaseStud
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError("");
+    setSavedMessage("");
     setIsSaving(true);
 
     const payload = {
@@ -161,9 +163,8 @@ export default function CaseStudyForm({ mode, projectId, initialData }: CaseStud
         return;
       }
 
-      const listPath = window.location.pathname.replace(/\/case-studies\/(new|[^/]+)\/?$/, "/case-studies");
-      router.push(listPath);
       router.refresh();
+      setSavedMessage("Saved successfully.");
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
@@ -187,9 +188,8 @@ export default function CaseStudyForm({ mode, projectId, initialData }: CaseStud
         return;
       }
 
-      const listPath = window.location.pathname.replace(/\/case-studies\/[^/]+\/?$/, "/case-studies");
-      router.push(listPath);
       router.refresh();
+      setSavedMessage("Saved successfully.");
     } catch {
       setError("Something went wrong. Please try again.");
     }
@@ -415,6 +415,7 @@ export default function CaseStudyForm({ mode, projectId, initialData }: CaseStud
       </div>
 
       {error && <p className="text-sm text-red-400">{error}</p>}
+      {savedMessage && <p className="text-sm text-brand-cyan-300">{savedMessage}</p>}
 
       <div className="flex items-center gap-3">
         <button

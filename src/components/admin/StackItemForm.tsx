@@ -24,10 +24,12 @@ export default function StackItemForm({ mode, itemId, initialData }: StackItemFo
   const [publishStatus, setPublishStatus] = useState(initialData?.publishStatus || "draft");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
+  const [savedMessage, setSavedMessage] = useState("");
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError("");
+    setSavedMessage("");
     setIsSaving(true);
 
     const endpoint = mode === "create" ? "/api/stack-items" : `/api/stack-items/${itemId}`;
@@ -46,8 +48,8 @@ export default function StackItemForm({ mode, itemId, initialData }: StackItemFo
         return;
       }
 
-      router.push("../stack-items");
       router.refresh();
+      setSavedMessage("Saved successfully.");
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
@@ -114,6 +116,7 @@ export default function StackItemForm({ mode, itemId, initialData }: StackItemFo
       </div>
 
       {error && <p className="text-sm text-red-400">{error}</p>}
+      {savedMessage && <p className="text-sm text-brand-cyan-300">{savedMessage}</p>}
 
       <button
         type="submit"

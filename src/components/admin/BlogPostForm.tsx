@@ -50,6 +50,7 @@ export default function BlogPostForm({ mode, postId, initialData }: BlogPostForm
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
+  const [savedMessage, setSavedMessage] = useState("");
 
   async function handleCoverUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -122,9 +123,8 @@ export default function BlogPostForm({ mode, postId, initialData }: BlogPostForm
         return;
       }
 
-      const listPath = window.location.pathname.replace(/\/blog\/(new|[^/]+)\/?$/, "/blog");
-      router.push(listPath);
       router.refresh();
+      setSavedMessage("Saved successfully.");
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
@@ -280,6 +280,7 @@ export default function BlogPostForm({ mode, postId, initialData }: BlogPostForm
       </div>
 
       {error && <p className="text-sm text-red-400">{error}</p>}
+      {savedMessage && <p className="text-sm text-brand-cyan-300">{savedMessage}</p>}
 
       <div className="flex items-center gap-3">
         <button

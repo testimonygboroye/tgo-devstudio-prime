@@ -396,10 +396,36 @@ body {
 .values-grid li {
   position: relative;
   background: linear-gradient(160deg, color-mix(in srgb, var(--bg-surface) 100%, transparent) 0%, color-mix(in srgb, var(--bg-surface-2) 100%, transparent) 100%);
-  border: 1px solid var(--border-subtle);
-  border-radius: 1rem;
-  padding: 1.5rem;
+  border-radius: 1.25rem;
+  padding: 1.75rem;
   margin: 0;
+  box-shadow:
+    0 0 0 1px rgba(46, 197, 240, 0.08),
+    0 20px 50px -20px rgba(91, 46, 232, 0.25),
+    0 8px 24px -10px rgba(0, 0, 0, 0.5);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease;
+  isolation: isolate;
+}
+.values-grid li::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  background: linear-gradient(135deg, rgba(91, 46, 232, 1) 0%, rgba(108, 60, 233, 0.7) 30%, rgba(46, 197, 240, 0.6) 65%, rgba(34, 211, 238, 1) 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.7;
+  transition: opacity 0.35s ease;
+  z-index: -1;
+}
+.values-grid li:hover {
+  transform: translateY(-4px);
+}
+.values-grid li:hover::before {
+  opacity: 1;
 }
 .values-grid li strong {
   color: var(--color-brand-cyan-400);

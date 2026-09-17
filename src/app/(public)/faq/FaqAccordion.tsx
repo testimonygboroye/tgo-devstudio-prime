@@ -13,18 +13,25 @@ export default function FaqAccordion({ item }: { item: FaqItemData }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="rounded-lg border border-base-800 bg-base-900">
-      <button
-        onClick={() => setIsOpen((prev) => !prev)}
-        className="flex w-full items-center justify-between px-4 py-3 text-left"
-      >
-        <span className="text-sm font-medium text-neutral-100">{item.question}</span>
-        <ChevronDown
-          size={18}
-          className={`flex-shrink-0 text-neutral-500 transition-transform ${isOpen ? "rotate-180" : ""}`}
-        />
-      </button>
-      {isOpen && <p className="border-t border-base-800 px-4 py-3 text-sm text-neutral-400">{item.answer}</p>}
+    <div className="surface-card">
+      <div className="surface-card-inner">
+        <button
+          onClick={() => setIsOpen((prev) => !prev)}
+          className="flex w-full items-center justify-between px-5 py-4 text-left"
+        >
+          <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{item.question}</span>
+          <ChevronDown
+            size={18}
+            className={`flex-shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`}
+            style={{ color: "var(--text-muted)" }}
+          />
+        </button>
+        {isOpen && (
+          <p className="border-t px-5 py-4 text-sm leading-relaxed" style={{ borderColor: "var(--border-subtle)", color: "var(--text-secondary)" }}>
+            {item.answer}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

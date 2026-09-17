@@ -32,87 +32,78 @@ async function getJob(slug: string) {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const job = await getJob(slug);
-
-  if (!job) {
-    return { title: "Job Opening Not Found | TGO DevStudio Prime" };
-  }
-
-  return {
-    title: `${job.title} | Careers | TGO DevStudio Prime`,
-    description: job.summary,
-  };
+  if (!job) return { title: "Job Opening Not Found | TGO DevStudio Prime" };
+  return { title: `${job.title} | Careers | TGO DevStudio Prime`, description: job.summary };
 }
 
 export default async function JobDetailPage({ params }: PageProps) {
   const { slug } = await params;
   const job = await getJob(slug);
-
-  if (!job) {
-    notFound();
-  }
+  if (!job) notFound();
 
   const locationInfo = LOCATION_INFO[job.locationType];
   const employmentInfo = EMPLOYMENT_INFO[job.employmentType];
 
   return (
-    <main className="min-h-screen px-6 py-16 sm:px-12">
+    <main className="min-h-screen px-6 py-20 sm:px-12">
       <article className="mx-auto max-w-2xl">
-        <p className="font-mono text-xs uppercase tracking-widest text-neutral-400">Careers</p>
-        <h1 className="mt-2 text-4xl font-bold brand-gradient-text sm:text-5xl">{job.title}</h1>
+        <span className="eyebrow-label">Careers</span>
+        <h1
+          className="heading-premium mt-3 text-4xl font-bold brand-gradient-text sm:text-5xl"
+          style={{ fontFamily: "var(--font-display)" }}
+        >
+          {job.title}
+        </h1>
         {job.department && <p className="mt-2 text-brand-cyan-300">{job.department}</p>}
 
-        <div className="mt-6 grid gap-4 sm:grid-cols-2">
-          <div className="rounded-lg border border-base-800 bg-base-900 p-4">
-            <p className="text-sm font-semibold text-neutral-100">{locationInfo.label}</p>
-            <p className="mt-1 text-xs text-neutral-400">{locationInfo.description}</p>
+        <div className="mt-7 grid gap-5 sm:grid-cols-2">
+          <div className="surface-card">
+            <div className="surface-card-inner p-5">
+              <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{locationInfo.label}</p>
+              <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>{locationInfo.description}</p>
+            </div>
           </div>
-          <div className="rounded-lg border border-base-800 bg-base-900 p-4">
-            <p className="text-sm font-semibold text-neutral-100">{employmentInfo.label}</p>
-            <p className="mt-1 text-xs text-neutral-400">{employmentInfo.description}</p>
+          <div className="surface-card">
+            <div className="surface-card-inner p-5">
+              <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{employmentInfo.label}</p>
+              <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>{employmentInfo.description}</p>
+            </div>
           </div>
         </div>
 
-        <p className="mt-8 text-neutral-100/80">{job.summary}</p>
+        <p className="mt-9 text-lg leading-relaxed" style={{ color: "var(--text-secondary)" }}>{job.summary}</p>
 
         {job.responsibilities && (
-          <div className="mt-8">
-            <h2 className="text-xl font-semibold text-neutral-100">Responsibilities</h2>
-            <p className="mt-2 whitespace-pre-line text-neutral-100/70">{job.responsibilities}</p>
+          <div className="mt-9">
+            <h2 className="text-xl font-semibold" style={{ color: "var(--text-primary)" }}>Responsibilities</h2>
+            <p className="mt-2 whitespace-pre-line leading-relaxed" style={{ color: "var(--text-secondary)" }}>{job.responsibilities}</p>
           </div>
         )}
 
         {job.requirements && (
-          <div className="mt-8">
-            <h2 className="text-xl font-semibold text-neutral-100">Requirements</h2>
-            <p className="mt-2 whitespace-pre-line text-neutral-100/70">{job.requirements}</p>
+          <div className="mt-9">
+            <h2 className="text-xl font-semibold" style={{ color: "var(--text-primary)" }}>Requirements</h2>
+            <p className="mt-2 whitespace-pre-line leading-relaxed" style={{ color: "var(--text-secondary)" }}>{job.requirements}</p>
           </div>
         )}
 
-        <div className="mt-12 border-t border-base-800 pt-8">
-          <h2 className="text-xl font-semibold text-neutral-100">Apply for this role</h2>
-          <div className="mt-6">
+        <div className="mt-14 border-t pt-10" style={{ borderColor: "var(--border-subtle)" }}>
+          <h2 className="text-xl font-semibold" style={{ color: "var(--text-primary)" }}>Apply for this role</h2>
+          <div className="mt-7">
             <JobApplicationForm jobId={job._id.toString()} />
           </div>
 
           {(job.applyUrl || job.applyEmail) && (
-            <div className="mt-8 border-t border-base-800 pt-6">
-              <p className="text-sm text-neutral-400">You can also apply directly via:</p>
-              <div className="mt-3 flex gap-3">
+            <div className="mt-9 border-t pt-7" style={{ borderColor: "var(--border-subtle)" }}>
+              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>You can also apply directly via:</p>
+              <div className="mt-4 flex flex-wrap gap-3">
                 {job.applyUrl && (
-                  <a
-                    href={job.applyUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="rounded-md border border-base-800 px-4 py-2 text-sm text-neutral-100 hover:bg-base-900"
-                  >
+                  <a href={job.applyUrl} target="_blank" rel="noopener noreferrer" className="btn-premium-secondary rounded-full px-5 py-2.5 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
                     External Application Link
                   </a>
                 )}
                 {job.applyEmail && (
-                  <a
-                    href={`mailto:${job.applyEmail}?subject=${encodeURIComponent(`Application: ${job.title}`)}`}
-                    className="rounded-md border border-base-800 px-4 py-2 text-sm text-neutral-100 hover:bg-base-900"
-                  >
+                  <a href={`mailto:${job.applyEmail}?subject=${encodeURIComponent(`Application: ${job.title}`)}`} className="btn-premium-secondary rounded-full px-5 py-2.5 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
                     Email Directly
                   </a>
                 )}

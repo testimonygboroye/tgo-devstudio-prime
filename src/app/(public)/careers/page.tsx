@@ -31,53 +31,59 @@ const LOCATION_LABELS: Record<string, string> = {
 
 export default async function CareersPage() {
   await connectToDatabase();
-  const jobs = await JobOpening.find({ publishStatus: "published" })
-    .sort({ createdAt: -1 })
-    .lean();
+  const jobs = await JobOpening.find({ publishStatus: "published" }).sort({ createdAt: -1 }).lean();
 
   return (
-    <main className="min-h-screen px-6 py-16 sm:px-12">
+    <main className="min-h-screen px-6 py-20 sm:px-12">
       <div className="mx-auto max-w-4xl">
-        <p className="font-mono text-xs uppercase tracking-widest text-neutral-400">Careers</p>
-        <h1 className="mt-2 text-4xl font-bold brand-gradient-text sm:text-5xl">Join TGO DevStudio</h1>
-        <p className="mt-4 max-w-2xl text-neutral-100/70">
-          We're a full-stack software engineering studio that cares deeply about craft, clarity,
+        <span className="eyebrow-label">Careers</span>
+        <h1
+          className="heading-premium mt-3 text-5xl font-bold brand-gradient-text sm:text-6xl"
+          style={{ fontFamily: "var(--font-display)" }}
+        >
+          Join TGO DevStudio
+        </h1>
+        <p className="mt-4 max-w-2xl leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+          We&apos;re a full-stack software engineering studio that cares deeply about craft, clarity,
           and building things that last. We hire people who take pride in getting the details
           right.
         </p>
 
         {jobs.length === 0 ? (
-          <div className="mt-12 rounded-xl border border-base-800 bg-base-900 p-8 text-center">
-            <p className="text-lg font-semibold text-neutral-100">No open roles right now</p>
-            <p className="mt-2 text-neutral-400">
-              We don't have any positions open at the moment, but we're always interested in
-              hearing from talented people. Check back soon, or reach out directly if you think
-              you'd be a great fit.
-            </p>
+          <div className="surface-card mt-14">
+            <div className="surface-card-inner p-10 text-center">
+              <p className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
+                No open roles right now
+              </p>
+              <p className="mt-2" style={{ color: "var(--text-secondary)" }}>
+                We don&apos;t have any positions open at the moment, but we&apos;re always
+                interested in hearing from talented people. Check back soon, or reach out
+                directly if you think you&apos;d be a great fit.
+              </p>
+            </div>
           </div>
         ) : (
-          <div className="mt-12 space-y-4">
+          <div className="mt-14 space-y-5">
             {jobs.map((job) => (
-              <Link
-                key={job._id.toString()}
-                href={`/careers/${job.slug}`}
-                className="block rounded-xl border border-base-800 bg-base-900 p-6 hover:border-brand-cyan-400"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h2 className="text-lg font-semibold text-neutral-100">{job.title}</h2>
-                  <div className="flex gap-2">
-                    <span className="rounded-full border border-base-800 px-2 py-0.5 text-xs text-neutral-400">
-                      {LOCATION_LABELS[job.locationType]}
-                    </span>
-                    <span className="rounded-full border border-base-800 px-2 py-0.5 text-xs text-neutral-400">
-                      {EMPLOYMENT_LABELS[job.employmentType]}
-                    </span>
+              <Link key={job._id.toString()} href={`/careers/${job.slug}`} className="surface-card block">
+                <div className="surface-card-inner p-7">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
+                      {job.title}
+                    </h2>
+                    <div className="flex gap-2">
+                      <span className="rounded-full border px-2 py-0.5 text-xs" style={{ borderColor: "var(--border-subtle)", color: "var(--text-muted)" }}>
+                        {LOCATION_LABELS[job.locationType]}
+                      </span>
+                      <span className="rounded-full border px-2 py-0.5 text-xs" style={{ borderColor: "var(--border-subtle)", color: "var(--text-muted)" }}>
+                        {EMPLOYMENT_LABELS[job.employmentType]}
+                      </span>
+                    </div>
                   </div>
+                  {job.department && <p className="mt-1 text-sm text-brand-cyan-300">{job.department}</p>}
+                  <p className="mt-3 text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{job.summary}</p>
+                  <p className="mt-4 text-xs font-semibold text-brand-cyan-300">View role details →</p>
                 </div>
-                {job.department && (
-                  <p className="mt-1 text-sm text-brand-cyan-300">{job.department}</p>
-                )}
-                <p className="mt-3 text-sm text-neutral-400">{job.summary}</p>
               </Link>
             ))}
           </div>

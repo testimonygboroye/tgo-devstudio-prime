@@ -14,17 +14,26 @@ export const metadata: Metadata = {
 
 export default function ContactPage() {
   return (
-    <main className="min-h-screen px-6 py-16 sm:px-12">
-      <div className="mx-auto max-w-xl">
-        <p className="font-mono text-xs uppercase tracking-widest text-neutral-400">Contact</p>
-        <h1 className="mt-2 text-4xl font-bold brand-gradient-text sm:text-5xl">Let's Talk</h1>
-        <div className="mt-4"><AvailabilityBadge /></div>
-        <p className="mt-4 text-neutral-100/70">
+    <main className="ambient-glow relative min-h-screen px-6 py-24 sm:px-12">
+      <div className="mx-auto max-w-xl text-center">
+        <span className="eyebrow-label justify-center">Contact</span>
+        <h1
+          className="heading-premium mt-4 text-5xl font-bold brand-gradient-text sm:text-6xl"
+          style={{ fontFamily: "var(--font-display)" }}
+        >
+          Let&apos;s Talk
+        </h1>
+        <div className="mt-5 flex justify-center">
+          <AvailabilityBadge />
+        </div>
+        <p className="mt-5 leading-relaxed" style={{ color: "var(--text-secondary)" }}>
           Have a project in mind, a question, or just want to say hello? Send us a message and
-          we'll respond as soon as we can.
+          we&apos;ll respond as soon as we can.
         </p>
+      </div>
 
-        <div className="mt-10">
+      <div className="surface-card mx-auto mt-12 max-w-xl">
+        <div className="surface-card-inner p-8 sm:p-10">
           <ContactForm />
         </div>
       </div>

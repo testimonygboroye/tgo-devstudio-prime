@@ -21,23 +21,30 @@ export default async function BookACallPage() {
   const settings = saved || DEFAULTS;
 
   return (
-    <main className="min-h-screen px-6 py-16 sm:px-12">
+    <main className="ambient-glow relative min-h-screen px-6 py-24 sm:px-12">
       <div className="mx-auto max-w-3xl text-center">
-        <p className="font-mono text-xs uppercase tracking-widest text-neutral-400">Get Started</p>
-        <h1 className="mt-2 text-4xl font-bold brand-gradient-text sm:text-5xl">
+        <span className="eyebrow-label justify-center">Get Started</span>
+        <h1
+          className="heading-premium mt-4 text-5xl font-bold brand-gradient-text sm:text-6xl"
+          style={{ fontFamily: "var(--font-display)" }}
+        >
           {settings.heading}
         </h1>
-        <p className="mx-auto mt-4 max-w-xl text-neutral-100/70">{settings.description}</p>
+        <p className="mx-auto mt-5 max-w-xl leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+          {settings.description}
+        </p>
       </div>
 
-      <div className="mx-auto mt-10 max-w-3xl overflow-hidden rounded-xl border border-base-800">
-        <iframe
-          src={`${settings.calendlyUrl}?background_color=0a0a0f&text_color=f5f5f8&primary_color=2ec5f0`}
-          width="100%"
-          height="700"
-          frameBorder="0"
-          title="Book a call with TGO DevStudio"
-        />
+      <div className="surface-card mx-auto mt-12 max-w-3xl">
+        <div className="surface-card-inner overflow-hidden">
+          <iframe
+            src={`${settings.calendlyUrl}?background_color=131722&text_color=f1f3f8&primary_color=2ec5f0`}
+            width="100%"
+            height="700"
+            frameBorder="0"
+            title="Book a call with TGO DevStudio"
+          />
+        </div>
       </div>
     </main>
   );

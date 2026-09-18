@@ -17,12 +17,15 @@ export default async function AccessibilityPage() {
   const page = saved || ACCESSIBILITY_DEFAULT;
 
   return (
-    <main className="min-h-screen px-6 py-16 sm:px-12">
+    <main className="min-h-screen px-6 py-20 sm:px-12">
       <div className="mx-auto max-w-3xl">
-        <p className="font-mono text-xs uppercase tracking-widest text-neutral-400">Legal</p>
-        <h1 className="mt-2 text-4xl font-bold brand-gradient-text sm:text-5xl">{page.title}</h1>
+        <span className="eyebrow-label">Legal</span>
+        <h1 className="heading-premium mt-3 text-4xl font-bold brand-gradient-text sm:text-5xl" style={{ fontFamily: "var(--font-display)" }}>
+          {page.title}
+        </h1>
         <div
           className="prose prose-invert mt-10 max-w-none"
+          style={{ color: "var(--text-secondary)" }}
           dangerouslySetInnerHTML={{ __html: sanitizeBlogHtml(page.content) }}
         />
       </div>

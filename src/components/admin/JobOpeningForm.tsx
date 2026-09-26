@@ -114,129 +114,138 @@ export default function JobOpeningForm({ mode, jobId, initialData }: JobOpeningF
 
   return (
     <form onSubmit={handleSubmit} className="max-w-2xl space-y-6">
-      <div>
-        <label className="block text-sm text-neutral-400">Title</label>
-        <input
-          required
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
-          className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
-        />
-        <CharacterCounter current={title.length} max={TEXT_LIMITS.job.title} />
-      </div>
-
-      <div>
-        <label className="block text-sm text-neutral-400">Department (optional)</label>
-        <input
-          value={department}
-          onChange={(event) => setDepartment(event.target.value)}
-          className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
+      <div className="surface-card p-6 sm:p-8 space-y-6">
         <div>
-          <label className="block text-sm text-neutral-400">Location Type</label>
-          <select
-            value={locationType}
-            onChange={(event) => setLocationType(event.target.value)}
-            className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
-          >
-            <option value="remote">Remote</option>
-            <option value="onsite">Onsite</option>
-            <option value="hybrid">Hybrid</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm text-neutral-400">Employment Type</label>
-          <select
-            value={employmentType}
-            onChange={(event) => setEmploymentType(event.target.value)}
-            className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
-          >
-            <option value="full-time">Full-time</option>
-            <option value="part-time">Part-time</option>
-            <option value="contract">Contract</option>
-            <option value="internship">Internship</option>
-            <option value="freelance">Freelance</option>
-          </select>
-        </div>
-      </div>
-
-      <div>
-        <label className="block text-sm text-neutral-400">Summary</label>
-        <textarea
-          required
-          rows={2}
-          value={summary}
-          onChange={(event) => setSummary(event.target.value)}
-          className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
-        />
-        <CharacterCounter current={summary.length} max={TEXT_LIMITS.job.summary} />
-      </div>
-
-      <div>
-        <label className="block text-sm text-neutral-400">Responsibilities</label>
-        <textarea
-          rows={5}
-          value={responsibilities}
-          onChange={(event) => setResponsibilities(event.target.value)}
-          className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
-        />
-        <CharacterCounter current={responsibilities.length} max={TEXT_LIMITS.job.responsibilities} />
-      </div>
-
-      <div>
-        <label className="block text-sm text-neutral-400">Requirements</label>
-        <textarea
-          rows={5}
-          value={requirements}
-          onChange={(event) => setRequirements(event.target.value)}
-          className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
-        />
-        <CharacterCounter current={requirements.length} max={TEXT_LIMITS.job.requirements} />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm text-neutral-400">Apply Email</label>
+          <label className="block text-sm font-medium text-[var(--text-primary)]">Title</label>
           <input
-            type="email"
-            value={applyEmail}
-            onChange={(event) => setApplyEmail(event.target.value)}
-            className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
+            required
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            className="input-premium mt-1.5"
+            placeholder="Job title..."
+          />
+          <CharacterCounter current={title.length} max={TEXT_LIMITS.job.title} />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-[var(--text-primary)]">Department (optional)</label>
+          <input
+            value={department}
+            onChange={(event) => setDepartment(event.target.value)}
+            className="input-premium mt-1.5"
+            placeholder="e.g. Engineering"
           />
         </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-[var(--text-primary)]">Location Type</label>
+            <select
+              value={locationType}
+              onChange={(event) => setLocationType(event.target.value)}
+              className="select-premium mt-1.5"
+            >
+              <option value="remote">Remote</option>
+              <option value="onsite">Onsite</option>
+              <option value="hybrid">Hybrid</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[var(--text-primary)]">Employment Type</label>
+            <select
+              value={employmentType}
+              onChange={(event) => setEmploymentType(event.target.value)}
+              className="select-premium mt-1.5"
+            >
+              <option value="full-time">Full-time</option>
+              <option value="part-time">Part-time</option>
+              <option value="contract">Contract</option>
+              <option value="internship">Internship</option>
+              <option value="freelance">Freelance</option>
+            </select>
+          </div>
+        </div>
+
         <div>
-          <label className="block text-sm text-neutral-400">Apply URL</label>
-          <input
-            value={applyUrl}
-            onChange={(event) => setApplyUrl(event.target.value)}
-            className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
+          <label className="block text-sm font-medium text-[var(--text-primary)]">Summary</label>
+          <textarea
+            required
+            rows={3}
+            value={summary}
+            onChange={(event) => setSummary(event.target.value)}
+            className="textarea-premium mt-1.5"
+            placeholder="Job summary..."
           />
+          <CharacterCounter current={summary.length} max={TEXT_LIMITS.job.summary} />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-[var(--text-primary)]">Responsibilities</label>
+          <textarea
+            rows={5}
+            value={responsibilities}
+            onChange={(event) => setResponsibilities(event.target.value)}
+            className="textarea-premium mt-1.5"
+            placeholder="Key responsibilities..."
+          />
+          <CharacterCounter current={responsibilities.length} max={TEXT_LIMITS.job.responsibilities} />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-[var(--text-primary)]">Requirements</label>
+          <textarea
+            rows={5}
+            value={requirements}
+            onChange={(event) => setRequirements(event.target.value)}
+            className="textarea-premium mt-1.5"
+            placeholder="Candidate requirements..."
+          />
+          <CharacterCounter current={requirements.length} max={TEXT_LIMITS.job.requirements} />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-[var(--text-primary)]">Apply Email</label>
+            <input
+              type="email"
+              value={applyEmail}
+              onChange={(event) => setApplyEmail(event.target.value)}
+              className="input-premium mt-1.5"
+              placeholder="careers@example.com"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[var(--text-primary)]">Apply URL</label>
+            <input
+              value={applyUrl}
+              onChange={(event) => setApplyUrl(event.target.value)}
+              className="input-premium mt-1.5"
+              placeholder="https://..."
+            />
+          </div>
+        </div>
+        <p className="text-xs text-[var(--text-muted)]">Provide at least one of apply email or apply URL.</p>
+
+        <div>
+          <label className="block text-sm font-medium text-[var(--text-primary)]">Publish Status</label>
+          <select
+            value={publishStatus}
+            onChange={(event) => setPublishStatus(event.target.value)}
+            className="select-premium mt-1.5"
+          >
+            <option value="draft">Draft</option>
+            <option value="published">Published</option>
+          </select>
         </div>
       </div>
-      <p className="text-xs text-neutral-400">Provide at least one of the above.</p>
 
-      <div>
-        <label className="block text-sm text-neutral-400">Publish Status</label>
-        <select
-          value={publishStatus}
-          onChange={(event) => setPublishStatus(event.target.value)}
-          className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
-        >
-          <option value="draft">Draft</option>
-          <option value="published">Published</option>
-        </select>
-      </div>
+      {error && <p className="text-sm font-medium text-red-400 bg-red-400/10 p-3 rounded-xl border border-red-400/20">{error}</p>}
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
-
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 pt-2">
         <button
           type="submit"
           disabled={isSaving}
-          className="rounded-md brand-gradient-bg px-5 py-2 font-semibold text-base-950 disabled:opacity-60"
+          className="btn-premium-primary rounded-xl px-6 py-3 font-semibold text-white shadow-lg shadow-brand-violet-600/20 disabled:opacity-60"
         >
           {isSaving ? "Saving..." : mode === "create" ? "Create Job Opening" : "Save Changes"}
         </button>
@@ -245,9 +254,9 @@ export default function JobOpeningForm({ mode, jobId, initialData }: JobOpeningF
           <button
             type="button"
             onClick={handleDelete}
-            className="rounded-md border border-red-400/40 px-5 py-2 text-sm text-red-400 hover:bg-red-400/10"
+            className="rounded-xl border border-red-400/40 bg-[var(--bg-surface)] px-6 py-3 text-sm font-semibold text-red-400 hover:bg-red-400/10 transition-all"
           >
-            Delete
+            Delete Job Opening
           </button>
         )}
       </div>

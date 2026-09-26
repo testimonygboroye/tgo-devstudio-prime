@@ -6,8 +6,8 @@ interface CharacterCounterProps {
 export default function CharacterCounter({ current, max }: CharacterCounterProps) {
   const isOverLimit = current > max;
   return (
-    <p className={`mt-1 text-xs ${isOverLimit ? "text-red-400" : "text-neutral-400"}`}>
-      {current} / {max}
+    <p className={`mt-1.5 text-xs font-mono ${isOverLimit ? "text-red-400 font-semibold" : "text-[var(--text-muted)]"}`}>
+      {current} / {max} characters
     </p>
   );
 }

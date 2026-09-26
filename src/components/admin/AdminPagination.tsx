@@ -8,28 +8,28 @@ export default function AdminPagination({ currentPage, totalPages, buildHref }: 
   if (totalPages <= 1) return null;
 
   return (
-    <div className="mt-6 flex items-center justify-between text-sm">
+    <div className="surface-card mt-8 flex items-center justify-between px-6 py-4 text-sm">
       <a
         href={currentPage > 1 ? buildHref(currentPage - 1) : undefined}
         aria-disabled={currentPage <= 1}
-        className={`rounded-md border border-base-800 px-3 py-1.5 ${
+        className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 font-medium transition-all ${
           currentPage <= 1
-            ? "pointer-events-none text-neutral-600"
-            : "text-neutral-100 hover:bg-base-900"
+            ? "pointer-events-none opacity-40 text-[var(--text-muted)]"
+            : "border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:border-brand-cyan-400 hover:text-brand-cyan-400"
         }`}
       >
         ← Previous
       </a>
-      <span className="text-neutral-500">
+      <span className="font-mono text-xs uppercase tracking-widest text-[var(--text-secondary)]">
         Page {currentPage} of {totalPages}
       </span>
       <a
         href={currentPage < totalPages ? buildHref(currentPage + 1) : undefined}
         aria-disabled={currentPage >= totalPages}
-        className={`rounded-md border border-base-800 px-3 py-1.5 ${
+        className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 font-medium transition-all ${
           currentPage >= totalPages
-            ? "pointer-events-none text-neutral-600"
-            : "text-neutral-100 hover:bg-base-900"
+            ? "pointer-events-none opacity-40 text-[var(--text-muted)]"
+            : "border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:border-brand-cyan-400 hover:text-brand-cyan-400"
         }`}
       >
         Next →

@@ -63,7 +63,7 @@ export default function TeamMemberForm({ mode, memberId, initialData }: TeamMemb
     try {
       const formData = new FormData();
       formData.append("file", file);
-    formData.append("folder", "team");
+      formData.append("folder", "team");
 
       const response = await fetch("/api/media/upload", { method: "POST", body: formData });
       const data = await response.json();
@@ -156,168 +156,179 @@ export default function TeamMemberForm({ mode, memberId, initialData }: TeamMemb
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-2xl space-y-6">
-      <div>
-        <label className="block text-sm text-neutral-400">Name</label>
-        <input
-          required
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
-        />
-        <CharacterCounter current={name.length} max={TEXT_LIMITS.team.name} />
-      </div>
+    <form onSubmit={handleSubmit} className="mx-auto max-w-2xl space-y-6">
+      <div className="rounded-xl border border-base-800 bg-base-900/50 p-6 shadow-xl space-y-5 backdrop-blur-sm">
+        <h2 className="text-lg font-semibold text-neutral-100">
+          {mode === "create" ? "New Team Member" : "Edit Team Member"}
+        </h2>
 
-      <div>
-        <label className="block text-sm text-neutral-400">Job Title</label>
-        <input
-          required
-          value={jobTitle}
-          onChange={(event) => setJobTitle(event.target.value)}
-          className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
-        />
-        <CharacterCounter current={jobTitle.length} max={TEXT_LIMITS.team.jobTitle} />
-      </div>
-
-      <div>
-        <label className="block text-sm text-neutral-400">Bio</label>
-        <textarea
-          required
-          rows={4}
-          value={bio}
-          onChange={(event) => setBio(event.target.value)}
-          className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
-        />
-        <CharacterCounter current={bio.length} max={TEXT_LIMITS.team.bio} />
-      </div>
-
-      <div className="grid grid-cols-3 gap-4">
         <div>
-          <label className="block text-sm text-neutral-400">LinkedIn URL</label>
+          <label className="block text-sm font-medium text-neutral-300">Name</label>
           <input
-            value={linkedinUrl}
-            onChange={(event) => setLinkedinUrl(event.target.value)}
-            placeholder="Add later if not ready"
-            className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
+            required
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            placeholder="e.g. Jane Doe"
+            className="mt-1 w-full rounded-lg border border-base-800 bg-base-950 px-4 py-2.5 text-neutral-100 outline-none transition focus:border-brand-cyan-400 focus:ring-2 focus:ring-brand-cyan-400/20"
           />
-        </div>
-        <div>
-          <label className="block text-sm text-neutral-400">GitHub URL</label>
-          <input
-            value={githubUrl}
-            onChange={(event) => setGithubUrl(event.target.value)}
-            className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
-          />
-        </div>
-        <div>
-          <label className="block text-sm text-neutral-400">X / Twitter URL</label>
-          <input
-            value={twitterUrl}
-            onChange={(event) => setTwitterUrl(event.target.value)}
-            className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm text-neutral-400">Display Order</label>
-          <input
-            type="number"
-            value={displayOrder}
-            onChange={(event) => setDisplayOrder(Number(event.target.value))}
-            className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
-          />
-          <p className="mt-1 text-xs text-neutral-400">Lower numbers appear first.</p>
-        </div>
-        <div>
-          <label className="block text-sm text-neutral-400">Publish Status</label>
-          <select
-            value={publishStatus}
-            onChange={(event) => setPublishStatus(event.target.value)}
-            className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
-          >
-            <option value="draft">Draft</option>
-            <option value="published">Published</option>
-          </select>
+          <CharacterCounter current={name.length} max={TEXT_LIMITS.team.name} />
         </div>
 
-        <div className="flex items-center gap-2 pt-6">
+        <div>
+          <label className="block text-sm font-medium text-neutral-300">Job Title</label>
+          <input
+            required
+            value={jobTitle}
+            onChange={(event) => setJobTitle(event.target.value)}
+            placeholder="e.g. Senior Software Architect"
+            className="mt-1 w-full rounded-lg border border-base-800 bg-base-950 px-4 py-2.5 text-neutral-100 outline-none transition focus:border-brand-cyan-400 focus:ring-2 focus:ring-brand-cyan-400/20"
+          />
+          <CharacterCounter current={jobTitle.length} max={TEXT_LIMITS.team.jobTitle} />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-neutral-300">Bio</label>
+          <textarea
+            required
+            rows={4}
+            value={bio}
+            onChange={(event) => setBio(event.target.value)}
+            placeholder="Short professional biography..."
+            className="mt-1 w-full rounded-lg border border-base-800 bg-base-950 px-4 py-2.5 text-neutral-100 outline-none transition focus:border-brand-cyan-400 focus:ring-2 focus:ring-brand-cyan-400/20"
+          />
+          <CharacterCounter current={bio.length} max={TEXT_LIMITS.team.bio} />
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div>
+            <label className="block text-sm font-medium text-neutral-300">LinkedIn URL</label>
+            <input
+              value={linkedinUrl}
+              onChange={(event) => setLinkedinUrl(event.target.value)}
+              placeholder="https://linkedin.com/in/..."
+              className="mt-1 w-full rounded-lg border border-base-800 bg-base-950 px-3 py-2 text-sm text-neutral-100 outline-none transition focus:border-brand-cyan-400 focus:ring-2 focus:ring-brand-cyan-400/20"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-300">GitHub URL</label>
+            <input
+              value={githubUrl}
+              onChange={(event) => setGithubUrl(event.target.value)}
+              placeholder="https://github.com/..."
+              className="mt-1 w-full rounded-lg border border-base-800 bg-base-950 px-3 py-2 text-sm text-neutral-100 outline-none transition focus:border-brand-cyan-400 focus:ring-2 focus:ring-brand-cyan-400/20"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-300">X / Twitter URL</label>
+            <input
+              value={twitterUrl}
+              onChange={(event) => setTwitterUrl(event.target.value)}
+              placeholder="https://x.com/..."
+              className="mt-1 w-full rounded-lg border border-base-800 bg-base-950 px-3 py-2 text-sm text-neutral-100 outline-none transition focus:border-brand-cyan-400 focus:ring-2 focus:ring-brand-cyan-400/20"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label className="block text-sm font-medium text-neutral-300">Display Order</label>
+            <input
+              type="number"
+              value={displayOrder}
+              onChange={(event) => setDisplayOrder(Number(event.target.value))}
+              className="mt-1 w-full rounded-lg border border-base-800 bg-base-950 px-4 py-2.5 text-neutral-100 outline-none transition focus:border-brand-cyan-400 focus:ring-2 focus:ring-brand-cyan-400/20"
+            />
+            <p className="mt-1 text-xs text-neutral-400">Lower numbers appear first.</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-300">Publish Status</label>
+            <select
+              value={publishStatus}
+              onChange={(event) => setPublishStatus(event.target.value)}
+              className="mt-1 w-full rounded-lg border border-base-800 bg-base-950 px-4 py-2.5 text-neutral-100 outline-none transition focus:border-brand-cyan-400 focus:ring-2 focus:ring-brand-cyan-400/20"
+            >
+              <option value="draft">Draft</option>
+              <option value="published">Published</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 pt-2">
           <input
             type="checkbox"
             id="featured"
             checked={featured}
             onChange={(event) => setFeatured(event.target.checked)}
-            className="h-4 w-4 rounded border-base-800 bg-base-900"
+            className="h-4 w-4 rounded border-base-800 bg-base-950 text-brand-cyan-400 focus:ring-brand-cyan-400/20"
           />
-          <label htmlFor="featured" className="text-sm text-neutral-400">
+          <label htmlFor="featured" className="text-sm text-neutral-300 select-none cursor-pointer">
             Feature on homepage
           </label>
         </div>
-      </div>
 
-      <div className="rounded-lg border border-base-800 bg-base-900 p-4">
-        <p className="text-sm font-semibold text-neutral-100">Photo</p>
+        <div className="rounded-lg border border-base-800 bg-base-950 p-4 space-y-3">
+          <p className="text-sm font-semibold text-neutral-200">Photo</p>
 
-        {photo && (
-          <div className="mt-3 flex items-center justify-between rounded-md border border-base-800 p-2">
-            <div className="flex items-center gap-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={photo.url} alt={photo.altText} className="h-12 w-12 rounded-full object-cover" />
-              <span className="text-xs text-neutral-400">{photo.altText}</span>
+          {photo && (
+            <div className="flex items-center justify-between rounded-lg border border-base-800 bg-base-900 p-3">
+              <div className="flex items-center gap-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={photo.url} alt={photo.altText} className="h-12 w-12 rounded-full object-cover border border-base-700" />
+                <span className="text-xs text-neutral-300">{photo.altText}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPhoto(null)}
+                className="text-xs font-medium text-red-400 hover:underline"
+              >
+                Remove
+              </button>
             </div>
+          )}
+
+          <div className="space-y-2 pt-1">
+            <label className="block text-sm font-medium text-neutral-300">
+              Alt text (required before uploading)
+            </label>
+            <input
+              value={pendingAltText}
+              onChange={(event) => setPendingAltText(event.target.value)}
+              className="w-full rounded-lg border border-base-800 bg-base-900 px-4 py-2.5 text-sm text-neutral-100 outline-none transition focus:border-brand-cyan-400 focus:ring-2 focus:ring-brand-cyan-400/20"
+              placeholder="e.g. Headshot of Jane Doe smiling"
+            />
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handlePhotoUpload}
+              disabled={isUploading}
+              className="text-sm text-neutral-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-brand-cyan-400/10 file:text-brand-cyan-300 hover:file:bg-brand-cyan-400/20 cursor-pointer"
+            />
+            {isUploading && <p className="text-xs text-brand-cyan-300 animate-pulse">Uploading photo...</p>}
+          </div>
+        </div>
+
+        {error && <p className="text-sm font-medium text-red-400">{error}</p>}
+        {savedMessage && <p className="text-sm font-medium text-brand-cyan-300">{savedMessage}</p>}
+
+        <div className="flex items-center gap-3 pt-4 border-t border-base-800">
+          <button
+            type="submit"
+            disabled={isSaving}
+            className="rounded-lg brand-gradient-bg px-6 py-2.5 font-semibold text-base-950 shadow-md transition hover:opacity-90 disabled:opacity-60"
+          >
+            {isSaving ? "Saving..." : mode === "create" ? "Add Team Member" : "Save Changes"}
+          </button>
+
+          {mode === "edit" && (
             <button
               type="button"
-              onClick={() => setPhoto(null)}
-              className="text-xs text-red-400 hover:underline"
+              onClick={handleDelete}
+              className="rounded-lg border border-red-500/40 px-5 py-2.5 text-sm font-medium text-red-300 transition hover:bg-red-500/10"
             >
-              Remove
+              Delete
             </button>
-          </div>
-        )}
-
-        <div className="mt-4 space-y-2">
-          <label className="block text-sm text-neutral-400">
-            Alt text (required before uploading)
-          </label>
-          <input
-            value={pendingAltText}
-            onChange={(event) => setPendingAltText(event.target.value)}
-            className="w-full rounded-md border border-base-800 bg-base-950 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
-            placeholder="e.g. Headshot of Jane Doe smiling, outdoor background"
-          />
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            onChange={handlePhotoUpload}
-            disabled={isUploading}
-            className="text-sm text-neutral-400"
-          />
-          {isUploading && <p className="text-xs text-neutral-400">Uploading...</p>}
+          )}
         </div>
-      </div>
-
-      {error && <p className="text-sm text-red-400">{error}</p>}
-      {savedMessage && <p className="text-sm text-brand-cyan-300">{savedMessage}</p>}
-
-      <div className="flex items-center gap-3">
-        <button
-          type="submit"
-          disabled={isSaving}
-          className="rounded-md brand-gradient-bg px-5 py-2 font-semibold text-base-950 disabled:opacity-60"
-        >
-          {isSaving ? "Saving..." : mode === "create" ? "Add Team Member" : "Save Changes"}
-        </button>
-
-        {mode === "edit" && (
-          <button
-            type="button"
-            onClick={handleDelete}
-            className="rounded-md border border-red-400/40 px-5 py-2 text-sm text-red-400 hover:bg-red-400/10"
-          >
-            Delete
-          </button>
-        )}
       </div>
     </form>
   );

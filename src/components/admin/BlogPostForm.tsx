@@ -161,132 +161,137 @@ export default function BlogPostForm({ mode, postId, initialData }: BlogPostForm
 
   return (
     <form onSubmit={handleSubmit} className="max-w-3xl space-y-6">
-      <div>
-        <label className="block text-sm text-neutral-400">Title</label>
-        <input
-          required
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
-          className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
-        />
-        <CharacterCounter current={title.length} max={TEXT_LIMITS.blog.title} />
-      </div>
-
-      <div>
-        <label className="block text-sm text-neutral-400">Excerpt</label>
-        <textarea
-          required
-          rows={2}
-          value={excerpt}
-          onChange={(event) => setExcerpt(event.target.value)}
-          className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
-        />
-        <CharacterCounter current={excerpt.length} max={TEXT_LIMITS.blog.excerpt} />
-      </div>
-
-      <div>
-        <label className="block text-sm text-neutral-400">Content</label>
-        <div className="mt-1">
-          <RichTextEditor content={contentHtml} onChange={setContentHtml} />
-        </div>
-        <CharacterCounter current={contentHtml.length} max={TEXT_LIMITS.blog.contentHtml} />
-      </div>
-
-      <div>
-        <label className="block text-sm text-neutral-400">Tags (comma-separated)</label>
-        <input
-          value={tagsInput}
-          onChange={(event) => setTagsInput(event.target.value)}
-          className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
+      <div className="surface-card p-6 sm:p-8 space-y-6">
         <div>
-          <label className="block text-sm text-neutral-400">Publish Status</label>
-          <select
-            value={publishStatus}
-            onChange={(event) => setPublishStatus(event.target.value)}
-            className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
-          >
-            <option value="draft">Draft</option>
-            <option value="scheduled">Scheduled</option>
-            <option value="published">Published</option>
-          </select>
-        </div>
-        <div className="flex items-center gap-2 pt-6">
+          <label className="block text-sm font-medium text-[var(--text-primary)]">Title</label>
           <input
-            type="checkbox"
-            id="featured"
-            checked={featured}
-            onChange={(event) => setFeatured(event.target.checked)}
-            className="h-4 w-4 rounded border-base-800 bg-base-900"
+            required
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            className="input-premium mt-1.5"
+            placeholder="Enter blog post title..."
           />
-          <label htmlFor="featured" className="text-sm text-neutral-400">
-            Feature on homepage
-          </label>
+          <CharacterCounter current={title.length} max={TEXT_LIMITS.blog.title} />
         </div>
+
+        <div>
+          <label className="block text-sm font-medium text-[var(--text-primary)]">Excerpt</label>
+          <textarea
+            required
+            rows={3}
+            value={excerpt}
+            onChange={(event) => setExcerpt(event.target.value)}
+            className="textarea-premium mt-1.5"
+            placeholder="Brief summary of the article..."
+          />
+          <CharacterCounter current={excerpt.length} max={TEXT_LIMITS.blog.excerpt} />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-[var(--text-primary)] mb-1.5">Content</label>
+          <RichTextEditor content={contentHtml} onChange={setContentHtml} />
+          <CharacterCounter current={contentHtml.length} max={TEXT_LIMITS.blog.contentHtml} />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-[var(--text-primary)]">Tags (comma-separated)</label>
+          <input
+            value={tagsInput}
+            onChange={(event) => setTagsInput(event.target.value)}
+            className="input-premium mt-1.5"
+            placeholder="Next.js, React, Architecture"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+          <div>
+            <label className="block text-sm font-medium text-[var(--text-primary)]">Publish Status</label>
+            <select
+              value={publishStatus}
+              onChange={(event) => setPublishStatus(event.target.value)}
+              className="select-premium mt-1.5"
+            >
+              <option value="draft">Draft</option>
+              <option value="scheduled">Scheduled</option>
+              <option value="published">Published</option>
+            </select>
+          </div>
+          <div className="flex items-center gap-3 pt-7">
+            <input
+              type="checkbox"
+              id="featured"
+              checked={featured}
+              onChange={(event) => setFeatured(event.target.checked)}
+              className="h-4 w-4 rounded border-[var(--border-subtle)] bg-[var(--bg-surface)] text-brand-violet-600 focus:ring-brand-cyan-400"
+            />
+            <label htmlFor="featured" className="text-sm font-medium text-[var(--text-primary)] cursor-pointer">
+              Feature on homepage
+            </label>
+          </div>
+        </div>
+
         {publishStatus === "scheduled" && (
           <div>
-            <label className="block text-sm text-neutral-400">Publish Date &amp; Time</label>
+            <label className="block text-sm font-medium text-[var(--text-primary)]">Publish Date &amp; Time</label>
             <input
               type="datetime-local"
               value={scheduledFor}
               onChange={(event) => setScheduledFor(event.target.value)}
-              className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
+              className="input-premium mt-1.5"
             />
           </div>
         )}
-      </div>
 
-      <div className="rounded-lg border border-base-800 bg-base-900 p-4">
-        <p className="text-sm font-semibold text-neutral-100">Cover Image</p>
+        <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-2)] p-5 space-y-4">
+          <p className="text-sm font-semibold text-[var(--text-primary)]">Cover Image</p>
 
-        {coverImage && (
-          <div className="mt-3 flex items-center justify-between rounded-md border border-base-800 p-2">
-            <div className="flex items-center gap-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={coverImage.url} alt={coverImage.altText} className="h-12 w-20 rounded object-cover" />
-              <span className="text-xs text-neutral-400">{coverImage.altText}</span>
+          {coverImage && (
+            <div className="flex items-center justify-between rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-3">
+              <div className="flex items-center gap-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={coverImage.url} alt={coverImage.altText} className="h-12 w-20 rounded-lg object-cover" />
+                <span className="text-xs text-[var(--text-secondary)]">{coverImage.altText}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCoverImage(null)}
+                className="text-xs font-semibold text-red-400 hover:underline"
+              >
+                Remove
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => setCoverImage(null)}
-              className="text-xs text-red-400 hover:underline"
-            >
-              Remove
-            </button>
-          </div>
-        )}
+          )}
 
-        <div className="mt-4 space-y-2">
-          <label className="block text-sm text-neutral-400">
-            Alt text (required before uploading)
-          </label>
-          <input
-            value={pendingAltText}
-            onChange={(event) => setPendingAltText(event.target.value)}
-            className="w-full rounded-md border border-base-800 bg-base-950 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
-          />
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            onChange={handleCoverUpload}
-            disabled={isUploading}
-            className="text-sm text-neutral-400"
-          />
-          {isUploading && <p className="text-xs text-neutral-400">Uploading...</p>}
+          <div className="space-y-2">
+            <label className="block text-xs font-medium text-[var(--text-secondary)]">
+              Alt text (required before uploading)
+            </label>
+            <input
+              value={pendingAltText}
+              onChange={(event) => setPendingAltText(event.target.value)}
+              className="input-premium text-sm"
+              placeholder="Describe cover image for accessibility..."
+            />
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleCoverUpload}
+              disabled={isUploading}
+              className="text-sm text-[var(--text-muted)] file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-violet-600/15 file:text-brand-cyan-300 hover:file:bg-brand-violet-600/25 transition-all cursor-pointer"
+            />
+            {isUploading && <p className="text-xs text-brand-cyan-400 animate-pulse">Uploading cover image...</p>}
+          </div>
         </div>
       </div>
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
-      {savedMessage && <p className="text-sm text-brand-cyan-300">{savedMessage}</p>}
+      {error && <p className="text-sm font-medium text-red-400 bg-red-400/10 p-3 rounded-xl border border-red-400/20">{error}</p>}
+      {savedMessage && <p className="text-sm font-medium text-brand-cyan-300 bg-brand-cyan-400/10 p-3 rounded-xl border border-brand-cyan-400/20">{savedMessage}</p>}
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 pt-2">
         <button
           type="submit"
           disabled={isSaving}
-          className="rounded-md brand-gradient-bg px-5 py-2 font-semibold text-base-950 disabled:opacity-60"
+          className="btn-premium-primary rounded-xl px-6 py-3 font-semibold text-white shadow-lg shadow-brand-violet-600/20 disabled:opacity-60"
         >
           {isSaving ? "Saving..." : mode === "create" ? "Create Post" : "Save Changes"}
         </button>
@@ -295,9 +300,9 @@ export default function BlogPostForm({ mode, postId, initialData }: BlogPostForm
           <button
             type="button"
             onClick={handleDelete}
-            className="rounded-md border border-red-400/40 px-5 py-2 text-sm text-red-400 hover:bg-red-400/10"
+            className="rounded-xl border border-red-400/40 bg-[var(--bg-surface)] px-6 py-3 text-sm font-semibold text-red-400 hover:bg-red-400/10 transition-all"
           >
-            Delete
+            Delete Post
           </button>
         )}
       </div>

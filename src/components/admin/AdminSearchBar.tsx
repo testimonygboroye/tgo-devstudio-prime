@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { Search } from "lucide-react";
 
 interface AdminSearchBarProps {
   placeholder?: string;
@@ -31,12 +32,15 @@ export default function AdminSearchBar({ placeholder = "Search...", defaultValue
   }, [value, basePath, router]);
 
   return (
-    <input
-      type="text"
-      value={value}
-      onChange={(e) => setValue(e.target.value)}
-      placeholder={placeholder}
-      className="w-full max-w-xs rounded-md border border-base-800 bg-base-900 px-3 py-2 text-sm text-neutral-100 outline-none focus:border-brand-cyan-400"
-    />
+    <div className="relative w-full max-w-sm">
+      <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none" />
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder={placeholder}
+        className="input-premium pl-10 text-sm"
+      />
+    </div>
   );
 }

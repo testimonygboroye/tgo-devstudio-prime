@@ -448,13 +448,112 @@ body {
 .values-grid li {
   position: relative;
   background: linear-gradient(160deg, color-mix(in srgb, var(--bg-surface) 100%, transparent) 0%, color-mix(in srgb, var(--bg-surface-2) 100%, transparent) 100%);
-  border: 1px solid var(--border-subtle);
-  border-radius: 1rem;
-  padding: 1.5rem;
+  border-radius: 1.25rem;
+  padding: 1.75rem;
   margin: 0;
+  box-shadow:
+    0 0 0 1px rgba(46, 197, 240, 0.08),
+    0 20px 50px -20px rgba(91, 46, 232, 0.25),
+    0 8px 24px -10px rgba(0, 0, 0, 0.5);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease;
+  isolation: isolate;
+}
+.values-grid li::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  background: linear-gradient(135deg, rgba(91, 46, 232, 1) 0%, rgba(108, 60, 233, 0.7) 30%, rgba(46, 197, 240, 0.6) 65%, rgba(34, 211, 238, 1) 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.7;
+  transition: opacity 0.35s ease;
+  z-index: -1;
+}
+.values-grid li:hover {
+  transform: translateY(-4px);
+}
+.values-grid li:hover::before {
+  opacity: 1;
 }
 .values-grid li strong {
   color: var(--color-brand-cyan-400);
   display: block;
   margin-bottom: 0.5rem;
+}
+
+/* ============================================
+   DESIGN SYSTEM EXTENSIONS: Form Controls & Badges
+   ============================================ */
+
+.input-premium,
+.textarea-premium,
+.select-premium {
+  width: 100%;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.input-premium:hover,
+.textarea-premium:hover,
+.select-premium:hover {
+  border-color: color-mix(in srgb, var(--color-brand-cyan-400) 50%, var(--border-subtle));
+}
+
+.input-premium:focus,
+.textarea-premium:focus,
+.select-premium:focus {
+  outline: none;
+  border-color: var(--color-brand-cyan-400);
+  box-shadow: 0 0 0 3px rgba(46, 197, 240, 0.2);
+  background-color: var(--bg-surface-2);
+}
+
+.btn-premium-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--text-primary);
+  border-radius: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btn-premium-outline:hover {
+  border-color: var(--color-brand-cyan-400);
+  background-color: var(--surface-hover);
+  color: var(--color-brand-cyan-400);
+  transform: translateY(-2px);
+}
+
+.badge-premium {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  background: color-mix(in srgb, var(--color-brand-violet-600) 15%, var(--bg-surface));
+  border: 1px solid color-mix(in srgb, var(--color-brand-violet-600) 30%, var(--border-subtle));
+  color: var(--color-brand-cyan-300);
+}
+
+::selection {
+  background-color: rgba(91, 46, 232, 0.35);
+  color: #FFFFFF;
 }

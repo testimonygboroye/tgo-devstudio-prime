@@ -67,7 +67,7 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
     editorProps: {
       attributes: {
         class:
-          "min-h-[300px] w-full rounded-b-md border border-t-0 border-base-800 bg-base-950 px-4 py-3 text-neutral-100 outline-none prose prose-invert max-w-none",
+          "min-h-[300px] w-full rounded-b-xl border border-t-0 border-[var(--border-subtle)] bg-[var(--bg-surface)] px-5 py-4 text-[var(--text-primary)] outline-none prose prose-invert max-w-none",
       },
     },
   });
@@ -104,7 +104,7 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
 
       const formData = new FormData();
       formData.append("file", file);
-    formData.append("folder", "blog");
+      formData.append("folder", "blog");
 
       try {
         const response = await fetch("/api/media/upload", { method: "POST", body: formData });
@@ -125,8 +125,8 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
   }
 
   return (
-    <div>
-      <div className="flex flex-wrap items-center gap-1 rounded-t-md border border-base-800 bg-base-900 p-2">
+    <div className="rounded-xl shadow-sm">
+      <div className="flex flex-wrap items-center gap-1.5 rounded-t-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-2)] p-3 shadow-inner">
         <select
           onChange={(event) => {
             if (event.target.value) {
@@ -135,7 +135,7 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
               editor.chain().focus().unsetFontFamily().run();
             }
           }}
-          className="rounded border border-base-800 bg-base-950 px-2 py-1 text-sm text-neutral-100"
+          className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-2.5 py-1.5 text-xs text-[var(--text-primary)] outline-none"
           defaultValue=""
         >
           {FONT_FAMILIES.map((font) => (
@@ -147,7 +147,7 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
 
         <select
           onChange={(event) => editor.chain().focus().setFontSize(event.target.value).run()}
-          className="rounded border border-base-800 bg-base-950 px-2 py-1 text-sm text-neutral-100"
+          className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-2.5 py-1.5 text-xs text-[var(--text-primary)] outline-none"
           defaultValue="16px"
         >
           {FONT_SIZES.map((size) => (
@@ -258,13 +258,13 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
 
         <Divider />
 
-        <span className="text-xs text-neutral-400">Color</span>
+        <span className="text-xs text-[var(--text-muted)] font-mono uppercase">Color</span>
         {TEXT_COLOR_SWATCHES.map((color) => (
           <button
             key={color}
             type="button"
             onClick={() => editor.chain().focus().setColor(color).run()}
-            className="h-6 w-6 rounded-full border border-base-800"
+            className="h-5 w-5 rounded-full border border-[var(--border-subtle)] hover:scale-110 transition-transform"
             style={{ backgroundColor: color }}
             aria-label={`Set text color to ${color}`}
           />
@@ -272,19 +272,19 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
         <input
           type="color"
           onChange={(event) => editor.chain().focus().setColor(event.target.value).run()}
-          className="h-6 w-8 cursor-pointer rounded border border-base-800 bg-transparent"
+          className="h-6 w-7 cursor-pointer rounded border border-[var(--border-subtle)] bg-transparent p-0"
           aria-label="Custom text color"
         />
 
         <Divider />
 
-        <span className="text-xs text-neutral-400">Highlight</span>
+        <span className="text-xs text-[var(--text-muted)] font-mono uppercase">Highlight</span>
         {HIGHLIGHT_SWATCHES.map((color) => (
           <button
             key={color}
             type="button"
             onClick={() => editor.chain().focus().setBackgroundColor(color).run()}
-            className="h-6 w-6 rounded-full border border-base-800"
+            className="h-5 w-5 rounded-full border border-[var(--border-subtle)] hover:scale-110 transition-transform"
             style={{ backgroundColor: color }}
             aria-label={`Set highlight color to ${color}`}
           />
@@ -292,7 +292,7 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
         <button
           type="button"
           onClick={() => editor.chain().focus().unsetBackgroundColor().run()}
-          className="rounded px-2 py-1 text-xs text-neutral-400 hover:bg-base-800"
+          className="rounded-lg px-2 py-1 text-xs text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]"
         >
           None
         </button>
@@ -316,8 +316,10 @@ function ToolbarButton({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded px-2 py-1 text-sm font-medium ${
-        active ? "brand-gradient-bg text-base-950" : "text-neutral-100 hover:bg-base-800"
+      className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
+        active
+          ? "brand-gradient-bg text-base-950 shadow-sm"
+          : "text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
       }`}
     >
       {children}
@@ -326,5 +328,5 @@ function ToolbarButton({
 }
 
 function Divider() {
-  return <span className="mx-1 h-5 w-px bg-base-800" />;
+  return <span className="mx-1 h-4 w-px bg-[var(--border-subtle)]" />;
 }

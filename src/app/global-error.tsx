@@ -8,27 +8,32 @@ export default function GlobalError({
 }) {
   return (
     <html lang="en">
-      <body>
-        <main className="flex min-h-screen flex-col items-center justify-center gap-6 bg-[#0A0A0F] px-6 text-center">
-          <p className="font-mono text-sm uppercase tracking-widest text-neutral-400">
+      <body style={{ margin: 0, backgroundColor: "#0B0E14" }}>
+        <main className="flex min-h-screen flex-col items-center justify-center gap-6 px-6 text-center">
+          <p className="font-mono text-sm uppercase tracking-widest" style={{ color: "#6B7280" }}>
             Error 500
           </p>
-          <h1 className="text-5xl font-bold text-neutral-100 sm:text-7xl">
+          <h1
+            className="text-6xl font-bold sm:text-8xl"
+            style={{ background: "linear-gradient(135deg, #5B2EE8 0%, #6C3CE9 35%, #2EC5F0 75%, #22D3EE 100%)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}
+          >
             Something Went Wrong
           </h1>
-          <p className="max-w-md text-neutral-100/70">
+          <p className="max-w-md leading-relaxed" style={{ color: "#A8B0C3" }}>
             An unexpected error occurred. Please try again, or head back to the homepage.
           </p>
           <div className="mt-4 flex gap-4">
             <button
               onClick={() => window.location.reload()}
-              className="rounded-md border border-neutral-700 px-6 py-3 font-semibold text-neutral-100"
+              className="rounded-full px-8 py-3.5 font-semibold"
+              style={{ border: "1px solid #262C3D", color: "#F1F3F8", background: "transparent" }}
             >
               Try Again
             </button>
             <a
               href="/"
-              className="rounded-md bg-gradient-to-r from-[#6C3CE9] to-[#2EC5F0] px-6 py-3 font-semibold text-[#0A0A0F]"
+              className="rounded-full px-8 py-3.5 font-semibold"
+              style={{ background: "linear-gradient(135deg, #5B2EE8 0%, #6C3CE9 35%, #2EC5F0 75%, #22D3EE 100%)", color: "#0B0E14" }}
             >
               Back to Home
             </a>

@@ -21,9 +21,7 @@ export default function HelpIndexPage() {
     setIsLoading(true);
     const res = await fetch(`/api/help-articles${term ? `?q=${encodeURIComponent(term)}` : ""}`);
     const data = await res.json();
-    if (data.status === "ok") {
-      setArticles(data.articles);
-    }
+    if (data.status === "ok") setArticles(data.articles);
     setIsLoading(false);
   }, []);
 
@@ -62,44 +60,45 @@ export default function HelpIndexPage() {
   }, {});
 
   return (
-    <main className="min-h-screen px-6 py-16 sm:px-12">
+    <main className="min-h-screen px-6 py-20 sm:px-12">
       <div className="mx-auto max-w-3xl">
-        <p className="font-mono text-xs uppercase tracking-widest text-neutral-400">Help &amp; Guide</p>
-        <h1 className="mt-2 text-4xl font-bold brand-gradient-text sm:text-5xl">
+        <span className="eyebrow-label">Help &amp; Guide</span>
+        <h1
+          className="heading-premium mt-3 text-5xl font-bold brand-gradient-text sm:text-6xl"
+          style={{ fontFamily: "var(--font-display)" }}
+        >
           How Can We Help?
         </h1>
 
-        <div className="mt-8 flex items-center gap-3 rounded-lg border border-base-800 bg-base-900 px-4 py-3">
-          <Search size={18} className="text-neutral-500" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search articles..."
-            className="w-full bg-transparent text-neutral-100 outline-none placeholder:text-neutral-500"
-          />
+        <div className="surface-card mt-9">
+          <div className="surface-card-inner flex items-center gap-3 px-5 py-4">
+            <Search size={18} style={{ color: "var(--text-muted)" }} />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search articles..."
+              className="w-full bg-transparent outline-none"
+              style={{ color: "var(--text-primary)" }}
+            />
+          </div>
         </div>
 
-        {isLoading && <p className="mt-8 text-neutral-400">Loading...</p>}
-
+        {isLoading && <p className="mt-8" style={{ color: "var(--text-muted)" }}>Loading...</p>}
         {!isLoading && articles.length === 0 && (
-          <p className="mt-8 text-neutral-400">No articles found.</p>
+          <p className="mt-8" style={{ color: "var(--text-muted)" }}>No articles found.</p>
         )}
 
         {!isLoading && Object.keys(grouped).length > 0 && (
-          <div className="mt-10 space-y-8">
+          <div className="mt-12 space-y-10">
             {Object.entries(grouped).map(([category, items]) => (
               <div key={category}>
-                <h2 className="text-sm font-semibold uppercase tracking-widest text-brand-cyan-300">
-                  {category}
-                </h2>
-                <div className="mt-3 space-y-2">
+                <span className="eyebrow-label">{category}</span>
+                <div className="mt-5 space-y-3">
                   {items.map((article) => (
-                    <button
-                      key={article._id}
-                      onClick={() => handleOpenArticle(article._id)}
-                      className="block w-full rounded-lg border border-base-800 bg-base-900 p-4 text-left text-neutral-100 hover:border-brand-cyan-400"
-                    >
-                      {article.title}
+                    <button key={article._id} onClick={() => handleOpenArticle(article._id)} className="surface-card block w-full text-left">
+                      <div className="surface-card-inner px-5 py-4" style={{ color: "var(--text-primary)" }}>
+                        {article.title}
+                      </div>
                     </button>
                   ))}
                 </div>

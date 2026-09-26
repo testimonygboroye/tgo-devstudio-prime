@@ -63,74 +63,75 @@ export default function HelpArticleForm({ mode, articleId, initialData }: HelpAr
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-3xl space-y-4">
-      <div>
-        <label className="block text-sm text-neutral-400">Title</label>
-        <input
-          required
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm text-neutral-400">Category</label>
-        <input
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          placeholder="e.g. Admin, Public Site, Brand"
-          className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
+    <form onSubmit={handleSubmit} className="max-w-3xl space-y-6">
+      <div className="surface-card p-6 sm:p-8 space-y-6">
         <div>
-          <label className="block text-sm text-neutral-400">Visibility</label>
-          <select
-            value={visibility}
-            onChange={(e) => setVisibility(e.target.value)}
-            className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
-          >
-            <option value="public">Public (everyone, everywhere)</option>
-            <option value="preLogin">Pre-Login (login page only)</option>
-            <option value="anyAuthenticated">Any Logged-In Admin</option>
-            <option value="permission">Requires Specific Permission</option>
-          </select>
+          <label className="block text-sm font-medium text-[var(--text-primary)]">Title</label>
+          <input
+            required
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="input-premium mt-1.5"
+            placeholder="Help article title..."
+          />
         </div>
 
-        {visibility === "permission" && (
+        <div>
+          <label className="block text-sm font-medium text-[var(--text-primary)]">Category</label>
+          <input
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            placeholder="e.g. Admin, Public Site, Brand"
+            className="input-premium mt-1.5"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm text-neutral-400">Required Content Access</label>
+            <label className="block text-sm font-medium text-[var(--text-primary)]">Visibility</label>
             <select
-              value={requiredContentType}
-              onChange={(e) => setRequiredContentType(e.target.value)}
-              className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
+              value={visibility}
+              onChange={(e) => setVisibility(e.target.value)}
+              className="select-premium mt-1.5"
             >
-              <option value="">Select a content type</option>
-              {CONTENT_TYPE_OPTIONS.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
+              <option value="public">Public (everyone, everywhere)</option>
+              <option value="preLogin">Pre-Login (login page only)</option>
+              <option value="anyAuthenticated">Any Logged-In Admin</option>
+              <option value="permission">Requires Specific Permission</option>
             </select>
           </div>
-        )}
-      </div>
 
-      <div>
-        <label className="block text-sm text-neutral-400">Content</label>
-        <div className="mt-1">
+          {visibility === "permission" && (
+            <div>
+              <label className="block text-sm font-medium text-[var(--text-primary)]">Required Content Access</label>
+              <select
+                value={requiredContentType}
+                onChange={(e) => setRequiredContentType(e.target.value)}
+                className="select-premium mt-1.5"
+              >
+                <option value="">Select a content type</option>
+                {CONTENT_TYPE_OPTIONS.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-[var(--text-primary)] mb-1.5">Content</label>
           <RichTextEditor content={bodyHtml} onChange={setBodyHtml} />
         </div>
       </div>
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-sm font-medium text-red-400 bg-red-400/10 p-3 rounded-xl border border-red-400/20">{error}</p>}
 
       <button
         type="submit"
         disabled={isSaving}
-        className="rounded-md brand-gradient-bg px-5 py-2 font-semibold text-base-950 disabled:opacity-60"
+        className="btn-premium-primary rounded-xl px-6 py-3 font-semibold text-white shadow-lg shadow-brand-violet-600/20 disabled:opacity-60"
       >
         {isSaving ? "Saving..." : mode === "create" ? "Create Article" : "Save Changes"}
       </button>

@@ -66,7 +66,7 @@ export default function ServiceForm({ mode, serviceId, initialData }: ServiceFor
 
   async function handleDelete() {
     if (confirmText !== "DELETE") {
-      setError('You must type DELETE exactly to confirm.');
+      setError("You must type DELETE exactly to confirm.");
       return;
     }
     setIsDeleting(true);
@@ -79,134 +79,143 @@ export default function ServiceForm({ mode, serviceId, initialData }: ServiceFor
       return;
     }
     router.refresh();
-      setSavedMessage("Saved successfully.");
+    setSavedMessage("Saved successfully.");
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-xl space-y-4">
-      <div>
-        <label className="block text-sm text-neutral-400">Title</label>
-        <input
-          required
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
-        />
-      </div>
+    <form onSubmit={handleSubmit} className="mx-auto max-w-2xl space-y-6">
+      <div className="rounded-xl border border-base-800 bg-base-900/50 p-6 shadow-xl space-y-4 backdrop-blur-sm">
+        <h2 className="text-lg font-semibold text-neutral-100">
+          {mode === "create" ? "New Service" : "Edit Service"}
+        </h2>
 
-      <div>
-        <label className="block text-sm text-neutral-400">Summary</label>
-        <textarea
-          required
-          rows={4}
-          value={summary}
-          onChange={(e) => setSummary(e.target.value)}
-          className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm text-neutral-400">Icon</label>
-        <div className="mt-2 grid grid-cols-6 gap-2">
-          {SERVICE_ICON_NAMES.map((name) => {
-            const IconComp = SERVICE_ICON_MAP[name];
-            return (
-              <button
-                key={name}
-                type="button"
-                onClick={() => setIcon(name)}
-                title={name}
-                className={`flex h-12 items-center justify-center rounded-md border ${
-                  icon === name
-                    ? "border-brand-cyan-400 bg-brand-cyan-400/10 text-brand-cyan-300"
-                    : "border-base-800 bg-base-900 text-neutral-400 hover:bg-base-800"
-                }`}
-              >
-                <IconComp size={20} />
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm text-neutral-400">Display Order</label>
+          <label className="block text-sm font-medium text-neutral-300">Title</label>
           <input
-            type="number"
-            value={displayOrder}
-            onChange={(e) => setDisplayOrder(Number(e.target.value))}
-            className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
+            required
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="e.g. Full-Stack Web Development"
+            className="mt-1 w-full rounded-lg border border-base-800 bg-base-950 px-4 py-2.5 text-neutral-100 outline-none transition focus:border-brand-cyan-400 focus:ring-2 focus:ring-brand-cyan-400/20"
           />
         </div>
+
         <div>
-          <label className="block text-sm text-neutral-400">Status</label>
-          <select
-            value={publishStatus}
-            onChange={(e) => setPublishStatus(e.target.value)}
-            className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
-          >
-            <option value="draft">Draft</option>
-            <option value="published">Published</option>
-          </select>
+          <label className="block text-sm font-medium text-neutral-300">Summary</label>
+          <textarea
+            required
+            rows={4}
+            value={summary}
+            onChange={(e) => setSummary(e.target.value)}
+            placeholder="Briefly describe the service offering..."
+            className="mt-1 w-full rounded-lg border border-base-800 bg-base-950 px-4 py-2.5 text-neutral-100 outline-none transition focus:border-brand-cyan-400 focus:ring-2 focus:ring-brand-cyan-400/20"
+          />
         </div>
-      </div>
 
-      <div className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          id="featured"
-          checked={featured}
-          onChange={(e) => setFeatured(e.target.checked)}
-          className="h-4 w-4 rounded border-base-800 bg-base-900"
-        />
-        <label htmlFor="featured" className="text-sm text-neutral-400">
-          Feature on homepage
-        </label>
-      </div>
+        <div>
+          <label className="block text-sm font-medium text-neutral-300">Icon</label>
+          <div className="mt-2 grid grid-cols-6 gap-2 max-h-48 overflow-y-auto p-1 rounded-lg border border-base-800 bg-base-950">
+            {SERVICE_ICON_NAMES.map((name) => {
+              const IconComp = SERVICE_ICON_MAP[name];
+              return (
+                <button
+                  key={name}
+                  type="button"
+                  onClick={() => setIcon(name)}
+                  title={name}
+                  className={`flex h-12 items-center justify-center rounded-lg border transition ${
+                    icon === name
+                      ? "border-brand-cyan-400 bg-brand-cyan-400/10 text-brand-cyan-300 shadow-md"
+                      : "border-base-800 bg-base-900 text-neutral-400 hover:bg-base-800 hover:text-neutral-200"
+                  }`}
+                >
+                  <IconComp size={20} />
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
-      {savedMessage && <p className="text-sm text-brand-cyan-300">{savedMessage}</p>}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label className="block text-sm font-medium text-neutral-300">Display Order</label>
+            <input
+              type="number"
+              value={displayOrder}
+              onChange={(e) => setDisplayOrder(Number(e.target.value))}
+              className="mt-1 w-full rounded-lg border border-base-800 bg-base-950 px-4 py-2.5 text-neutral-100 outline-none transition focus:border-brand-cyan-400 focus:ring-2 focus:ring-brand-cyan-400/20"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-300">Status</label>
+            <select
+              value={publishStatus}
+              onChange={(e) => setPublishStatus(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-base-800 bg-base-950 px-4 py-2.5 text-neutral-100 outline-none transition focus:border-brand-cyan-400 focus:ring-2 focus:ring-brand-cyan-400/20"
+            >
+              <option value="draft">Draft</option>
+              <option value="published">Published</option>
+            </select>
+          </div>
+        </div>
 
-      <div className="flex items-center gap-3">
-        <button
-          type="submit"
-          disabled={isSaving}
-          className="rounded-md brand-gradient-bg px-5 py-2 font-semibold text-base-950 disabled:opacity-60"
-        >
-          {isSaving ? "Saving..." : mode === "create" ? "Create Service" : "Save Changes"}
-        </button>
+        <div className="flex items-center gap-3 pt-2">
+          <input
+            type="checkbox"
+            id="featured"
+            checked={featured}
+            onChange={(e) => setFeatured(e.target.checked)}
+            className="h-4 w-4 rounded border-base-800 bg-base-950 text-brand-cyan-400 focus:ring-brand-cyan-400/20"
+          />
+          <label htmlFor="featured" className="text-sm text-neutral-300 select-none cursor-pointer">
+            Feature on homepage
+          </label>
+        </div>
 
-        {mode === "edit" && (
+        {error && <p className="text-sm font-medium text-red-400">{error}</p>}
+        {savedMessage && <p className="text-sm font-medium text-brand-cyan-300">{savedMessage}</p>}
+
+        <div className="flex items-center gap-3 pt-4 border-t border-base-800">
           <button
-            type="button"
-            onClick={() => setShowConfirm(true)}
-            className="rounded-md border border-red-500/50 px-5 py-2 text-sm text-red-300 hover:bg-red-500/10"
+            type="submit"
+            disabled={isSaving}
+            className="rounded-lg brand-gradient-bg px-6 py-2.5 font-semibold text-base-950 shadow-md transition hover:opacity-90 disabled:opacity-60"
           >
-            Delete
+            {isSaving ? "Saving..." : mode === "create" ? "Create Service" : "Save Changes"}
           </button>
-        )}
+
+          {mode === "edit" && (
+            <button
+              type="button"
+              onClick={() => setShowConfirm(true)}
+              className="rounded-lg border border-red-500/40 px-5 py-2.5 text-sm font-medium text-red-300 transition hover:bg-red-500/10"
+            >
+              Delete
+            </button>
+          )}
+        </div>
       </div>
 
       {showConfirm && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 px-4">
-          <div className="w-full max-w-sm rounded-xl border border-base-800 bg-base-950 p-6">
-            <p className="font-semibold text-neutral-100">Delete this service?</p>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-2xl border border-base-800 bg-base-950 p-6 shadow-2xl">
+            <p className="text-lg font-semibold text-neutral-100">Delete this service?</p>
             <p className="mt-2 text-sm text-neutral-400">
-              Type <span className="font-mono font-bold text-red-300">DELETE</span> below to confirm.
+              Type <span className="font-mono font-bold text-red-400">DELETE</span> below to confirm.
             </p>
             <input
               value={confirmText}
               onChange={(e) => setConfirmText(e.target.value)}
-              className="mt-3 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
+              placeholder="DELETE"
+              className="mt-3 w-full rounded-lg border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none transition focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
             />
             {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
-            <div className="mt-4 flex gap-2">
+            <div className="mt-5 flex items-center gap-3">
               <button
                 type="button"
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className="rounded-md bg-red-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                className="flex-1 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-500 disabled:opacity-50"
               >
                 {isDeleting ? "Deleting..." : "Confirm Delete"}
               </button>
@@ -217,7 +226,7 @@ export default function ServiceForm({ mode, serviceId, initialData }: ServiceFor
                   setConfirmText("");
                   setError("");
                 }}
-                className="rounded-md border border-base-800 px-4 py-2 text-sm text-neutral-100 hover:bg-base-900"
+                className="flex-1 rounded-lg border border-base-800 px-4 py-2.5 text-sm font-medium text-neutral-300 transition hover:bg-base-900"
               >
                 Cancel
               </button>

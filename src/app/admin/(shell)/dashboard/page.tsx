@@ -4,10 +4,14 @@ import Role from "@/models/Role";
 import { Shield, UserCheck, Key, BarChart3, ArrowUpRight, Layers } from "lucide-react";
 import Link from "next/link";
 import { getAdminBasePath } from "@/lib/adminPath";
+import { redirect } from "next/navigation";
 
 export default async function AdminDashboardPage() {
   const session = await getServerSession();
-  const canManageRoles = session!.role.canManageRoles;
+  if (!session) {
+    redirect(`${getAdminBasePath()}/login`);
+  }
+  const canManageRoles = session.role.canManageRoles;
   const basePath = getAdminBasePath();
 
   if (canManageRoles) {
@@ -17,7 +21,7 @@ export default async function AdminDashboardPage() {
     ? await Role.find().sort({ createdAt: 1 }).lean()
     : [];
 
-  const currentRoleId = session!.role._id?.toString();
+  const currentRoleId = session.role._id?.toString();
 
   return (
     <div className="space-y-8">
@@ -33,10 +37,10 @@ export default async function AdminDashboardPage() {
               Secure CMS Control Center
             </div>
             <h1 className="text-3xl sm:text-4xl font-bold font-display text-[var(--text-primary)] tracking-tight">
-              Welcome back, <span className="brand-gradient-text">{session!.user.name}</span>
+              Welcome back, <span className="brand-gradient-text">{session.user.name}</span>
             </h1>
             <p className="mt-2 text-sm sm:text-base text-[var(--text-secondary)] max-w-xl">
-              You are authenticated securely as <span className="font-semibold text-[var(--text-primary)]">{session!.user.email}</span> with role <span className="text-brand-cyan-400 font-semibold">{session!.role.name}</span>.
+              You are authenticated securely as <span className="font-semibold text-[var(--text-primary)]">{session.user.email}</span> with role <span className="text-brand-cyan-400 font-semibold">{session.role.name}</span>.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -175,7 +179,7 @@ export default async function AdminDashboardPage() {
       ) : (
         <section className="space-y-4">
           <div className="surface-card rounded-xl p-5 border-[var(--border-subtle)]">
-            <span className="font-display font-semibold text-[var(--text-primary)]">Your role: {session!.role.name}</span>
+            <span className="font-display font-semibold text-[var(--text-primary)]">Your role: {session.role.name}</span>
             <p className="mt-1 text-sm text-[var(--text-secondary)]">
               Role management and advanced matrix configuration are restricted to roles with corresponding permissions.
             </p>

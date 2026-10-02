@@ -55,7 +55,7 @@ export function createTranslator(locale: Locale) {
 export function getLocalizedContent<T extends Record<string, any>>(
   doc: T,
   locale: Locale,
-  fields: (keyof T)[]
+  fields: readonly (keyof T)[]
 ): T {
   if (locale === "en" || !doc.translations) {
     return doc;

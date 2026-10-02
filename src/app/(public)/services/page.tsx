@@ -29,7 +29,7 @@ export default async function ServicesPage() {
     getLocalizedContent(
       service,
       locale,
-      TRANSLATABLE_FIELDS.Service as (keyof typeof service)[]
+      TRANSLATABLE_FIELDS.Service
     )
   );
 

@@ -28,7 +28,7 @@ export default async function ProcessPage() {
     getLocalizedContent(
       step,
       locale,
-      TRANSLATABLE_FIELDS.ProcessStep as (keyof typeof step)[]
+      TRANSLATABLE_FIELDS.ProcessStep
     )
   );
 

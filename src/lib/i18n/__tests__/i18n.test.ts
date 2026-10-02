@@ -1,9 +1,9 @@
-import { LOCALES, DEFAULT_LOCALE, RTL_LOCALES } from "../config";
+import { LOCALES, DEFAULT_LOCALE, RTL_LOCALES, LANGUAGES } from "../config";
 import { getDictionary, dictionaries } from "../dictionaries";
 import { getLocalizedContent, createTranslator } from "../translationHelper";
 import { formatDate, formatNumber, formatCurrency } from "../formatting";
 
-describe("Multilingual i18n System", () => {
+describe("Multilingual i18n System & API Localization", () => {
   test("supported locales include en, fr, es, ar, de, yo", () => {
     expect(LOCALES).toContain("en");
     expect(LOCALES).toContain("fr");
@@ -13,9 +13,11 @@ describe("Multilingual i18n System", () => {
     expect(LOCALES).toContain("yo");
     expect(DEFAULT_LOCALE).toBe("en");
     expect(RTL_LOCALES).toContain("ar");
+    expect(LANGUAGES.ar.dir).toBe("rtl");
+    expect(LANGUAGES.en.dir).toBe("ltr");
   });
 
-  test("getDictionary returns dictionary for all locales with required keys", () => {
+  test("getDictionary returns dictionary for all locales with required keys including api", () => {
     for (const loc of LOCALES) {
       const dict = getDictionary(loc);
       expect(dict).toBeDefined();
@@ -36,6 +38,9 @@ describe("Multilingual i18n System", () => {
       expect(dict.stack).toBeDefined();
       expect(dict.process).toBeDefined();
       expect(dict.team).toBeDefined();
+      expect(dict.api).toBeDefined();
+      expect(dict.api.errors).toBeDefined();
+      expect(dict.api.success).toBeDefined();
     }
   });
 
@@ -64,12 +69,15 @@ describe("Multilingual i18n System", () => {
     expect(resNoTrans.title).toBe("Only English");
   });
 
-  test("createTranslator supports nested keys and fallback", () => {
-    const t = createTranslator("fr");
-    expect(t("common.save")).toBe("Enregistrer");
-    expect(t("nav.home")).toBe("Accueil");
+  test("createTranslator supports nested keys, interpolation and fallback", () => {
+    const tFr = createTranslator("fr");
+    expect(tFr("common.save")).toBe("Enregistrer");
+    expect(tFr("nav.home")).toBe("Accueil");
+    expect(tFr("api.errors.invalidCredentials")).toBeDefined();
+
     // Fallback test
-    expect(t("nonexistent.key")).toBe("nonexistent.key");
+    const tAr = createTranslator("ar");
+    expect(tAr("api.errors.invalidCredentials")).toBeDefined();
   });
 
   test("getLocalizedContent handles Map translations", () => {

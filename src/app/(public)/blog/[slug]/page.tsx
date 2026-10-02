@@ -8,6 +8,9 @@ import { getPubliclyVisibleFilter } from "@/lib/utils/blogVisibility";
 import { sanitizeBlogHtml } from "@/lib/sanitizeHtml";
 import { calculateReadingTime } from "@/lib/utils/readingTime";
 import ImageLightbox from "@/components/shared/ImageLightbox";
+import { getServerLocale } from "@/lib/i18n/serverLocale";
+import { createTranslator, getLocalizedContent } from "@/lib/i18n/translationHelper";
+import { TRANSLATABLE_FIELDS } from "@/lib/i18n/translatableFields";
 
 export const revalidate = 300;
 
@@ -21,11 +24,23 @@ async function getPost(slug: string) {
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const locale = await getServerLocale();
   const { slug } = await params;
-  const post = await getPost(slug);
-  if (!post) return { title: "Post Not Found | TGO DevStudio Prime" };
+  const rawPost = await getPost(slug);
+
+  if (!rawPost) {
+    return { title: "Post Not Found | TGO DevStudio Prime" };
+  }
+
+  const post = getLocalizedContent(
+    rawPost,
+    locale,
+    TRANSLATABLE_FIELDS.BlogPost
+  );
+
   const title = post.metaTitle || `${post.title} | TGO DevStudio Prime`;
   const description = post.metaDescription || post.excerpt;
+
   return {
     title,
     description,
@@ -39,38 +54,70 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function BlogDetailPage({ params }: PageProps) {
+  const locale = await getServerLocale();
+  const t = createTranslator(locale);
+
   const { slug } = await params;
-  const post = await getPost(slug);
-  if (!post) notFound();
+  const rawPost = await getPost(slug);
+
+  if (!rawPost) notFound();
+
+  const post = getLocalizedContent(
+    rawPost,
+    locale,
+    TRANSLATABLE_FIELDS.BlogPost
+  );
 
   const author = await User.findById(post.createdBy).select("name").lean();
   const safeHtml = sanitizeBlogHtml(post.contentHtml);
   const readingMinutes = calculateReadingTime(post.contentHtml);
 
-  const relatedPosts =
+  const relatedRawPosts =
     post.tags.length > 0
-      ? await BlogPost.find({ _id: { $ne: post._id }, tags: { $in: post.tags }, ...getPubliclyVisibleFilter() })
-          .select("title slug excerpt")
+      ? await BlogPost.find({
+          _id: { $ne: post._id },
+          tags: { $in: post.tags },
+          ...getPubliclyVisibleFilter(),
+        })
+          .select("title slug excerpt translations")
           .limit(3)
           .lean()
       : [];
 
+  const relatedPosts = relatedRawPosts.map((related) =>
+    getLocalizedContent(related, locale, TRANSLATABLE_FIELDS.BlogPost)
+  );
+
   return (
     <main className="min-h-screen px-6 py-20 sm:px-12">
       <article className="mx-auto max-w-2xl">
-        <span className="eyebrow-label">Blog</span>
-        <h1 className="heading-premium mt-3 text-4xl font-bold brand-gradient-text sm:text-5xl" style={{ fontFamily: "var(--font-display)" }}>
+        <span className="eyebrow-label">{t("nav.blog")}</span>
+
+        <h1
+          className="heading-premium mt-3 text-4xl font-bold brand-gradient-text sm:text-5xl"
+          style={{ fontFamily: "var(--font-display)" }}
+        >
           {post.title}
         </h1>
+
         <p className="mt-3 text-sm" style={{ color: "var(--text-muted)" }}>
-          {author ? `By ${author.name}` : ""} · {new Date(post.createdAt).toLocaleDateString()} · {readingMinutes} min read
+          {author ? `${t("common.by")} ${author.name}` : ""} ·{" "}
+          {new Date(post.createdAt).toLocaleDateString(locale)} ·{" "}
+          {readingMinutes} {t("blog.minRead")}
         </p>
 
         {post.coverImage?.url && (
           <div className="mt-8">
-            <ImageLightbox src={post.coverImage.url} alt={post.coverImage.altText}>
+            <ImageLightbox
+              src={post.coverImage.url}
+              alt={post.coverImage.altText}
+            >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={post.coverImage.url} alt={post.coverImage.altText} className="w-full rounded-xl" />
+              <img
+                src={post.coverImage.url}
+                alt={post.coverImage.altText}
+                className="w-full rounded-xl"
+              />
             </ImageLightbox>
           </div>
         )}
@@ -84,7 +131,14 @@ export default async function BlogDetailPage({ params }: PageProps) {
         {post.tags.length > 0 && (
           <div className="mt-10 flex flex-wrap gap-2">
             {post.tags.map((tag: string) => (
-              <span key={tag} className="rounded-full border px-2 py-0.5 text-xs" style={{ borderColor: "var(--border-subtle)", color: "var(--text-muted)" }}>
+              <span
+                key={tag}
+                className="rounded-full border px-2 py-0.5 text-xs"
+                style={{
+                  borderColor: "var(--border-subtle)",
+                  color: "var(--text-muted)",
+                }}
+              >
                 {tag}
               </span>
             ))}
@@ -92,14 +146,37 @@ export default async function BlogDetailPage({ params }: PageProps) {
         )}
 
         {relatedPosts.length > 0 && (
-          <div className="mt-16 border-t pt-10" style={{ borderColor: "var(--border-subtle)" }}>
-            <h2 className="text-sm font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>Related Posts</h2>
+          <div
+            className="mt-16 border-t pt-10"
+            style={{ borderColor: "var(--border-subtle)" }}
+          >
+            <h2
+              className="text-sm font-semibold uppercase tracking-widest"
+              style={{ color: "var(--text-muted)" }}
+            >
+              {t("blog.relatedPosts")}
+            </h2>
+
             <div className="mt-5 space-y-3">
               {relatedPosts.map((related) => (
-                <Link key={related._id.toString()} href={`/blog/${related.slug}`} className="surface-card block">
+                <Link
+                  key={related._id.toString()}
+                  href={`/blog/${related.slug}`}
+                  className="surface-card block"
+                >
                   <div className="surface-card-inner p-5">
-                    <p className="font-semibold" style={{ color: "var(--text-primary)" }}>{related.title}</p>
-                    <p className="mt-1 text-sm" style={{ color: "var(--text-secondary)" }}>{related.excerpt}</p>
+                    <p
+                      className="font-semibold"
+                      style={{ color: "var(--text-primary)" }}
+                    >
+                      {related.title}
+                    </p>
+                    <p
+                      className="mt-1 text-sm"
+                      style={{ color: "var(--text-secondary)" }}
+                    >
+                      {related.excerpt}
+                    </p>
                   </div>
                 </Link>
               ))}

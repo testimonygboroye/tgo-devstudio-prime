@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { getAdminBasePath } from "@/lib/adminPath";
 import { LayoutDashboard, Briefcase, Users, Newspaper, DoorOpen, Inbox, Mail, Star, Layers, Workflow, FileText, Home, HelpCircle, PhoneCall, Boxes, UserPlus, Send, BookOpen, MessageCircleQuestion, UserCog, MessageSquare, ShieldCheck, Image, ScrollText, BarChart3, KeyRound, Zap, Settings, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -47,8 +48,7 @@ export default function AdminSidebar({ userName, userEmail, roleName }: AdminSid
   const [counts, setCounts] = useState<Record<string, number>>({});
   const pathname = usePathname();
 
-  const segments = pathname.split("/").filter(Boolean);
-  const basePathSegment = segments[0] ? `/${segments[0]}` : "";
+  const basePathSegment = getAdminBasePath();
 
   const loadCounts = useCallback(async () => {
     try {

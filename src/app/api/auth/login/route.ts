@@ -5,6 +5,7 @@ import Role from "@/models/Role";
 import { verifyPassword } from "@/lib/auth/passwords";
 import { signAccessToken, signRefreshToken, signTemp2FAToken } from "@/lib/auth/jwt";
 import { setAuthCookies } from "@/lib/auth/cookies";
+import { apiError, apiSuccess } from "@/lib/i18n/apiResponse";
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCK_DURATION_MS = 15 * 60 * 1000;
@@ -14,10 +15,7 @@ export async function POST(request: NextRequest) {
   const { email, password } = body as { email?: string; password?: string };
 
   if (!email || !password) {
-    return NextResponse.json(
-      { status: "error", message: "Email and password are required." },
-      { status: 400 }
-    );
+    return apiError("emailPasswordRequired", "Email and password are required.", 400);
   }
 
   await connectToDatabase();
@@ -25,24 +23,24 @@ export async function POST(request: NextRequest) {
   const user = await User.findOne({ email: email.toLowerCase() });
 
   if (!user) {
-    return NextResponse.json({ status: "error", message: "Invalid credentials." }, { status: 401 });
+    return apiError("invalidCredentials", "Invalid credentials.", 401);
   }
 
   if (user.isBanned) {
-    return NextResponse.json(
-      { status: "error", message: "This account has been suspended. Contact the Founder if you believe this is a mistake." },
-      { status: 403 }
+    return apiError(
+      "accountSuspended",
+      "This account has been suspended. Contact the Founder if you believe this is a mistake.",
+      403
     );
   }
 
   if (user.lockUntil && user.lockUntil.getTime() > Date.now()) {
     const minutesRemaining = Math.ceil((user.lockUntil.getTime() - Date.now()) / 60000);
-    return NextResponse.json(
-      {
-        status: "error",
-        message: `Account temporarily locked due to repeated failed login attempts. Try again in ${minutesRemaining} minute(s).`,
-      },
-      { status: 423 }
+    return apiError(
+      "accountLocked",
+      `Account temporarily locked due to repeated failed login attempts. Try again in ${minutesRemaining} minute(s).`,
+      423,
+      { minutes: minutesRemaining }
     );
   }
 
@@ -58,7 +56,7 @@ export async function POST(request: NextRequest) {
 
     await user.save();
 
-    return NextResponse.json({ status: "error", message: "Invalid credentials." }, { status: 401 });
+    return apiError("invalidCredentials", "Invalid credentials.", 401);
   }
 
   user.failedLoginAttempts = 0;
@@ -92,7 +90,7 @@ export async function POST(request: NextRequest) {
     tokenVersion: user.refreshTokenVersion,
   });
 
-  const response = NextResponse.json({ status: "ok", message: "Logged in successfully." });
+  const response = await apiSuccess({}, "loggedIn", "Logged in successfully.", 200);
   setAuthCookies(response, accessToken, refreshToken);
   return response;
 }

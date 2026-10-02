@@ -14,7 +14,7 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
-const siteUrl = process.env.SITE_URL || "https://tgo-devstudio-prime.onrender.com";
+const siteUrl = process.env.SITE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://tgo-devstudio-prime.onrender.com");
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

@@ -8,6 +8,7 @@ interface ThemeContextValue {
   theme: ThemeMode;
   resolvedTheme: "light" | "dark";
   setTheme: (theme: ThemeMode) => void;
+  toggleTheme: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
@@ -41,6 +42,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     applyTheme(mode);
   }
 
+  const toggleTheme = useCallback(() => {
+    const next = resolvedTheme === "dark" ? "light" : "dark";
+    setTheme(next);
+  }, [resolvedTheme]);
+
   useEffect(() => {
     if (theme !== "system") return;
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
@@ -56,7 +62,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [theme]);
 
   return (
-    <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme }}>
+    <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );

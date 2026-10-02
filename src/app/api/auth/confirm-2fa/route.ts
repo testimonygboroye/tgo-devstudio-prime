@@ -4,19 +4,20 @@ import User from "@/models/User";
 import { getAuthenticatedSession } from "@/lib/auth/session";
 import { verifyTotpToken } from "@/lib/auth/totp";
 import { generateBackupCodes, hashBackupCodes } from "@/lib/auth/backupCodes";
+import { apiError, apiSuccess } from "@/lib/i18n/apiResponse";
 
 export async function POST(request: NextRequest) {
   const session = await getAuthenticatedSession(request);
 
   if (!session) {
-    return NextResponse.json({ status: "error", message: "Not authenticated." }, { status: 401 });
+    return apiError("unauthorized", "Not authenticated.", 401);
   }
 
   const body = await request.json();
   const { code } = body as { code?: string };
 
   if (!code) {
-    return NextResponse.json({ status: "error", message: "code is required." }, { status: 400 });
+    return apiError("allFieldsRequired", "All fields are required.", 400);
   }
 
   await connectToDatabase();
@@ -24,16 +25,13 @@ export async function POST(request: NextRequest) {
   const user = await User.findById(session.user._id).select("+twoFactorTempSecret");
 
   if (!user || !user.twoFactorTempSecret) {
-    return NextResponse.json(
-      { status: "error", message: "No 2FA setup in progress. Call setup-2fa first." },
-      { status: 400 }
-    );
+    return apiError("invalid2faCode", "No 2FA setup in progress. Call setup-2fa first.", 400);
   }
 
   const isCodeValid = await verifyTotpToken(code, user.twoFactorTempSecret);
 
   if (!isCodeValid) {
-    return NextResponse.json({ status: "error", message: "Invalid authentication code." }, { status: 401 });
+    return apiError("invalid2faCode", "Invalid authentication code.", 401);
   }
 
   const backupCodes = generateBackupCodes();
@@ -45,9 +43,5 @@ export async function POST(request: NextRequest) {
   user.backupCodeHashes = backupCodeHashes;
   await user.save();
 
-  return NextResponse.json({
-    status: "ok",
-    message: "Two-factor authentication enabled.",
-    backupCodes,
-  });
+  return apiSuccess({ backupCodes }, "twoFactorEnabled", "Two-factor authentication enabled.", 200);
 }

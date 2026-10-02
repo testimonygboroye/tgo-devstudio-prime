@@ -17,28 +17,29 @@ export default function SiteFooter() {
   const { t } = useTranslation();
 
   const COMPANY_LINKS = [
-    { label: t.nav.about, href: "/about" },
-    { label: t.nav.services, href: "/services" },
-    { label: t.nav.process, href: "/process" },
-    { label: t.nav.team, href: "/team" },
-    { label: t.nav.stack, href: "/stack" },
+    { label: t("nav.about"), href: "/about" },
+    { label: t("nav.services"), href: "/services" },
+    { label: t("nav.process"), href: "/process" },
+    { label: t("nav.team"), href: "/team" },
+    { label: t("nav.stack"), href: "/stack" },
   ];
 
   const WORK_LINKS = [
-    { label: t.nav.portfolio, href: "/portfolio" },
-    { label: t.nav.blog, href: "/blog" },
-    { label: t.nav.careers, href: "/careers" },
-    { label: t.nav.testimonials, href: "/testimonials" },
+    { label: t("nav.portfolio"), href: "/portfolio" },
+    { label: t("nav.blog"), href: "/blog" },
+    { label: t("nav.careers"), href: "/careers" },
+    { label: t("nav.testimonials"), href: "/testimonials" },
   ];
 
   const LEGAL_LINKS = [
-    { label: t.nav.contact, href: "/contact" },
-    { label: t.nav.bookACall, href: "/book-a-call" },
-    { label: t.nav.help, href: "/help" },
-    { label: t.nav.faq, href: "/faq" },
+    { label: t("nav.contact"), href: "/contact" },
+    { label: t("nav.bookACall"), href: "/book-a-call" },
+    { label: t("nav.help"), href: "/help" },
+    { label: t("nav.faq"), href: "/faq" },
     { label: "Privacy Policy", href: "/privacy-policy" },
     { label: "Terms of Service", href: "/terms-of-service" },
     { label: "Accessibility", href: "/accessibility" },
+    { label: t("common.settings"), href: "/settings" },
   ];
 
   return (
@@ -73,7 +74,7 @@ export default function SiteFooter() {
           </div>
 
           <div>
-            <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{t.nav.about}</p>
+            <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{t("nav.about")}</p>
             <div className="mt-4 flex flex-col gap-2.5">
               {COMPANY_LINKS.map((link) => (
                 <Link key={link.href} href={link.href} className="text-sm hover:text-brand-cyan-300" style={{ color: "var(--text-secondary)" }}>
@@ -84,7 +85,7 @@ export default function SiteFooter() {
           </div>
 
           <div>
-            <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{t.nav.portfolio}</p>
+            <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{t("nav.portfolio")}</p>
             <div className="mt-4 flex flex-col gap-2.5">
               {WORK_LINKS.map((link) => (
                 <Link key={link.href} href={link.href} className="text-sm hover:text-brand-cyan-300" style={{ color: "var(--text-secondary)" }}>
@@ -95,7 +96,7 @@ export default function SiteFooter() {
           </div>
 
           <div>
-            <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{t.nav.contact}</p>
+            <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{t("nav.contact")}</p>
             <div className="mt-4 flex flex-col gap-2.5">
               {LEGAL_LINKS.map((link) => (
                 <Link key={link.href} href={link.href} className="text-sm hover:text-brand-cyan-300" style={{ color: "var(--text-secondary)" }}>

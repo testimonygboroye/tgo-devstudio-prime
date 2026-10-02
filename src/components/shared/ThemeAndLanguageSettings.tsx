@@ -9,10 +9,10 @@ export default function ThemeAndLanguageSettings() {
   const { theme, setTheme } = useTheme();
   const { locale, setLocale, t } = useTranslation();
 
-  const themes: { id: ThemeMode; label: string; desc: string; icon: any } = [
-    { id: "light" as ThemeMode, label: t.common.light, desc: t.theme.lightDesc, icon: Sun },
-    { id: "dark" as ThemeMode, label: t.common.dark, desc: t.theme.darkDesc, icon: Moon },
-    { id: "system" as ThemeMode, label: t.common.system, desc: t.theme.systemDesc, icon: Laptop },
+  const themes: { id: ThemeMode; label: string; desc: string; icon: any }[] = [
+    { id: "light" as ThemeMode, label: t("common.light"), desc: t("theme.lightDesc"), icon: Sun },
+    { id: "dark" as ThemeMode, label: t("common.dark"), desc: t("theme.darkDesc"), icon: Moon },
+    { id: "system" as ThemeMode, label: t("common.system"), desc: t("theme.systemDesc"), icon: Laptop },
   ];
 
   return (
@@ -22,11 +22,11 @@ export default function ThemeAndLanguageSettings() {
         <div className="flex items-center gap-2 mb-2">
           <Sun size={20} className="text-[var(--color-brand-cyan-400)]" />
           <h2 className="text-xl font-bold font-display text-[var(--text-primary)]">
-            {t.theme.title}
+            {t("theme.title")}
           </h2>
         </div>
         <p className="text-sm text-[var(--text-secondary)] mb-6">
-          {t.theme.description}
+          {t("theme.description")}
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -68,11 +68,11 @@ export default function ThemeAndLanguageSettings() {
         <div className="flex items-center gap-2 mb-2">
           <Globe size={20} className="text-[var(--color-brand-cyan-400)]" />
           <h2 className="text-xl font-bold font-display text-[var(--text-primary)]">
-            {t.language.title}
+            {t("language.title")}
           </h2>
         </div>
         <p className="text-sm text-[var(--text-secondary)] mb-6">
-          {t.language.description}
+          {t("language.description")}
         </p>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">

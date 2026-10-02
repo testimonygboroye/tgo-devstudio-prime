@@ -4,6 +4,9 @@ import type { Metadata } from "next";
 import { connectToDatabase } from "@/lib/db";
 import TeamMember from "@/models/TeamMember";
 import { ArrowLeft } from "lucide-react";
+import { getServerLocale } from "@/lib/i18n/serverLocale";
+import { createTranslator, getLocalizedContent } from "@/lib/i18n/translationHelper";
+import { TRANSLATABLE_FIELDS } from "@/lib/i18n/translatableFields";
 
 export const revalidate = 300;
 
@@ -13,16 +16,26 @@ interface PageProps {
 
 async function getMember(slug: string) {
   await connectToDatabase();
-  return TeamMember.findOne({ slug, publishStatus: "published" }).lean();
+  return TeamMember.findOne({
+    slug,
+    publishStatus: "published",
+  }).lean();
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const locale = await getServerLocale();
   const { slug } = await params;
-  const member = await getMember(slug);
+  const rawMember = await getMember(slug);
 
-  if (!member) {
+  if (!rawMember) {
     return { title: "Team Member Not Found | TGO DevStudio Prime" };
   }
+
+  const member = getLocalizedContent(
+    rawMember,
+    locale,
+    TRANSLATABLE_FIELDS.TeamMember
+  );
 
   return {
     title: `${member.name} | TGO DevStudio Prime`,
@@ -36,12 +49,19 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function TeamMemberDetailPage({ params }: PageProps) {
-  const { slug } = await params;
-  const member = await getMember(slug);
+  const locale = await getServerLocale();
+  const t = createTranslator(locale);
 
-  if (!member) {
-    notFound();
-  }
+  const { slug } = await params;
+  const rawMember = await getMember(slug);
+
+  if (!rawMember) notFound();
+
+  const member = getLocalizedContent(
+    rawMember,
+    locale,
+    TRANSLATABLE_FIELDS.TeamMember
+  );
 
   return (
     <main className="min-h-screen px-6 py-16 sm:px-12">
@@ -50,7 +70,7 @@ export default async function TeamMemberDetailPage({ params }: PageProps) {
           href="/team"
           className="flex items-center gap-1 text-sm text-neutral-400 hover:text-brand-cyan-300"
         >
-          <ArrowLeft size={16} /> Back to Team
+          <ArrowLeft size={16} /> {t("team.backToTeam")}
         </Link>
 
         <div className="mt-8 flex flex-col items-center text-center sm:flex-row sm:items-start sm:text-left sm:gap-6">
@@ -64,24 +84,49 @@ export default async function TeamMemberDetailPage({ params }: PageProps) {
           ) : (
             <div className="h-32 w-32 flex-shrink-0 rounded-full bg-base-800" />
           )}
-          <div className="mt-4 sm:mt-0">
-            <h1 className="text-3xl font-bold text-neutral-100 sm:text-4xl">{member.name}</h1>
-            <p className="mt-1 text-brand-cyan-300">{member.jobTitle}</p>
 
-            {(member.linkedinUrl || member.githubUrl || member.twitterUrl) && (
+          <div className="mt-4 sm:mt-0">
+            <h1 className="text-3xl font-bold text-neutral-100 sm:text-4xl">
+              {member.name}
+            </h1>
+
+            <p className="mt-1 text-brand-cyan-300">
+              {member.jobTitle}
+            </p>
+
+            {(member.linkedinUrl ||
+              member.githubUrl ||
+              member.twitterUrl) && (
               <div className="mt-3 flex justify-center gap-4 text-sm text-neutral-400 sm:justify-start">
                 {member.linkedinUrl && (
-                  <a href={member.linkedinUrl} target="_blank" rel="noopener noreferrer" className="hover:text-brand-cyan-300">
+                  <a
+                    href={member.linkedinUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-brand-cyan-300"
+                  >
                     LinkedIn
                   </a>
                 )}
+
                 {member.githubUrl && (
-                  <a href={member.githubUrl} target="_blank" rel="noopener noreferrer" className="hover:text-brand-cyan-300">
+                  <a
+                    href={member.githubUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-brand-cyan-300"
+                  >
                     GitHub
                   </a>
                 )}
+
                 {member.twitterUrl && (
-                  <a href={member.twitterUrl} target="_blank" rel="noopener noreferrer" className="hover:text-brand-cyan-300">
+                  <a
+                    href={member.twitterUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-brand-cyan-300"
+                  >
                     X
                   </a>
                 )}
@@ -91,8 +136,13 @@ export default async function TeamMemberDetailPage({ params }: PageProps) {
         </div>
 
         <div className="mt-10 border-t border-base-800 pt-8">
-          <h2 className="text-sm font-semibold uppercase tracking-widest text-neutral-500">About</h2>
-          <p className="mt-3 whitespace-pre-wrap text-neutral-100/80">{member.bio}</p>
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-neutral-500">
+            {t("team.about")}
+          </h2>
+
+          <p className="mt-3 whitespace-pre-wrap text-neutral-100/80">
+            {member.bio}
+          </p>
         </div>
       </div>
     </main>

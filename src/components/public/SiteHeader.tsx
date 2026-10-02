@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Menu, X, Home, Layers, Briefcase, Newspaper, DoorOpen, Mail, Info, Workflow, Users, Star, PhoneCall, Boxes, HelpCircle, ChevronDown, MessageCircleQuestion } from "lucide-react";
+import { Menu, X, Home, Layers, Briefcase, Newspaper, DoorOpen, Mail, Info, Workflow, Users, Star, PhoneCall, Boxes, HelpCircle, ChevronDown, MessageCircleQuestion, Settings } from "lucide-react";
 import HelpSearchPopup from "@/components/shared/HelpSearchPopup";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 
@@ -14,40 +14,42 @@ export default function SiteHeader() {
   const moreRef = useRef<HTMLDivElement>(null);
 
   const DESKTOP_NAV_LINKS = [
-    { label: t.nav.home, href: "/" },
-    { label: t.nav.services, href: "/services" },
-    { label: t.nav.portfolio, href: "/portfolio" },
-    { label: t.nav.blog, href: "/blog" },
-    { label: t.nav.careers, href: "/careers" },
-    { label: t.nav.contact, href: "/contact" },
-    { label: t.nav.bookACall, href: "/book-a-call" },
+    { label: t("nav.home"), href: "/" },
+    { label: t("nav.services"), href: "/services" },
+    { label: t("nav.portfolio"), href: "/portfolio" },
+    { label: t("nav.blog"), href: "/blog" },
+    { label: t("nav.careers"), href: "/careers" },
+    { label: t("nav.contact"), href: "/contact" },
+    { label: t("nav.bookACall"), href: "/book-a-call" },
   ];
 
   const MORE_LINKS = [
-    { label: t.nav.about, href: "/about", icon: Info },
-    { label: t.nav.process, href: "/process", icon: Workflow },
-    { label: t.nav.team, href: "/team", icon: Users },
-    { label: t.nav.testimonials, href: "/testimonials", icon: Star },
-    { label: t.nav.faq, href: "/faq", icon: MessageCircleQuestion },
-    { label: t.nav.stack, href: "/stack", icon: Boxes },
-    { label: t.nav.help, href: "/help", icon: HelpCircle },
+    { label: t("nav.about"), href: "/about", icon: Info },
+    { label: t("nav.process"), href: "/process", icon: Workflow },
+    { label: t("nav.team"), href: "/team", icon: Users },
+    { label: t("nav.testimonials"), href: "/testimonials", icon: Star },
+    { label: t("nav.faq"), href: "/faq", icon: MessageCircleQuestion },
+    { label: t("nav.stack"), href: "/stack", icon: Boxes },
+    { label: t("nav.help"), href: "/help", icon: HelpCircle },
+    { label: t("common.settings"), href: "/settings", icon: Settings },
   ];
 
   const DRAWER_NAV_LINKS = [
-    { label: t.nav.home, href: "/", icon: Home },
-    { label: t.nav.about, href: "/about", icon: Info },
-    { label: t.nav.services, href: "/services", icon: Layers },
-    { label: t.nav.process, href: "/process", icon: Workflow },
-    { label: t.nav.portfolio, href: "/portfolio", icon: Briefcase },
-    { label: t.nav.team, href: "/team", icon: Users },
-    { label: t.nav.blog, href: "/blog", icon: Newspaper },
-    { label: t.nav.careers, href: "/careers", icon: DoorOpen },
-    { label: t.nav.testimonials, href: "/testimonials", icon: Star },
-    { label: t.nav.faq, href: "/faq", icon: MessageCircleQuestion },
-    { label: t.nav.contact, href: "/contact", icon: Mail },
-    { label: t.nav.bookACall, href: "/book-a-call", icon: PhoneCall },
-    { label: t.nav.stack, href: "/stack", icon: Boxes },
-    { label: t.nav.help, href: "/help", icon: HelpCircle },
+    { label: t("nav.home"), href: "/", icon: Home },
+    { label: t("nav.about"), href: "/about", icon: Info },
+    { label: t("nav.services"), href: "/services", icon: Layers },
+    { label: t("nav.process"), href: "/process", icon: Workflow },
+    { label: t("nav.portfolio"), href: "/portfolio", icon: Briefcase },
+    { label: t("nav.team"), href: "/team", icon: Users },
+    { label: t("nav.blog"), href: "/blog", icon: Newspaper },
+    { label: t("nav.careers"), href: "/careers", icon: DoorOpen },
+    { label: t("nav.testimonials"), href: "/testimonials", icon: Star },
+    { label: t("nav.faq"), href: "/faq", icon: MessageCircleQuestion },
+    { label: t("nav.contact"), href: "/contact", icon: Mail },
+    { label: t("nav.bookACall"), href: "/book-a-call", icon: PhoneCall },
+    { label: t("nav.stack"), href: "/stack", icon: Boxes },
+    { label: t("nav.help"), href: "/help", icon: HelpCircle },
+    { label: t("common.settings"), href: "/settings", icon: Settings },
   ];
 
   useEffect(() => {
@@ -87,7 +89,7 @@ export default function SiteHeader() {
                 onClick={() => setIsMoreOpen((prev) => !prev)}
                 className="flex items-center gap-1 text-sm text-neutral-100/80 hover:text-brand-cyan-300"
               >
-                {t.nav.more} <ChevronDown size={14} />
+                {t("nav.more")} <ChevronDown size={14} />
               </button>
 
               {isMoreOpen && (
@@ -135,7 +137,7 @@ export default function SiteHeader() {
           >
             <div className="flex flex-shrink-0 items-center justify-between border-b border-base-800 px-4 py-5">
               <span className="font-mono text-xs uppercase tracking-widest text-neutral-500">
-                {t.nav.home}
+                {t("nav.home")}
               </span>
               <button
                 onClick={() => setIsMenuOpen(false)}

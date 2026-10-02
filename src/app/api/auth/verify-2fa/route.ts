@@ -5,6 +5,7 @@ import { verifyTemp2FAToken, signAccessToken, signRefreshToken } from "@/lib/aut
 import { verifyTotpToken } from "@/lib/auth/totp";
 import { verifyAndConsumeBackupCode } from "@/lib/auth/backupCodes";
 import { setAuthCookies } from "@/lib/auth/cookies";
+import { apiError, apiSuccess } from "@/lib/i18n/apiResponse";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -15,20 +16,14 @@ export async function POST(request: NextRequest) {
   };
 
   if (!tempToken || !code) {
-    return NextResponse.json(
-      { status: "error", message: "tempToken and code are both required." },
-      { status: 400 }
-    );
+    return apiError("allFieldsRequired", "All fields are required.", 400);
   }
 
   let payload;
   try {
     payload = verifyTemp2FAToken(tempToken);
   } catch {
-    return NextResponse.json(
-      { status: "error", message: "This 2FA session has expired. Please log in again." },
-      { status: 401 }
-    );
+    return apiError("sessionInvalid", "This 2FA session has expired. Please log in again.", 401);
   }
 
   await connectToDatabase();
@@ -36,7 +31,7 @@ export async function POST(request: NextRequest) {
   const user = await User.findById(payload.userId).select("+twoFactorSecret +backupCodeHashes");
 
   if (!user || !user.twoFactorEnabled || !user.twoFactorSecret) {
-    return NextResponse.json({ status: "error", message: "Invalid 2FA session." }, { status: 401 });
+    return apiError("sessionInvalid", "Invalid 2FA session.", 401);
   }
 
   let isCodeValid = false;
@@ -53,7 +48,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (!isCodeValid) {
-    return NextResponse.json({ status: "error", message: "Invalid authentication code." }, { status: 401 });
+    return apiError("invalid2faCode", "Invalid authentication code.", 401);
   }
 
   const accessToken = signAccessToken({
@@ -66,7 +61,7 @@ export async function POST(request: NextRequest) {
     tokenVersion: user.refreshTokenVersion,
   });
 
-  const response = NextResponse.json({ status: "ok", message: "Logged in successfully." });
+  const response = await apiSuccess({}, "loggedIn", "Logged in successfully.", 200);
   setAuthCookies(response, accessToken, refreshToken);
   return response;
 }

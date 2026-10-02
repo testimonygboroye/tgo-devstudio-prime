@@ -3,6 +3,9 @@ import type { Metadata } from "next";
 import { connectToDatabase } from "@/lib/db";
 import Review from "@/models/Review";
 import ReviewForm from "@/components/public/ReviewForm";
+import { getServerLocale } from "@/lib/i18n/serverLocale";
+import { createTranslator, getLocalizedContent } from "@/lib/i18n/translationHelper";
+import { TRANSLATABLE_FIELDS } from "@/lib/i18n/translatableFields";
 
 export const revalidate = 300;
 
@@ -12,55 +15,95 @@ export const metadata: Metadata = {
 };
 
 export default async function TestimonialsPage() {
+  const locale = await getServerLocale();
+  const t = createTranslator(locale);
+
   await connectToDatabase();
-  const reviews = await Review.find({ status: "approved" })
-    .select("submitterName rating body targetLabelSnapshot customLabel featured createdAt")
+
+  const rawReviews = await Review.find({
+    status: "approved",
+  })
+    .select(
+      "submitterName rating body targetLabelSnapshot customLabel featured createdAt translations"
+    )
     .sort({ featured: -1, createdAt: -1 })
     .lean();
+
+  const reviews = rawReviews.map((review) =>
+    getLocalizedContent(review, locale, TRANSLATABLE_FIELDS.Review)
+  );
 
   return (
     <main className="min-h-screen px-6 py-20 sm:px-12">
       <div className="mx-auto max-w-5xl">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <span className="eyebrow-label">Testimonials</span>
-            <h1 className="heading-premium mt-3 text-5xl font-bold brand-gradient-text sm:text-6xl" style={{ fontFamily: "var(--font-display)" }}>
-              What People Say
-            </h1>
-          </div>
-          <a href="#review-form" className="btn-premium-secondary mt-2 whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-            Skip to Review Form ↓
-          </a>
+        <span className="eyebrow-label">{t("nav.testimonials")}</span>
+
+        <h1
+          className="heading-premium mt-3 text-5xl font-bold brand-gradient-text sm:text-6xl"
+          style={{ fontFamily: "var(--font-display)" }}
+        >
+          {t("testimonials.title")}
+        </h1>
+
+        <p
+          className="mt-4 max-w-2xl leading-relaxed"
+          style={{ color: "var(--text-secondary)" }}
+        >
+          {t("testimonials.subtitle")}
+        </p>
+
+        <div className="mt-14 grid gap-7 sm:grid-cols-2">
+          {reviews.map((review) => (
+            <Link
+              key={review._id.toString()}
+              href={`/testimonials/${review._id.toString()}`}
+              className="surface-card block"
+            >
+              <div className="surface-card-inner p-7">
+                <div className="flex gap-1 text-brand-cyan-300">
+                  {"★".repeat(review.rating)}
+                  <span className="text-base-800">
+                    {"★".repeat(5 - review.rating)}
+                  </span>
+                </div>
+
+                <p
+                  className="mt-3 line-clamp-3 leading-relaxed"
+                  style={{ color: "var(--text-secondary)" }}
+                >
+                  {review.body}
+                </p>
+
+                <p
+                  className="mt-4 text-sm font-semibold"
+                  style={{ color: "var(--text-primary)" }}
+                >
+                  {review.submitterName}
+                </p>
+
+                <p
+                  className="text-xs"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  {review.customLabel || review.targetLabelSnapshot}
+                </p>
+              </div>
+            </Link>
+          ))}
         </div>
 
-        {reviews.length === 0 ? (
-          <p className="mt-10" style={{ color: "var(--text-muted)" }}>No reviews yet — be the first to share your experience.</p>
-        ) : (
-          <div className="mt-14 grid gap-7 sm:grid-cols-2">
-            {reviews.map((review) => (
-              <Link key={review._id.toString()} href={`/testimonials/${review._id.toString()}`} className="surface-card block">
-                <div className="surface-card-inner p-7">
-                  {review.featured && (
-                    <span className="mb-3 inline-block rounded-full bg-brand-cyan-400/20 px-2 py-0.5 text-xs text-brand-cyan-300">Featured</span>
-                  )}
-                  <div className="flex gap-1 text-brand-cyan-300">
-                    {"★".repeat(review.rating)}
-                    <span style={{ color: "var(--border-subtle)" }}>{"★".repeat(5 - review.rating)}</span>
-                  </div>
-                  <p className="mt-3 line-clamp-3 leading-relaxed" style={{ color: "var(--text-secondary)" }}>{review.body}</p>
-                  <p className="mt-4 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{review.submitterName}</p>
-                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>{review.customLabel || review.targetLabelSnapshot}</p>
-                  <p className="mt-3 text-xs font-semibold text-brand-cyan-300">Read full review →</p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
-
-        <div id="review-form" className="mt-20 scroll-mt-20 border-t pt-12" style={{ borderColor: "var(--border-subtle)" }}>
-          <h2 className="heading-premium text-3xl font-semibold" style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}>
-            Share Your Experience
+        <div
+          id="review-form"
+          className="mt-20 border-t pt-12"
+          style={{ borderColor: "var(--border-subtle)" }}
+        >
+          <h2
+            className="text-3xl font-semibold"
+            style={{ color: "var(--text-primary)" }}
+          >
+            {t("common.submit")}
           </h2>
+
           <div className="mt-7">
             <ReviewForm />
           </div>

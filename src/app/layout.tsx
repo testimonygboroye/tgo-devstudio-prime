@@ -3,7 +3,10 @@ import { JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import OrganizationSchema from "@/components/shared/OrganizationSchema";
 import { ThemeProvider } from "@/components/shared/ThemeProvider";
+import { LanguageProvider } from "@/lib/i18n/LanguageContext";
 import ServiceWorkerRegistration from "@/components/shared/ServiceWorkerRegistration";
+import { getServerLocale } from "@/lib/i18n/serverLocale";
+import { RTL_LOCALES } from "@/lib/i18n/config";
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
@@ -25,13 +28,16 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getServerLocale();
+  const dir = RTL_LOCALES.includes(locale) ? "rtl" : "ltr";
+
   return (
-    <html lang="en" className={jetbrainsMono.variable} suppressHydrationWarning>
+    <html lang={locale} dir={dir} className={jetbrainsMono.variable} suppressHydrationWarning>
       <head>
         <meta name="google-site-verification" content="g7RX7-eoPACihWjJckfBIfFsgo8jnXz2iTpegqH56nA" />
         <meta property="fb:app_id" content="2134239190472228" />
@@ -51,9 +57,11 @@ export default function RootLayout({
       </head>
       <body suppressHydrationWarning>
         <ThemeProvider>
-        <OrganizationSchema />
-        <ServiceWorkerRegistration />
-        {children}
+          <LanguageProvider>
+            <OrganizationSchema />
+            <ServiceWorkerRegistration />
+            {children}
+          </LanguageProvider>
         </ThemeProvider>
       </body>
     </html>

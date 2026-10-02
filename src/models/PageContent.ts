@@ -7,6 +7,7 @@ export interface IPageContent extends Document {
   title: string;
   content: string;
   lastUpdatedBy: Types.ObjectId;
+  translations?: Map<string, Record<string, unknown>> | Record<string, Record<string, unknown>>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -22,6 +23,17 @@ const PageContentSchema = new Schema<IPageContent>(
     title: { type: String, required: true, trim: true, maxlength: 150 },
     content: { type: String, required: true },
     lastUpdatedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    translations: {
+      type: Map,
+      of: new Schema(
+        {
+          title: { type: String, trim: true, maxlength: 150 },
+          content: { type: String },
+        },
+        { _id: false }
+      ),
+      default: {},
+    },
   },
   { timestamps: true }
 );

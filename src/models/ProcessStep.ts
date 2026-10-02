@@ -9,6 +9,7 @@ export interface IProcessStep extends Document {
   publishStatus: PublishStatus;
   featured: boolean;
   createdBy: Types.ObjectId;
+  translations?: Map<string, Record<string, unknown>> | Record<string, Record<string, unknown>>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -21,6 +22,17 @@ const ProcessStepSchema = new Schema<IProcessStep>(
     publishStatus: { type: String, enum: ["draft", "published"], default: "draft" },
     featured: { type: Boolean, default: false },
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    translations: {
+      type: Map,
+      of: new Schema(
+        {
+          title: { type: String, trim: true, maxlength: 100 },
+          description: { type: String, trim: true, maxlength: 400 },
+        },
+        { _id: false }
+      ),
+      default: {},
+    },
   },
   { timestamps: true }
 );

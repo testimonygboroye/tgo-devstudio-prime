@@ -10,6 +10,7 @@ export interface IService extends Document {
   publishStatus: PublishStatus;
   featured: boolean;
   createdBy: Types.ObjectId;
+  translations?: Map<string, Record<string, unknown>> | Record<string, Record<string, unknown>>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -23,6 +24,17 @@ const ServiceSchema = new Schema<IService>(
     publishStatus: { type: String, enum: ["draft", "published"], default: "draft" },
     featured: { type: Boolean, default: false },
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    translations: {
+      type: Map,
+      of: new Schema(
+        {
+          title: { type: String, trim: true, maxlength: 100 },
+          summary: { type: String, trim: true, maxlength: 300 },
+        },
+        { _id: false }
+      ),
+      default: {},
+    },
   },
   { timestamps: true }
 );

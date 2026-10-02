@@ -6,6 +6,7 @@ export interface IBookACallSettings extends Document {
   description: string;
   calendlyUrl: string;
   lastUpdatedBy: Types.ObjectId;
+  translations?: Map<string, Record<string, unknown>> | Record<string, Record<string, unknown>>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -16,6 +17,17 @@ const BookACallSettingsSchema = new Schema<IBookACallSettings>(
     description: { type: String, required: true, trim: true, maxlength: 300 },
     calendlyUrl: { type: String, required: true, trim: true },
     lastUpdatedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    translations: {
+      type: Map,
+      of: new Schema(
+        {
+          heading: { type: String, trim: true, maxlength: 150 },
+          description: { type: String, trim: true, maxlength: 300 },
+        },
+        { _id: false }
+      ),
+      default: {},
+    },
   },
   { timestamps: true }
 );

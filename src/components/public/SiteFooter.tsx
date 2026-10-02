@@ -1,7 +1,10 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
 import { GitHubIcon, WhatsAppIcon, FacebookIcon, InstagramIcon } from "./SocialIcons";
 import NewsletterForm from "./NewsletterForm";
+import { useTranslation } from "@/lib/i18n/LanguageContext";
 
 const SOCIAL_LINKS = [
   { label: "WhatsApp", href: "https://wa.me/message/LUJ6PXE3ISDZF1", Icon: WhatsAppIcon },
@@ -10,32 +13,34 @@ const SOCIAL_LINKS = [
   { label: "Instagram", href: "https://www.instagram.com/testimonygboroye?igsh=MXU0dmxraXRwN2lnbw==", Icon: InstagramIcon },
 ];
 
-const COMPANY_LINKS = [
-  { label: "About", href: "/about" },
-  { label: "Services", href: "/services" },
-  { label: "Process", href: "/process" },
-  { label: "Team", href: "/team" },
-  { label: "Stack", href: "/stack" },
-];
-
-const WORK_LINKS = [
-  { label: "Portfolio", href: "/portfolio" },
-  { label: "Blog", href: "/blog" },
-  { label: "Careers", href: "/careers" },
-  { label: "Testimonials", href: "/testimonials" },
-];
-
-const LEGAL_LINKS = [
-  { label: "Contact", href: "/contact" },
-  { label: "Book a Call", href: "/book-a-call" },
-  { label: "Help & Guide", href: "/help" },
-  { label: "FAQ", href: "/faq" },
-  { label: "Privacy Policy", href: "/privacy-policy" },
-  { label: "Terms of Service", href: "/terms-of-service" },
-  { label: "Accessibility", href: "/accessibility" },
-];
-
 export default function SiteFooter() {
+  const { t } = useTranslation();
+
+  const COMPANY_LINKS = [
+    { label: t.nav.about, href: "/about" },
+    { label: t.nav.services, href: "/services" },
+    { label: t.nav.process, href: "/process" },
+    { label: t.nav.team, href: "/team" },
+    { label: t.nav.stack, href: "/stack" },
+  ];
+
+  const WORK_LINKS = [
+    { label: t.nav.portfolio, href: "/portfolio" },
+    { label: t.nav.blog, href: "/blog" },
+    { label: t.nav.careers, href: "/careers" },
+    { label: t.nav.testimonials, href: "/testimonials" },
+  ];
+
+  const LEGAL_LINKS = [
+    { label: t.nav.contact, href: "/contact" },
+    { label: t.nav.bookACall, href: "/book-a-call" },
+    { label: t.nav.help, href: "/help" },
+    { label: t.nav.faq, href: "/faq" },
+    { label: "Privacy Policy", href: "/privacy-policy" },
+    { label: "Terms of Service", href: "/terms-of-service" },
+    { label: "Accessibility", href: "/accessibility" },
+  ];
+
   return (
     <footer className="border-t" style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-page)" }}>
       <div className="mx-auto max-w-6xl px-6 py-16 sm:px-12">
@@ -68,7 +73,7 @@ export default function SiteFooter() {
           </div>
 
           <div>
-            <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Company</p>
+            <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{t.nav.about}</p>
             <div className="mt-4 flex flex-col gap-2.5">
               {COMPANY_LINKS.map((link) => (
                 <Link key={link.href} href={link.href} className="text-sm hover:text-brand-cyan-300" style={{ color: "var(--text-secondary)" }}>
@@ -79,7 +84,7 @@ export default function SiteFooter() {
           </div>
 
           <div>
-            <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Our Work</p>
+            <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{t.nav.portfolio}</p>
             <div className="mt-4 flex flex-col gap-2.5">
               {WORK_LINKS.map((link) => (
                 <Link key={link.href} href={link.href} className="text-sm hover:text-brand-cyan-300" style={{ color: "var(--text-secondary)" }}>
@@ -90,7 +95,7 @@ export default function SiteFooter() {
           </div>
 
           <div>
-            <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Get in Touch</p>
+            <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{t.nav.contact}</p>
             <div className="mt-4 flex flex-col gap-2.5">
               {LEGAL_LINKS.map((link) => (
                 <Link key={link.href} href={link.href} className="text-sm hover:text-brand-cyan-300" style={{ color: "var(--text-secondary)" }}>

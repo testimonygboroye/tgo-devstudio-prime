@@ -16,14 +16,19 @@ import { getPubliclyVisibleFilter } from "@/lib/utils/blogVisibility";
 import ScrollReveal from "@/components/public/ScrollReveal";
 import AvailabilityBadge from "@/components/public/AvailabilityBadge";
 import HeroMoment from "@/components/public/HeroMoment";
+import { getServerLocale, getTranslator } from "@/lib/i18n/serverLocale";
+import { getLocalizedContent } from "@/lib/i18n/translationHelper";
+import { TRANSLATABLE_FIELDS } from "@/lib/i18n/translatableFields";
 
 export const revalidate = 300;
 
 export default async function HomePage() {
   await connectToDatabase();
+  const locale = await getServerLocale();
+  const t = await getTranslator();
 
   const [
-    settings,
+    rawSettings,
     featuredProjects,
     services,
     processSteps,
@@ -42,7 +47,14 @@ export default async function HomePage() {
     Review.find({ status: "approved", featuredOnHomepage: true }).sort({ createdAt: -1 }).limit(3).lean(),
   ]);
 
-  const hero = { ...HOME_DEFAULTS, ...(settings || {}) };
+  const rawHero = { ...HOME_DEFAULTS, ...(rawSettings || {}) };
+  const hero = getLocalizedContent(rawHero, locale, TRANSLATABLE_FIELDS.HomeSettings as any);
+  const projects = featuredProjects.map((p) => getLocalizedContent(p, locale, TRANSLATABLE_FIELDS.Project as any));
+  const serviceList = services.map((s) => getLocalizedContent(s, locale, TRANSLATABLE_FIELDS.Service as any));
+  const steps = processSteps.map((s) => getLocalizedContent(s, locale, TRANSLATABLE_FIELDS.ProcessStep as any));
+  const team = teamMembers.map((m) => getLocalizedContent(m, locale, TRANSLATABLE_FIELDS.TeamMember as any));
+  const posts = latestPosts.map((p) => getLocalizedContent(p, locale, TRANSLATABLE_FIELDS.BlogPost as any));
+  const reviews = featuredReviews.map((r) => getLocalizedContent(r, locale, TRANSLATABLE_FIELDS.Review as any));
 
   return (
     <main style={{ backgroundColor: "var(--bg-page)" }}>

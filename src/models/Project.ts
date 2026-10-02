@@ -28,6 +28,7 @@ export interface IProject extends Document {
   metaTitle?: string;
   metaDescription?: string;
   createdBy: Types.ObjectId;
+  translations?: Map<string, Record<string, unknown>> | Record<string, Record<string, unknown>>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -61,6 +62,22 @@ const ProjectSchema = new Schema<IProject>(
     metaTitle: { type: String },
     metaDescription: { type: String },
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    translations: {
+      type: Map,
+      of: new Schema(
+        {
+          title: { type: String, trim: true, maxlength: 120 },
+          summary: { type: String, trim: true, maxlength: 250 },
+          problemStatement: { type: String, maxlength: 1500 },
+          approach: { type: String, maxlength: 1500 },
+          outcome: { type: String, maxlength: 1500 },
+          metaTitle: { type: String },
+          metaDescription: { type: String },
+        },
+        { _id: false }
+      ),
+      default: {},
+    },
   },
   { timestamps: true }
 );

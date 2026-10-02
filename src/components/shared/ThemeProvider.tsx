@@ -1,36 +1,65 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
 
-type Theme = "dark" | "light";
+export type ThemeMode = "light" | "dark" | "system";
 
 interface ThemeContextValue {
-  theme: Theme;
-  toggleTheme: () => void;
+  theme: ThemeMode;
+  resolvedTheme: "light" | "dark";
+  setTheme: (theme: ThemeMode) => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("dark");
+  const [theme, setThemeState] = useState<ThemeMode>("system");
+  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("dark");
 
-  useEffect(() => {
-    const stored = localStorage.getItem("tgo-theme") as Theme | null;
-    const initial = stored || "dark";
-    setTheme(initial);
-    document.documentElement.setAttribute("data-theme", initial);
+  const applyTheme = useCallback((mode: ThemeMode) => {
+    let resolved: "light" | "dark" = "dark";
+    if (mode === "system") {
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      resolved = prefersDark ? "dark" : "light";
+    } else {
+      resolved = mode;
+    }
+    setResolvedTheme(resolved);
+    document.documentElement.setAttribute("data-theme", resolved);
   }, []);
 
-  function toggleTheme() {
-    setTheme((prev) => {
-      const next = prev === "dark" ? "light" : "dark";
-      localStorage.setItem("tgo-theme", next);
-      document.documentElement.setAttribute("data-theme", next);
-      return next;
-    });
+  useEffect(() => {
+    const stored = localStorage.getItem("tgo-theme") as ThemeMode | null;
+    const initial = stored || "system";
+    setThemeState(initial);
+    applyTheme(initial);
+  }, [applyTheme]);
+
+  function setTheme(mode: ThemeMode) {
+    setThemeState(mode);
+    localStorage.setItem("tgo-theme", mode);
+    applyTheme(mode);
   }
 
-  return <ThemeContext.Provider value={{ theme, toggleTheme }}>{children}</ThemeContext.Provider>;
+  useEffect(() => {
+    if (theme !== "system") return;
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const handler = (e: MediaQueryListEvent) => {
+      if (theme === "system") {
+        const resolved = e.matches ? "dark" : "light";
+        setResolvedTheme(resolved);
+        document.documentElement.setAttribute("data-theme", resolved);
+      }
+    };
+    mediaQuery.addEventListener("change", handler);
+    return () => mediaQuery.removeEventListener("change", handler);
+  }, [theme]);
+
+  return (
+    <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme }}>
+      {children}
+    </ThemeContext.Provider>
+  );
 }
 
 export function useTheme() {

@@ -21,6 +21,7 @@ export interface ITeamMember extends Document {
   featured: boolean;
   publishStatus: PublishStatus;
   createdBy: Types.ObjectId;
+  translations?: Map<string, Record<string, unknown>> | Record<string, Record<string, unknown>>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -48,6 +49,18 @@ const TeamMemberSchema = new Schema<ITeamMember>(
     featured: { type: Boolean, default: false },
     publishStatus: { type: String, enum: ["draft", "published"], default: "draft" },
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    translations: {
+      type: Map,
+      of: new Schema(
+        {
+          name: { type: String, trim: true, maxlength: 100 },
+          jobTitle: { type: String, trim: true, maxlength: 100 },
+          bio: { type: String, trim: true, maxlength: 400 },
+        },
+        { _id: false }
+      ),
+      default: {},
+    },
   },
   { timestamps: true }
 );

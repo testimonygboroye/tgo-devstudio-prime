@@ -19,6 +19,7 @@ export interface IBlogPost extends Document {
   metaTitle?: string;
   metaDescription?: string;
   createdBy: Types.ObjectId;
+  translations?: Map<string, Record<string, unknown>> | Record<string, Record<string, unknown>>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -41,6 +42,20 @@ const BlogPostSchema = new Schema<IBlogPost>(
     metaTitle: { type: String },
     metaDescription: { type: String },
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    translations: {
+      type: Map,
+      of: new Schema(
+        {
+          title: { type: String, trim: true, maxlength: 150 },
+          excerpt: { type: String, trim: true, maxlength: 300 },
+          contentHtml: { type: String, maxlength: 50000 },
+          metaTitle: { type: String },
+          metaDescription: { type: String },
+        },
+        { _id: false }
+      ),
+      default: {},
+    },
   },
   { timestamps: true }
 );

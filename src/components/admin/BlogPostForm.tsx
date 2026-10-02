@@ -4,7 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import RichTextEditor from "./RichTextEditor";
 import CharacterCounter from "./CharacterCounter";
+import LocaleTabs from "./LocaleTabs";
 import { TEXT_LIMITS } from "@/lib/constants/textLimits";
+import { Locale, RTL_LOCALES } from "@/lib/i18n/config";
 
 interface CoverImage {
   url: string;
@@ -24,6 +26,7 @@ interface BlogPostFormProps {
     publishStatus: string;
     scheduledFor?: string;
     featured?: boolean;
+    translations?: Record<string, Record<string, unknown>>;
   };
 }
 
@@ -38,9 +41,16 @@ function toDatetimeLocalValue(isoString?: string): string {
 export default function BlogPostForm({ mode, postId, initialData }: BlogPostFormProps) {
   const router = useRouter();
 
-  const [title, setTitle] = useState(initialData?.title ?? "");
-  const [excerpt, setExcerpt] = useState(initialData?.excerpt ?? "");
-  const [contentHtml, setContentHtml] = useState(initialData?.contentHtml ?? "");
+  const [currentLocale, setCurrentLocale] = useState<Locale>("en");
+  const [translations, setTranslations] = useState<Record<string, Record<string, unknown>>>(
+    initialData?.translations ?? {}
+  );
+
+  // Base English fields
+  const [baseTitle, setBaseTitle] = useState(initialData?.title ?? "");
+  const [baseExcerpt, setBaseExcerpt] = useState(initialData?.excerpt ?? "");
+  const [baseContentHtml, setBaseContentHtml] = useState(initialData?.contentHtml ?? "");
+
   const [coverImage, setCoverImage] = useState<CoverImage | null>(initialData?.coverImage ?? null);
   const [pendingAltText, setPendingAltText] = useState("");
   const [tagsInput, setTagsInput] = useState(initialData?.tags?.join(", ") ?? "");
@@ -51,6 +61,27 @@ export default function BlogPostForm({ mode, postId, initialData }: BlogPostForm
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
   const [savedMessage, setSavedMessage] = useState("");
+
+  // Get current active field values based on locale
+  const activeTitle = currentLocale === "en" ? baseTitle : String(translations[currentLocale]?.title ?? "");
+  const activeExcerpt = currentLocale === "en" ? baseExcerpt : String(translations[currentLocale]?.excerpt ?? "");
+  const activeContentHtml = currentLocale === "en" ? baseContentHtml : String(translations[currentLocale]?.contentHtml ?? "");
+
+  function handleFieldChange(field: "title" | "excerpt" | "contentHtml", value: string) {
+    if (currentLocale === "en") {
+      if (field === "title") setBaseTitle(value);
+      if (field === "excerpt") setBaseExcerpt(value);
+      if (field === "contentHtml") setBaseContentHtml(value);
+    } else {
+      setTranslations((prev) => ({
+        ...prev,
+        [currentLocale]: {
+          ...(prev[currentLocale] || {}),
+          [field]: value,
+        },
+      }));
+    }
+  }
 
   async function handleCoverUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -68,7 +99,7 @@ export default function BlogPostForm({ mode, postId, initialData }: BlogPostForm
     try {
       const formData = new FormData();
       formData.append("file", file);
-    formData.append("folder", "blog");
+      formData.append("folder", "blog");
 
       const response = await fetch("/api/media/upload", { method: "POST", body: formData });
       const data = await response.json();
@@ -100,14 +131,15 @@ export default function BlogPostForm({ mode, postId, initialData }: BlogPostForm
     setIsSaving(true);
 
     const payload = {
-      title,
-      excerpt,
-      contentHtml,
+      title: baseTitle,
+      excerpt: baseExcerpt,
+      contentHtml: baseContentHtml,
       coverImage: coverImage ?? undefined,
       tags: tagsInput.split(",").map((tag) => tag.trim()).filter(Boolean),
       publishStatus,
       featured,
       scheduledFor: publishStatus === "scheduled" ? new Date(scheduledFor).toISOString() : undefined,
+      translations,
     };
 
     try {
@@ -159,129 +191,152 @@ export default function BlogPostForm({ mode, postId, initialData }: BlogPostForm
     }
   }
 
+  const isRtl = RTL_LOCALES.includes(currentLocale);
+
   return (
-    <form onSubmit={handleSubmit} className="max-w-3xl space-y-6">
+    <form onSubmit={handleSubmit} className="max-w-3xl space-y-6" dir={isRtl ? "rtl" : "ltr"}>
+      <LocaleTabs
+        currentLocale={currentLocale}
+        onLocaleChange={setCurrentLocale}
+        translations={translations}
+        translatableFields={["title", "excerpt", "contentHtml"]}
+      />
+
       <div className="surface-card p-6 sm:p-8 space-y-6">
         <div>
-          <label className="block text-sm font-medium text-[var(--text-primary)]">Title</label>
+          <label className="block text-sm font-medium text-[var(--text-primary)]">
+            Title {currentLocale !== "en" && `(${currentLocale.toUpperCase()})`}
+          </label>
           <input
-            required
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
+            required={currentLocale === "en"}
+            value={activeTitle}
+            onChange={(event) => handleFieldChange("title", event.target.value)}
             className="input-premium mt-1.5"
-            placeholder="Enter blog post title..."
+            placeholder={currentLocale === "en" ? "Enter blog post title..." : "Enter translation (or leave blank to fall back)..."}
           />
-          <CharacterCounter current={title.length} max={TEXT_LIMITS.blog.title} />
+          <CharacterCounter current={activeTitle.length} max={TEXT_LIMITS.blog.title} />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[var(--text-primary)]">Excerpt</label>
+          <label className="block text-sm font-medium text-[var(--text-primary)]">
+            Excerpt {currentLocale !== "en" && `(${currentLocale.toUpperCase()})`}
+          </label>
           <textarea
-            required
+            required={currentLocale === "en"}
             rows={3}
-            value={excerpt}
-            onChange={(event) => setExcerpt(event.target.value)}
+            value={activeExcerpt}
+            onChange={(event) => handleFieldChange("excerpt", event.target.value)}
             className="textarea-premium mt-1.5"
-            placeholder="Brief summary of the article..."
+            placeholder={currentLocale === "en" ? "Brief summary of the article..." : "Brief summary translation..."}
           />
-          <CharacterCounter current={excerpt.length} max={TEXT_LIMITS.blog.excerpt} />
+          <CharacterCounter current={activeExcerpt.length} max={TEXT_LIMITS.blog.excerpt} />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[var(--text-primary)] mb-1.5">Content</label>
-          <RichTextEditor content={contentHtml} onChange={setContentHtml} />
-          <CharacterCounter current={contentHtml.length} max={TEXT_LIMITS.blog.contentHtml} />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-[var(--text-primary)]">Tags (comma-separated)</label>
-          <input
-            value={tagsInput}
-            onChange={(event) => setTagsInput(event.target.value)}
-            className="input-premium mt-1.5"
-            placeholder="Next.js, React, Architecture"
+          <label className="block text-sm font-medium text-[var(--text-primary)] mb-1.5">
+            Content {currentLocale !== "en" && `(${currentLocale.toUpperCase()})`}
+          </label>
+          <RichTextEditor
+            key={currentLocale}
+            content={activeContentHtml}
+            onChange={(html) => handleFieldChange("contentHtml", html)}
           />
+          <CharacterCounter current={activeContentHtml.length} max={TEXT_LIMITS.blog.contentHtml} />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-          <div>
-            <label className="block text-sm font-medium text-[var(--text-primary)]">Publish Status</label>
-            <select
-              value={publishStatus}
-              onChange={(event) => setPublishStatus(event.target.value)}
-              className="select-premium mt-1.5"
-            >
-              <option value="draft">Draft</option>
-              <option value="scheduled">Scheduled</option>
-              <option value="published">Published</option>
-            </select>
-          </div>
-          <div className="flex items-center gap-3 pt-7">
-            <input
-              type="checkbox"
-              id="featured"
-              checked={featured}
-              onChange={(event) => setFeatured(event.target.checked)}
-              className="h-4 w-4 rounded border-[var(--border-subtle)] bg-[var(--bg-surface)] text-brand-violet-600 focus:ring-brand-cyan-400"
-            />
-            <label htmlFor="featured" className="text-sm font-medium text-[var(--text-primary)] cursor-pointer">
-              Feature on homepage
-            </label>
-          </div>
-        </div>
-
-        {publishStatus === "scheduled" && (
-          <div>
-            <label className="block text-sm font-medium text-[var(--text-primary)]">Publish Date &amp; Time</label>
-            <input
-              type="datetime-local"
-              value={scheduledFor}
-              onChange={(event) => setScheduledFor(event.target.value)}
-              className="input-premium mt-1.5"
-            />
-          </div>
-        )}
-
-        <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-2)] p-5 space-y-4">
-          <p className="text-sm font-semibold text-[var(--text-primary)]">Cover Image</p>
-
-          {coverImage && (
-            <div className="flex items-center justify-between rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-3">
-              <div className="flex items-center gap-3">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={coverImage.url} alt={coverImage.altText} className="h-12 w-20 rounded-lg object-cover" />
-                <span className="text-xs text-[var(--text-secondary)]">{coverImage.altText}</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setCoverImage(null)}
-                className="text-xs font-semibold text-red-400 hover:underline"
-              >
-                Remove
-              </button>
+        {currentLocale === "en" && (
+          <>
+            <div>
+              <label className="block text-sm font-medium text-[var(--text-primary)]">Tags (comma-separated)</label>
+              <input
+                value={tagsInput}
+                onChange={(event) => setTagsInput(event.target.value)}
+                className="input-premium mt-1.5"
+                placeholder="Next.js, React, Architecture"
+              />
             </div>
-          )}
 
-          <div className="space-y-2">
-            <label className="block text-xs font-medium text-[var(--text-secondary)]">
-              Alt text (required before uploading)
-            </label>
-            <input
-              value={pendingAltText}
-              onChange={(event) => setPendingAltText(event.target.value)}
-              className="input-premium text-sm"
-              placeholder="Describe cover image for accessibility..."
-            />
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              onChange={handleCoverUpload}
-              disabled={isUploading}
-              className="text-sm text-[var(--text-muted)] file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-violet-600/15 file:text-brand-cyan-300 hover:file:bg-brand-violet-600/25 transition-all cursor-pointer"
-            />
-            {isUploading && <p className="text-xs text-brand-cyan-400 animate-pulse">Uploading cover image...</p>}
-          </div>
-        </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-primary)]">Publish Status</label>
+                <select
+                  value={publishStatus}
+                  onChange={(event) => setPublishStatus(event.target.value)}
+                  className="select-premium mt-1.5"
+                >
+                  <option value="draft">Draft</option>
+                  <option value="scheduled">Scheduled</option>
+                  <option value="published">Published</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-3 pt-7">
+                <input
+                  type="checkbox"
+                  id="featured"
+                  checked={featured}
+                  onChange={(event) => setFeatured(event.target.checked)}
+                  className="h-4 w-4 rounded border-[var(--border-subtle)] bg-[var(--bg-surface)] text-brand-violet-600 focus:ring-brand-cyan-400"
+                />
+                <label htmlFor="featured" className="text-sm font-medium text-[var(--text-primary)] cursor-pointer">
+                  Feature on homepage
+                </label>
+              </div>
+            </div>
+
+            {publishStatus === "scheduled" && (
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-primary)]">Publish Date &amp; Time</label>
+                <input
+                  type="datetime-local"
+                  value={scheduledFor}
+                  onChange={(event) => setScheduledFor(event.target.value)}
+                  className="input-premium mt-1.5"
+                />
+              </div>
+            )}
+
+            <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-2)] p-5 space-y-4">
+              <p className="text-sm font-semibold text-[var(--text-primary)]">Cover Image</p>
+
+              {coverImage && (
+                <div className="flex items-center justify-between rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-3">
+                  <div className="flex items-center gap-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={coverImage.url} alt={coverImage.altText} className="h-12 w-20 rounded-lg object-cover" />
+                    <span className="text-xs text-[var(--text-secondary)]">{coverImage.altText}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setCoverImage(null)}
+                    className="text-xs font-semibold text-red-400 hover:underline"
+                  >
+                    Remove
+                  </button>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <label className="block text-xs font-medium text-[var(--text-secondary)]">
+                  Alt text (required before uploading)
+                </label>
+                <input
+                  value={pendingAltText}
+                  onChange={(event) => setPendingAltText(event.target.value)}
+                  className="input-premium text-sm"
+                  placeholder="Describe cover image for accessibility..."
+                />
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleCoverUpload}
+                  disabled={isUploading}
+                  className="text-sm text-[var(--text-muted)] file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-violet-600/15 file:text-brand-cyan-300 hover:file:bg-brand-violet-600/25 transition-all cursor-pointer"
+                />
+                {isUploading && <p className="text-xs text-brand-cyan-400 animate-pulse">Uploading cover image...</p>}
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {error && <p className="text-sm font-medium text-red-400 bg-red-400/10 p-3 rounded-xl border border-red-400/20">{error}</p>}

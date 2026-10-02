@@ -33,6 +33,7 @@ export interface IHomeSettings extends Document {
   statThreeValue: string;
   statThreeLabel: string;
   lastUpdatedBy: Types.ObjectId;
+  translations?: Map<string, Record<string, unknown>> | Record<string, Record<string, unknown>>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -78,6 +79,40 @@ const HomeSettingsSchema = new Schema<IHomeSettings>(
     statThreeValue: { type: String, default: "10+", maxlength: 20 },
     statThreeLabel: { type: String, default: "Technologies Mastered", maxlength: 50 },
     lastUpdatedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    translations: {
+      type: Map,
+      of: new Schema(
+        {
+          heroHeadline: { type: String, trim: true, maxlength: 150 },
+          heroSubheadline: { type: String, trim: true, maxlength: 300 },
+          primaryCtaLabel: { type: String, trim: true, maxlength: 50 },
+          secondaryCtaLabel: { type: String, trim: true, maxlength: 50 },
+          caseStudiesLabel: { type: String, maxlength: 50 },
+          caseStudiesHeading: { type: String, maxlength: 100 },
+          servicesLabel: { type: String, maxlength: 50 },
+          servicesHeading: { type: String, maxlength: 100 },
+          processLabel: { type: String, maxlength: 50 },
+          processHeading: { type: String, maxlength: 100 },
+          teamLabel: { type: String, maxlength: 50 },
+          teamHeading: { type: String, maxlength: 100 },
+          testimonialsLabel: { type: String, maxlength: 50 },
+          testimonialsHeading: { type: String, maxlength: 100 },
+          blogLabel: { type: String, maxlength: 50 },
+          blogHeading: { type: String, maxlength: 100 },
+          careersLabel: { type: String, maxlength: 50 },
+          careersHeading: { type: String, maxlength: 150 },
+          careersNoRolesMessage: { type: String, maxlength: 200 },
+          finalCtaHeading: { type: String, maxlength: 150 },
+          finalCtaDescription: { type: String, maxlength: 300 },
+          finalCtaButtonLabel: { type: String, maxlength: 50 },
+          statOneLabel: { type: String, maxlength: 50 },
+          statTwoLabel: { type: String, maxlength: 50 },
+          statThreeLabel: { type: String, maxlength: 50 },
+        },
+        { _id: false }
+      ),
+      default: {},
+    },
   },
   { timestamps: true }
 );

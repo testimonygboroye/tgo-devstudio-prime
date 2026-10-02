@@ -9,6 +9,7 @@ export interface IStackItem extends Document {
   displayOrder: number;
   publishStatus: PublishStatus;
   createdBy: Types.ObjectId;
+  translations?: Map<string, Record<string, unknown>> | Record<string, Record<string, unknown>>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -21,6 +22,18 @@ const StackItemSchema = new Schema<IStackItem>(
     displayOrder: { type: Number, default: 0 },
     publishStatus: { type: String, enum: ["draft", "published"], default: "draft" },
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    translations: {
+      type: Map,
+      of: new Schema(
+        {
+          category: { type: String, trim: true, maxlength: 60 },
+          title: { type: String, trim: true, maxlength: 100 },
+          description: { type: String, trim: true, maxlength: 400 },
+        },
+        { _id: false }
+      ),
+      default: {},
+    },
   },
   { timestamps: true }
 );

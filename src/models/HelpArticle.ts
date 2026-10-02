@@ -10,6 +10,7 @@ export interface IHelpArticle extends Document {
   requiredContentType?: string;
   category: string;
   createdBy: Types.ObjectId;
+  translations?: Map<string, Record<string, unknown>> | Record<string, Record<string, unknown>>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -27,6 +28,18 @@ const HelpArticleSchema = new Schema<IHelpArticle>(
     requiredContentType: { type: String, trim: true },
     category: { type: String, trim: true, default: "General" },
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    translations: {
+      type: Map,
+      of: new Schema(
+        {
+          title: { type: String, trim: true, maxlength: 150 },
+          bodyHtml: { type: String },
+          category: { type: String, trim: true },
+        },
+        { _id: false }
+      ),
+      default: {},
+    },
   },
   { timestamps: true }
 );

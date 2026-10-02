@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Briefcase, Users, Newspaper, DoorOpen, Inbox, Mail, Star, Layers, Workflow, FileText, Home, HelpCircle, PhoneCall, Boxes, UserPlus, Send, BookOpen, MessageCircleQuestion, UserCog, MessageSquare, ShieldCheck, Image, ScrollText, BarChart3, KeyRound, Zap, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
+import { LayoutDashboard, Briefcase, Users, Newspaper, DoorOpen, Inbox, Mail, Star, Layers, Workflow, FileText, Home, HelpCircle, PhoneCall, Boxes, UserPlus, Send, BookOpen, MessageCircleQuestion, UserCog, MessageSquare, ShieldCheck, Image, ScrollText, BarChart3, KeyRound, Zap, Settings, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface AdminSidebarProps {
   userName: string;
@@ -39,6 +39,7 @@ const NAV_ITEMS = [
   { label: "Manage Articles", hrefSuffix: "/help-articles", icon: BookOpen, badgeKey: null },
   { label: "Book a Call", hrefSuffix: "/book-a-call", icon: PhoneCall, badgeKey: null },
   { label: "Stack Items", hrefSuffix: "/stack-items", icon: Boxes, badgeKey: null },
+  { label: "Theme & Language", hrefSuffix: "/settings", icon: Settings, badgeKey: null },
 ] as const;
 
 export default function AdminSidebar({ userName, userEmail, roleName }: AdminSidebarProps) {

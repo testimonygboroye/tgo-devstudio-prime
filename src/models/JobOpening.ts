@@ -17,6 +17,7 @@ export interface IJobOpening extends Document {
   applyUrl?: string;
   publishStatus: PublishStatus;
   createdBy: Types.ObjectId;
+  translations?: Map<string, Record<string, unknown>> | Record<string, Record<string, unknown>>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -39,6 +40,20 @@ const JobOpeningSchema = new Schema<IJobOpening>(
     applyUrl: { type: String },
     publishStatus: { type: String, enum: ["draft", "published"], default: "draft" },
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    translations: {
+      type: Map,
+      of: new Schema(
+        {
+          title: { type: String, trim: true, maxlength: 120 },
+          department: { type: String, trim: true },
+          summary: { type: String, trim: true, maxlength: 250 },
+          responsibilities: { type: String, maxlength: 2000 },
+          requirements: { type: String, maxlength: 2000 },
+        },
+        { _id: false }
+      ),
+      default: {},
+    },
   },
   { timestamps: true }
 );

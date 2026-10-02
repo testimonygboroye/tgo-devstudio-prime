@@ -25,6 +25,7 @@ export interface IReview extends Document {
   featured: boolean;
   featuredOnHomepage: boolean;
   moderationHistory: IModerationLogEntry[];
+  translations?: Map<string, Record<string, unknown>> | Record<string, Record<string, unknown>>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -57,6 +58,17 @@ const ReviewSchema = new Schema<IReview>(
     featured: { type: Boolean, default: false },
     featuredOnHomepage: { type: Boolean, default: false },
     moderationHistory: { type: [ModerationLogSchema], default: [] },
+    translations: {
+      type: Map,
+      of: new Schema(
+        {
+          body: { type: String, trim: true, maxlength: 2000 },
+          customLabel: { type: String, trim: true, maxlength: 200 },
+        },
+        { _id: false }
+      ),
+      default: {},
+    },
   },
   { timestamps: true }
 );

@@ -32,6 +32,7 @@ const SECTION_LABELS: Record<string, string> = {
   "help-articles": "Manage Articles",
   "book-a-call": "Book a Call Settings",
   "stack-items": "Stack Items",
+  settings: "Theme & Language Settings",
 };
 
 export default function AdminTopBar() {

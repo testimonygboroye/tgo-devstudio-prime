@@ -5,7 +5,10 @@ import UserEditClient from "./UserEditClient";
 
 export default async function UserEditPage() {
   const session = await getServerSession();
-  if (!session!.role.canManageUsers) {
+  if (!session) {
+    redirect(`${getAdminBasePath()}/login`);
+  }
+  if (!session.role.canManageUsers) {
     redirect(`${getAdminBasePath()}/dashboard`);
   }
 

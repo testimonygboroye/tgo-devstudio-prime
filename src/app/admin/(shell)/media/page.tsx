@@ -5,7 +5,10 @@ import MediaLibraryClient from "./MediaLibraryClient";
 
 export default async function MediaLibraryPage() {
   const session = await getServerSession();
-  if (!session!.role.isFounderRole && !session!.role.canManageUsers) {
+  if (!session) {
+    redirect(`${getAdminBasePath()}/login`);
+  }
+  if (!session.role.isFounderRole && !session.role.canManageUsers) {
     redirect(`${getAdminBasePath()}/dashboard`);
   }
 

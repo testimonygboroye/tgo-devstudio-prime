@@ -5,7 +5,10 @@ import EditRoleClient from "./EditRoleClient";
 
 export default async function EditRolePage() {
   const session = await getServerSession();
-  if (!session!.role.canManageRoles) {
+  if (!session) {
+    redirect(`${getAdminBasePath()}/login`);
+  }
+  if (!session.role.canManageRoles) {
     redirect(`${getAdminBasePath()}/dashboard`);
   }
 

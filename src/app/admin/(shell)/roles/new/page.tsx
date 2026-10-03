@@ -5,7 +5,10 @@ import RoleForm from "@/components/admin/RoleForm";
 
 export default async function NewRolePage() {
   const session = await getServerSession();
-  if (!session!.role.canManageRoles) {
+  if (!session) {
+    redirect(`${getAdminBasePath()}/login`);
+  }
+  if (!session.role.canManageRoles) {
     redirect(`${getAdminBasePath()}/dashboard`);
   }
 

@@ -10,9 +10,7 @@ import {
   forbiddenResponse,
 } from "@/lib/auth/authorize";
 
-function getDateRange(
-  searchParams: URLSearchParams
-) {
+function getDateRange(searchParams: URLSearchParams) {
   const from = searchParams.get("from");
   const to = searchParams.get("to");
 
@@ -23,7 +21,6 @@ function getDateRange(
 
   if (from) {
     const date = new Date(`${from}T00:00:00.000Z`);
-
     if (!Number.isNaN(date.getTime())) {
       createdAt.$gte = date;
     }
@@ -31,15 +28,12 @@ function getDateRange(
 
   if (to) {
     const date = new Date(`${to}T23:59:59.999Z`);
-
     if (!Number.isNaN(date.getTime())) {
       createdAt.$lte = date;
     }
   }
 
-  return Object.keys(createdAt).length
-    ? { createdAt }
-    : {};
+  return Object.keys(createdAt).length ? { createdAt } : {};
 }
 
 function calculateStatus(visitor: {
@@ -52,14 +46,10 @@ function calculateStatus(visitor: {
   const now = Date.now();
 
   const daysSinceLastSeen =
-    (now -
-      new Date(visitor.lastSeen).getTime()) /
-    86400000;
+    (now - new Date(visitor.lastSeen).getTime()) / 86400000;
 
   const daysSinceFirstSeen =
-    (now -
-      new Date(visitor.firstSeen).getTime()) /
-    86400000;
+    (now - new Date(visitor.firstSeen).getTime()) / 86400000;
 
   if (daysSinceLastSeen > 30) {
     return "dormant";
@@ -93,13 +83,8 @@ function calculateStatus(visitor: {
   return "new";
 }
 
-export async function GET(
-  request: NextRequest
-) {
-  const session =
-    await getAuthenticatedSession(
-      request
-    );
+export async function GET(request: NextRequest) {
+  const session = await getAuthenticatedSession(request);
 
   if (!session) {
     return unauthorizedResponse();
@@ -113,141 +98,72 @@ export async function GET(
 
   await connectToDatabase();
 
-  const { searchParams } =
-    new URL(request.url);
+  const { searchParams } = new URL(request.url);
 
   const limit = Math.min(
     Math.max(
-      parseInt(
-        searchParams.get("limit") ||
-          "100",
-        10
-      ) || 100,
+      parseInt(searchParams.get("limit") || "100", 10) || 100,
       1
     ),
     250
   );
 
-  const host =
-    searchParams.get("host") ||
-    undefined;
-
-  const provider =
-    searchParams.get("provider") ||
-    undefined;
-
-  const countryCode =
-    searchParams.get("countryCode") ||
-    undefined;
-
-  const region =
-    searchParams.get("region") ||
-    undefined;
-
-  const city =
-    searchParams.get("city") ||
-    undefined;
-
-  const deviceType =
-    searchParams.get("deviceType") ||
-    undefined;
-
-  const browser =
-    searchParams.get("browser") ||
-    undefined;
-
+  const host = searchParams.get("host") || undefined;
+  const provider = searchParams.get("provider") || undefined;
+  const countryCode = searchParams.get("countryCode") || undefined;
+  const region = searchParams.get("region") || undefined;
+  const city = searchParams.get("city") || undefined;
+  const deviceType = searchParams.get("deviceType") || undefined;
+  const browser = searchParams.get("browser") || undefined;
   const operatingSystem =
-    searchParams.get("operatingSystem") ||
-    undefined;
+    searchParams.get("operatingSystem") || undefined;
+  const status = searchParams.get("status") || undefined;
+  const search = searchParams.get("search") || undefined;
+  const sort = searchParams.get("sort") || "recent";
 
-  const status =
-    searchParams.get("status") ||
-    undefined;
+  const dateFilter = getDateRange(searchParams);
 
-  const search =
-    searchParams.get("search") ||
-    undefined;
-
-  const sort =
-    searchParams.get("sort") ||
-    "recent";
-
-  const dateFilter =
-    getDateRange(searchParams);
-
-  const pageViewMatch: Record<
-    string,
-    unknown
-  > = {
+  const pageViewMatch: Record<string, unknown> = {
     ...dateFilter,
   };
 
-  if (host) {
-    pageViewMatch.host = host;
-  }
-
-  if (provider) {
-    pageViewMatch.deploymentProvider =
-      provider;
-  }
-
-  if (countryCode) {
-    pageViewMatch.countryCode =
-      countryCode;
-  }
-
-  if (region) {
-    pageViewMatch.region = region;
-  }
-
-  if (city) {
-    pageViewMatch.city = city;
-  }
-
-  if (deviceType) {
-    pageViewMatch.deviceType =
-      deviceType;
-  }
-
-  if (browser) {
-    pageViewMatch.browser =
-      browser;
-  }
-
+  if (host) pageViewMatch.host = host;
+  if (provider) pageViewMatch.deploymentProvider = provider;
+  if (countryCode) pageViewMatch.countryCode = countryCode;
+  if (region) pageViewMatch.region = region;
+  if (city) pageViewMatch.city = city;
+  if (deviceType) pageViewMatch.deviceType = deviceType;
+  if (browser) pageViewMatch.browser = browser;
   if (operatingSystem) {
-    pageViewMatch.operatingSystem =
-      operatingSystem;
+    pageViewMatch.operatingSystem = operatingSystem;
   }
 
-  const matchingVisitorIds =
-    host ||
-    provider ||
-    countryCode ||
-    region ||
-    city ||
-    deviceType ||
-    browser ||
-    operatingSystem ||
-    Object.keys(dateFilter).length
-      ? await PageView.distinct(
-          "visitorId",
-          pageViewMatch
-        )
-      : null;
+  const hasPageViewFilters =
+    Boolean(
+      host ||
+      provider ||
+      countryCode ||
+      region ||
+      city ||
+      deviceType ||
+      browser ||
+      operatingSystem ||
+      Object.keys(dateFilter).length
+    );
 
-  const visitorQuery: Record<
-    string,
-    unknown
-  > = {};
+  const matchingVisitorIds = hasPageViewFilters
+    ? await PageView.distinct(
+        "visitorId",
+        pageViewMatch
+      )
+    : null;
+
+  const visitorQuery: Record<string, unknown> = {};
 
   if (matchingVisitorIds) {
     visitorQuery.visitorId = {
       $in: matchingVisitorIds,
     };
-  }
-
-  if (status) {
-    visitorQuery.status = status;
   }
 
   if (search) {
@@ -273,32 +189,49 @@ export async function GET(
     ];
   }
 
-  let sortQuery:
-    | Record<string, 1 | -1>
-    | undefined;
+  let sortQuery: Record<string, 1 | -1>;
 
-  if (sort === "top-visited") {
-    sortQuery = {
-      totalPageViews: -1,
-    };
-  } else if (sort === "top-active") {
-    sortQuery = {
-      totalSessions: -1,
-      totalPageViews: -1,
-    };
-  } else if (sort === "top-constant") {
-    sortQuery = {
-      activeDays: -1,
-      totalSessions: -1,
-    };
-  } else if (sort === "newest") {
-    sortQuery = {
-      firstSeen: -1,
-    };
-  } else {
-    sortQuery = {
-      lastSeen: -1,
-    };
+  switch (sort) {
+    case "top-visited":
+      sortQuery = {
+        totalPageViews: -1,
+        lastSeen: -1,
+      };
+      break;
+
+    case "top-active":
+      sortQuery = {
+        totalSessions: -1,
+        totalPageViews: -1,
+        lastSeen: -1,
+      };
+      break;
+
+    case "top-constant":
+      sortQuery = {
+        activeDays: -1,
+        totalSessions: -1,
+        lastSeen: -1,
+      };
+      break;
+
+    case "oldest":
+      sortQuery = {
+        firstSeen: 1,
+      };
+      break;
+
+    case "newest":
+      sortQuery = {
+        firstSeen: -1,
+      };
+      break;
+
+    default:
+      sortQuery = {
+        lastSeen: -1,
+      };
+      break;
   }
 
   const [
@@ -309,15 +242,18 @@ export async function GET(
     availableHosts,
     availableProviders,
     availableCountries,
+    availableRegions,
+    availableCities,
+    availableDevices,
+    availableBrowsers,
+    availableOperatingSystems,
   ] = await Promise.all([
     PageView.find(pageViewMatch)
       .sort({ createdAt: -1 })
       .limit(limit)
       .lean(),
 
-    PageView.countDocuments(
-      pageViewMatch
-    ),
+    PageView.countDocuments(pageViewMatch),
 
     PageView.distinct(
       "visitorId",
@@ -363,207 +299,167 @@ export async function GET(
     ]),
 
     PageView.distinct("host"),
-
-    PageView.distinct(
-      "deploymentProvider"
-    ),
-
-    PageView.distinct(
-      "countryCode"
-    ),
+    PageView.distinct("deploymentProvider"),
+    PageView.distinct("countryCode"),
+    PageView.distinct("region"),
+    PageView.distinct("city"),
+    PageView.distinct("deviceType"),
+    PageView.distinct("browser"),
+    PageView.distinct("operatingSystem"),
   ]);
 
-  const visitors = await Visitor.find(
-    visitorQuery
-  )
+  const visitors = await Visitor.find(visitorQuery)
     .sort(sortQuery)
-    .limit(limit)
+    .limit(250)
     .lean();
 
-  const visitorIds =
-    visitors.map(
-      (visitor) => visitor.visitorId
-    );
+  const visitorIds = visitors.map(
+    (visitor) => visitor.visitorId
+  );
 
-  const activeDayRows =
-    visitorIds.length
-      ? await PageView.aggregate([
-          {
-            $match: {
-              visitorId: {
-                $in: visitorIds,
+  const activeDayRows = visitorIds.length
+    ? await PageView.aggregate([
+        {
+          $match: {
+            visitorId: {
+              $in: visitorIds,
+            },
+          },
+        },
+        {
+          $project: {
+            visitorId: 1,
+            day: {
+              $dateToString: {
+                format: "%Y-%m-%d",
+                date: "$createdAt",
               },
             },
           },
-          {
-            $project: {
-              visitorId: 1,
-              day: {
-                $dateToString: {
-                  format: "%Y-%m-%d",
-                  date: "$createdAt",
-                },
-              },
+        },
+        {
+          $group: {
+            _id: {
+              visitorId: "$visitorId",
+              day: "$day",
             },
           },
-          {
-            $group: {
-              _id: {
-                visitorId:
-                  "$visitorId",
-                day: "$day",
-              },
+        },
+        {
+          $group: {
+            _id: "$_id.visitorId",
+            activeDays: {
+              $sum: 1,
             },
           },
-          {
-            $group: {
-              _id: "$_id.visitorId",
-              activeDays: {
-                $sum: 1,
-              },
+        },
+      ])
+    : [];
+
+  const activeDayMap = new Map(
+    activeDayRows.map((row) => [
+      row._id as string,
+      row.activeDays as number,
+    ])
+  );
+
+  const visitorHosts = visitorIds.length
+    ? await PageView.aggregate([
+        {
+          $match: {
+            visitorId: {
+              $in: visitorIds,
             },
           },
-        ])
-      : [];
-
-  const activeDayMap =
-    new Map(
-      activeDayRows.map(
-        (row) => [
-          row._id as string,
-          row.activeDays as number,
-        ]
-      )
-    );
-
-  const visitorHosts =
-    visitorIds.length
-      ? await PageView.aggregate([
-          {
-            $match: {
-              visitorId: {
-                $in: visitorIds,
-              },
+        },
+        {
+          $match: {
+            host: {
+              $exists: true,
+              $ne: null,
             },
           },
-          {
-            $match: {
-              host: {
-                $exists: true,
-                $ne: null,
-              },
+        },
+        {
+          $group: {
+            _id: "$visitorId",
+            hosts: {
+              $addToSet: "$host",
             },
           },
-          {
-            $group: {
-              _id: "$visitorId",
-              hosts: {
-                $addToSet: "$host",
-              },
-            },
-          },
-        ])
-      : [];
+        },
+      ])
+    : [];
 
-  const hostMap =
-    new Map(
-      visitorHosts.map(
-        (row) => [
-          row._id as string,
-          row.hosts as string[],
-        ]
-      )
-    );
+  const hostMap = new Map(
+    visitorHosts.map((row) => [
+      row._id as string,
+      row.hosts as string[],
+    ])
+  );
 
-  const formattedVisitors =
-    visitors.map(
-      (visitor, index) => {
-        const activeDays =
-          activeDayMap.get(
-            visitor.visitorId
-          ) ||
-          visitor.activeDays ||
-          0;
+  const formattedVisitors = visitors
+    .map((visitor) => {
+      const activeDays =
+        activeDayMap.get(visitor.visitorId) ||
+        visitor.activeDays ||
+        0;
 
-        const calculatedStatus =
-          calculateStatus({
-            firstSeen:
-              visitor.firstSeen,
-            lastSeen:
-              visitor.lastSeen,
-            totalPageViews:
-              visitor.totalPageViews,
-            totalSessions:
-              visitor.totalSessions,
-            activeDays,
-          });
-
-        return {
-          ...visitor,
-          _id: String(visitor._id),
+      return {
+        ...visitor,
+        _id: String(visitor._id),
+        activeDays,
+        status: calculateStatus({
+          firstSeen: visitor.firstSeen,
+          lastSeen: visitor.lastSeen,
+          totalPageViews: visitor.totalPageViews,
+          totalSessions: visitor.totalSessions,
           activeDays,
-          status: calculatedStatus,
-          rank: index + 1,
-          hosts:
-            hostMap.get(
-              visitor.visitorId
-            ) || [],
-        };
-      }
-    );
+        }),
+        hosts:
+          hostMap.get(visitor.visitorId) || [],
+      };
+    })
+    .filter((visitor) =>
+      status ? visitor.status === status : true
+    )
+    .slice(0, limit)
+    .map((visitor, index) => ({
+      ...visitor,
+      rank: index + 1,
+    }));
 
-  const totalDays =
-    dailyVisitors.length;
+  const totalDays = dailyVisitors.length;
 
   const averageDailyVisitors =
     totalDays > 0
       ? Math.round(
-          dailyVisitors.reduce(
+          (dailyVisitors.reduce(
             (sum, item) =>
-              sum +
-              Number(item.visitors),
+              sum + Number(item.visitors),
             0
           ) /
-            totalDays *
+            totalDays) *
             100
         ) / 100
       : 0;
 
-  const peakDay =
-    dailyVisitors.reduce(
-      (highest, current) =>
-        Number(current.visitors) >
-        Number(highest?.visitors || 0)
-          ? current
-          : highest,
-      null as
-        | {
-            _id: string;
-            visitors: number;
-          }
-        | null
-    );
+  const peakDay = dailyVisitors.reduce(
+    (highest, current) =>
+      Number(current.visitors) >
+      Number(highest?.visitors || 0)
+        ? current
+        : highest,
+    null as
+      | {
+          _id: string;
+          visitors: number;
+        }
+      | null
+  );
 
-  const deploymentHosts =
-    availableHosts
-      .filter(
-        (value): value is string =>
-          typeof value === "string" &&
-          value.length > 0
-      )
-      .sort();
-
-  const deploymentProviders =
-    availableProviders
-      .filter(
-        (value): value is string =>
-          typeof value === "string" &&
-          value.length > 0
-      )
-      .sort();
-
-  const countries =
-    availableCountries
+  const cleanOptions = (values: unknown[]) =>
+    values
       .filter(
         (value): value is string =>
           typeof value === "string" &&
@@ -576,8 +472,7 @@ export async function GET(
 
     views,
 
-    visitors:
-      formattedVisitors,
+    visitors: formattedVisitors,
 
     totalCount,
 
@@ -594,10 +489,28 @@ export async function GET(
     peakDay:
       peakDay?._id || null,
 
-    deploymentHosts,
+    deploymentHosts:
+      cleanOptions(availableHosts),
 
-    deploymentProviders,
+    deploymentProviders:
+      cleanOptions(availableProviders),
 
-    countries,
+    countries:
+      cleanOptions(availableCountries),
+
+    regions:
+      cleanOptions(availableRegions),
+
+    cities:
+      cleanOptions(availableCities),
+
+    deviceTypes:
+      cleanOptions(availableDevices),
+
+    browsers:
+      cleanOptions(availableBrowsers),
+
+    operatingSystems:
+      cleanOptions(availableOperatingSystems),
   });
 }

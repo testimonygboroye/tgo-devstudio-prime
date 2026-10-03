@@ -1,14 +1,20 @@
 import type { MetadataRoute } from "next";
+import { getSiteUrl } from "@/lib/siteUrl";
 
-export default function robots(): MetadataRoute.Robots {
-  const siteUrl = process.env.SITE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://tgo-devstudio-prime.onrender.com");
+export default async function robots(): Promise<MetadataRoute.Robots> {
+  const siteUrl = await getSiteUrl();
 
   return {
     rules: [
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/api/", "/admin/", "/settings", "/auth/"],
+        disallow: [
+          "/api/",
+          "/admin/",
+          "/settings",
+          "/auth/",
+        ],
       },
       {
         userAgent: "facebookexternalhit",
@@ -27,6 +33,7 @@ export default function robots(): MetadataRoute.Robots {
         allow: "/",
       },
     ],
+
     sitemap: `${siteUrl}/sitemap.xml`,
   };
 }

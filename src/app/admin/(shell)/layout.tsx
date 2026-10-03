@@ -27,6 +27,7 @@ export default async function AdminShellLayout({
         userName={session.user.name}
         userEmail={session.user.email}
         roleName={session.role.name}
+        basePath={basePath}
       />
       <div id="admin-scroll-area" className="flex-1 overflow-y-auto px-6 py-8 sm:px-10">
         <AdminTopBar />

@@ -5,7 +5,10 @@ import AnalyticsClient from "./AnalyticsClient";
 
 export default async function AnalyticsPage() {
   const session = await getServerSession();
-  if (!session!.role.isFounderRole) {
+  if (!session) {
+    redirect(`${getAdminBasePath()}/login`);
+  }
+  if (!session.role.isFounderRole) {
     redirect(`${getAdminBasePath()}/dashboard`);
   }
 

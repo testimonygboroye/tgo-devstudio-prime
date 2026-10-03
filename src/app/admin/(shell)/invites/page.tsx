@@ -5,7 +5,10 @@ import InvitesClient from "./InvitesClient";
 
 export default async function InvitesPage() {
   const session = await getServerSession();
-  if (!session!.role.canManageUsers) {
+  if (!session) {
+    redirect(`${getAdminBasePath()}/login`);
+  }
+  if (!session.role.canManageUsers) {
     redirect(`${getAdminBasePath()}/dashboard`);
   }
 

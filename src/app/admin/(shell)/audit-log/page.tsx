@@ -5,7 +5,10 @@ import AuditLogClient from "./AuditLogClient";
 
 export default async function AuditLogPage() {
   const session = await getServerSession();
-  if (!session!.role.isFounderRole) {
+  if (!session) {
+    redirect(`${getAdminBasePath()}/login`);
+  }
+  if (!session.role.isFounderRole) {
     redirect(`${getAdminBasePath()}/dashboard`);
   }
 

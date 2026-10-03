@@ -5,7 +5,10 @@ import UsersClient from "./UsersClient";
 
 export default async function UsersPage() {
   const session = await getServerSession();
-  if (!session!.role.canManageUsers) {
+  if (!session) {
+    redirect(`${getAdminBasePath()}/login`);
+  }
+  if (!session.role.canManageUsers) {
     redirect(`${getAdminBasePath()}/dashboard`);
   }
 

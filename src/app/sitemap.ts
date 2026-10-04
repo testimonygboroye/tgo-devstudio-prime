@@ -6,7 +6,9 @@ import JobOpening from "@/models/JobOpening";
 import TeamMember from "@/models/TeamMember";
 import Review from "@/models/Review";
 import HelpArticle from "@/models/HelpArticle";
+import Service from "@/models/Service";
 import { getSiteUrl } from "@/lib/siteUrl";
+import { slugify } from "@/lib/utils/slugify";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteUrl = await getSiteUrl();
@@ -20,6 +22,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     teamMembers,
     reviews,
     helpArticles,
+    services,
   ] = await Promise.all([
     Project.find({
       publishStatus: "published",
@@ -39,8 +42,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .select("slug updatedAt")
       .lean(),
 
-    TeamMember.find({})
-      .select("_id updatedAt")
+    TeamMember.find({
+      publishStatus: "published",
+    })
+      .select("slug updatedAt")
       .lean(),
 
     Review.find({
@@ -50,9 +55,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .lean(),
 
     HelpArticle.find({
-      publishStatus: "published",
+      visibility: "public",
     })
       .select("_id updatedAt")
+      .lean(),
+
+    Service.find({
+      publishStatus: "published",
+    })
+      .select("title updatedAt")
       .lean(),
   ]);
 
@@ -76,56 +87,59 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/terms-of-service",
   ];
 
+  const now = new Date();
+
   const staticEntries: MetadataRoute.Sitemap =
     staticRoutes.map((route) => ({
       url: `${siteUrl}${route}`,
-      lastModified: new Date(),
+      lastModified: now,
+    }));
+
+  const serviceEntries: MetadataRoute.Sitemap =
+    services.map((service) => ({
+      url: `${siteUrl}/services/${slugify(service.title)}`,
+      lastModified: service.updatedAt || now,
     }));
 
   const projectEntries: MetadataRoute.Sitemap =
     projects.map((project) => ({
       url: `${siteUrl}/portfolio/${project.slug}`,
-      lastModified:
-        project.updatedAt || new Date(),
+      lastModified: project.updatedAt || now,
     }));
 
   const blogEntries: MetadataRoute.Sitemap =
     posts.map((post) => ({
       url: `${siteUrl}/blog/${post.slug}`,
-      lastModified:
-        post.updatedAt || new Date(),
+      lastModified: post.updatedAt || now,
     }));
 
   const careerEntries: MetadataRoute.Sitemap =
     jobs.map((job) => ({
       url: `${siteUrl}/careers/${job.slug}`,
-      lastModified:
-        job.updatedAt || new Date(),
+      lastModified: job.updatedAt || now,
     }));
 
   const teamEntries: MetadataRoute.Sitemap =
     teamMembers.map((member) => ({
-      url: `${siteUrl}/team/${member._id}`,
-      lastModified:
-        member.updatedAt || new Date(),
+      url: `${siteUrl}/team/${member.slug}`,
+      lastModified: member.updatedAt || now,
     }));
 
   const testimonialEntries: MetadataRoute.Sitemap =
     reviews.map((review) => ({
       url: `${siteUrl}/testimonials/${review._id}`,
-      lastModified:
-        review.updatedAt || new Date(),
+      lastModified: review.updatedAt || now,
     }));
 
   const helpEntries: MetadataRoute.Sitemap =
     helpArticles.map((article) => ({
       url: `${siteUrl}/help/${article._id}`,
-      lastModified:
-        article.updatedAt || new Date(),
+      lastModified: article.updatedAt || now,
     }));
 
   return [
     ...staticEntries,
+    ...serviceEntries,
     ...projectEntries,
     ...blogEntries,
     ...careerEntries,

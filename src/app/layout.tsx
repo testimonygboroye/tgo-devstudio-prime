@@ -27,23 +27,39 @@ export async function generateMetadata(): Promise<Metadata> {
     },
 
     description:
-      "TGO DevStudio is a full-stack software engineering studio building premium digital products, platforms, websites, and intelligent software systems.",
+      "TGO DevStudio is a full-stack software engineering studio building premium digital products, platforms, websites, applications, cloud systems, AI solutions, and intelligent software systems.",
 
     applicationName: "TGO DevStudio Prime",
-
-    generator: "Next.js",
 
     keywords: [
       "TGO DevStudio",
       "TGO DevStudio Prime",
+      "TGO software engineering",
+      "TGO DevStudio Nigeria",
       "full-stack development",
-      "software engineering",
+      "full-stack software engineering",
+      "custom software development",
+      "software engineering company",
+      "software development company",
       "web development",
+      "website development",
+      "web application development",
       "mobile app development",
+      "Android app development",
+      "iOS app development",
+      "SaaS development",
       "software consulting",
-      "digital products",
-      "custom software",
+      "technology consulting",
+      "digital product development",
+      "product engineering",
+      "AI development",
+      "cloud engineering",
+      "cybersecurity",
+      "DevOps",
+      "API development",
+      "database engineering",
       "Nigeria software company",
+      "African software company",
     ],
 
     authors: [
@@ -54,43 +70,18 @@ export async function generateMetadata(): Promise<Metadata> {
     ],
 
     creator: "TGO DevStudio",
-
     publisher: "TGO DevStudio",
 
     alternates: {
       canonical: siteUrl,
     },
 
-,
-
     manifest: "/manifest.json",
 
     icons: {
-      icon: [
-        {
-          url: "/icons/icon-192x192.png",
-          type: "image/png",
-          sizes: "192x192",
-        },
-        {
-          url: "/icons/icon-512x512.png",
-          type: "image/png",
-          sizes: "512x512",
-        },
-      ],
-      shortcut: [
-        {
-          url: "/icons/icon-192x192.png",
-          type: "image/png",
-        },
-      ],
-      apple: [
-        {
-          url: "/icons/apple-touch-icon.png",
-          type: "image/png",
-          sizes: "180x180",
-        },
-      ],
+      icon: "/logo.png",
+      shortcut: "/logo.png",
+      apple: "/icons/apple-touch-icon.png",
     },
 
     openGraph: {
@@ -98,11 +89,11 @@ export async function generateMetadata(): Promise<Metadata> {
       siteName: "TGO DevStudio",
       title: "TGO DevStudio Prime",
       description:
-        "Premium full-stack software engineering, digital products, platforms, and intelligent software systems.",
+        "Premium full-stack software engineering, digital products, platforms, applications, AI, cloud systems, and intelligent software.",
       type: "website",
       images: [
         {
-          url: "/icons/icon-512x512.png",
+          url: "/logo.png",
           alt: "TGO DevStudio",
         },
       ],
@@ -113,7 +104,7 @@ export async function generateMetadata(): Promise<Metadata> {
       title: "TGO DevStudio Prime",
       description:
         "Premium full-stack software engineering and digital product development.",
-      images: ["/icons/icon-512x512.png"],
+      images: ["/logo.png"],
     },
 
     robots: {
@@ -144,6 +135,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const locale = await getServerLocale();
+
   const dir = RTL_LOCALES.includes(locale)
     ? "rtl"
     : "ltr";

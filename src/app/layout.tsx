@@ -16,7 +16,11 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export async function generateMetadata(): Promise<Metadata> {
-  const siteUrl = await getSiteUrl();
+  const siteUrl = getSiteUrl();
+
+  const googleVerification =
+    process.env.GOOGLE_SITE_VERIFICATION ||
+    "g7RX7-eoPACihWjJckfBIfFsgo8jnXz2iTpegqH56nA";
 
   return {
     metadataBase: new URL(siteUrl),
@@ -104,8 +108,8 @@ export async function generateMetadata(): Promise<Metadata> {
       type: "website",
       images: [
         {
-          url: "/icons/icon-512x512.png",
-          alt: "TGO DevStudio",
+          url: "/opengraph-image",
+          alt: "TGO DevStudio Prime — Premium Software Engineering",
         },
       ],
     },
@@ -115,7 +119,7 @@ export async function generateMetadata(): Promise<Metadata> {
       title: "TGO DevStudio Prime",
       description:
         "Premium full-stack software engineering and digital product development.",
-      images: ["/icons/icon-512x512.png"],
+      images: ["/opengraph-image"],
     },
 
     robots: {
@@ -131,7 +135,7 @@ export async function generateMetadata(): Promise<Metadata> {
     },
 
     verification: {
-      google: "g7RX7-eoPACihWjJckfBIfFsgo8jnXz2iTpegqH56nA",
+      google: googleVerification,
     },
 
     other: {

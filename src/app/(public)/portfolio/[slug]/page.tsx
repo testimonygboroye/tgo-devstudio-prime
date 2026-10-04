@@ -9,8 +9,7 @@ import { TRANSLATABLE_FIELDS } from "@/lib/i18n/translatableFields";
 
 export const revalidate = 300;
 
-const siteUrl =
-  process.env.SITE_URL || "https://tgo-devstudio-prime.onrender.com";
+import { getSiteUrl } from "@/lib/siteUrl";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -67,6 +66,8 @@ export default async function CaseStudyDetailPage({ params }: PageProps) {
     locale,
     TRANSLATABLE_FIELDS.Project
   );
+
+  const siteUrl = getSiteUrl();
 
   const schema = {
     "@context": "https://schema.org",

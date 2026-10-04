@@ -1,10 +1,8 @@
-import { headers } from "next/headers";
-
 function normalizeUrl(value: string): string {
   return value.replace(/\/+$/, "");
 }
 
-export async function getSiteUrl(): Promise<string> {
+export function getSiteUrl(): string {
   const configured =
     process.env.SITE_URL ||
     process.env.NEXT_PUBLIC_SITE_URL;
@@ -13,32 +11,21 @@ export async function getSiteUrl(): Promise<string> {
     return normalizeUrl(configured);
   }
 
-  try {
-    const requestHeaders = await headers();
+  const deploymentUrl =
+    process.env.VERCEL_PROJECT_PRODUCTION_URL ||
+    process.env.VERCEL_URL ||
+    process.env.DEPLOY_PRIME_URL ||
+    process.env.URL ||
+    process.env.RENDER_EXTERNAL_URL;
 
-    const forwardedHost =
-      requestHeaders.get("x-forwarded-host");
+  if (deploymentUrl) {
+    const value = deploymentUrl.trim();
 
-    const host =
-      forwardedHost ||
-      requestHeaders.get("host");
-
-    if (host) {
-      const normalizedHost =
-        host.split(",")[0].trim();
-
-      const forwardedProto =
-        requestHeaders.get("x-forwarded-proto");
-
-      const protocol =
-        forwardedProto === "http"
-          ? "http"
-          : "https";
-
-      return `${protocol}://${normalizedHost}`;
+    if (/^https?:\/\//i.test(value)) {
+      return normalizeUrl(value);
     }
-  } catch {
-    // Fall back below when request headers are unavailable.
+
+    return normalizeUrl(`https://${value}`);
   }
 
   return "http://localhost:3000";

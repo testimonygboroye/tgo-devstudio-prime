@@ -13,10 +13,9 @@ export function getSiteUrl(): string {
 
   const deploymentUrl =
     process.env.VERCEL_PROJECT_PRODUCTION_URL ||
-    process.env.VERCEL_URL ||
     process.env.DEPLOY_PRIME_URL ||
     process.env.URL ||
-    process.env.RENDER_EXTERNAL_URL;
+    process.env.VERCEL_URL;
 
   if (deploymentUrl) {
     const value = deploymentUrl.trim();
@@ -28,5 +27,12 @@ export function getSiteUrl(): string {
     return normalizeUrl(`https://${value}`);
   }
 
-  return "http://localhost:3000";
+  /*
+   * TGO DevStudio's public SEO canonical is Vercel until
+   * a custom domain is configured through SITE_URL.
+   *
+   * Other deployment hosts remain measurable in analytics,
+   * but should not become competing canonical versions.
+   */
+  return "https://tgo-devstudio-prime.vercel.app";
 }

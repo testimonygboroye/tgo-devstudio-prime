@@ -79,8 +79,19 @@ export async function generateMetadata(): Promise<Metadata> {
     manifest: "/manifest.json",
 
     icons: {
-      icon: "/logo.png",
-      shortcut: "/logo.png",
+      icon: [
+        {
+          url: "/icons/icon-192x192.png",
+          type: "image/png",
+          sizes: "192x192",
+        },
+        {
+          url: "/icons/icon-512x512.png",
+          type: "image/png",
+          sizes: "512x512",
+        },
+      ],
+      shortcut: "/icons/icon-192x192.png",
       apple: "/icons/apple-touch-icon.png",
     },
 
@@ -93,7 +104,7 @@ export async function generateMetadata(): Promise<Metadata> {
       type: "website",
       images: [
         {
-          url: "/logo.png",
+          url: "/icons/icon-512x512.png",
           alt: "TGO DevStudio",
         },
       ],
@@ -104,7 +115,7 @@ export async function generateMetadata(): Promise<Metadata> {
       title: "TGO DevStudio Prime",
       description:
         "Premium full-stack software engineering and digital product development.",
-      images: ["/logo.png"],
+      images: ["/icons/icon-512x512.png"],
     },
 
     robots: {

@@ -13,9 +13,10 @@ export function getSiteUrl(): string {
 
   const deploymentUrl =
     process.env.VERCEL_PROJECT_PRODUCTION_URL ||
+    process.env.VERCEL_URL ||
     process.env.DEPLOY_PRIME_URL ||
     process.env.URL ||
-    process.env.VERCEL_URL;
+    process.env.RENDER_EXTERNAL_URL;
 
   if (deploymentUrl) {
     const value = deploymentUrl.trim();

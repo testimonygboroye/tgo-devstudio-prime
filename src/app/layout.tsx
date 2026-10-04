@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import OrganizationSchema from "@/components/shared/OrganizationSchema";
+import SeoSchemas from "@/components/shared/SeoSchemas";
 import { ThemeProvider } from "@/components/shared/ThemeProvider";
 import { LanguageProvider } from "@/lib/i18n/LanguageContext";
 import ServiceWorkerRegistration from "@/components/shared/ServiceWorkerRegistration";
@@ -61,6 +61,10 @@ export async function generateMetadata(): Promise<Metadata> {
       canonical: siteUrl,
     },
 
+,
+
+    manifest: "/manifest.json",
+
     icons: {
       icon: [
         {
@@ -74,14 +78,12 @@ export async function generateMetadata(): Promise<Metadata> {
           sizes: "512x512",
         },
       ],
-
       shortcut: [
         {
           url: "/icons/icon-192x192.png",
           type: "image/png",
         },
       ],
-
       apple: [
         {
           url: "/icons/apple-touch-icon.png",
@@ -90,8 +92,6 @@ export async function generateMetadata(): Promise<Metadata> {
         },
       ],
     },
-
-    manifest: "/manifest.json",
 
     openGraph: {
       url: siteUrl,
@@ -102,7 +102,7 @@ export async function generateMetadata(): Promise<Metadata> {
       type: "website",
       images: [
         {
-          url: "/logo.png",
+          url: "/icons/icon-512x512.png",
           alt: "TGO DevStudio",
         },
       ],
@@ -113,7 +113,7 @@ export async function generateMetadata(): Promise<Metadata> {
       title: "TGO DevStudio Prime",
       description:
         "Premium full-stack software engineering and digital product development.",
-      images: ["/logo.png"],
+      images: ["/icons/icon-512x512.png"],
     },
 
     robots: {
@@ -181,7 +181,7 @@ export default async function RootLayout({
       <body suppressHydrationWarning>
         <ThemeProvider>
           <LanguageProvider>
-            <OrganizationSchema />
+            <SeoSchemas />
             <ServiceWorkerRegistration />
             {children}
           </LanguageProvider>

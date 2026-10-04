@@ -27,12 +27,5 @@ export function getSiteUrl(): string {
     return normalizeUrl(`https://${value}`);
   }
 
-  /*
-   * TGO DevStudio's public SEO canonical is Vercel until
-   * a custom domain is configured through SITE_URL.
-   *
-   * Other deployment hosts remain measurable in analytics,
-   * but should not become competing canonical versions.
-   */
   return "https://tgo-devstudio-prime.vercel.app";
 }

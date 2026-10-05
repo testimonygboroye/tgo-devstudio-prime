@@ -15,12 +15,16 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
+const PRIMARY_GOOGLE_VERIFICATION =
+  process.env.GOOGLE_SITE_VERIFICATION_VERCEL ||
+  "JD9MRdvmfX4z9ZXkFe3xKNKtXkJNMr6PwAcKDhnHzpI";
+
+const EXISTING_GOOGLE_VERIFICATION =
+  process.env.GOOGLE_SITE_VERIFICATION ||
+  "g7RX7-eoPACihWjJckfBIfFsgo8jnXz2iTpegqH56nA";
+
 export async function generateMetadata(): Promise<Metadata> {
   const siteUrl = getSiteUrl();
-
-  const googleVerification =
-    process.env.GOOGLE_SITE_VERIFICATION ||
-    "g7RX7-eoPACihWjJckfBIfFsgo8jnXz2iTpegqH56nA";
 
   return {
     metadataBase: new URL(siteUrl),
@@ -31,7 +35,7 @@ export async function generateMetadata(): Promise<Metadata> {
     },
 
     description:
-      "TGO DevStudio is a full-stack software engineering studio building premium digital products, platforms, websites, applications, cloud systems, AI solutions, and intelligent software systems.",
+      "TGO DevStudio builds premium software, websites, apps, SaaS platforms, AI systems, cloud solutions, and custom digital products.",
 
     applicationName: "TGO DevStudio Prime",
 
@@ -40,7 +44,6 @@ export async function generateMetadata(): Promise<Metadata> {
       "TGO DevStudio Prime",
       "TGO software engineering",
       "TGO DevStudio Nigeria",
-      "full-stack development",
       "full-stack software engineering",
       "custom software development",
       "software engineering company",
@@ -85,6 +88,11 @@ export async function generateMetadata(): Promise<Metadata> {
     icons: {
       icon: [
         {
+          url: "/icon.png",
+          type: "image/png",
+          sizes: "192x192",
+        },
+        {
           url: "/icons/icon-192x192.png",
           type: "image/png",
           sizes: "192x192",
@@ -95,8 +103,19 @@ export async function generateMetadata(): Promise<Metadata> {
           sizes: "512x512",
         },
       ],
-      shortcut: "/icons/icon-192x192.png",
-      apple: "/icons/apple-touch-icon.png",
+      shortcut: "/icon.png",
+      apple: [
+        {
+          url: "/apple-icon.png",
+          type: "image/png",
+          sizes: "180x180",
+        },
+        {
+          url: "/icons/apple-touch-icon.png",
+          type: "image/png",
+          sizes: "180x180",
+        },
+      ],
     },
 
     openGraph: {
@@ -135,7 +154,10 @@ export async function generateMetadata(): Promise<Metadata> {
     },
 
     verification: {
-      google: googleVerification,
+      google: [
+        PRIMARY_GOOGLE_VERIFICATION,
+        EXISTING_GOOGLE_VERIFICATION,
+      ],
     },
 
     other: {

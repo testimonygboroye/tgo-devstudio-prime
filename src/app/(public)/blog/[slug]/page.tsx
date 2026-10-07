@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { Types } from "mongoose";
+
 import { connectToDatabase } from "@/lib/db";
 import BlogPost from "@/models/BlogPost";
 import User from "@/models/User";
@@ -15,27 +16,37 @@ import {
   getLocalizedContent,
 } from "@/lib/i18n/translationHelper";
 import { TRANSLATABLE_FIELDS } from "@/lib/i18n/translatableFields";
+import { getSiteUrl } from "@/lib/siteUrl";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
 async function getPost(slug: string) {
-  await connectToDatabase();
+  try {
+    await connectToDatabase();
 
-  return BlogPost.findOne({
-    slug,
-    ...getPubliclyVisibleFilter(),
-  }).lean();
+    return await BlogPost.findOne({
+      slug,
+      ...getPubliclyVisibleFilter(),
+    }).lean();
+  } catch (error) {
+    console.error("[TGO Blog] Failed to load blog post:", error);
+    return null;
+  }
+}
+
+function safeJsonLd(value: unknown): string {
+  return JSON.stringify(value).replace(/</g, "\\u003c");
 }
 
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
-  const locale = await getServerLocale();
   const { slug } = await params;
+  const locale = await getServerLocale();
   const rawPost = await getPost(slug);
 
   if (!rawPost) {
@@ -43,6 +54,10 @@ export async function generateMetadata({
       title: "Post Not Found | TGO DevStudio Prime",
       description:
         "The requested TGO DevStudio blog post could not be found.",
+      robots: {
+        index: false,
+        follow: false,
+      },
     };
   }
 
@@ -56,21 +71,65 @@ export async function generateMetadata({
     post.metaTitle ||
     `${post.title} | TGO DevStudio Prime`;
 
-  const description =
+  const description = (
     post.metaDescription ||
     post.excerpt ||
-    "Insights from TGO DevStudio on software engineering, digital products, AI, cloud and technology.";
+    "Insights from TGO DevStudio on software engineering, digital products, AI, cloud and technology."
+  ).slice(0, 160);
+
+  const siteUrl = getSiteUrl();
+  const canonical = `${siteUrl}/blog/${post.slug}`;
 
   return {
     title,
-    description: description.slice(0, 160),
+    description,
+
+    keywords: Array.isArray(post.tags)
+      ? post.tags
+      : undefined,
+
+    alternates: {
+      canonical,
+    },
+
     openGraph: {
+      url: canonical,
       title,
-      description: description.slice(0, 160),
+      description,
       type: "article",
-      images: post.coverImage?.url
-        ? [{ url: post.coverImage.url }]
+      siteName: "TGO DevStudio",
+      publishedTime: post.createdAt
+        ? new Date(post.createdAt).toISOString()
         : undefined,
+      modifiedTime: post.updatedAt
+        ? new Date(post.updatedAt).toISOString()
+        : undefined,
+      images: post.coverImage?.url
+        ? [
+            {
+              url: post.coverImage.url,
+              alt:
+                post.coverImage.altText ||
+                post.title,
+            },
+          ]
+        : [
+            {
+              url: `${siteUrl}/opengraph-image`,
+              alt:
+                "TGO DevStudio Prime — Premium Software Engineering",
+            },
+          ],
+    },
+
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [
+        post.coverImage?.url ||
+          `${siteUrl}/opengraph-image`,
+      ],
     },
   };
 }
@@ -103,39 +162,69 @@ export default async function BlogDetailPage({
       ? post.contentHtml
       : "";
 
-  let author = null;
+  let author: { name?: string } | null = null;
 
   if (
     post.createdBy &&
     Types.ObjectId.isValid(String(post.createdBy))
   ) {
-    author = await User.findById(post.createdBy)
-      .select("name")
-      .lean();
+    try {
+      author = await User.findById(post.createdBy)
+        .select("name")
+        .lean();
+    } catch (error) {
+      console.error(
+        "[TGO Blog] Failed to load author:",
+        error
+      );
+    }
   }
 
-  const safeHtml =
-    sanitizeBlogHtml(contentHtml);
+  let safeHtml = "";
+
+  try {
+    safeHtml = sanitizeBlogHtml(contentHtml);
+  } catch (error) {
+    console.error(
+      "[TGO Blog] Failed to sanitize blog HTML:",
+      error
+    );
+
+    safeHtml = contentHtml
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
 
   const readingMinutes =
     calculateReadingTime(contentHtml);
 
-  const relatedRawPosts =
-    tags.length > 0
-      ? await BlogPost.find({
-          _id: { $ne: post._id },
-          tags: { $in: tags },
-          ...getPubliclyVisibleFilter(),
-        })
-          .select(
-            "title slug excerpt translations"
-          )
-          .limit(3)
-          .lean()
-      : [];
+  let relatedPosts: typeof rawPost[] = [];
 
-  const relatedPosts =
-    relatedRawPosts.map((related) =>
+  if (tags.length > 0) {
+    try {
+      relatedPosts = await BlogPost.find({
+        _id: { $ne: post._id },
+        tags: { $in: tags },
+        ...getPubliclyVisibleFilter(),
+      })
+        .select(
+          "title slug excerpt translations createdAt updatedAt"
+        )
+        .limit(3)
+        .lean();
+    } catch (error) {
+      console.error(
+        "[TGO Blog] Failed to load related posts:",
+        error
+      );
+    }
+  }
+
+  const localizedRelatedPosts =
+    relatedPosts.map((related) =>
       getLocalizedContent(
         related,
         locale,
@@ -153,8 +242,95 @@ export default async function BlogDetailPage({
     post.title ||
     "TGO DevStudio blog image";
 
+  const siteUrl = getSiteUrl();
+  const canonical = `${siteUrl}/blog/${post.slug}`;
+
+  const articleSchema = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "@id": `${canonical}#article`,
+    headline: post.title,
+    description:
+      post.metaDescription ||
+      post.excerpt ||
+      undefined,
+    url: canonical,
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": canonical,
+    },
+    publisher: {
+      "@type": "Organization",
+      "@id": `${siteUrl}/#organization`,
+      name: "TGO DevStudio",
+      logo: {
+        "@type": "ImageObject",
+        url: `${siteUrl}/icons/icon-512x512.png`,
+      },
+    },
+    author: author?.name
+      ? {
+          "@type": "Person",
+          name: author.name,
+        }
+      : {
+          "@type": "Organization",
+          name: "TGO DevStudio",
+        },
+    datePublished: post.createdAt
+      ? new Date(post.createdAt).toISOString()
+      : undefined,
+    dateModified: post.updatedAt
+      ? new Date(post.updatedAt).toISOString()
+      : undefined,
+    image: coverImageUrl
+      ? [coverImageUrl]
+      : [`${siteUrl}/opengraph-image`],
+    keywords: tags,
+    inLanguage: locale,
+  };
+
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "TGO DevStudio",
+        item: siteUrl,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: t("nav.blog"),
+        item: `${siteUrl}/blog`,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: post.title,
+        item: canonical,
+      },
+    ],
+  };
+
   return (
     <main className="min-h-screen px-6 py-20 sm:px-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: safeJsonLd(articleSchema),
+        }}
+      />
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: safeJsonLd(breadcrumbSchema),
+        }}
+      />
+
       <article className="mx-auto max-w-2xl">
         <span className="eyebrow-label">
           {t("nav.blog")}
@@ -231,7 +407,7 @@ export default async function BlogDetailPage({
           </div>
         )}
 
-        {relatedPosts.length > 0 && (
+        {localizedRelatedPosts.length > 0 && (
           <div
             className="mt-16 border-t pt-10"
             style={{
@@ -249,35 +425,37 @@ export default async function BlogDetailPage({
             </h2>
 
             <div className="mt-5 space-y-3">
-              {relatedPosts.map((related) => (
-                <Link
-                  key={related._id.toString()}
-                  href={`/blog/${related.slug}`}
-                  className="surface-card block"
-                >
-                  <div className="surface-card-inner p-5">
-                    <p
-                      className="font-semibold"
-                      style={{
-                        color:
-                          "var(--text-primary)",
-                      }}
-                    >
-                      {related.title}
-                    </p>
+              {localizedRelatedPosts.map(
+                (related) => (
+                  <Link
+                    key={related._id.toString()}
+                    href={`/blog/${related.slug}`}
+                    className="surface-card block"
+                  >
+                    <div className="surface-card-inner p-5">
+                      <p
+                        className="font-semibold"
+                        style={{
+                          color:
+                            "var(--text-primary)",
+                        }}
+                      >
+                        {related.title}
+                      </p>
 
-                    <p
-                      className="mt-1 text-sm"
-                      style={{
-                        color:
-                          "var(--text-secondary)",
-                      }}
-                    >
-                      {related.excerpt}
-                    </p>
-                  </div>
-                </Link>
-              ))}
+                      <p
+                        className="mt-1 text-sm"
+                        style={{
+                          color:
+                            "var(--text-secondary)",
+                        }}
+                      >
+                        {related.excerpt}
+                      </p>
+                    </div>
+                  </Link>
+                )
+              )}
             </div>
           </div>
         )}

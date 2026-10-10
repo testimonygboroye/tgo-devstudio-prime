@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import { JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import SeoSchemas from "@/components/shared/SeoSchemas";
@@ -188,6 +189,10 @@ export default async function RootLayout({
           content={EXISTING_GOOGLE_VERIFICATION}
         />
         <meta
+          name="google-site-verification"
+          content="xL7vg5zAQMqoO3geCs_YO0EK23xm71OCahP7UvyCpZo"
+        />
+        <meta
           name="theme-color"
           content="#0A0A0F"
         />
@@ -217,6 +222,7 @@ export default async function RootLayout({
             {children}
           </LanguageProvider>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );

@@ -1,4 +1,6 @@
 import { connectToDatabase } from "@/lib/db";
+import { sendAdminPush } from "@/lib/push/server";
+import { getAdminBasePath } from "@/lib/adminPath";
 import AuditLog from "@/models/AuditLog";
 import User from "@/models/User";
 
@@ -39,13 +41,25 @@ export async function logAuditAction(params: LogAuditParams): Promise<void> {
     const user = await User.findById(params.actorId).select("name");
     if (!user) return;
 
+    const action = describeAction(params.method, params.path);
     await AuditLog.create({
       actor: params.actorId,
       actorName: user.name,
       method: params.method,
       path: params.path,
-      action: describeAction(params.method, params.path),
+      action,
     });
+
+    // Avoid noisy login/logout notifications while retaining meaningful audit events.
+    if (!/\/api\/auth\/(login|logout)/.test(params.path)) {
+      void sendAdminPush({
+        title: "Admin audit event",
+        body: `${user.name}: ${action}.`,
+        url: `${getAdminBasePath()}/audit-log`,
+        category: "audit",
+        tag: `audit-${Date.now()}`,
+      }).catch((error) => console.error("[Push] Audit notification failed:", error));
+    }
   } catch (error) {
     console.error("Failed to write audit log entry:", error);
   }

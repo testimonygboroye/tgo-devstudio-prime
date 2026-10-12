@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
+import { sendAdminPush } from "@/lib/push/server";
+import { getAdminBasePath } from "@/lib/adminPath";
 import JobOpening from "@/models/JobOpening";
 import JobApplication from "@/models/JobApplication";
 import { getAuthenticatedSession } from "@/lib/auth/session";
@@ -94,6 +96,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     resumeUrl,
     resumePublicId,
   });
+
+  void sendAdminPush({
+    title: "New job application",
+    body: `${application.applicantName} applied for ${job.title}.`,
+    url: `${getAdminBasePath()}/applications`,
+    category: "applications",
+    tag: `application-${application._id}`,
+  }).catch((error) => console.error("[Push] Application notification failed:", error));
 
   notifyNewApplication({
     applicantName: application.applicantName,

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
+import { sendAdminPush } from "@/lib/push/server";
+import { getAdminBasePath } from "@/lib/adminPath";
 import ContactSubmission, {
   ContactSubject,
 } from "@/models/ContactSubmission";
@@ -174,6 +176,14 @@ export async function POST(
       }
     );
   }
+
+  void sendAdminPush({
+    title: "New contact message",
+    body: `${submission.name} sent a new contact message.`,
+    url: `${getAdminBasePath()}/contact`,
+    category: "contact",
+    tag: `contact-${submission._id}`,
+  }).catch((error) => console.error("[Push] Contact notification failed:", error));
 
   notifyNewContact({
     name: submission.name,

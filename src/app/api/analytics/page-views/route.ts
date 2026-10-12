@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
+import { captureAnalyticsSnapshot } from "@/lib/push/analyticsSnapshot";
 import PageView from "@/models/PageView";
 import Visitor from "@/models/Visitor";
 import {
@@ -466,6 +467,17 @@ export async function GET(request: NextRequest) {
           value.length > 0
       )
       .sort();
+
+  // Capture only unfiltered metrics, once per UTC day, so dashboard filters
+  // cannot distort the daily comparison baseline.
+  if (!hasPageViewFilters && !search) {
+    void captureAnalyticsSnapshot({
+      uniqueVisitorCount: uniqueVisitors.length,
+      averageDailyVisitors,
+      peakDailyVisitors: peakDay ? Number(peakDay.visitors) : 0,
+      peakDay: peakDay?._id || null,
+    }).catch((error) => console.error("[Push] Analytics snapshot failed:", error));
+  }
 
   return NextResponse.json({
     status: "ok",

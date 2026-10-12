@@ -5,6 +5,7 @@ import { getAdminBasePath } from "@/lib/adminPath";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import AdminTopBar from "@/components/admin/AdminTopBar";
 import BackToTopButton from "@/components/shared/BackToTopButton";
+import PushNotificationSetup from "@/components/admin/PushNotificationSetup";
 
 export default async function AdminShellLayout({
   children,
@@ -31,6 +32,7 @@ export default async function AdminShellLayout({
       />
       <div id="admin-scroll-area" className="flex-1 overflow-y-auto px-6 py-8 sm:px-10">
         <AdminTopBar />
+        <PushNotificationSetup />
         {children}
         <BackToTopButton scrollContainerId="admin-scroll-area" position="right" />
       </div>

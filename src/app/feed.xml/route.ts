@@ -1,6 +1,7 @@
 import { connectToDatabase } from "@/lib/db";
 import BlogPost from "@/models/BlogPost";
 import { getPubliclyVisibleFilter } from "@/lib/utils/blogVisibility";
+import { getSiteUrl } from "@/lib/siteUrl";
 
 function escapeXml(value: string): string {
   return value
@@ -12,7 +13,7 @@ function escapeXml(value: string): string {
 }
 
 export async function GET() {
-  const siteUrl = process.env.SITE_URL || "https://tgo-devstudio-prime.onrender.com";
+  const siteUrl = getSiteUrl();
 
   await connectToDatabase();
   const posts = await BlogPost.find(getPubliclyVisibleFilter())

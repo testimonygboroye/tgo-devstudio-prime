@@ -5,6 +5,7 @@ import { getAdminBasePath } from "@/lib/adminPath";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import AdminTopBar from "@/components/admin/AdminTopBar";
 import BackToTopButton from "@/components/shared/BackToTopButton";
+import PushNotificationSetup from "@/components/admin/PushNotificationSetup";
 
 export default async function AdminShellLayout({
   children,
@@ -17,7 +18,10 @@ export default async function AdminShellLayout({
   if (!session) {
     const headersList = await headers();
     const currentPath = headersList.get("x-current-path") || "";
-    const redirectParam = currentPath ? `?redirect=${encodeURIComponent(currentPath)}` : "";
+    const redirectParam = currentPath
+      ? `?redirect=${encodeURIComponent(currentPath)}`
+      : "";
+
     redirect(`${basePath}/login${redirectParam}`);
   }
 
@@ -29,10 +33,21 @@ export default async function AdminShellLayout({
         roleName={session.role.name}
         basePath={basePath}
       />
-      <div id="admin-scroll-area" className="flex-1 overflow-y-auto px-6 py-8 sm:px-10">
+
+      <div
+        id="admin-scroll-area"
+        className="flex-1 overflow-y-auto px-6 py-8 sm:px-10"
+      >
         <AdminTopBar />
+
+        {session.role.isFounderRole && <PushNotificationSetup />}
+
         {children}
-        <BackToTopButton scrollContainerId="admin-scroll-area" position="right" />
+
+        <BackToTopButton
+          scrollContainerId="admin-scroll-area"
+          position="right"
+        />
       </div>
     </div>
   );

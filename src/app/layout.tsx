@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import { JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import SeoSchemas from "@/components/shared/SeoSchemas";
@@ -87,6 +88,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
     icons: {
       icon: [
+        { url: "/favicon.png", type: "image/png" },
         {
           url: "/icon.png",
           type: "image/png",
@@ -103,7 +105,7 @@ export async function generateMetadata(): Promise<Metadata> {
           sizes: "512x512",
         },
       ],
-      shortcut: "/icon.png",
+      shortcut: "/favicon.png",
       apple: [
         {
           url: "/apple-icon.png",
@@ -153,13 +155,6 @@ export async function generateMetadata(): Promise<Metadata> {
       },
     },
 
-    verification: {
-      google: [
-        PRIMARY_GOOGLE_VERIFICATION,
-        EXISTING_GOOGLE_VERIFICATION,
-      ],
-    },
-
     other: {
       "fb:app_id": "2134239190472228",
     },
@@ -185,6 +180,18 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <head>
+        <meta
+          name="google-site-verification"
+          content={PRIMARY_GOOGLE_VERIFICATION}
+        />
+        <meta
+          name="google-site-verification"
+          content={EXISTING_GOOGLE_VERIFICATION}
+        />
+        <meta
+          name="google-site-verification"
+          content="xL7vg5zAQMqoO3geCs_YO0EK23xm71OCahP7UvyCpZo"
+        />
         <meta
           name="theme-color"
           content="#0A0A0F"
@@ -215,6 +222,7 @@ export default async function RootLayout({
             {children}
           </LanguageProvider>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );

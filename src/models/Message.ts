@@ -1,4 +1,8 @@
 import { Schema, model, models, Document, Model, Types } from "mongoose";
+import User from "@/models/User";
+import Role from "@/models/Role";
+import { sendAdminPush } from "@/lib/push/server";
+import { getAdminBasePath } from "@/lib/adminPath";
 
 export type MessageType = "roleChangeRequest" | "general";
 
@@ -24,6 +28,24 @@ const MessageSchema = new Schema<IMessage>(
   },
   { timestamps: true }
 );
+
+MessageSchema.post("save", function (doc) {
+  void (async () => {
+    const recipient = await User.findById(doc.recipient).select("role").lean();
+    if (!recipient) return;
+
+    const role = await Role.findById(recipient.role).select("isFounderRole").lean();
+    if (!role?.isFounderRole) return;
+
+    await sendAdminPush({
+      title: doc.title || "New admin message",
+      body: doc.body || "You have a new message.",
+      url: `${getAdminBasePath()}/messages`,
+      category: "messages",
+      tag: `message-${doc._id}`,
+    }, String(recipient._id));
+  })().catch((error) => console.error("[Push] Message notification failed:", error));
+});
 
 const Message: Model<IMessage> = models.Message || model<IMessage>("Message", MessageSchema);
 export default Message;

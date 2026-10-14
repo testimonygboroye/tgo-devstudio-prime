@@ -23,9 +23,9 @@
     "@tiptap/pm": "^3.29.2",
     "@tiptap/react": "^3.29.2",
     "@tiptap/starter-kit": "^3.29.2",
+    "@vercel/analytics": "^2.0.1",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.10.0",
-    "isomorphic-dompurify": "^3.22.0",
     "jsonwebtoken": "^9.0.3",
     "lowlight": "^3.3.0",
     "lucide-react": "^1.30.0",
@@ -35,7 +35,9 @@
     "qrcode": "^1.5.4",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "tailwindcss": "^4"
+    "sanitize-html": "^2.18.0",
+    "tailwindcss": "^4",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.24.0",
@@ -51,6 +53,8 @@
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/sanitize-html": "^2.16.2",
+    "@types/web-push": "^3.6.4",
     "babel-jest": "^29.7.0",
     "eslint": "^9",
     "eslint-config-next": "16.3.0",

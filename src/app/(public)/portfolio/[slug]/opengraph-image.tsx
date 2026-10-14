@@ -1,12 +1,13 @@
 import { ImageResponse } from "next/og";
 import { connectToDatabase } from "@/lib/db";
 import Project from "@/models/Project";
+import { getSiteUrl } from "@/lib/siteUrl";
 
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 export const revalidate = 3600;
 
-const siteUrl = process.env.SITE_URL || "https://tgo-devstudio-prime.onrender.com";
+const siteUrl = getSiteUrl();
 
 export default async function Image({ params }: { params: { slug: string } }) {
   if (process.env.OG_IMAGES_ENABLED === "false") {

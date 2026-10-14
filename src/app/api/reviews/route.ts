@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
+import { sendAdminPush } from "@/lib/push/server";
+import { getAdminBasePath } from "@/lib/adminPath";
 import Review from "@/models/Review";
 import Project from "@/models/Project";
 import TeamMember from "@/models/TeamMember";
@@ -173,6 +175,14 @@ export async function POST(request: NextRequest) {
   const finalLabel = targetRequiresCustomLabel(resolvedTargetType)
     ? review.customLabel!
     : targetLabelSnapshot || REVIEW_TARGET_LABELS[resolvedTargetType];
+
+  void sendAdminPush({
+    title: "New review awaiting moderation",
+    body: `${review.submitterName} submitted a ${review.rating}-star review.`,
+    url: `${getAdminBasePath()}/reviews`,
+    category: "reviews",
+    tag: `review-${review._id}`,
+  }).catch((error) => console.error("[Push] Review notification failed:", error));
 
   notifyNewReview({
     submitterName: review.submitterName,

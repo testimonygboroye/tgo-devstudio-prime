@@ -5,7 +5,6 @@ import { getAdminBasePath } from "@/lib/adminPath";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import AdminTopBar from "@/components/admin/AdminTopBar";
 import BackToTopButton from "@/components/shared/BackToTopButton";
-import PushNotificationSetup from "@/components/admin/PushNotificationSetup";
 
 export default async function AdminShellLayout({
   children,
@@ -40,7 +39,6 @@ export default async function AdminShellLayout({
       >
         <AdminTopBar />
 
-        {session.role.isFounderRole && <PushNotificationSetup />}
 
         {children}
 

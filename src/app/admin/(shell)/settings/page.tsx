@@ -1,23 +1,24 @@
-import ThemeAndLanguageSettings from "@/components/shared/ThemeAndLanguageSettings";
-import { getServerLocale } from "@/lib/i18n/serverLocale";
-import { createTranslator } from "@/lib/i18n/translationHelper";
+import SettingsNavigation from "@/components/settings/SettingsNavigation";
 
-export default async function AdminSettingsPage() {
-  const locale = await getServerLocale();
-  const t = createTranslator(locale);
-
+export default function AdminSettingsPage() {
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold font-display text-[var(--text-primary)]">
-          {t("common.settings")}
-        </h2>
-        <p className="text-sm text-[var(--text-secondary)] mt-1">
-          {t("theme.description")}
+      <header>
+        <p className="font-mono text-xs uppercase tracking-widest text-neutral-400">
+          Administration
         </p>
-      </div>
+        <h1 className="mt-1 text-3xl font-bold brand-gradient-text">
+          Admin Settings
+        </h1>
+        <p className="mt-2 text-sm text-[var(--text-secondary)]">
+          Manage your admin preferences and notification settings.
+        </p>
+      </header>
 
-      <ThemeAndLanguageSettings />
+      <SettingsNavigation
+        basePath="/admin/settings"
+        includeNotifications
+      />
     </div>
   );
 }

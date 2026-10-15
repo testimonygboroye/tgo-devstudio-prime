@@ -1,4 +1,4 @@
-import ThemeAndLanguageSettings from "@/components/shared/ThemeAndLanguageSettings";
+import SettingsNavigation from "@/components/settings/SettingsNavigation";
 import { getServerLocale } from "@/lib/i18n/serverLocale";
 import { createTranslator } from "@/lib/i18n/translationHelper";
 
@@ -7,19 +7,21 @@ export default async function PublicSettingsPage() {
   const t = createTranslator(locale);
 
   return (
-    <div className="min-h-screen py-16 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto space-y-8">
-        <div className="text-center space-y-2">
-          <span className="eyebrow-label justify-center">{t("common.settings")}</span>
-          <h1 className="text-3xl sm:text-4xl font-bold font-display text-[var(--text-primary)]">
-            {t("theme.title")}
+    <div className="min-h-screen px-4 py-16 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-4xl space-y-8">
+        <header className="space-y-3 text-center">
+          <span className="eyebrow-label justify-center">
+            {t("common.settings")}
+          </span>
+          <h1 className="text-3xl font-bold font-display text-[var(--text-primary)] sm:text-4xl">
+            Settings
           </h1>
-          <p className="text-[var(--text-secondary)] max-w-xl mx-auto">
-            {t("theme.description")}
+          <p className="mx-auto max-w-xl text-[var(--text-secondary)]">
+            Personalise your browsing experience.
           </p>
-        </div>
+        </header>
 
-        <ThemeAndLanguageSettings />
+        <SettingsNavigation basePath="/settings" />
       </div>
     </div>
   );

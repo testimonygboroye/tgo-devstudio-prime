@@ -72,7 +72,7 @@ const NAV_ITEMS = [
   { label: "Manage Articles", hrefSuffix: "/help-articles", icon: BookOpen, badgeKey: null },
   { label: "Book a Call", hrefSuffix: "/book-a-call", icon: PhoneCall, badgeKey: null },
   { label: "Stack Items", hrefSuffix: "/stack-items", icon: Boxes, badgeKey: null },
-  { label: "Theme & Language", hrefSuffix: "/settings", icon: Settings, badgeKey: null },
+  { label: "Admin Settings", hrefSuffix: "/settings", icon: Settings, badgeKey: null },
 ] as const;
 
 export default function AdminSidebar({

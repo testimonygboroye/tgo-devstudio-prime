@@ -49,12 +49,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   if (!user) {
     return NextResponse.json({ status: "error", message: "User not found." }, { status: 404 });
   }
-  if (user.role.isFounderRole) {
-    return forbiddenResponse("The Founder account cannot be modified through this endpoint.");
-  }
-  if (user.role.hierarchyLevel <= session.role.hierarchyLevel && !session.role.isFounderRole) {
-    return forbiddenResponse("You cannot modify a user at or above your own hierarchy level.");
-  }
+  const isSelf = String(user._id) === String(session.user._id);
+  const isFounderTarget = Boolean(user.role.isFounderRole);
 
   const body = await request.json();
   const { name, roleId, newPassword, banAction } = body as {
@@ -63,6 +59,22 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     newPassword?: string;
     banAction?: "ban" | "unban";
   };
+
+  if (isFounderTarget && !isSelf) {
+    return forbiddenResponse("The Founder account cannot be modified by another account.");
+  }
+
+  if (isFounderTarget && (roleId || newPassword || banAction)) {
+    return forbiddenResponse("The Founder account's role, password and account status cannot be changed through this endpoint.");
+  }
+
+  if (isSelf && (roleId || newPassword || banAction)) {
+    return forbiddenResponse("You may update your display name here, but cannot change your own role, password or account status through this endpoint.");
+  }
+
+  if (!isSelf && user.role.hierarchyLevel <= session.role.hierarchyLevel && !session.role.isFounderRole) {
+    return forbiddenResponse("You cannot modify a user at or above your own hierarchy level.");
+  }
 
   if (name && name.trim().length > 0) {
     user.name = name.trim();

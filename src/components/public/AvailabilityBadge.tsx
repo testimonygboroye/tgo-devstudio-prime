@@ -10,7 +10,18 @@ export default async function AvailabilityBadge() {
 
   return (
     <div className="inline-flex items-center gap-2 rounded-full border border-base-800 bg-base-900 px-4 py-2 text-sm text-neutral-100">
-      <span className={`h-2 w-2 rounded-full ${config.color}`} />
+      <span
+        className="h-2 w-2 rounded-full"
+        style={{
+          backgroundColor:
+            availability.indicatorColor ||
+            (availability.state === "booked"
+              ? "#ef4444"
+              : availability.state === "limited"
+                ? "#f59e0b"
+                : "#22c55e"),
+        }}
+      />
       {availability.customMessage || config.label}
     </div>
   );

@@ -69,4 +69,5 @@ export const AVAILABILITY_LABELS: Record<string, { label: string; color: string 
 export const AVAILABILITY_DEFAULT = {
   state: "accepting",
   customMessage: "",
+  indicatorColor: "#22c55e",
 };

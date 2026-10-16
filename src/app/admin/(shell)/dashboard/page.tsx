@@ -4,7 +4,6 @@ import Role from "@/models/Role";
 import { Shield, UserCheck, Key, BarChart3, ArrowUpRight, Layers } from "lucide-react";
 import Link from "next/link";
 import { getAdminBasePath } from "@/lib/adminPath";
-import PushNotificationSetup from "@/components/admin/PushNotificationSetup";
 import { redirect } from "next/navigation";
 
 export default async function AdminDashboardPage() {
@@ -26,7 +25,6 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="space-y-8">
-      {session.role.isFounderRole && <PushNotificationSetup />}
       {/* Welcome Hero Card */}
       <div className="surface-card rounded-2xl p-6 sm:p-8 relative overflow-hidden">
         <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 rounded-full bg-brand-violet-600/10 blur-3xl pointer-events-none" />

@@ -11,6 +11,7 @@ const OPTIONS = [
 export default function AvailabilityClient() {
   const [state, setState] = useState("accepting");
   const [customMessage, setCustomMessage] = useState("");
+  const [indicatorColor, setIndicatorColor] = useState("#22c55e");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [savedMessage, setSavedMessage] = useState("");
@@ -23,6 +24,7 @@ export default function AvailabilityClient() {
       if (data.status === "ok") {
         setState(data.availability.state);
         setCustomMessage(data.availability.customMessage || "");
+        setIndicatorColor(data.availability.indicatorColor || "#22c55e");
       }
       setIsLoading(false);
     }
@@ -37,7 +39,7 @@ export default function AvailabilityClient() {
     const res = await fetch("/api/availability-status", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ state, customMessage }),
+      body: JSON.stringify({ state, customMessage, indicatorColor }),
     });
     const data = await res.json();
 
@@ -70,6 +72,30 @@ export default function AvailabilityClient() {
             </option>
           ))}
         </select>
+      </div>
+
+      <div>
+        <label className="block text-sm text-neutral-400">
+          Indicator colour
+        </label>
+        <div className="mt-2 flex items-center gap-3">
+          <input
+            type="color"
+            value={indicatorColor}
+            onChange={(e) => setIndicatorColor(e.target.value)}
+            aria-label="Availability indicator colour"
+            className="h-10 w-14 cursor-pointer rounded border border-neutral-700 bg-transparent p-1"
+          />
+          <input
+            type="text"
+            value={indicatorColor}
+            onChange={(e) => setIndicatorColor(e.target.value)}
+            pattern="^#[0-9a-fA-F]{6}$"
+            maxLength={7}
+            aria-label="Indicator colour hex code"
+            className="w-32 rounded-md border border-base-800 bg-base-900 px-3 py-2 text-sm text-neutral-100 outline-none focus:border-brand-cyan-400"
+          />
+        </div>
       </div>
 
       <div>

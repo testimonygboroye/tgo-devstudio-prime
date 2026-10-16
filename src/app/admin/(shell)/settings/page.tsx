@@ -1,6 +1,8 @@
 import SettingsNavigation from "@/components/settings/SettingsNavigation";
+import { getAdminBasePath } from "@/lib/adminPath";
 
 export default function AdminSettingsPage() {
+  const basePath = getAdminBasePath();
   return (
     <div className="space-y-6">
       <header>
@@ -16,7 +18,7 @@ export default function AdminSettingsPage() {
       </header>
 
       <SettingsNavigation
-        basePath="/admin/settings"
+        basePath={`${basePath}/settings`}
         includeNotifications
       />
     </div>

@@ -6,6 +6,7 @@ export type AvailabilityState = "accepting" | "limited" | "booked";
 export interface IAvailabilityStatus extends Document {
   state: AvailabilityState;
   customMessage?: string;
+  indicatorColor?: string;
   lastUpdatedBy: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -15,6 +16,12 @@ const AvailabilityStatusSchema = new Schema<IAvailabilityStatus>(
   {
     state: { type: String, enum: ["accepting", "limited", "booked"], required: true, default: "accepting" },
     customMessage: { type: String, trim: true, maxlength: 150 },
+    indicatorColor: {
+      type: String,
+      trim: true,
+      default: "#22c55e",
+      match: /^#[0-9a-fA-F]{6}$/,
+    },
     lastUpdatedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
   },
   { timestamps: true }

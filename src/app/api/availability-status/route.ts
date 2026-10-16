@@ -49,9 +49,11 @@ export async function PUT(request: NextRequest) {
   const {
     state,
     customMessage,
+    indicatorColor,
   } = body as {
     state?: string;
     customMessage?: string;
+    indicatorColor?: string;
   };
 
   if (
@@ -72,6 +74,12 @@ export async function PUT(request: NextRequest) {
       ? customMessage.trim()
       : "";
 
+  const normalizedIndicatorColor =
+    typeof indicatorColor === "string" &&
+    /^#[0-9a-fA-F]{6}$/.test(indicatorColor)
+      ? indicatorColor
+      : "#22c55e";
+
   if (normalizedCustomMessage.length > 150) {
     return NextResponse.json(
       {
@@ -89,6 +97,7 @@ export async function PUT(request: NextRequest) {
     $set: {
       state,
       lastUpdatedBy: session.user._id,
+      indicatorColor: normalizedIndicatorColor,
     },
   };
 

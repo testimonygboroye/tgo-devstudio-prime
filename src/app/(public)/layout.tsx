@@ -5,17 +5,31 @@ import BackToTopButton from "@/components/shared/BackToTopButton";
 import CookieConsentBanner from "@/components/public/CookieConsentBanner";
 import HelpDiscoveryPrompt from "@/components/shared/HelpDiscoveryPrompt";
 import AnalyticsTracker from "@/components/public/AnalyticsTracker";
+import ShareCurrentPage from "@/components/public/ShareCurrentPage";
 
-export default function PublicLayout({ children }: { children: React.ReactNode }) {
+export default function PublicLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <>
       <SiteHeader />
+
       {children}
+
+      <ShareCurrentPage />
+
       <SiteFooter />
+
       <SocialFloatingButton />
+
       <BackToTopButton position="left" />
+
       <CookieConsentBanner />
+
       <HelpDiscoveryPrompt />
+
       <AnalyticsTracker />
     </>
   );

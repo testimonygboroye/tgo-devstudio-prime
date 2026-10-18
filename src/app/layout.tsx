@@ -18,7 +18,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 const PRIMARY_GOOGLE_VERIFICATION =
   process.env.GOOGLE_SITE_VERIFICATION_VERCEL ||
-  "JD9MRdvmfX4z9ZXkFe3xKNKtXkJNMr6PwAcKDhnHzpI";
+  "xL7vg5zAQMqoO3geCs_YO0EK23xm71OCahP7UvyCpZo";
 
 const EXISTING_GOOGLE_VERIFICATION =
   process.env.GOOGLE_SITE_VERIFICATION ||
@@ -187,10 +187,6 @@ export default async function RootLayout({
         <meta
           name="google-site-verification"
           content={EXISTING_GOOGLE_VERIFICATION}
-        />
-        <meta
-          name="google-site-verification"
-          content="xL7vg5zAQMqoO3geCs_YO0EK23xm71OCahP7UvyCpZo"
         />
         <meta
           name="theme-color"

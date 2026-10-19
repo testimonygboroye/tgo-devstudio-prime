@@ -5,8 +5,12 @@ import { connectToDatabase } from "@/lib/db";
 import TeamMember from "@/models/TeamMember";
 import { ArrowLeft } from "lucide-react";
 import { getServerLocale } from "@/lib/i18n/serverLocale";
-import { createTranslator, getLocalizedContent } from "@/lib/i18n/translationHelper";
+import {
+  createTranslator,
+  getLocalizedContent,
+} from "@/lib/i18n/translationHelper";
 import { TRANSLATABLE_FIELDS } from "@/lib/i18n/translatableFields";
+import { getSiteUrl } from "@/lib/siteUrl";
 
 export const revalidate = 300;
 
@@ -16,19 +20,26 @@ interface PageProps {
 
 async function getMember(slug: string) {
   await connectToDatabase();
+
   return TeamMember.findOne({
     slug,
     publishStatus: "published",
   }).lean();
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
   const locale = await getServerLocale();
   const { slug } = await params;
+  const siteUrl = getSiteUrl();
   const rawMember = await getMember(slug);
 
   if (!rawMember) {
-    return { title: "Team Member Not Found | TGO DevStudio Prime" };
+    return {
+      title: "Team Member Not Found | TGO DevStudio Prime",
+      robots: { index: false, follow: true },
+    };
   }
 
   const member = getLocalizedContent(
@@ -37,21 +48,49 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     TRANSLATABLE_FIELDS.TeamMember
   );
 
+  const title = `${member.name} | TGO DevStudio Prime`;
+  const description = String(member.bio || member.jobTitle || "")
+    .replace(/\s+/g, " ")
+    .slice(0, 160);
+
+  const profileImage =
+    typeof member.photo?.url === "string" && member.photo.url.trim()
+      ? member.photo.url
+      : `${siteUrl}/opengraph-image`;
+
+  const canonical = `${siteUrl}/team/${member.slug}`;
+
   return {
-    title: `${member.name} | TGO DevStudio Prime`,
-    description: member.bio,
+    title,
+    description,
+    alternates: { canonical },
     openGraph: {
-      title: `${member.name} | TGO DevStudio Prime`,
-      description: member.bio,
-      images: member.photo?.url ? [{ url: member.photo.url }] : undefined,
+      url: canonical,
+      title,
+      description,
+      type: "profile",
+      siteName: "TGO DevStudio",
+      images: [
+        {
+          url: profileImage,
+          alt: member.photo?.altText || `${member.name} — TGO DevStudio`,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [profileImage],
     },
   };
 }
 
-export default async function TeamMemberDetailPage({ params }: PageProps) {
+export default async function TeamMemberDetailPage({
+  params,
+}: PageProps) {
   const locale = await getServerLocale();
   const t = createTranslator(locale);
-
   const { slug } = await params;
   const rawMember = await getMember(slug);
 
@@ -70,7 +109,8 @@ export default async function TeamMemberDetailPage({ params }: PageProps) {
           href="/team"
           className="flex items-center gap-1 text-sm text-neutral-400 hover:text-brand-cyan-300"
         >
-          <ArrowLeft size={16} /> {t("team.backToTeam")}
+          <ArrowLeft size={16} />
+          {t("team.backToTeam")}
         </Link>
 
         <div className="mt-8 flex flex-col items-center text-center sm:flex-row sm:items-start sm:text-left sm:gap-6">

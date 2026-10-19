@@ -2,32 +2,48 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import Service from "@/models/Service";
 import { getAuthenticatedSession } from "@/lib/auth/session";
-import { unauthorizedResponse, forbiddenResponse, requireContentPermission } from "@/lib/auth/authorize";
+import {
+  unauthorizedResponse,
+  forbiddenResponse,
+  requireContentPermission,
+} from "@/lib/auth/authorize";
 
 const CONTENT_TYPE = "services";
 
 export async function POST(request: NextRequest) {
   const session = await getAuthenticatedSession(request);
-  if (!session) {
-    return unauthorizedResponse();
-  }
+
+  if (!session) return unauthorizedResponse();
 
   if (!requireContentPermission(session, CONTENT_TYPE, "create")) {
     return forbiddenResponse("You do not have permission to create services.");
   }
 
   const body = await request.json();
-  const { title, summary, icon, displayOrder, publishStatus, featured } = body as {
+
+  const {
+    title,
+    summary,
+    icon,
+    displayOrder,
+    publishStatus,
+    featured,
+    coverImage,
+  } = body as {
     title?: string;
     summary?: string;
     icon?: string;
     displayOrder?: number;
     publishStatus?: string;
     featured?: boolean;
+    coverImage?: { url?: string; publicId?: string; altText?: string } | null;
   };
 
-  if (!title || !summary) {
-    return NextResponse.json({ status: "error", message: "Title and summary are required." }, { status: 400 });
+  if (!title?.trim() || !summary?.trim()) {
+    return NextResponse.json(
+      { status: "error", message: "Title and summary are required." },
+      { status: 400 }
+    );
   }
 
   await connectToDatabase();
@@ -39,6 +55,13 @@ export async function POST(request: NextRequest) {
     displayOrder: displayOrder ?? 0,
     publishStatus: publishStatus === "published" ? "published" : "draft",
     featured: featured === true,
+    coverImage: coverImage?.url
+      ? {
+          url: coverImage.url,
+          publicId: coverImage.publicId || "",
+          altText: coverImage.altText || title.trim(),
+        }
+      : undefined,
     createdBy: session.user._id,
   });
 

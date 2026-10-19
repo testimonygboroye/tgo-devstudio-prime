@@ -11,6 +11,7 @@ const ALLOWED_FOLDERS = [
   "team",
   "about",
   "blog",
+  "services",
   "job-applications",
 ] as const;
 

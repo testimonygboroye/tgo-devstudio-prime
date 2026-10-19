@@ -24,6 +24,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const locale = await getServerLocale();
   const { slug } = await params;
   const rawProject = await getProject(slug);
+  const siteUrl = getSiteUrl();
 
   if (!rawProject) {
     return { title: "Case Study Not Found | TGO DevStudio Prime" };
@@ -37,17 +38,32 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const title = project.metaTitle || `${project.title} | TGO DevStudio Prime`;
   const description = project.metaDescription || project.summary;
+  const image =
+    project.images?.[0]?.url || `${siteUrl}/opengraph-image`;
+  const canonical = `${siteUrl}/portfolio/${project.slug}`;
 
   return {
     title,
     description,
+    alternates: { canonical },
     openGraph: {
+      url: canonical,
       title,
       description,
       type: "article",
-      images: project.images?.[0]
-        ? [{ url: project.images[0].url }]
-        : undefined,
+      siteName: "TGO DevStudio",
+      images: [
+        {
+          url: image,
+          alt: project.images?.[0]?.altText || project.title,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [image],
     },
   };
 }

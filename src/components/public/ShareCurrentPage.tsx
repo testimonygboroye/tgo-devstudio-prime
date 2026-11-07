@@ -14,7 +14,7 @@ import {
   MessageCircle,
 } from "lucide-react";
 
-type ShareMode = "choose" | "link" | "qr";
+type ShareMode = "choose" | "link" | "qr" | null;
 
 const DETAIL_ROUTE =
   /^\/(blog|services|portfolio|team|careers|testimonials|tech-stack|stack|faq)\/[^/]+\/?$/;
@@ -24,7 +24,7 @@ export default function ShareCurrentPage() {
 
   const [url, setUrl] = useState("");
   const [title, setTitle] = useState("TGO DevStudio");
-  const [mode, setMode] = useState<ShareMode>("choose");
+  const [mode, setMode] = useState<ShareMode>(null);
   const [copied, setCopied] = useState(false);
   const [qrData, setQrData] = useState("");
   const [qrLoading, setQrLoading] = useState(false);
@@ -37,7 +37,7 @@ export default function ShareCurrentPage() {
 
     setUrl(window.location.href);
     setTitle(document.title || "TGO DevStudio");
-    setMode("choose");
+    setMode(null);
     setQrData("");
     setError("");
   }, [isDetailPage, pathname]);
@@ -181,7 +181,7 @@ export default function ShareCurrentPage() {
   if (!isDetailPage) return null;
 
   const closeDialog = () => {
-    setMode("choose");
+    setMode(null);
     setError("");
   };
 
@@ -225,7 +225,7 @@ export default function ShareCurrentPage() {
         </div>
       </section>
 
-      {mode !== "choose" || mode === "choose" ? (
+      {mode !== null ? (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4"
           role="dialog"

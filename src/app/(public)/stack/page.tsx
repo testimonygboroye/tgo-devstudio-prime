@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { connectToDatabase } from "@/lib/db";
 import StackItem from "@/models/StackItem";
+import Link from "next/link";
 
 export const revalidate = 300;
 
@@ -43,12 +44,13 @@ export default async function StackPage() {
                 <span className="eyebrow-label">{category}</span>
                 <div className="mt-5 grid gap-5 sm:grid-cols-2">
                   {categoryItems.map((item) => (
-                    <div key={item._id.toString()} className="surface-card">
+                    <Link key={item._id.toString()} href={`/stack/${item._id.toString()}`} className="surface-card block transition hover:-translate-y-1">
                       <div className="surface-card-inner p-6">
                         <p className="font-semibold" style={{ color: "var(--text-primary)" }}>{item.title}</p>
                         <p className="mt-1.5 text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{item.description}</p>
+                        <p className="mt-4 text-xs font-semibold text-brand-cyan-300">Explore technology →</p>
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               </div>

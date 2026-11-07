@@ -34,6 +34,9 @@ export default async function EditServicePage({ params }: PageProps) {
             icon: service.icon,
             displayOrder: service.displayOrder,
             publishStatus: service.publishStatus,
+            featured: service.featured,
+            coverImage: service.coverImage ? { url: service.coverImage.url, publicId: service.coverImage.publicId, altText: service.coverImage.altText } : undefined,
+            translations: service.translations as Record<string, Record<string, unknown>>,
           }}
         />
       </div>

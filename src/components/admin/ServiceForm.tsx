@@ -16,6 +16,7 @@ interface ServiceFormProps {
     displayOrder: number;
     publishStatus: string;
     featured?: boolean;
+    coverImage?: { url: string; publicId?: string; altText?: string };
     translations?: Record<string, Record<string, unknown>>;
   };
 }
@@ -34,6 +35,9 @@ export default function ServiceForm({ mode, serviceId, initialData }: ServiceFor
   const [displayOrder, setDisplayOrder] = useState(initialData?.displayOrder ?? 0);
   const [publishStatus, setPublishStatus] = useState(initialData?.publishStatus || "draft");
   const [featured, setFeatured] = useState(initialData?.featured ?? false);
+  const [coverImage, setCoverImage] = useState(initialData?.coverImage ?? null);
+  const [coverAltText, setCoverAltText] = useState(initialData?.coverImage?.altText ?? "");
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
   const [savedMessage, setSavedMessage] = useState("");
@@ -60,6 +64,28 @@ export default function ServiceForm({ mode, serviceId, initialData }: ServiceFor
     }
   }
 
+  async function handleCoverUpload(file?: File) {
+    if (!file) return;
+    setError("");
+    setIsUploadingCover(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("folder", "services");
+      const response = await fetch("/api/media/upload", { method: "POST", body: formData });
+      const data = await response.json();
+      if (!response.ok) {
+        setError(data.message || "Cover image upload failed.");
+        return;
+      }
+      setCoverImage({ url: data.url, publicId: data.publicId || "", altText: coverAltText || baseTitle || "Service cover image" });
+    } catch {
+      setError("Cover image upload failed. Please try again.");
+    } finally {
+      setIsUploadingCover(false);
+    }
+  }
+
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError("");
@@ -80,6 +106,7 @@ export default function ServiceForm({ mode, serviceId, initialData }: ServiceFor
           displayOrder,
           publishStatus,
           featured,
+          coverImage: coverImage ? { ...coverImage, altText: coverAltText || baseTitle } : null,
           translations,
         }),
       });
@@ -204,6 +231,23 @@ export default function ServiceForm({ mode, serviceId, initialData }: ServiceFor
                   <option value="published">Published</option>
                 </select>
               </div>
+            </div>
+
+            <div className="space-y-3 rounded-xl border border-base-800 bg-base-950 p-4">
+              <div>
+                <label htmlFor="service-cover" className="block text-sm font-medium text-neutral-300">Service cover image</label>
+                <p className="mt-1 text-xs text-neutral-500">JPEG, PNG or WebP. Maximum 8MB. Used on the service page and social sharing previews.</p>
+              </div>
+              {coverImage?.url && (
+                <div className="space-y-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={coverImage.url} alt={coverAltText || baseTitle || "Service cover"} className="h-44 w-full rounded-lg object-cover" />
+                  <button type="button" onClick={() => setCoverImage(null)} className="text-xs font-semibold text-red-400 hover:text-red-300">Remove cover image</button>
+                </div>
+              )}
+              <input id="service-cover" type="file" accept="image/jpeg,image/png,image/webp" disabled={isUploadingCover} onChange={(e) => { void handleCoverUpload(e.target.files?.[0]); e.currentTarget.value = ""; }} className="block w-full text-sm text-neutral-300 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-cyan-400 file:px-4 file:py-2 file:font-semibold file:text-base-950" />
+              {isUploadingCover && <p className="text-xs text-brand-cyan-300">Uploading cover image…</p>}
+              <input value={coverAltText} onChange={(e) => setCoverAltText(e.target.value)} placeholder="Image alternative text" className="w-full rounded-lg border border-base-800 bg-base-900 px-4 py-2.5 text-sm text-neutral-100 outline-none focus:border-brand-cyan-400" />
             </div>
 
             <div className="flex items-center gap-3 pt-2">

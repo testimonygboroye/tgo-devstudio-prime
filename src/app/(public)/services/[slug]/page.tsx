@@ -57,17 +57,27 @@ export async function generateMetadata({
 
   const title = `${service.title} | TGO DevStudio Prime`;
   const description = service.summary;
+  const siteUrl = getSiteUrl();
+  const canonical = `${siteUrl}/services/${slug}`;
+  const image = service.coverImage?.url || `${siteUrl}/opengraph-image`;
 
   return {
     title,
     description,
-    alternates: {
-      canonical: `/services/${slug}`,
-    },
+    alternates: { canonical },
     openGraph: {
+      url: canonical,
       title,
       description,
       type: "website",
+      siteName: "TGO DevStudio",
+      images: [{ url: image, alt: service.coverImage?.altText || service.title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [image],
     },
   };
 }

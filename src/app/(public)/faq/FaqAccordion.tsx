@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ArrowUpRight } from "lucide-react";
+import Link from "next/link";
 
 interface FaqItemData {
   _id: string;
@@ -27,9 +28,12 @@ export default function FaqAccordion({ item }: { item: FaqItemData }) {
           />
         </button>
         {isOpen && (
-          <p className="border-t px-5 py-4 text-sm leading-relaxed" style={{ borderColor: "var(--border-subtle)", color: "var(--text-secondary)" }}>
-            {item.answer}
-          </p>
+          <div className="border-t px-5 py-4" style={{ borderColor: "var(--border-subtle)" }}>
+            <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{item.answer}</p>
+            <Link href={`/faq/${item._id}`} className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-brand-cyan-300 hover:text-brand-cyan-200">
+              Open shareable answer <ArrowUpRight size={14} />
+            </Link>
+          </div>
         )}
       </div>
     </div>

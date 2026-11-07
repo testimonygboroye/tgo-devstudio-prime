@@ -32,7 +32,8 @@ export async function POST(request: NextRequest) {
     if (!session) {
       return unauthorizedResponse();
     }
-    if (!requireAnyContentPermission(session, "caseStudies")) {
+    const permissionType = folder === "services" ? "services" : folder === "team" ? "team" : folder === "blog" ? "blog" : folder === "about" ? "about" : "caseStudies";
+    if (!requireAnyContentPermission(session, permissionType)) {
       return forbiddenResponse("You do not have permission to upload media.");
     }
   }

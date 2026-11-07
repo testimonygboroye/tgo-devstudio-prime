@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import type { Metadata } from "next";
 import { isValidObjectId } from "mongoose";
 import { connectToDatabase } from "@/lib/db";
@@ -6,6 +7,7 @@ import FaqItem from "@/models/FaqItem";
 import { getServerLocale } from "@/lib/i18n/serverLocale";
 import { getLocalizedContent } from "@/lib/i18n/translationHelper";
 import { TRANSLATABLE_FIELDS } from "@/lib/i18n/translatableFields";
+import { getSiteUrl } from "@/lib/siteUrl";
 
 export const revalidate = 300;
 
@@ -33,9 +35,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const faq = getLocalizedContent(rawFaq, locale, TRANSLATABLE_FIELDS.FaqItem);
   const title = `${faq.question} | TGO DevStudio FAQ`;
-  const description = String(faq.answer || "").replace(/\\s+/g, " ").slice(0, 160);
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\\/$/, "") || "https://tgo-devstudio-prime.vercel.app";
+  const description = String(faq.answer || "").replace(/\s+/g, " ").slice(0, 160);
+  const siteUrl = getSiteUrl();
   const canonical = `${siteUrl}/faq/${slug}`;
+  const fallbackImage = `${siteUrl}/opengraph-image`;
 
   return {
     title,
@@ -47,13 +50,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description,
       type: "article",
       siteName: "TGO DevStudio",
-      images: [{ url: `${siteUrl}/opengraph-image`, alt: "TGO DevStudio" }],
+      images: [{ url: fallbackImage, alt: "TGO DevStudio" }],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: [`${siteUrl}/opengraph-image`],
+      images: [fallbackImage],
     },
   };
 }
@@ -70,9 +73,9 @@ export default async function FaqDetailPage({ params }: PageProps) {
   return (
     <main className="min-h-screen px-6 py-20 sm:px-12">
       <article className="mx-auto max-w-3xl">
-        <a href="/faq" className="text-sm font-semibold text-brand-cyan-300 hover:text-brand-cyan-200">
+        <Link href="/faq" className="text-sm font-semibold text-brand-cyan-300 hover:text-brand-cyan-200">
           ← Back to FAQs
-        </a>
+        </Link>
         <span className="eyebrow-label mt-8 block">{faq.category || "Support"}</span>
         <h1 className="heading-premium mt-3 text-4xl font-bold brand-gradient-text sm:text-5xl">
           {faq.question}

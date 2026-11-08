@@ -10,6 +10,7 @@ import { Table, TableRow, TableCell, TableHeader } from "@tiptap/extension-table
 import { Image } from "@tiptap/extension-image";
 import { CodeBlockLowlight } from "@tiptap/extension-code-block-lowlight";
 import { common, createLowlight } from "lowlight";
+import { uploadMediaDirect } from "@/lib/client/uploadMedia";
 
 const lowlight = createLowlight(common);
 
@@ -102,20 +103,9 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
         return;
       }
 
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("folder", "blog");
-
       try {
-        const response = await fetch("/api/media/upload", { method: "POST", body: formData });
-        const data = await response.json();
-
-        if (!response.ok) {
-          window.alert(data.message || "Image upload failed.");
-          return;
-        }
-
-        editor?.chain().focus().setImage({ src: data.url, alt: altText.trim() }).run();
+        const uploaded = await uploadMediaDirect(file, "blog");
+        editor?.chain().focus().setImage({ src: uploaded.url, alt: altText.trim() }).run();
       } catch {
         window.alert("Image upload failed. Please try again.");
       }

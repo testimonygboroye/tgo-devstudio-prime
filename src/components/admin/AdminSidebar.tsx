@@ -60,6 +60,7 @@ const NAV_GROUPS = [
   ]},
   { title: "Website Content", items: [
     { label: "Homepage", hrefSuffix: "/home-settings", icon: Home, badgeKey: null },
+    { label: "Homepage Media", hrefSuffix: "/homepage-media", icon: Video, badgeKey: null },
     { label: "Case Studies", hrefSuffix: "/case-studies", icon: Briefcase, badgeKey: null },
     { label: "Services", hrefSuffix: "/services", icon: Layers, badgeKey: null },
     { label: "Process", hrefSuffix: "/process", icon: Workflow, badgeKey: null },
@@ -81,7 +82,6 @@ const NAV_GROUPS = [
   { title: "Site Tools", items: [
     { label: "Availability", hrefSuffix: "/availability", icon: Zap, badgeKey: null },
     { label: "Media Library", hrefSuffix: "/media", icon: Image, badgeKey: null },
-    { label: "Homepage Media", hrefSuffix: "/homepage-media", icon: Video, badgeKey: null },
     { label: "Help & Guide", hrefSuffix: "/help", icon: HelpCircle, badgeKey: null },
     { label: "Manage Articles", hrefSuffix: "/help-articles", icon: BookOpen, badgeKey: null },
   ]},

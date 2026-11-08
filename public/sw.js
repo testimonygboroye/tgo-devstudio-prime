@@ -98,7 +98,6 @@ self.addEventListener("fetch", (event) => {
 
   if (request.mode === "navigate") {
     // Never store or replay private/admin pages, even when offline.
-    if (isPrivatePath(url.pathname)) return;
     event.respondWith(handleNavigation(request));
     return;
   }

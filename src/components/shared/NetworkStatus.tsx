@@ -9,7 +9,7 @@ export default function NetworkStatus() {
   const [visible, setVisible] = useState(false);
   const verifyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const mounted = useRef(false);
+  const wasOffline = useRef(!navigator.onLine);
 
   const clearTimers = useCallback(() => {
     if (verifyTimer.current) clearTimeout(verifyTimer.current);
@@ -32,6 +32,12 @@ export default function NetworkStatus() {
       });
       if (!response.ok) throw new Error("Connection check failed");
       clearTimers();
+      if (!wasOffline.current) {
+        setState("online");
+        setVisible(false);
+        return;
+      }
+      wasOffline.current = false;
       setState("restored");
       setVisible(true);
       hideTimer.current = setTimeout(() => {
@@ -45,18 +51,20 @@ export default function NetworkStatus() {
   }, [clearTimers]);
 
   useEffect(() => {
-    mounted.current = true;
     if (!navigator.onLine) {
+      wasOffline.current = true;
       setState("offline");
       setVisible(true);
     }
 
     const handleOffline = () => {
       clearTimers();
+      wasOffline.current = true;
       setState("offline");
       setVisible(true);
     };
     const handleOnline = () => {
+      if (!wasOffline.current) return;
       if (verifyTimer.current) clearTimeout(verifyTimer.current);
       verifyTimer.current = setTimeout(() => void confirmConnection(), 350);
     };
@@ -66,7 +74,7 @@ export default function NetworkStatus() {
 
     // Recheck when a suspended mobile tab becomes active again.
     const handleVisibility = () => {
-      if (document.visibilityState === "visible" && navigator.onLine) {
+      if (document.visibilityState === "visible" && navigator.onLine && wasOffline.current) {
         void confirmConnection();
       }
     };
@@ -75,13 +83,13 @@ export default function NetworkStatus() {
     // Some mobile browsers do not reliably emit online/offline events.
     const interval = window.setInterval(() => {
       if (!navigator.onLine) {
+        wasOffline.current = true;
         setState("offline");
         setVisible(true);
       }
     }, 12000);
 
     return () => {
-      mounted.current = false;
       clearTimers();
       window.clearInterval(interval);
       window.removeEventListener("offline", handleOffline);

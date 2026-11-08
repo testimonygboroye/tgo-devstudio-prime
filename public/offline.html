@@ -32,7 +32,7 @@ main{width:min(100%,650px);padding:clamp(25px,6vw,48px);border:1px solid rgba(13
 </main>
 <script>
 (function(){
- const params=new URLSearchParams(location.search),target=params.get("requested")||"/";
+ const params=new URLSearchParams(location.search),target=params.get("requested")||((location.pathname!=="/offline.html")?location.pathname+location.search:"/");
  const requested=document.getElementById("requested");
  if(target&&target!=="/"){requested.textContent="Page requested: "+target;requested.style.display="block";}
  document.getElementById("retry").addEventListener("click",function(){location.replace(target.startsWith("/")&&!target.startsWith("//")?target:"/");});

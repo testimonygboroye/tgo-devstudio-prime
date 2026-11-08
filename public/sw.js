@@ -1,4 +1,4 @@
-const SW_VERSION = "tgo-offline-v1";
+const SW_VERSION = "tgo-offline-v2";
 const APP_CACHE = `${SW_VERSION}-app`;
 const PAGE_CACHE = `${SW_VERSION}-public-pages`;
 const ASSET_CACHE = `${SW_VERSION}-public-assets`;
@@ -8,7 +8,15 @@ const PRECACHE_URLS = [OFFLINE_URL, "/manifest.json", "/favicon.png", "/icons/ic
 self.addEventListener("install", (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(APP_CACHE);
-    await cache.addAll(PRECACHE_URLS.map((path) => new Request(path, { cache: "reload" })));
+    await cache.addAll([...PRECACHE_URLS, "/logo.png"].map((path) => new Request(path, { cache: "reload" })));
+    try {
+      const home = await fetch("/", { cache: "reload", credentials: "same-origin" });
+      const type = home.headers.get("content-type") || "";
+      if (home.ok && type.includes("text/html") && !home.headers.has("set-cookie")) {
+        const pages = await caches.open(PAGE_CACHE);
+        await pages.put("/", home.clone());
+      }
+    } catch { /* Keep the offline fallback available if homepage prefetch fails. */ }
     await self.skipWaiting();
   })());
 });
@@ -59,14 +67,10 @@ async function handleNavigation(request) {
     }
     const offline = await caches.match(OFFLINE_URL, { cacheName: APP_CACHE });
     if (offline) {
-      const fallbackUrl = new URL(OFFLINE_URL, self.location.origin);
-      fallbackUrl.searchParams.set("requested", url.pathname + url.search + url.hash);
-      return fetch(OFFLINE_URL).catch(() => caches.match(OFFLINE_URL, { cacheName: APP_CACHE })).then((response) => {
-        if (!response) return offline;
-        const headers = new Headers(response.headers);
-        headers.set("X-TGO-Offline", "1");
-        return new Response(response.body, { status: 200, headers });
-      });
+      const headers = new Headers(offline.headers);
+      headers.set("X-TGO-Offline", "1");
+      headers.set("Cache-Control", "no-store");
+      return new Response(offline.body, { status: 200, headers });
     }
     return Response.error();
   }

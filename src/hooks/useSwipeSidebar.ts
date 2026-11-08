@@ -5,8 +5,7 @@ export function useSwipeSidebar(isOpen:boolean,setIsOpen:(open:boolean)=>void,ed
  useEffect(()=>{
   let pointerId:number|null=null,startX=0,startY=0,eligible=false;
   const openDirection=edge==="left"?1:-1;
-  const suppressClickUntil=useRef(0);
-  const onDown=(event:PointerEvent)=>{
+   const onDown=(event:PointerEvent)=>{
    if(!event.isPrimary||(event.pointerType==="mouse"&&event.button!==0)||window.matchMedia("(min-width: 768px)").matches)return;
    const target=event.target as HTMLElement|null;
    const inDrawer=Boolean(target&&drawerRef.current?.contains(target));

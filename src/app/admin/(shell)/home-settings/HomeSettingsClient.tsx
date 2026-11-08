@@ -102,16 +102,24 @@ export default function HomeSettingsClient() {
   const [openSection, setOpenSection] = useState<string | null>("Hero Section");
 
   useEffect(() => {
+    let cancelled = false;
     async function load() {
-      const res = await fetch("/api/home-settings");
-      const data = await res.json();
-      if (data.status === "ok") {
-        setForm((prev) => ({ ...prev, ...data.settings }));
-        setIsDefault(data.isDefault);
+      try {
+        const res = await fetch("/api/home-settings", { cache: "no-store" });
+        const data = await res.json();
+        if (!res.ok || data.status !== "ok") throw new Error(data.message || "Could not load homepage settings.");
+        if (!cancelled) {
+          setForm((prev) => ({ ...prev, ...data.settings }));
+          setIsDefault(data.isDefault);
+        }
+      } catch (loadError) {
+        if (!cancelled) setError(loadError instanceof Error ? loadError.message : "Could not load homepage settings. Please retry.");
+      } finally {
+        if (!cancelled) setIsLoading(false);
       }
-      setIsLoading(false);
     }
-    load();
+    void load();
+    return () => { cancelled = true; };
   }, []);
 
   function updateField(field: string, value: string) {

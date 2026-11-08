@@ -33,7 +33,7 @@ export function useSwipeSidebar(
       if (drawer) {
         drawer.style.transition = "none";
         drawer.style.width = width + "px";
-        drawer.style.transform = edge === "right" ? `translate3d(${maxWidth - width}px,0,0)` : "translate3d(0,0,0)";
+        drawer.style.translate = edge === "right" ? `${maxWidth - width}px 0` : "0 0";
       }
       if (backdrop) {
         backdrop.style.transition = "none";
@@ -44,7 +44,7 @@ export function useSwipeSidebar(
     const clearInlineStyles = () => {
       const drawer = drawerRef.current;
       const backdrop = backdropRef.current;
-      if (drawer) { drawer.style.transition = ""; drawer.style.width = ""; drawer.style.transform = ""; }
+      if (drawer) { drawer.style.transition = ""; drawer.style.width = ""; drawer.style.translate = ""; }
       if (backdrop) { backdrop.style.transition = ""; backdrop.style.opacity = ""; }
     };
     const clearAfterRender = () => requestAnimationFrame(() => requestAnimationFrame(clearInlineStyles));

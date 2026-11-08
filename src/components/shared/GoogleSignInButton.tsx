@@ -23,12 +23,12 @@ export default function GoogleSignInButton({endpoint,payload={},onResult,onError
      try{const claims=JSON.parse(atob(response.credential.split(".")[1].replace(/-/g,"+").replace(/_/g,"/")));if(claims.email){localStorage.setItem(LAST_GOOGLE_EMAIL_KEY,String(claims.email));setLastEmail(String(claims.email));}}catch{}
      onResult(data);
     }catch{onError("Could not reach TGO authentication. Check your connection and try again.");}
-   },auto_select:false,ux_mode:"popup",cancel_on_tap_outside:true});
+   },auto_select:false,login_hint:lastEmail||undefined,ux_mode:"popup",cancel_on_tap_outside:true});
    buttonRef.current.innerHTML="";
    window.google.accounts.id.renderButton(buttonRef.current,{type:"standard",theme:"outline",size:"large",shape:"pill",text:"continue_with",logo_alignment:"left",width:Math.min(360,Math.max(260,buttonRef.current.clientWidth||320))});
    setButtonReady(true);
   }catch(error){initialized.current=false;onError("Google sign-in could not initialize. Check the OAuth client ID and authorized JavaScript origin.");}
- },[clientId,scriptReady,endpoint,payload,onResult,onError]);
+ },[clientId,scriptReady,endpoint,payload,onResult,onError,lastEmail]);
  useEffect(()=>{try{setLastEmail(localStorage.getItem(LAST_GOOGLE_EMAIL_KEY)||"");}catch{}},[]);
  useEffect(()=>{if(scriptReady){const timer=window.setInterval(()=>{if(window.google?.accounts?.id){initialize();window.clearInterval(timer);}},150);return()=>window.clearInterval(timer);}},[scriptReady,initialize]);
  useEffect(()=>{const resize=()=>{if(initialized.current&&buttonRef.current&&window.google?.accounts?.id){initialized.current=false;initialize();}};window.addEventListener("resize",resize);return()=>window.removeEventListener("resize",resize);},[initialize]);
@@ -37,6 +37,7 @@ export default function GoogleSignInButton({endpoint,payload={},onResult,onError
   <Script src="https://accounts.google.com/gsi/client" strategy="afterInteractive" onReady={()=>setScriptReady(true)} onLoad={()=>setScriptReady(true)} onError={()=>onError("Google sign-in could not load. Check your connection or browser settings.")}/>
   {lastEmail&&<button type="button" onClick={continueAsLastAccount} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-base-700 bg-base-900 px-4 py-3 text-sm font-semibold text-neutral-100 hover:border-brand-cyan-400"><span aria-hidden="true" className="text-lg font-bold">G</span><span>Continue as {lastEmail}</span></button>}
   <div ref={buttonRef} className="flex min-h-[48px] w-full justify-center" aria-label="Continue with Google"/>
+  {!buttonReady&&clientId&&<button type="button" onClick={openGoogleChooser} className="flex min-h-12 w-full items-center justify-center gap-3 rounded-full border border-base-700 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 hover:bg-neutral-100"><span className="text-xl font-bold text-blue-600">G</span>Continue with Google</button>}
   {!clientId&&<p role="alert" className="text-center text-xs text-amber-300">Google sign-in is not configured on this deployment (missing public OAuth client ID).</p>}
   {clientId&&scriptReady&&!buttonReady&&<p className="text-center text-xs text-neutral-500">Loading Google sign-in…</p>}
  </div>;

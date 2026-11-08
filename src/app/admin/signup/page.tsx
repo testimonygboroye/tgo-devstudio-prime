@@ -106,8 +106,6 @@ function SignupForm() {
 
           {!isValidating && inviteInfo && !success && (
             <><div className="mt-8 rounded-md border border-base-800 bg-base-900 p-3 text-sm text-neutral-400">Creating an account for <span className="text-neutral-100">{inviteInfo.email}</span> as <span className="text-brand-cyan-300">{inviteInfo.roleName}</span></div>
-              <GoogleSignInButton endpoint="/api/auth/google-invite" payload={{token}} onResult={handleGoogleResult} onError={handleGoogleError}/>
-              <div className="my-5 flex items-center gap-3 text-xs text-neutral-500"><span className="h-px flex-1 bg-base-800"/><span>OR CREATE WITH PASSWORD</span><span className="h-px flex-1 bg-base-800"/></div>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="rounded-md border border-base-800 bg-base-900 p-3 text-sm text-neutral-400">
                 Creating an account for <span className="text-neutral-100">{inviteInfo.email}</span> as{" "}
@@ -145,6 +143,8 @@ function SignupForm() {
                 {isSubmitting ? "Creating account..." : "Create Account"}
               </button>
             </form>
+            <div className="my-5 flex items-center gap-3 text-xs text-neutral-500"><span className="h-px flex-1 bg-base-800"/><span>OR</span><span className="h-px flex-1 bg-base-800"/></div>
+            <GoogleSignInButton endpoint="/api/auth/google-invite" payload={{token}} onResult={handleGoogleResult} onError={handleGoogleError}/>
             </>
           )}
 

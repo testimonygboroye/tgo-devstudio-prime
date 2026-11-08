@@ -16,7 +16,7 @@ import { getPubliclyVisibleFilter } from "@/lib/utils/blogVisibility";
 import ScrollReveal from "@/components/public/ScrollReveal";
 import AvailabilityBadge from "@/components/public/AvailabilityBadge";
 import HeroMoment from "@/components/public/HeroMoment";
-import LaunchExperience from "@/components/public/LaunchExperience";
+import HomepageMediaExperience from "@/components/public/HomepageMediaExperience";
 import LaunchSettings from "@/models/LaunchSettings";
 import { getServerLocale, getTranslator } from "@/lib/i18n/serverLocale";
 import { getLocalizedContent } from "@/lib/i18n/translationHelper";
@@ -62,7 +62,7 @@ export default async function HomePage() {
 
   return (
     <main style={{ backgroundColor: "var(--bg-page)" }}>
-      <LaunchExperience settings={launchSettings || { enabled: false }} />
+      <HomepageMediaExperience settings={launchSettings || { enabled: false }} />
       {/* Hero */}
       <section className="ambient-glow relative flex min-h-[90vh] flex-col items-center justify-center overflow-hidden bg-cover bg-center px-6 text-center sm:px-12" style={hero.heroBackgroundImage ? { backgroundImage: `linear-gradient(rgba(5, 8, 24, .76), rgba(5, 8, 24, .84)), url("${hero.heroBackgroundImage}")` } : undefined}>
         <HeroMoment />

@@ -1,120 +1,37 @@
 "use client";
 import { useEffect } from "react";
-
-type Ref = { current: HTMLElement | null };
-
-export function useSwipeSidebar(
-  isOpen: boolean,
-  setIsOpen: (open: boolean) => void,
-  edge: "left" | "right",
-  drawerRef: Ref,
-  backdropRef: Ref,
-  options: { maxWidth?: number; railWidth?: number } = {},
-) {
-  useEffect(() => {
-    let pointerId: number | null = null;
-    let startX = 0;
-    let startY = 0;
-    let startExtent = 0;
-    let maxWidth = 0;
-    let railWidth = 0;
-    let horizontal = false;
-    let lastX = 0;
-    let lastTime = 0;
-    let velocity = 0;
-    const direction = edge === "left" ? 1 : -1;
-
-    const paint = (extent: number) => {
-      const available = Math.max(1, maxWidth - railWidth);
-      const visible = Math.max(0, Math.min(available, extent));
-      const width = railWidth + visible;
-      const drawer = drawerRef.current;
-      const backdrop = backdropRef.current;
-      if (drawer) {
-        drawer.style.transition = "none";
-        drawer.style.width = width + "px";
-        drawer.style.translate = edge === "right" ? `${maxWidth - width}px 0` : "0 0";
-      }
-      if (backdrop) {
-        backdrop.style.transition = "none";
-        backdrop.style.opacity = String(visible / available);
-      }
-    };
-
-    const clearInlineStyles = () => {
-      const drawer = drawerRef.current;
-      const backdrop = backdropRef.current;
-      if (drawer) { drawer.style.transition = ""; drawer.style.width = ""; drawer.style.translate = ""; }
-      if (backdrop) { backdrop.style.transition = ""; backdrop.style.opacity = ""; }
-    };
-    const clearAfterRender = () => requestAnimationFrame(() => requestAnimationFrame(clearInlineStyles));
-
-    const onPointerDown = (event: PointerEvent) => {
-      if (window.matchMedia("(min-width: 768px)").matches) return;
-      if (!event.isPrimary || (event.pointerType === "mouse" && event.button !== 0)) return;
-      if (!drawerRef.current) return;
-      const target = event.target as HTMLElement | null;
-      if (target?.closest("input, textarea, select, [data-no-sidebar-swipe]")) return;
-      pointerId = event.pointerId;
-      startX = event.clientX;
-      startY = event.clientY;
-      lastX = startX;
-      lastTime = performance.now();
-      velocity = 0;
-      horizontal = false;
-      maxWidth = Math.min(options.maxWidth ?? (edge === "left" ? 304 : 336), window.innerWidth * 0.86);
-      railWidth = Math.min(options.railWidth ?? 0, maxWidth);
-      startExtent = isOpen ? maxWidth - railWidth : 0;
-    };
-
-    const onPointerMove = (event: PointerEvent) => {
-      if (pointerId === null || event.pointerId !== pointerId) return;
-      const dx = event.clientX - startX;
-      const dy = event.clientY - startY;
-      if (!horizontal) {
-        if (Math.abs(dx) < 7 && Math.abs(dy) < 7) return;
-        if (Math.abs(dx) <= Math.abs(dy) * 1.1) { pointerId = null; return; }
-        horizontal = true;
-      }
-      if (event.cancelable) event.preventDefault();
-      const now = performance.now();
-      velocity = (event.clientX - lastX) / Math.max(1, now - lastTime);
-      lastX = event.clientX;
-      lastTime = now;
-      paint(startExtent + dx * direction);
-    };
-
-    const onPointerUp = (event: PointerEvent) => {
-      if (pointerId === null || event.pointerId !== pointerId) return;
-      const dx = event.clientX - startX;
-      const available = Math.max(1, maxWidth - railWidth);
-      const extent = Math.max(0, Math.min(available, startExtent + dx * direction));
-      const threshold = available * 0.16;
-      let nextOpen = isOpen;
-      if (!isOpen && horizontal && (extent >= threshold || velocity * direction > 0.45)) nextOpen = true;
-      if (isOpen && horizontal && (extent <= available - threshold || velocity * direction < -0.45)) nextOpen = false;
-      pointerId = null;
-      if (horizontal) setIsOpen(nextOpen);
-      horizontal = false;
-      clearAfterRender();
-    };
-
-    const onPointerCancel = () => {
-      pointerId = null;
-      horizontal = false;
-      clearAfterRender();
-    };
-
-    window.addEventListener("pointerdown", onPointerDown, { passive: true });
-    window.addEventListener("pointermove", onPointerMove, { passive: false });
-    window.addEventListener("pointerup", onPointerUp, { passive: true });
-    window.addEventListener("pointercancel", onPointerCancel, { passive: true });
-    return () => {
-      window.removeEventListener("pointerdown", onPointerDown);
-      window.removeEventListener("pointermove", onPointerMove);
-      window.removeEventListener("pointerup", onPointerUp);
-      window.removeEventListener("pointercancel", onPointerCancel);
-      clearInlineStyles();
-    };
-  }, [backdropRef, drawerRef, edge, isOpen, options.maxWidth, options.railWidth, setIsOpen]);
+type Ref={current:HTMLElement|null};
+export function useSwipeSidebar(isOpen:boolean,setIsOpen:(open:boolean)=>void,edge:"left"|"right",drawerRef:Ref,_backdropRef:Ref,options:{maxWidth?:number;railWidth?:number}={}){
+ useEffect(()=>{
+  let pointerId:number|null=null,startX=0,startY=0,eligible=false;
+  const openDirection=edge==="left"?1:-1;
+  const onDown=(event:PointerEvent)=>{
+   if(!event.isPrimary||(event.pointerType==="mouse"&&event.button!==0)||window.matchMedia("(min-width: 768px)").matches)return;
+   const target=event.target as HTMLElement|null;
+   const inDrawer=Boolean(target&&drawerRef.current?.contains(target));
+   const nearEdge=edge==="left"?event.clientX<=Math.max(32,options.railWidth||0):event.clientX>=window.innerWidth-32;
+   eligible=isOpen?inDrawer:(nearEdge||inDrawer);
+   if(!eligible)return;
+   pointerId=event.pointerId;startX=event.clientX;startY=event.clientY;
+  };
+  const onMove=(event:PointerEvent)=>{
+   if(pointerId===null||event.pointerId!==pointerId)return;
+   const dx=event.clientX-startX,dy=event.clientY-startY;
+   if(Math.abs(dy)>Math.abs(dx)*1.15&&Math.abs(dy)>10){pointerId=null;return;}
+  };
+  const onUp=(event:PointerEvent)=>{
+   if(pointerId===null||event.pointerId!==pointerId)return;
+   const dx=event.clientX-startX,dy=event.clientY-startY;pointerId=null;
+   if(Math.abs(dx)<64||Math.abs(dx)<Math.abs(dy)*1.2)return;
+   const towardOpen=dx*openDirection>0;
+   if(!isOpen&&towardOpen)setIsOpen(true);
+   else if(isOpen&&!towardOpen)setIsOpen(false);
+  };
+  const onCancel=()=>{pointerId=null;};
+  window.addEventListener("pointerdown",onDown,{passive:true});
+  window.addEventListener("pointermove",onMove,{passive:true});
+  window.addEventListener("pointerup",onUp,{passive:true});
+  window.addEventListener("pointercancel",onCancel,{passive:true});
+  return()=>{window.removeEventListener("pointerdown",onDown);window.removeEventListener("pointermove",onMove);window.removeEventListener("pointerup",onUp);window.removeEventListener("pointercancel",onCancel);};
+ },[isOpen,setIsOpen,edge,drawerRef,options.railWidth]);
 }

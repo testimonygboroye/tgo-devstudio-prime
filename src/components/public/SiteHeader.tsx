@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useSwipeSidebar } from "@/hooks/useSwipeSidebar";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -18,30 +18,6 @@ export default function SiteHeader() {
   const drawerRef = useRef<HTMLElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
   useSwipeSidebar(isMenuOpen, setMenuOpen, "right", drawerRef, backdropRef);
-  const [isMoreOpen, setIsMoreOpen] = useState(false);
-  const moreRef = useRef<HTMLDivElement>(null);
-
-  const DESKTOP_NAV_LINKS = [
-    { label: t("nav.home"), href: "/" },
-    { label: t("nav.services"), href: "/services" },
-    { label: t("nav.portfolio"), href: "/portfolio" },
-    { label: t("nav.blog"), href: "/blog" },
-    { label: t("nav.careers"), href: "/careers" },
-    { label: t("nav.contact"), href: "/contact" },
-    { label: t("nav.bookACall"), href: "/book-a-call" },
-  ];
-
-  const MORE_LINKS = [
-    { label: t("nav.about"), href: "/about", icon: Info },
-    { label: t("nav.process"), href: "/process", icon: Workflow },
-    { label: t("nav.team"), href: "/team", icon: Users },
-    { label: t("nav.testimonials"), href: "/testimonials", icon: Star },
-    { label: t("nav.faq"), href: "/faq", icon: MessageCircleQuestion },
-    { label: t("nav.stack"), href: "/stack", icon: Boxes },
-    { label: t("nav.help"), href: "/help", icon: HelpCircle },
-    { label: t("common.settings"), href: "/settings", icon: Settings },
-  ];
-
   const DRAWER_NAV_GROUPS = [
     { title: t("nav.home"), links: [
       { label: t("nav.home"), href: "/", icon: Home },
@@ -67,18 +43,6 @@ export default function SiteHeader() {
       { label: t("common.settings"), href: "/settings", icon: Settings },
     ]},
   ];
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (moreRef.current && !moreRef.current.contains(event.target as Node)) {
-        setIsMoreOpen(false);
-      }
-    }
-    if (isMoreOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isMoreOpen]);
 
   return (
     <header className="sticky top-0 z-50">

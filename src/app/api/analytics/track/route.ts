@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
     const eventId = validId(body?.eventId) ? body.eventId : randomUUID();
 
     const userAgent = request.headers.get("user-agent") || "unknown";
-    if (/bot|crawler|spider|slurp|facebookexternalhit|WhatsApp|TelegramBot|Twitterbot|LinkedInBot|Discordbot|Google-InspectionTool/i.test(userAgent)) {
+    if (/bot|crawler|spider|slurp|facebookexternalhit|TelegramBot|Twitterbot|LinkedInBot|Discordbot|Google-InspectionTool/i.test(userAgent)) {
       return NextResponse.json({ status: "ok", ignored: true });
     }
     const authenticatedSession = await getAuthenticatedSession(request);

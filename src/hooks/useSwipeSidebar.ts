@@ -2,6 +2,7 @@
 import { useEffect, useRef } from "react";
 type Ref={current:HTMLElement|null};
 export function useSwipeSidebar(isOpen:boolean,setIsOpen:(open:boolean)=>void,edge:"left"|"right",drawerRef:Ref,_backdropRef:Ref,options:{maxWidth?:number;railWidth?:number}={}){
+ const suppressClickUntil=useRef(0);
  useEffect(()=>{
   let pointerId:number|null=null,startX=0,startY=0,eligible=false;
   const openDirection=edge==="left"?1:-1;

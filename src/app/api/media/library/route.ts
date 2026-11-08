@@ -22,10 +22,16 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const [imagesResult, rawResult] = await Promise.all([
+    const [imagesResult, videosResult, rawResult] = await Promise.all([
       cloudinary.api.resources({
         type: "upload",
         resource_type: "image",
+        prefix: "tgo-devstudio-prime/",
+        max_results: 200,
+      }),
+      cloudinary.api.resources({
+        type: "upload",
+        resource_type: "video",
         prefix: "tgo-devstudio-prime/",
         max_results: 200,
       }),
@@ -39,6 +45,7 @@ export async function GET(request: NextRequest) {
 
     const allResources: CloudinaryResource[] = [
       ...imagesResult.resources,
+      ...videosResult.resources,
       ...rawResult.resources,
     ];
 

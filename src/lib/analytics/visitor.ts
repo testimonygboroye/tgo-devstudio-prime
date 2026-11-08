@@ -46,16 +46,39 @@ export function countryName(code?: string): string | undefined {
   catch { return code.toUpperCase(); }
 }
 
+const SUBDIVISIONS: Record<string, Record<string, string>> = {
+  NG: { AB:"Abia", AD:"Adamawa", AK:"Akwa Ibom", AN:"Anambra", BA:"Bauchi", BY:"Bayelsa", BE:"Benue", BO:"Borno", CR:"Cross River", DE:"Delta", EB:"Ebonyi", ED:"Edo", EK:"Ekiti", EN:"Enugu", FC:"Federal Capital Territory", GO:"Gombe", IM:"Imo", JI:"Jigawa", KD:"Kaduna", KN:"Kano", KT:"Katsina", KE:"Kebbi", KO:"Kogi", KW:"Kwara", LA:"Lagos", NA:"Nasarawa", NI:"Niger", OG:"Ogun", ON:"Ondo", OS:"Osun", OY:"Oyo", PL:"Plateau", RI:"Rivers", SO:"Sokoto", TA:"Taraba", YO:"Yobe", ZA:"Zamfara" },
+  US: { AL:"Alabama", AK:"Alaska", AZ:"Arizona", AR:"Arkansas", CA:"California", CO:"Colorado", CT:"Connecticut", DE:"Delaware", FL:"Florida", GA:"Georgia", HI:"Hawaii", ID:"Idaho", IL:"Illinois", IN:"Indiana", IA:"Iowa", KS:"Kansas", KY:"Kentucky", LA:"Louisiana", ME:"Maine", MD:"Maryland", MA:"Massachusetts", MI:"Michigan", MN:"Minnesota", MS:"Mississippi", MO:"Missouri", MT:"Montana", NE:"Nebraska", NV:"Nevada", NH:"New Hampshire", NJ:"New Jersey", NM:"New Mexico", NY:"New York", NC:"North Carolina", ND:"North Dakota", OH:"Ohio", OK:"Oklahoma", OR:"Oregon", PA:"Pennsylvania", RI:"Rhode Island", SC:"South Carolina", SD:"South Dakota", TN:"Tennessee", TX:"Texas", UT:"Utah", VT:"Vermont", VA:"Virginia", WA:"Washington", WV:"West Virginia", WI:"Wisconsin", WY:"Wyoming", DC:"District of Columbia" },
+  CA: { AB:"Alberta", BC:"British Columbia", MB:"Manitoba", NB:"New Brunswick", NL:"Newfoundland and Labrador", NS:"Nova Scotia", NT:"Northwest Territories", NU:"Nunavut", ON:"Ontario", PE:"Prince Edward Island", QC:"Quebec", SK:"Saskatchewan", YT:"Yukon" },
+  AU: { ACT:"Australian Capital Territory", NSW:"New South Wales", NT:"Northern Territory", QLD:"Queensland", SA:"South Australia", TAS:"Tasmania", VIC:"Victoria", WA:"Western Australia" },
+};
 export function formatRegionName(value?: string, countryCode?: string): string | undefined {
   if (!value) return undefined;
-  const raw = decodeAnalyticsLabel(value);
-  const code = raw.includes("-") ? raw.split("-").pop()! : raw;
-  if (!/^[A-Z0-9]{1,3}$/i.test(code)) return raw;
-  const subdivision = raw.includes("-") ? raw.toUpperCase() : countryCode ? `${countryCode.toUpperCase()}-${code.toUpperCase()}` : "";
-  if (!subdivision) return raw;
-  let name = raw;
-  try { name = new Intl.DisplayNames(["en"], { type: "region" }).of(subdivision) || raw; } catch { /* Keep provider value. */ }
-  return name.toLowerCase() === code.toLowerCase() ? raw : `${name} (${code.toUpperCase()})`;
+  const raw = decodeAnalyticsLabel(value).trim();
+  const qualified = raw.match(/^([A-Z]{2})[-_]([A-Z0-9]{1,3})$/i);
+  const country = (qualified?.[1] || countryCode || "").toUpperCase();
+  const code = (qualified?.[2] || raw).toUpperCase();
+  const regions = SUBDIVISIONS[country];
+  if (!regions) return raw;
+  const name = regions[code];
+  if (name) return `${name} (${code})`;
+  const reverse = Object.entries(regions).find(([, label]) => label.toLowerCase() === raw.toLowerCase());
+  return reverse ? `${reverse[1]} (${reverse[0]})` : raw;
+}
+const COUNTRY_TIMEZONE_GROUP: Record<string, string> = {};
+for (const code of "NG GH KE ZA EG MA DZ TN SN CI CM ET UG TZ RW ZM ZW".split(" ")) COUNTRY_TIMEZONE_GROUP[code] = "Africa";
+for (const code of "GB IE FR DE ES PT IT NL BE CH AT SE NO DK FI PL CZ SK HU RO BG GR UA IS".split(" ")) COUNTRY_TIMEZONE_GROUP[code] = "Europe";
+for (const code of "US CA MX BR AR CL CO PE VE EC BO UY PY CR PA CU DO JM".split(" ")) COUNTRY_TIMEZONE_GROUP[code] = "America";
+for (const code of "IN PK BD LK NP CN JP KR SG MY TH VN ID PH AE SA QA IL TR".split(" ")) COUNTRY_TIMEZONE_GROUP[code] = "Asia";
+for (const code of "AU NZ FJ PG".split(" ")) COUNTRY_TIMEZONE_GROUP[code] = "Australia";
+export function isLikelyGeoMismatch(timezone?: string, countryCode?: string): boolean {
+  if (!timezone || !countryCode || timezone === "UTC" || timezone.startsWith("Etc/")) return false;
+  const timezoneGroup = timezone.split("/")[0];
+  const expectedGroup = COUNTRY_TIMEZONE_GROUP[countryCode.toUpperCase()];
+  if (!expectedGroup) return false;
+  if (expectedGroup === "America") return timezoneGroup !== "America";
+  if (expectedGroup === "Australia") return timezoneGroup !== "Australia" && timezoneGroup !== "Pacific";
+  return timezoneGroup !== expectedGroup;
 }
 
 export function canonicalizeDeploymentHost(value?: string): string | undefined {

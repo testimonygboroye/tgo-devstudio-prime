@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
+import { getAuthenticatedSession } from "@/lib/auth/session";
 import { connectToDatabase } from "@/lib/db";
 import PageView from "@/models/PageView";
 import Visitor, {
@@ -11,6 +12,7 @@ import {
   getDeploymentProvider,
   getVisitorGeo,
   parseUserAgent,
+  isLikelyGeoMismatch,
 } from "@/lib/analytics/visitor";
 
 const VISITOR_COOKIE = "tgo_visitor_id";
@@ -96,13 +98,21 @@ export async function POST(request: NextRequest) {
     const visitorCookie = request.cookies.get(VISITOR_COOKIE)?.value;
     const sessionCookie = request.cookies.get(SESSION_COOKIE)?.value;
     const validId = (value: unknown): value is string => typeof value === "string" && /^[a-zA-Z0-9-]{12,80}$/.test(value);
-    const visitorId = visitorCookie || (validId(body?.visitorId) ? body.visitorId : randomUUID());
+    const visitorId = validId(visitorCookie) ? visitorCookie : (validId(body?.visitorId) ? body.visitorId : randomUUID());
     const sessionId = sessionCookie || (validId(body?.sessionId) ? body.sessionId : randomUUID());
     const eventId = validId(body?.eventId) ? body.eventId : randomUUID();
 
-    const userAgent =
-      request.headers.get("user-agent") ||
-      "unknown";
+    const userAgent = request.headers.get("user-agent") || "unknown";
+    if (/bot|crawler|spider|slurp|facebookexternalhit|WhatsApp|TelegramBot|Twitterbot|LinkedInBot|Discordbot|Google-InspectionTool/i.test(userAgent)) {
+      return NextResponse.json({ status: "ok", ignored: true });
+    }
+    const authenticatedSession = await getAuthenticatedSession(request);
+    if (authenticatedSession?.role?.isFounderRole) {
+      await connectToDatabase();
+      await Visitor.updateOne({ visitorId }, { $set: { isInternal: true } });
+      await PageView.updateMany({ visitorId }, { $set: { isInternal: true } });
+      return NextResponse.json({ status: "ok", ignored: true });
+    }
 
     const parsedUserAgent =
       parseUserAgent(userAgent);
@@ -110,7 +120,10 @@ export async function POST(request: NextRequest) {
     const client =
       getClientMetadata(body?.metadata);
 
-    const geo = getVisitorGeo(request);
+    const detectedGeo = getVisitorGeo(request);
+    const geo = isLikelyGeoMismatch(client.timezone, detectedGeo.countryCode)
+      ? { ...detectedGeo, region: undefined, city: undefined }
+      : detectedGeo;
 
     const deploymentHost =
       getDeploymentHost(request);
@@ -232,19 +245,9 @@ export async function POST(request: NextRequest) {
         status: "ok",
       });
 
-    if (!visitorCookie) {
-      response.cookies.set(
-        VISITOR_COOKIE,
-        visitorId,
-        {
-          httpOnly: true,
-          secure: true,
-          sameSite: "lax",
-          path: "/",
-          maxAge: VISITOR_MAX_AGE,
-        }
-      );
-    }
+    response.cookies.set(VISITOR_COOKIE, visitorId, {
+      httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: VISITOR_MAX_AGE,
+    });
 
     response.cookies.set(
       SESSION_COOKIE,

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { captureAnalyticsSnapshot } from "@/lib/push/analyticsSnapshot";
 import PageView from "@/models/PageView";
@@ -322,6 +322,11 @@ export async function GET(request: NextRequest) {
     PageView.distinct("operatingSystem"),
   ]);
 
+  const regionPairs = await PageView.aggregate([
+    { $match: { region: { $exists: true, $nin: [null, ""] } } },
+    { $group: { _id: { region: "$region", countryCode: "$countryCode" } } },
+  ]);
+
   const visitors = await Visitor.find(visitorQuery)
     .sort(sortQuery)
     .limit(250)
@@ -484,12 +489,16 @@ export async function GET(request: NextRequest) {
   // Capture only unfiltered metrics, once per UTC day, so dashboard filters
   // cannot distort the daily comparison baseline.
   if (!hasPageViewFilters && !search) {
-    void captureAnalyticsSnapshot({
-      uniqueVisitorCount: uniqueVisitors.length,
-      averageDailyVisitors,
-      peakDailyVisitors: peakDay ? Number(peakDay.visitors) : 0,
-      peakDay: peakDay?._id || null,
-    }).catch((error) => console.error("[Push] Analytics snapshot failed:", error));
+    after(async () => {
+      try {
+        await captureAnalyticsSnapshot({
+          uniqueVisitorCount: uniqueVisitors.length,
+          averageDailyVisitors,
+          peakDailyVisitors: peakDay ? Number(peakDay.visitors) : 0,
+          peakDay: peakDay?._id || null,
+        });
+      } catch (error) { console.error("[Push] Analytics snapshot failed:", error); }
+    });
   }
 
   return NextResponse.json({
@@ -524,10 +533,10 @@ export async function GET(request: NextRequest) {
       cleanOptions(availableCountries).map((code) => `${countryName(code) || code} (${code})`),
 
     regions:
-      cleanOptions(availableRegions).map((value) => formatRegionName(value, countryCode) || value),
+      [...new Set(regionPairs.map((row) => formatRegionName(String(row._id.region), row._id.countryCode ? String(row._id.countryCode) : undefined) || decodeAnalyticsLabel(String(row._id.region))))].sort(),
 
     cities:
-      cleanOptions(availableCities).map((value) => decodeAnalyticsLabel(value)),
+      [...new Set(cleanOptions(availableCities).map((value) => decodeAnalyticsLabel(value)))].sort(),
 
     deviceTypes:
       cleanOptions(availableDevices),

@@ -37,6 +37,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticEntries: MetadataRoute.Sitemap = STATIC_ROUTES.map((route) => ({
     url: `${siteUrl}${route}`,
     lastModified: now,
+    changeFrequency: route === "" ? "daily" : route === "/blog" || route === "/portfolio" || route === "/services" ? "daily" : "monthly",
+    priority: route === "" ? 1 : ["/services", "/portfolio", "/blog", "/contact"].includes(route) ? 0.85 : 0.55,
   }));
 
   /*
@@ -107,36 +109,50 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ...services.map((service) => ({
         url: `${siteUrl}/services/${slugify(service.title)}`,
         lastModified: service.updatedAt || now,
+        changeFrequency: "weekly" as const,
+        priority: 0.8,
       })),
 
       ...projects.map((project) => ({
         url: `${siteUrl}/portfolio/${project.slug}`,
         lastModified: project.updatedAt || now,
+        changeFrequency: "monthly" as const,
+        priority: 0.75,
       })),
 
       ...posts.map((post) => ({
         url: `${siteUrl}/blog/${post.slug}`,
         lastModified: post.updatedAt || now,
+        changeFrequency: "weekly" as const,
+        priority: 0.8,
       })),
 
       ...jobs.map((job) => ({
         url: `${siteUrl}/careers/${job.slug}`,
         lastModified: job.updatedAt || now,
+        changeFrequency: "weekly" as const,
+        priority: 0.65,
       })),
 
       ...teamMembers.map((member) => ({
         url: `${siteUrl}/team/${member.slug}`,
         lastModified: member.updatedAt || now,
+        changeFrequency: "monthly" as const,
+        priority: 0.55,
       })),
 
       ...reviews.map((review) => ({
         url: `${siteUrl}/testimonials/${review._id}`,
         lastModified: review.updatedAt || now,
+        changeFrequency: "monthly" as const,
+        priority: 0.45,
       })),
 
       ...helpArticles.map((article) => ({
         url: `${siteUrl}/help/${article._id}`,
         lastModified: article.updatedAt || now,
+        changeFrequency: "monthly" as const,
+        priority: 0.5,
       })),
     ];
   } catch (error) {

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { sendAdminPush } from "@/lib/push/server";
 import { getAdminBasePath } from "@/lib/adminPath";
@@ -176,13 +176,18 @@ export async function POST(request: NextRequest) {
     ? review.customLabel!
     : targetLabelSnapshot || REVIEW_TARGET_LABELS[resolvedTargetType];
 
-  void sendAdminPush({
+  after(async () => {
+    try {
+      const result = await sendAdminPush({
     title: "New review awaiting moderation",
     body: `${review.submitterName} submitted a ${review.rating}-star review.`,
     url: `${getAdminBasePath()}/reviews`,
     category: "reviews",
     tag: `review-${review._id}`,
-  }).catch((error) => console.error("[Push] Review notification failed:", error));
+      });
+      if (result.failed) console.error("[Push] Review notification delivery had failures:", result);
+    } catch (error) { console.error("[Push] Review notification failed:", error); }
+  });
 
   notifyNewReview({
     submitterName: review.submitterName,

@@ -246,19 +246,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!sessionCookie) {
-      response.cookies.set(
-        SESSION_COOKIE,
-        sessionId,
-        {
-          httpOnly: true,
-          secure: true,
-          sameSite: "lax",
-          path: "/",
-          maxAge: SESSION_MAX_AGE,
-        }
-      );
-    }
+    response.cookies.set(
+      SESSION_COOKIE,
+      sessionId,
+      {
+        httpOnly: true,
+        secure: true,
+        sameSite: "lax",
+        path: "/",
+        maxAge: SESSION_MAX_AGE,
+      }
+    );
 
     return response;
   } catch (error) {

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { sendAdminPush } from "@/lib/push/server";
 import { getAdminBasePath } from "@/lib/adminPath";
@@ -177,13 +177,18 @@ export async function POST(
     );
   }
 
-  void sendAdminPush({
+  after(async () => {
+    try {
+      const result = await sendAdminPush({
     title: "New contact message",
     body: `${submission.name} sent a new contact message.`,
     url: `${getAdminBasePath()}/contact`,
     category: "contact",
     tag: `contact-${submission._id}`,
-  }).catch((error) => console.error("[Push] Contact notification failed:", error));
+      });
+      if (result.failed) console.error("[Push] Contact notification delivery had failures:", result);
+    } catch (error) { console.error("[Push] Contact notification failed:", error); }
+  });
 
   notifyNewContact({
     name: submission.name,

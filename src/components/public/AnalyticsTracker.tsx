@@ -6,6 +6,7 @@ type QueuedView = { eventId: string; visitorId: string; sessionId: string; path:
 const QUEUE_KEY = "tgo-analytics-queue-v1";
 const VISITOR_KEY = "tgo-analytics-visitor-v1";
 const SESSION_KEY = "tgo-analytics-session-v1";
+const SESSION_ACTIVITY_KEY = "tgo-analytics-session-activity-v1";
 function makeId() {
   return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `tgo-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 }
@@ -38,7 +39,10 @@ export default function AnalyticsTracker() {
     lastPath.current = pathname;
     try {
       const visitorId = stableId(localStorage, VISITOR_KEY);
+      const lastActivity = Number(sessionStorage.getItem(SESSION_ACTIVITY_KEY) || "0");
+      if (!lastActivity || Date.now() - lastActivity > 30 * 60 * 1000) sessionStorage.setItem(SESSION_KEY, makeId());
       const sessionId = stableId(sessionStorage, SESSION_KEY);
+      sessionStorage.setItem(SESSION_ACTIVITY_KEY, String(Date.now()));
       const url = new URL(window.location.href);
       const params = url.searchParams;
       const isStandalonePwa = window.matchMedia?.("(display-mode: standalone)").matches || Boolean((window.navigator as Navigator & { standalone?: boolean }).standalone);

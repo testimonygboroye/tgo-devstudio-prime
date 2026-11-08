@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { sendAdminPush } from "@/lib/push/server";
 import { getAdminBasePath } from "@/lib/adminPath";
@@ -97,13 +97,18 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     resumePublicId,
   });
 
-  void sendAdminPush({
+  after(async () => {
+    try {
+      const result = await sendAdminPush({
     title: "New job application",
     body: `${application.applicantName} applied for ${job.title}.`,
     url: `${getAdminBasePath()}/applications`,
     category: "applications",
     tag: `application-${application._id}`,
-  }).catch((error) => console.error("[Push] Application notification failed:", error));
+      });
+      if (result.failed) console.error("[Push] Application notification delivery had failures:", result);
+    } catch (error) { console.error("[Push] Application notification failed:", error); }
+  });
 
   notifyNewApplication({
     applicantName: application.applicantName,

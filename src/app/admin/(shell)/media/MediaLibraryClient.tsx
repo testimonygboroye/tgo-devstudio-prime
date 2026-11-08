@@ -30,15 +30,16 @@ export default function MediaLibraryClient() {
   const load = useCallback(async () => {
     setIsLoading(true);
     setError("");
-    const res = await fetch("/api/media/library");
-    const data = await res.json();
-    if (data.status !== "ok") {
-      setError(data.message || "Failed to load media library.");
+    try {
+      const res = await fetch("/api/media/library", { cache: "no-store" });
+      const data = await res.json();
+      if (!res.ok || data.status !== "ok") throw new Error(data.message || "Failed to load media library.");
+      setItems(Array.isArray(data.items) ? data.items : []);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Media library could not be reached. Please try again.");
+    } finally {
       setIsLoading(false);
-      return;
     }
-    setItems(data.items);
-    setIsLoading(false);
   }, []);
 
   useEffect(() => {
@@ -98,7 +99,7 @@ export default function MediaLibraryClient() {
         <span className="text-sm text-neutral-500">{filteredItems.length} file(s)</span>
       </div>
 
-      {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
+      {error && <div className="mt-4 flex flex-wrap items-center gap-3"><p className="text-sm text-red-400">{error}</p><button type="button" onClick={load} className="rounded-lg border border-base-700 px-3 py-1.5 text-xs text-neutral-200 hover:bg-base-800">Retry</button></div>}
       {isLoading && <p className="mt-6 text-neutral-400">Loading media library...</p>}
 
       {!isLoading && filteredItems.length === 0 && (
@@ -112,6 +113,8 @@ export default function MediaLibraryClient() {
               {item.resourceType === "image" ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={item.url} alt={item.publicId} className="h-full w-full object-cover" />
+              ) : item.resourceType === "video" ? (
+                <video src={item.url} muted playsInline preload="metadata" className="h-full w-full object-cover" />
               ) : (
                 <FileText size={32} className="text-neutral-500" />
               )}

@@ -32,6 +32,7 @@ import {
   BarChart3,
   KeyRound,
   Zap,
+  Video,
   Settings,
   LogOut,
   ChevronLeft,
@@ -80,7 +81,7 @@ const NAV_GROUPS = [
   { title: "Site Tools", items: [
     { label: "Availability", hrefSuffix: "/availability", icon: Zap, badgeKey: null },
     { label: "Media Library", hrefSuffix: "/media", icon: Image, badgeKey: null },
-    { label: "Launch Control", hrefSuffix: "/launch-control", icon: Zap, badgeKey: null },
+    { label: "Homepage Media", hrefSuffix: "/homepage-media", icon: Video, badgeKey: null },
     { label: "Help & Guide", hrefSuffix: "/help", icon: HelpCircle, badgeKey: null },
     { label: "Manage Articles", hrefSuffix: "/help-articles", icon: BookOpen, badgeKey: null },
   ]},

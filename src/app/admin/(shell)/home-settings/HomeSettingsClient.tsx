@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { uploadMediaDirect } from "@/lib/client/uploadMedia";
 
 const FIELD_GROUPS = [
   {
@@ -97,6 +98,7 @@ export default function HomeSettingsClient() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
   const [savedMessage, setSavedMessage] = useState("");
+  const [uploadingHero, setUploadingHero] = useState(false);
   const [openSection, setOpenSection] = useState<string | null>("Hero Section");
 
   useEffect(() => {
@@ -182,6 +184,20 @@ export default function HomeSettingsClient() {
                         onChange={(e) => updateField(field.key, e.target.value)}
                         className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
                       />
+                    )}
+                    {field.key === "heroBackgroundImage" && (
+                      <div className="mt-3 space-y-2">
+                        <label className="block text-xs text-neutral-500">Or upload a wide background image</label>
+                        <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" disabled={uploadingHero} onChange={async (event) => {
+                          const file = event.target.files?.[0]; if (!file) return;
+                          setError(""); setSavedMessage(""); setUploadingHero(true);
+                          try { const uploaded = await uploadMediaDirect(file, "homepage-media"); updateField("heroBackgroundImage", uploaded.url); setSavedMessage("Hero background image uploaded. Save Homepage Settings to publish it."); }
+                          catch (uploadError) { setError(uploadError instanceof Error ? uploadError.message : "Background image upload failed."); }
+                          finally { setUploadingHero(false); event.target.value = ""; }
+                        }} className="block w-full text-xs text-neutral-400 file:mr-3 file:rounded-lg file:border-0 file:bg-base-800 file:px-3 file:py-2 file:text-neutral-100" />
+                        {uploadingHero && <p className="text-xs text-cyan-300">Uploading image…</p>}
+                        {form.heroBackgroundImage && <img src={form.heroBackgroundImage} alt="Homepage hero background preview" className="mt-2 h-32 w-full rounded-lg object-cover" />}
+                      </div>
                     )}
                   </div>
                 ))}

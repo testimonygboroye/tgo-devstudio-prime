@@ -1,0 +1,23 @@
+name: Keep Render service awake
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: render-keepalive
+  cancel-in-progress: true
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Ping production health endpoint
+        run: |
+          curl --fail --silent --show-error --location \
+            --connect-timeout 15 --max-time 90 \
+            --retry 2 --retry-delay 5 --retry-all-errors \
+            --output /dev/null \
+            --write-out "TGO Render health endpoint returned HTTP %{http_code}\n" \
+            https://tgo-devstudio-prime.onrender.com/api/health

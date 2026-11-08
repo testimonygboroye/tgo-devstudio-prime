@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Briefcase,
@@ -84,6 +84,7 @@ export default function AdminSidebar({
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const pathname = usePathname();
+  const router = useRouter();
 
   const basePathSegment = basePath;
 
@@ -124,7 +125,7 @@ export default function AdminSidebar({
 
   return (
     <aside
-      className={`flex h-full flex-col border-r border-[var(--border-subtle)] bg-[var(--bg-surface)] transition-all duration-300 ${
+      className={`flex h-full flex-col border-r border-[var(--border-subtle)] bg-[var(--bg-surface)] transition-[width] duration-100 ease-out ${
         isCollapsed ? "w-20" : "w-68"
       }`}
     >
@@ -165,8 +166,12 @@ export default function AdminSidebar({
             <Link
               key={item.hrefSuffix}
               href={href}
+              prefetch={false}
+              onPointerEnter={() => router.prefetch(href)}
+              onFocus={() => router.prefetch(href)}
+              onTouchStart={() => router.prefetch(href)}
               title={item.label}
-              className={`group relative flex items-center gap-3.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
+              className={`group relative flex items-center gap-3.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-75 ${
                 isActive
                   ? "brand-gradient-bg text-white shadow-md shadow-brand-violet-600/20"
                   : "text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"

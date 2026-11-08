@@ -13,12 +13,40 @@ export default function ShareCurrentPage() {
  },[mode,url,qrData]);
  async function copyLink(){const currentUrl=url||window.location.href;try{await navigator.clipboard.writeText(currentUrl);}catch{const input=document.createElement("textarea");input.value=currentUrl;input.style.position="fixed";input.style.opacity="0";document.body.appendChild(input);input.select();const ok=document.execCommand("copy");input.remove();if(!ok){setError("Unable to copy the link. Please copy it manually.");return;}}setCopied(true);window.setTimeout(()=>setCopied(false),2000);}
  async function shareLink(){const currentUrl=url||window.location.href;if(navigator.share){try{await navigator.share({title,text:title,url:currentUrl});return;}catch(e){if(e instanceof Error&&e.name==="AbortError")return;}}await copyLink();}
- async function shareQrImage(){if(!qrData)return;const currentUrl=url||window.location.href;try{const blob=await(await fetch(qrData)).blob();const file=new File([blob],"tgo-page-qr.png",{type:"image/png"});
-  if(navigator.share&&navigator.canShare?.({files:[file]})){await navigator.share({title,text:`Scan this QR code to open ${title}: ${currentUrl}`,url:currentUrl,files:[file]});return;}
-  if(navigator.share){await navigator.share({title,text:`QR code for ${title}: ${currentUrl}`,url:currentUrl});return;}
-  setError("This browser cannot share files. Use Download QR or copy the page link.");
- }catch(e){if(e instanceof Error&&e.name==="AbortError")return;setError("Could not open the sharing menu. Please try again or download the QR image.");}}
- function downloadQr(){if(!qrData)return;const a=document.createElement("a");a.href=qrData;a.download="tgo-page-qr.png";document.body.appendChild(a);a.click();a.remove();}
+ function shareQrImage() {
+  if (!qrData) return;
+  const currentUrl = url || window.location.href;
+  if (!navigator.share) {
+    setError("This browser does not support the system sharing menu. Download the QR image instead.");
+    return;
+  }
+  try {
+    // Convert synchronously: Web Share requires the original tap/click
+    // activation and awaiting fetch/blob conversion expires that permission.
+    const base64 = qrData.slice(qrData.indexOf(",") + 1);
+    const bytes = Uint8Array.from(atob(base64), (character) => character.charCodeAt(0));
+    const file = new File([bytes], "tgo-page-qr.png", { type: "image/png" });
+    const shareText = `Scan this QR code to open ${title}: ${currentUrl}`;
+
+    // If this browser cannot share files, still open the native app chooser
+    // with the page link. Otherwise share the QR PNG itself.
+    if (navigator.canShare && !navigator.canShare({ files: [file] })) {
+      void navigator.share({ title, text: shareText, url: currentUrl }).catch((shareError) => {
+        if (shareError instanceof Error && shareError.name === "AbortError") return;
+        setError("Your browser could not open the sharing apps menu. Please use Download QR.");
+      });
+      return;
+    }
+    // Chromium can reject file + url together; the URL is included in text.
+    void navigator.share({ title, text: shareText, files: [file] }).catch((shareError) => {
+      if (shareError instanceof Error && shareError.name === "AbortError") return;
+      setError("Your device rejected QR image sharing. Download the QR image or share the page link.");
+    });
+  } catch {
+    setError("Could not prepare the QR image for sharing. Please download it instead.");
+  }
+}
+function downloadQr(){if(!qrData)return;const a=document.createElement("a");a.href=qrData;a.download="tgo-page-qr.png";document.body.appendChild(a);a.click();a.remove();}
  const close=()=>{setMode(null);setError("");};
  return <><section className="mx-auto max-w-4xl px-6 pb-12 sm:px-12" aria-label="Share this page"><div className="flex flex-col gap-4 rounded-2xl border p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6" style={{borderColor:"var(--border-subtle)",background:"var(--bg-surface)"}}><div><p className="text-lg font-semibold" style={{color:"var(--text-primary)"}}>Found this useful?</p><p className="mt-1 text-sm" style={{color:"var(--text-secondary)"}}>Share this page with someone who might find it helpful.</p></div><button type="button" onClick={()=>setMode("choose")} className="btn-premium-primary inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-base-950"><Share2 size={17}/>Share page</button></div></section>
  {mode!==null&&<div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4" role="dialog" aria-modal="true" aria-label="Share this page" onClick={close}><div className="w-full max-w-md rounded-3xl p-6 shadow-2xl" style={{background:"var(--bg-surface)",color:"var(--text-primary)"}} onClick={e=>e.stopPropagation()}>

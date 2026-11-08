@@ -25,7 +25,7 @@ export default async function AdminShellLayout({
   }
 
   return (
-    <div className="flex h-dvh overflow-hidden ambient-glow bg-[var(--bg-page)]">
+    <div className="flex h-dvh overflow-hidden bg-[var(--bg-page)]">
       <AdminSidebar
         userName={session.user.name}
         userEmail={session.user.email}

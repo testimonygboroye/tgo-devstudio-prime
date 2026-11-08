@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Menu, X, Home, Layers, Briefcase, Newspaper, DoorOpen, Mail, Info, Workflow, Users, Star, PhoneCall, Boxes, HelpCircle, ChevronDown, MessageCircleQuestion, Settings } from "lucide-react";
 import HelpSearchPopup from "@/components/shared/HelpSearchPopup";
@@ -9,6 +10,8 @@ import { useTranslation } from "@/lib/i18n/LanguageContext";
 
 export default function SiteHeader() {
   const { t } = useTranslation();
+  const router = useRouter();
+  const prefetchOnIntent = (href: string) => router.prefetch(href);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
@@ -66,7 +69,7 @@ export default function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-50">
-      <div className="border-b border-base-800 bg-base-950/90 backdrop-blur">
+      <div className="border-b border-base-800 bg-base-950/95">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 sm:px-12">
           <Link href="/" className="flex items-center gap-2" onClick={() => setIsMenuOpen(false)}>
             <Image src="/logo.png" alt="TGO DevStudio logo" width={36} height={36} priority />
@@ -78,6 +81,9 @@ export default function SiteHeader() {
               <Link
                 key={link.href}
                 href={link.href}
+                prefetch={false}
+                onPointerEnter={() => prefetchOnIntent(link.href)}
+                onFocus={() => prefetchOnIntent(link.href)}
                 className="text-sm text-neutral-100/80 hover:text-brand-cyan-300"
               >
                 {link.label}
@@ -100,6 +106,9 @@ export default function SiteHeader() {
                       <Link
                         key={link.href}
                         href={link.href}
+                        prefetch={false}
+                        onPointerEnter={() => prefetchOnIntent(link.href)}
+                        onFocus={() => prefetchOnIntent(link.href)}
                         onClick={() => setIsMoreOpen(false)}
                         className="flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-100 hover:bg-base-800 hover:text-brand-cyan-300"
                       >
@@ -156,6 +165,10 @@ export default function SiteHeader() {
                     <Link
                       key={link.href}
                       href={link.href}
+                      prefetch={false}
+                      onPointerEnter={() => prefetchOnIntent(link.href)}
+                      onFocus={() => prefetchOnIntent(link.href)}
+                      onTouchStart={() => prefetchOnIntent(link.href)}
                       onClick={() => setIsMenuOpen(false)}
                       className="flex items-center gap-3 bg-base-900 px-4 py-3.5 text-sm text-neutral-100 transition-colors hover:bg-base-800 hover:text-brand-cyan-300"
                     >

@@ -45,35 +45,47 @@ interface AdminSidebarProps {
   basePath: string;
 }
 
-const NAV_ITEMS = [
-  { label: "Dashboard", hrefSuffix: "/dashboard", icon: LayoutDashboard, badgeKey: null },
-  { label: "Security (2FA)", hrefSuffix: "/security", icon: KeyRound, badgeKey: null },
-  { label: "Invites", hrefSuffix: "/invites", icon: UserPlus, badgeKey: null },
-  { label: "Users & Roles", hrefSuffix: "/users", icon: UserCog, badgeKey: null },
-  { label: "Manage Roles", hrefSuffix: "/roles", icon: ShieldCheck, badgeKey: null },
-  { label: "Audit Log", hrefSuffix: "/audit-log", icon: ScrollText, badgeKey: null },
-  { label: "Visitor Analytics", hrefSuffix: "/analytics", icon: BarChart3, badgeKey: null },
-  { label: "Messages", hrefSuffix: "/messages", icon: MessageSquare, badgeKey: "messages" },
-  { label: "Homepage", hrefSuffix: "/home-settings", icon: Home, badgeKey: null },
-  { label: "Availability", hrefSuffix: "/availability", icon: Zap, badgeKey: null },
-  { label: "Media Library", hrefSuffix: "/media", icon: Image, badgeKey: null },
-  { label: "Case Studies", hrefSuffix: "/case-studies", icon: Briefcase, badgeKey: null },
-  { label: "Services", hrefSuffix: "/services", icon: Layers, badgeKey: null },
-  { label: "Process", hrefSuffix: "/process", icon: Workflow, badgeKey: null },
-  { label: "Team", hrefSuffix: "/team", icon: Users, badgeKey: null },
-  { label: "Blog", hrefSuffix: "/blog", icon: Newspaper, badgeKey: null },
-  { label: "Careers", hrefSuffix: "/careers", icon: DoorOpen, badgeKey: null },
-  { label: "Applications", hrefSuffix: "/applications", icon: Inbox, badgeKey: "jobApplications" },
-  { label: "Contact", hrefSuffix: "/contact", icon: Mail, badgeKey: "contactSubmissions" },
-  { label: "Newsletter", hrefSuffix: "/newsletter", icon: Send, badgeKey: null },
-  { label: "FAQ", hrefSuffix: "/faq-items", icon: MessageCircleQuestion, badgeKey: null },
-  { label: "Reviews", hrefSuffix: "/reviews", icon: Star, badgeKey: "reviews" },
-  { label: "Site Pages", hrefSuffix: "/pages", icon: FileText, badgeKey: null },
-  { label: "Help & Guide", hrefSuffix: "/help", icon: HelpCircle, badgeKey: null },
-  { label: "Manage Articles", hrefSuffix: "/help-articles", icon: BookOpen, badgeKey: null },
-  { label: "Book a Call", hrefSuffix: "/book-a-call", icon: PhoneCall, badgeKey: null },
-  { label: "Stack Items", hrefSuffix: "/stack-items", icon: Boxes, badgeKey: null },
-  { label: "Admin Settings", hrefSuffix: "/settings", icon: Settings, badgeKey: null },
+const NAV_GROUPS = [
+  { title: "Overview", items: [
+    { label: "Dashboard", hrefSuffix: "/dashboard", icon: LayoutDashboard, badgeKey: null },
+    { label: "Visitor Analytics", hrefSuffix: "/analytics", icon: BarChart3, badgeKey: null },
+  ]},
+  { title: "People & Access", items: [
+    { label: "Invites", hrefSuffix: "/invites", icon: UserPlus, badgeKey: null },
+    { label: "Users & Roles", hrefSuffix: "/users", icon: UserCog, badgeKey: null },
+    { label: "Manage Roles", hrefSuffix: "/roles", icon: ShieldCheck, badgeKey: null },
+    { label: "Security (2FA)", hrefSuffix: "/security", icon: KeyRound, badgeKey: null },
+    { label: "Audit Log", hrefSuffix: "/audit-log", icon: ScrollText, badgeKey: null },
+  ]},
+  { title: "Website Content", items: [
+    { label: "Homepage", hrefSuffix: "/home-settings", icon: Home, badgeKey: null },
+    { label: "Case Studies", hrefSuffix: "/case-studies", icon: Briefcase, badgeKey: null },
+    { label: "Services", hrefSuffix: "/services", icon: Layers, badgeKey: null },
+    { label: "Process", hrefSuffix: "/process", icon: Workflow, badgeKey: null },
+    { label: "Team", hrefSuffix: "/team", icon: Users, badgeKey: null },
+    { label: "Blog", hrefSuffix: "/blog", icon: Newspaper, badgeKey: null },
+    { label: "Careers", hrefSuffix: "/careers", icon: DoorOpen, badgeKey: null },
+    { label: "FAQ", hrefSuffix: "/faq-items", icon: MessageCircleQuestion, badgeKey: null },
+    { label: "Reviews", hrefSuffix: "/reviews", icon: Star, badgeKey: "reviews" },
+    { label: "Site Pages", hrefSuffix: "/pages", icon: FileText, badgeKey: null },
+    { label: "Stack Items", hrefSuffix: "/stack-items", icon: Boxes, badgeKey: null },
+  ]},
+  { title: "Messages & Leads", items: [
+    { label: "Messages", hrefSuffix: "/messages", icon: MessageSquare, badgeKey: "messages" },
+    { label: "Contact", hrefSuffix: "/contact", icon: Mail, badgeKey: "contactSubmissions" },
+    { label: "Applications", hrefSuffix: "/applications", icon: Inbox, badgeKey: "jobApplications" },
+    { label: "Newsletter", hrefSuffix: "/newsletter", icon: Send, badgeKey: null },
+    { label: "Book a Call", hrefSuffix: "/book-a-call", icon: PhoneCall, badgeKey: null },
+  ]},
+  { title: "Site Tools", items: [
+    { label: "Availability", hrefSuffix: "/availability", icon: Zap, badgeKey: null },
+    { label: "Media Library", hrefSuffix: "/media", icon: Image, badgeKey: null },
+    { label: "Help & Guide", hrefSuffix: "/help", icon: HelpCircle, badgeKey: null },
+    { label: "Manage Articles", hrefSuffix: "/help-articles", icon: BookOpen, badgeKey: null },
+  ]},
+  { title: "Administration", items: [
+    { label: "Admin Settings", hrefSuffix: "/settings", icon: Settings, badgeKey: null },
+  ]},
 ] as const;
 
 export default function AdminSidebar({
@@ -162,59 +174,34 @@ export default function AdminSidebar({
       </div>
 
       <nav className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4 space-y-1">
-        {NAV_ITEMS.map((item) => {
-          const href = `${basePathSegment}${item.hrefSuffix}`;
-
-          const isActive =
-            item.hrefSuffix === "/dashboard" || item.hrefSuffix === "/help"
-              ? pathname === href
-              : pathname.startsWith(href);
-
-          const Icon = item.icon;
-          const count = item.badgeKey ? counts[item.badgeKey] || 0 : 0;
-
+        {NAV_GROUPS.map((group) => {
+          const groupActive = group.items.some((item) => pathname.startsWith(`${basePathSegment}${item.hrefSuffix}`));
           return (
-            <Link
-              key={item.hrefSuffix}
-              href={href}
-              prefetch={false}
-              onPointerEnter={() => router.prefetch(href)}
-              onFocus={() => router.prefetch(href)}
-              onTouchStart={() => router.prefetch(href)}
-              title={item.label}
-              className={`group relative flex items-center gap-3.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-75 ${
-                isActive
-                  ? "brand-gradient-bg text-white shadow-md shadow-brand-violet-600/20"
-                  : "text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
-              }`}
-            >
-              <span className="relative flex-shrink-0 flex items-center justify-center">
-                <Icon
-                  size={18}
-                  className={
-                    isActive
-                      ? "text-white"
-                      : "text-brand-cyan-400 group-hover:scale-110 transition-transform"
-                  }
-                />
-
-                {count > 0 && (
-                  <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white shadow-sm">
-                    {count > 9 ? "9+" : count}
-                  </span>
-                )}
-              </span>
-
-              {!collapsed && <span className="truncate">{item.label}</span>}
-
-              {collapsed && (
-                <div className="absolute left-full ml-2 hidden rounded-lg bg-[var(--bg-surface-2)] border border-[var(--border-subtle)] px-3 py-1.5 text-xs text-[var(--text-primary)] shadow-xl group-hover:block z-50 whitespace-nowrap">
-                  {item.label}
-                </div>
-              )}
-            </Link>
+            <details key={group.title} open={groupActive || undefined} className="group/nav mb-2">
+              <summary title={group.title} className={`flex cursor-pointer list-none items-center justify-between rounded-lg px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)] hover:bg-[var(--surface-hover)] ${collapsed ? "justify-center" : ""}`}>
+                {!collapsed ? <><span>{group.title}</span><ChevronRight size={14} className="transition-transform group-open/nav:rotate-90"/></> : <span>{group.title.slice(0,1)}</span>}
+              </summary>
+              <div className="mt-1 space-y-1">
+                {group.items.map((item) => {
+                  const href = `${basePathSegment}${item.hrefSuffix}`;
+                  const isActive = item.hrefSuffix === "/dashboard" || item.hrefSuffix === "/help" ? pathname === href : pathname.startsWith(href);
+                  const Icon = item.icon;
+                  const count = item.badgeKey ? counts[item.badgeKey] || 0 : 0;
+                  return (
+                    <Link key={item.hrefSuffix} href={href} prefetch={false} onPointerEnter={() => router.prefetch(href)} onFocus={() => router.prefetch(href)} onTouchStart={() => router.prefetch(href)} title={item.label}
+                      className={`group relative flex items-center gap-3.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-75 ${isActive ? "brand-gradient-bg text-white shadow-md shadow-brand-violet-600/20" : "text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"}`}>
+                      <span className="relative flex-shrink-0 flex items-center justify-center"><Icon size={18} className={isActive ? "text-white" : "text-brand-cyan-400 group-hover:scale-110 transition-transform"}/>
+                        {count > 0 && <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white shadow-sm">{count > 9 ? "9+" : count}</span>}
+                      </span>
+                      {!collapsed && <span className="truncate">{item.label}</span>}
+                      {collapsed && <div className="absolute left-full z-50 ml-2 hidden whitespace-nowrap rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface-2)] px-3 py-1.5 text-xs text-[var(--text-primary)] shadow-xl group-hover:block">{item.label}</div>}
+                    </Link>
+                  );
+                })}
+              </div>
+            </details>
           );
-        })}
+        })}}
       </nav>
 
       <div className="flex-shrink-0 border-t border-[var(--border-subtle)] p-4 bg-[var(--bg-surface-2)]/50">

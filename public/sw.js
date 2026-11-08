@@ -1,9 +1,9 @@
-const SW_VERSION = "tgo-offline-v3";
+const SW_VERSION = "tgo-offline-v4";
 const APP_CACHE = `${SW_VERSION}-app`;
 const PAGE_CACHE = `${SW_VERSION}-public-pages`;
 const ASSET_CACHE = `${SW_VERSION}-public-assets`;
 const OFFLINE_URL = "/offline.html";
-const PRECACHE_URLS = [OFFLINE_URL, "/manifest.json", "/favicon.png", "/icons/icon-192x192.png"];
+const PRECACHE_URLS = [OFFLINE_URL, "/manifest.json", "/favicon.png", "/logo.png", "/icons/icon-192x192.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil((async () => {

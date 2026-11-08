@@ -19,11 +19,10 @@ export default function SiteHeader() {
   const backdropRef = useRef<HTMLDivElement>(null);
   useSwipeSidebar(isMenuOpen, setMenuOpen, "right", drawerRef, backdropRef);
   const DRAWER_NAV_GROUPS = [
-    { title: t("nav.home"), links: [
-      { label: t("nav.home"), href: "/", icon: Home },
+    { title: "Company", links: [
       { label: t("nav.about"), href: "/about", icon: Info },
     ]},
-    { title: t("nav.services"), links: [
+    { title: "Capabilities & Work", links: [
       { label: t("nav.services"), href: "/services", icon: Layers },
       { label: t("nav.process"), href: "/process", icon: Workflow },
       { label: t("nav.portfolio"), href: "/portfolio", icon: Briefcase },
@@ -80,7 +79,7 @@ export default function SiteHeader() {
 
       <div ref={backdropRef} className={`fixed inset-0 z-[60] bg-black/60 sm:hidden transition-opacity duration-150 ${isMenuOpen ? "opacity-100" : "pointer-events-none opacity-0"}`} onClick={() => setIsMenuOpen(false)} aria-hidden={!isMenuOpen}>
         <nav ref={drawerRef} aria-label="Main navigation" aria-hidden={!isMenuOpen} className={`fixed right-0 top-0 flex h-dvh w-[min(21rem,86vw)] flex-col border-l border-base-800 bg-base-950 shadow-2xl transition-transform duration-150 ease-out ${isMenuOpen ? "translate-x-0" : "translate-x-full"}`} onClick={(event) => event.stopPropagation()}>
-          <div className="flex flex-shrink-0 items-center justify-between border-b border-base-800 px-4 py-5"><span className="font-mono text-xs uppercase tracking-widest text-neutral-500">{t("nav.home")}</span><button onClick={() => setIsMenuOpen(false)} aria-label="Close menu" className="text-neutral-100"><X size={22} /></button></div>
+          <div className="flex flex-shrink-0 items-center justify-between border-b border-base-800 px-4 py-5"><span className="font-mono text-xs uppercase tracking-widest text-neutral-500">Explore TGO</span><button onClick={() => setIsMenuOpen(false)} aria-label="Close menu" className="text-neutral-100"><X size={22} /></button></div>
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 py-3"><div className="flex flex-col divide-y divide-base-800 overflow-hidden rounded-lg border border-base-800">
             {DRAWER_NAV_GROUPS.map((group,index) => <details key={group.title} open={index===0} className="border-b border-base-800 last:border-0"><summary className="flex cursor-pointer list-none items-center justify-between bg-base-900 px-4 py-3.5 text-sm font-semibold text-neutral-200 hover:bg-base-800"><span>{group.title}</span><ChevronDown size={15} className="text-brand-cyan-400"/></summary><div className="bg-base-950/70">{group.links.map(link=>{const Icon=link.icon;return <Link key={link.href} href={link.href} prefetch={false} onPointerEnter={()=>prefetchOnIntent(link.href)} onFocus={()=>prefetchOnIntent(link.href)} onTouchStart={()=>prefetchOnIntent(link.href)} onClick={()=>setIsMenuOpen(false)} className="flex items-center gap-3 px-6 py-3 text-sm text-neutral-300 transition-colors hover:bg-base-800 hover:text-brand-cyan-300"><Icon size={17} className="text-brand-cyan-400"/>{link.label}</Link>;})}</div></details>)}
           </div></div>

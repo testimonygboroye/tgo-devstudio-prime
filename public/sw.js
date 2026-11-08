@@ -12,7 +12,7 @@ self.addEventListener("install", (event) => {
     try {
       const home = await fetch("/", { cache: "reload", credentials: "same-origin" });
       const type = home.headers.get("content-type") || "";
-      if (home.ok && type.includes("text/html") && !home.headers.has("set-cookie")) {
+      if (home.ok && type.includes("text/html")) {
         const pages = await caches.open(PAGE_CACHE);
         await pages.put("/", home.clone());
       }

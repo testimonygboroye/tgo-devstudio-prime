@@ -16,6 +16,7 @@ export type VisitorStatus =
 
 export interface IVisitor extends Document {
   visitorId: string;
+  isInternal?: boolean;
 
   displayName?: string;
   email?: string;
@@ -82,6 +83,8 @@ export interface IVisitor extends Document {
 
 const VisitorSchema = new Schema<IVisitor>(
   {
+    isInternal: { type: Boolean, default: false, index: true },
+
     visitorId: {
       type: String,
       required: true,

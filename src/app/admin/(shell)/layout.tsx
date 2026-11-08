@@ -1,5 +1,8 @@
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
+import { headers, cookies } from "next/headers";
+import { connectToDatabase } from "@/lib/db";
+import Visitor from "@/models/Visitor";
+import PageView from "@/models/PageView";
 import { getServerSession } from "@/lib/auth/serverSession";
 import { getAdminBasePath } from "@/lib/adminPath";
 import AdminSidebar from "@/components/admin/AdminSidebar";
@@ -13,6 +16,17 @@ export default async function AdminShellLayout({
 }) {
   const session = await getServerSession();
   const basePath = getAdminBasePath();
+  const visitorId = (await cookies()).get("tgo_visitor_id")?.value;
+  if (session?.role?.isFounderRole && visitorId && /^[a-zA-Z0-9-]{12,80}$/.test(visitorId)) {
+    await connectToDatabase();
+    const marked = await Visitor.updateOne(
+      { visitorId, isInternal: { $ne: true } },
+      { $set: { isInternal: true } },
+    );
+    if (marked.modifiedCount > 0) {
+      await PageView.updateMany({ visitorId }, { $set: { isInternal: true } });
+    }
+  }
 
   if (!session) {
     const headersList = await headers();

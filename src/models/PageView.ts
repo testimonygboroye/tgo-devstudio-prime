@@ -10,6 +10,7 @@ export interface IPageView extends Document {
   path: string;
   eventId?: string;
   visitorId: string;
+  isInternal?: boolean;
   sessionId?: string;
   userAgent: string;
   referrer?: string;
@@ -45,6 +46,8 @@ const PageViewSchema = new Schema<IPageView>(
       index: true,
     },
     eventId: { type: String, sparse: true, unique: true, index: true },
+
+    isInternal: { type: Boolean, default: false, index: true },
 
     visitorId: {
       type: String,

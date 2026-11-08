@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import HelpSearchPopup from "@/components/shared/HelpSearchPopup";
-import ThemeToggle from "@/components/shared/ThemeToggle";
+import { Menu } from "lucide-react";
 
 const SECTION_LABELS: Record<string, string> = {
   dashboard: "Dashboard",
@@ -93,8 +93,10 @@ export default function AdminTopBar() {
       </div>
 
       <div className="flex items-center gap-3">
+        <button type="button" onClick={() => window.dispatchEvent(new Event("tgo:toggle-admin-sidebar"))} aria-label="Open admin navigation" className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] md:hidden">
+          <Menu size={21} />
+        </button>
         <HelpSearchPopup />
-        <ThemeToggle />
       </div>
     </div>
   );

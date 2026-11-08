@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSwipeSidebar } from "@/hooks/useSwipeSidebar";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -35,6 +36,7 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  X,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -81,7 +83,17 @@ export default function AdminSidebar({
   roleName,
   basePath,
 }: AdminSidebarProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const setMobileOpen = useCallback((open: boolean) => setIsMobileOpen(open), []);
+  useSwipeSidebar(isMobileOpen, setMobileOpen, "left");
+  useEffect(() => {
+    const toggle = () => setIsMobileOpen((open) => !open);
+    window.addEventListener("tgo:toggle-admin-sidebar", toggle);
+    return () => window.removeEventListener("tgo:toggle-admin-sidebar", toggle);
+  }, []);
+  useEffect(() => { setIsMobileOpen(false); }, [pathname]);
+  const collapsed = isCollapsed && !isMobileOpen;
   const [counts, setCounts] = useState<Record<string, number>>({});
   const pathname = usePathname();
   const router = useRouter();
@@ -124,13 +136,13 @@ export default function AdminSidebar({
   }
 
   return (
-    <aside
-      className={`flex h-full flex-col border-r border-[var(--border-subtle)] bg-[var(--bg-surface)] transition-[width] duration-100 ease-out ${
-        isCollapsed ? "w-20" : "w-68"
-      }`}
-    >
+    <>
+      {isMobileOpen && <button type="button" aria-label="Close admin navigation" onClick={() => setIsMobileOpen(false)} className="fixed inset-0 z-[60] bg-black/60 md:hidden" />}
+      <aside
+        className={`fixed inset-y-0 left-0 z-[70] flex h-dvh flex-col border-r border-[var(--border-subtle)] bg-[var(--bg-surface)] shadow-2xl transition-transform duration-150 ease-out md:static md:z-auto md:h-full md:shrink-0 md:shadow-none md:transition-[width] ${isMobileOpen ? "translate-x-0 w-[min(19rem,86vw)]" : "-translate-x-full md:translate-x-0"} ${collapsed ? "md:w-20" : "md:w-68"}`}
+      >
       <div className="flex flex-shrink-0 items-center justify-between px-5 py-5 border-b border-[var(--border-subtle)]">
-        {!isCollapsed && (
+        {!collapsed && (
           <div className="flex items-center gap-2">
             <div className="h-7 w-7 rounded-lg brand-gradient-bg flex items-center justify-center font-bold text-white text-xs">
               T
@@ -142,11 +154,11 @@ export default function AdminSidebar({
         )}
 
         <button
-          onClick={() => setIsCollapsed((prev) => !prev)}
-          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          onClick={() => { if (isMobileOpen) setIsMobileOpen(false); else setIsCollapsed((prev) => !prev); }}
+          aria-label={isMobileOpen ? "Close sidebar" : isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           className="rounded-lg p-1.5 text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors ml-auto"
         >
-          {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          <span className="md:hidden">{isMobileOpen ? <X size={18} /> : <ChevronRight size={18} />}</span><span className="hidden md:inline">{isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}</span>
         </button>
       </div>
 
@@ -194,9 +206,9 @@ export default function AdminSidebar({
                 )}
               </span>
 
-              {!isCollapsed && <span className="truncate">{item.label}</span>}
+              {!collapsed && <span className="truncate">{item.label}</span>}
 
-              {isCollapsed && (
+              {collapsed && (
                 <div className="absolute left-full ml-2 hidden rounded-lg bg-[var(--bg-surface-2)] border border-[var(--border-subtle)] px-3 py-1.5 text-xs text-[var(--text-primary)] shadow-xl group-hover:block z-50 whitespace-nowrap">
                   {item.label}
                 </div>
@@ -207,7 +219,7 @@ export default function AdminSidebar({
       </nav>
 
       <div className="flex-shrink-0 border-t border-[var(--border-subtle)] p-4 bg-[var(--bg-surface-2)]/50">
-        {!isCollapsed && (
+        {!collapsed && (
           <div className="mb-3 px-1">
             <p className="truncate text-sm font-semibold text-[var(--text-primary)]">
               {userName}
@@ -233,6 +245,7 @@ export default function AdminSidebar({
           {!isCollapsed && <span>Log out</span>}
         </button>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }

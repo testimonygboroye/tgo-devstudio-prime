@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { useSwipeSidebar } from "@/hooks/useSwipeSidebar";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -13,6 +14,8 @@ export default function SiteHeader() {
   const router = useRouter();
   const prefetchOnIntent = (href: string) => router.prefetch(href);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const setMenuOpen = useCallback((open: boolean) => setIsMenuOpen(open), []);
+  useSwipeSidebar(isMenuOpen, setMenuOpen, "right");
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
 
@@ -141,7 +144,7 @@ export default function SiteHeader() {
           onClick={() => setIsMenuOpen(false)}
         >
           <nav
-            className="fixed right-0 top-0 flex h-screen w-2/5 min-w-[240px] max-w-xs flex-col border-l border-base-800 bg-base-950"
+            className="fixed right-0 top-0 flex h-screen w-[min(21rem,86vw)] flex-col border-l border-base-800 bg-base-950 shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex flex-shrink-0 items-center justify-between border-b border-base-800 px-4 py-5">

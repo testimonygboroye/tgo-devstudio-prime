@@ -1,5 +1,6 @@
 "use client";
 import { useEffect,useState } from "react";
+import { uploadMediaDirect } from "@/lib/client/uploadMedia";
 type Form={enabled:boolean;launchDate:string;title:string;description:string;videoUrl:string;flyerUrl:string;afterLaunchVideoUrl:string;afterLaunchFlyerUrl:string;flyerSeconds:number;videoDurationHours:number;videoDurationMinutes:number;videoDurationSeconds:number;useVideoDurationOverride:boolean};
 const defaults:Form={enabled:false,launchDate:"",title:"",description:"",videoUrl:"",flyerUrl:"",afterLaunchVideoUrl:"",afterLaunchFlyerUrl:"",flyerSeconds:8,videoDurationHours:0,videoDurationMinutes:0,videoDurationSeconds:0,useVideoDurationOverride:false};
 const mediaFields:[keyof Form,string,"video"|"image"][]=[
@@ -10,7 +11,7 @@ export default function HomepageMediaClient(){
  const [form,setForm]=useState<Form>(defaults),[loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[uploading,setUploading]=useState(""),[message,setMessage]=useState(""),[error,setError]=useState("");
  useEffect(()=>{(async()=>{try{const r=await fetch("/api/homepage-media",{cache:"no-store"});const d=await r.json();if(d.settings){const dt=d.settings.launchDate?new Date(d.settings.launchDate):null;setForm({...defaults,...d.settings,launchDate:dt&&!Number.isNaN(dt.getTime())?new Date(dt.getTime()-dt.getTimezoneOffset()*60000).toISOString().slice(0,16):""});}}catch{setError("Could not load homepage media settings.");}finally{setLoading(false);}})();},[]);
  function update<K extends keyof Form>(key:K,value:Form[K]){setForm(old=>({...old,[key]:value}));}
- async function upload(key:keyof Form,file?:File){if(!file)return;setUploading(key);setError("");setMessage("");try{const body=new FormData();body.append("file",file);body.append("folder","homepage-media");const r=await fetch("/api/media/upload",{method:"POST",body});const d=await r.json();if(!r.ok)throw new Error(d.message||"Upload failed.");update(key,d.url as never);setMessage(file.name+" uploaded.");}catch(e){setError(e instanceof Error?e.message:"Upload failed.");}finally{setUploading("");}}
+ async function upload(key:keyof Form,file?:File){if(!file)return;setUploading(key);setError("");setMessage("");try{const uploaded=await uploadMediaDirect(file,"homepage-media");update(key,uploaded.url as never);setMessage(file.name+" uploaded.");}catch(e){setError(e instanceof Error?e.message:"Upload failed.");}finally{setUploading("");}}
  async function save(){setSaving(true);setError("");setMessage("");try{const r=await fetch("/api/homepage-media",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({...form,launchDate:form.launchDate?new Date(form.launchDate).toISOString():null})});const d=await r.json();if(!r.ok)throw new Error(d.message||"Could not save settings.");setMessage("Homepage media settings saved.");}catch(e){setError(e instanceof Error?e.message:"Save failed.");}finally{setSaving(false);}}
  if(loading)return <p className="text-neutral-400">Loading homepage media settings…</p>;
  return <div className="max-w-4xl space-y-6">

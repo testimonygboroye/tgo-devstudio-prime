@@ -1,11 +1,11 @@
 import { Schema, model, models, type Model, type Document } from "mongoose";
 export interface ILaunchSettings extends Document {
- enabled:boolean; launchDate?:Date; title:string; description:string;
+ enabled:boolean; countdownEnabled:boolean; countdownVisible:boolean; launchDate?:Date; title:string; description:string;
  videoUrl:string; flyerUrl:string; afterLaunchVideoUrl:string; afterLaunchFlyerUrl:string;
  videoSeconds:number; flyerSeconds:number; videoDurationHours:number; videoDurationMinutes:number; videoDurationSeconds:number; useVideoDurationOverride:boolean; updatedAt:Date;
 }
 const SchemaDefinition=new Schema<ILaunchSettings>({
- enabled:{type:Boolean,default:false},launchDate:{type:Date},
+ enabled:{type:Boolean,default:false},countdownEnabled:{type:Boolean,default:true},countdownVisible:{type:Boolean,default:true},launchDate:{type:Date},
  title:{type:String,default:"Something exceptional is coming",maxlength:140},
  description:{type:String,default:"Explore what's next from TGO DevStudio.",maxlength:400},
  videoUrl:{type:String,default:""},flyerUrl:{type:String,default:""},

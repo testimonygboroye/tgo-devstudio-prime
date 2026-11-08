@@ -19,8 +19,8 @@ export default function LaunchExperience({settings}:Props){
  const target=useMemo(()=>settings.launchDate?new Date(settings.launchDate).getTime():0,[settings.launchDate]);
  const hasTarget=Boolean(target&&!Number.isNaN(target));
  const afterTarget=hasTarget&&now>=target;
- const video=afterTarget?settings.afterLaunchVideoUrl:settings.videoUrl;
- const image=afterTarget?settings.afterLaunchFlyerUrl:settings.flyerUrl;
+ const video=afterTarget&&settings.afterLaunchVideoUrl?settings.afterLaunchVideoUrl:settings.videoUrl;
+ const image=afterTarget&&settings.afterLaunchFlyerUrl?settings.afterLaunchFlyerUrl:settings.flyerUrl;
  const media=useMemo(()=>[...(video?[{kind:"video" as const,url:video}]:[]),...(image?[{kind:"image" as const,url:image}]:[])],[video,image]);
  const current=media[mediaIndex]||null;
  const overrideSeconds=(settings.videoDurationHours||0)*3600+(settings.videoDurationMinutes||0)*60+(settings.videoDurationSeconds||0);

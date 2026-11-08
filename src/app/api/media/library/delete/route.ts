@@ -19,9 +19,8 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    await cloudinary.uploader.destroy(publicId, {
-      resource_type: resourceType === "raw" ? "raw" : "image",
-    });
+    const safeResourceType = resourceType === "video" ? "video" : resourceType === "raw" ? "raw" : "image";
+    await cloudinary.uploader.destroy(publicId, { resource_type: safeResourceType });
     return NextResponse.json({ status: "ok", message: "File deleted." });
   } catch (error) {
     console.error("Failed to delete media:", error);

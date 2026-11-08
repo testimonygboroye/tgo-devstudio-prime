@@ -7,6 +7,7 @@ import CharacterCounter from "./CharacterCounter";
 import LocaleTabs from "./LocaleTabs";
 import { TEXT_LIMITS } from "@/lib/constants/textLimits";
 import { Locale, RTL_LOCALES } from "@/lib/i18n/config";
+import { uploadMediaDirect } from "@/lib/client/uploadMedia";
 
 interface CoverImage {
   url: string;
@@ -97,19 +98,8 @@ export default function BlogPostForm({ mode, postId, initialData }: BlogPostForm
     setIsUploading(true);
 
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("folder", "blog");
-
-      const response = await fetch("/api/media/upload", { method: "POST", body: formData });
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.message || "Cover image upload failed.");
-        return;
-      }
-
-      setCoverImage({ url: data.url, publicId: data.publicId, altText: pendingAltText.trim() });
+      const uploaded = await uploadMediaDirect(file, "blog");
+      setCoverImage({ url: uploaded.url, publicId: uploaded.publicId, altText: pendingAltText.trim() });
       setPendingAltText("");
     } catch {
       setError("Cover image upload failed. Please try again.");

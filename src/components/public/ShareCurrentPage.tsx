@@ -18,46 +18,52 @@ export default function ShareCurrentPage() {
 
  async function copyLink(){const currentUrl=url||window.location.href;try{await navigator.clipboard.writeText(currentUrl);}catch{const input=document.createElement("textarea");input.value=currentUrl;input.style.position="fixed";input.style.opacity="0";document.body.appendChild(input);input.select();const ok=document.execCommand("copy");input.remove();if(!ok){setError("Unable to copy the link. Please copy it manually.");return;}}setCopied(true);window.setTimeout(()=>setCopied(false),2000);}
  async function shareLink(){const currentUrl=url||window.location.href;if(navigator.share){try{await navigator.share({title,text:title,url:currentUrl});return;}catch(e){if(e instanceof Error&&e.name==="AbortError")return;}}await copyLink();}
- function shareQrImage() {
+ async function shareQrImage() {
   if (!qrData) return;
   const currentUrl = url || window.location.href;
   if (!navigator.share) {
     setError("This browser does not support the system sharing menu. Download the QR image instead.");
     return;
   }
+
   try {
-    // Send the QR image as a file and the destination as a real URL.
-    // Compatible receiving apps generate the OG preview from that URL.
+    // Read the exact Open Graph image declared for this page. Fetch it through
+    // our same-origin, allow-listed endpoint so Android can attach it as a file.
+    const ogImageMeta = document.querySelector<HTMLMetaElement>('meta[property="og:image"]');
+    const ogImageUrl = ogImageMeta?.content || new URL("/opengraph-image", window.location.origin).toString();
+    const ogResponse = await fetch(`/api/share-og-image?url=${encodeURIComponent(ogImageUrl)}`);
+    if (!ogResponse.ok) {
+      throw new Error("The page preview image could not be prepared.");
+    }
+
+    const ogBlob = await ogResponse.blob();
+    if (!ogBlob.type.startsWith("image/")) {
+      throw new Error("The page preview is not a valid image.");
+    }
+
+    const ogExtension = ogBlob.type.includes("png") ? "png" : ogBlob.type.includes("webp") ? "webp" : "jpg";
+    const ogFile = new File([ogBlob], `tgo-page-preview.${ogExtension}`, { type: ogBlob.type });
     const base64 = qrData.slice(qrData.indexOf(",") + 1);
     const bytes = Uint8Array.from(atob(base64), (character) => character.charCodeAt(0));
     const qrFile = new File([bytes], "tgo-page-qr.png", { type: "image/png" });
-    const shareText = `Scan this QR code to open ${title}: ${currentUrl}`;
-    const files = [qrFile];
 
-    if (navigator.canShare?.({ files })) {
-      void navigator.share({ title, text: shareText, url: currentUrl, files }).catch((shareError) => {
-        if (shareError instanceof Error && shareError.name === "AbortError") return;
-        setError("Your device could not share both images. Please try again or share the page as a link.");
-      });
-      return;
+    // File order is intentional: the page's OG preview first, QR code second.
+    const files = [ogFile, qrFile];
+    if (!navigator.canShare?.({ files })) {
+      throw new Error("Your sharing app does not support sending both images together. Download the QR code and share the page link separately.");
     }
 
-    // Some Android share targets accept one image only. Preserve the QR
-    // image and link rather than silently substituting the OG image.
-    if (navigator.canShare?.({ files: [qrFile] })) {
-      void navigator.share({ title, text: shareText, url: currentUrl, files: [qrFile] }).catch((shareError) => {
-        if (shareError instanceof Error && shareError.name === "AbortError") return;
-        setError("Your device could not share the QR image. Please try sharing the page as a link.");
-      });
-      return;
-    }
-
-    void navigator.share({ title, text: shareText, url: currentUrl }).catch((shareError) => {
-      if (shareError instanceof Error && shareError.name === "AbortError") return;
-      setError("Your browser could not open the sharing apps menu. Please download the QR image instead.");
+    // Do not repeat the URL in text: the url field supplies it once, avoiding
+    // the duplicate link visible in some Android share targets.
+    await navigator.share({
+      title,
+      text: `Open ${title} or scan the QR code.`,
+      url: currentUrl,
+      files,
     });
-  } catch {
-    setError("Could not prepare the QR code for sharing. Please download it instead.");
+  } catch (shareError) {
+    if (shareError instanceof Error && shareError.name === "AbortError") return;
+    setError(shareError instanceof Error ? shareError.message : "Could not prepare the preview and QR images for sharing.");
   }
 }
 function downloadQr(){if(!qrData)return;const a=document.createElement("a");a.href=qrData;a.download="tgo-page-qr.png";document.body.appendChild(a);a.click();a.remove();}

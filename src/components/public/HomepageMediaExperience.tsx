@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 type Props={settings:{
- enabled?:boolean;launchDate?:string|Date|null;title?:string;description?:string;
+ enabled?:boolean;countdownEnabled?:boolean;countdownVisible?:boolean;launchDate?:string|Date|null;title?:string;description?:string;
  videoUrl?:string;flyerUrl?:string;afterLaunchVideoUrl?:string;afterLaunchFlyerUrl?:string;
  flyerSeconds?:number;videoDurationHours?:number;videoDurationMinutes?:number;videoDurationSeconds?:number;useVideoDurationOverride?:boolean;
 }};
@@ -18,7 +18,8 @@ export default function LaunchExperience({settings}:Props){
  const [now,setNow]=useState(Date.now()),[mediaIndex,setMediaIndex]=useState(0);
  const target=useMemo(()=>settings.launchDate?new Date(settings.launchDate).getTime():0,[settings.launchDate]);
  const hasTarget=Boolean(target&&!Number.isNaN(target));
- const afterTarget=hasTarget&&now>=target;
+ const countdownEnabled=settings.countdownEnabled!==false;
+ const afterTarget=countdownEnabled&&hasTarget&&now>=target;
  const video=afterTarget&&settings.afterLaunchVideoUrl?settings.afterLaunchVideoUrl:settings.videoUrl;
  const image=afterTarget&&settings.afterLaunchFlyerUrl?settings.afterLaunchFlyerUrl:settings.flyerUrl;
  const media=useMemo(()=>[...(video?[{kind:"video" as const,url:video}]:[]),...(image?[{kind:"image" as const,url:image}]:[])],[video,image]);
@@ -37,7 +38,8 @@ export default function LaunchExperience({settings}:Props){
   return()=>window.clearTimeout(timer);
  },[mediaIndex,current?.kind,current?.url,useOverride,overrideSeconds,settings.flyerSeconds,media.length]);
  if(!settings.enabled)return null;
- const countdown=hasTarget&&!afterTarget?remainingTime(target,now):null;
+ const countdown=countdownEnabled&&hasTarget&&!afterTarget?remainingTime(target,now):null;
+ const showCountdown=Boolean(countdown&&settings.countdownVisible!==false);
  const units=countdown?[["Years",countdown.years],["Months",countdown.months],["Days",countdown.days],["Hours",countdown.hours],["Minutes",countdown.minutes],["Seconds",countdown.seconds]] as const:[];
  return <section className="relative overflow-hidden border-b border-base-800 bg-base-950 px-5 py-12 sm:px-10 sm:py-16">
   <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(91,46,232,.22),transparent_55%),radial-gradient(ellipse_at_bottom_right,rgba(46,197,240,.12),transparent_45%)]"/>
@@ -46,7 +48,7 @@ export default function LaunchExperience({settings}:Props){
    {current&&<div className="mx-auto mt-8 max-w-5xl overflow-hidden rounded-3xl border border-white/10 bg-black shadow-2xl shadow-violet-950/30">
     {current.kind==="video"?<video key={current.url} src={current.url} autoPlay muted playsInline controls loop={media.length===1} onEnded={advance} className="max-h-[68vh] w-full object-contain"/>:<img src={current.url} alt={settings.title||"TGO DevStudio homepage media"} className="max-h-[68vh] w-full object-contain"/>}
    </div>}
-   {countdown&&<div className="mx-auto mt-8 max-w-5xl rounded-2xl border border-brand-cyan-400/20 bg-white/[.035] p-4 sm:p-6"><p className="mb-4 text-center text-xs font-semibold uppercase tracking-[.22em] text-brand-cyan-300">Countdown</p><div className="grid grid-cols-3 gap-2 sm:grid-cols-6 sm:gap-3">{units.map(([label,value])=><div key={label} className="rounded-xl border border-white/10 bg-black/30 px-2 py-3 text-center"><div className="font-mono text-2xl font-bold text-white sm:text-3xl">{String(value).padStart(2,"0")}</div><div className="mt-1 text-[10px] uppercase tracking-widest text-neutral-400 sm:text-xs">{label}</div></div>)}</div></div>}
+   {showCountdown&&countdown&&<div className="mx-auto mt-8 max-w-5xl rounded-2xl border border-brand-cyan-400/20 bg-white/[.035] p-4 sm:p-6"><p className="mb-4 text-center text-xs font-semibold uppercase tracking-[.22em] text-brand-cyan-300">Countdown</p><div className="grid grid-cols-3 gap-2 sm:grid-cols-6 sm:gap-3">{units.map(([label,value])=><div key={label} className="rounded-xl border border-white/10 bg-black/30 px-2 py-3 text-center"><div className="font-mono text-2xl font-bold text-white sm:text-3xl">{String(value).padStart(2,"0")}</div><div className="mt-1 text-[10px] uppercase tracking-widest text-neutral-400 sm:text-xs">{label}</div></div>)}</div></div>}
   </div>
  </section>;
 }

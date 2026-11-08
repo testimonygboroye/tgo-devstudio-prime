@@ -1,8 +1,8 @@
 "use client";
 import { useEffect,useState } from "react";
 import { uploadMediaDirect } from "@/lib/client/uploadMedia";
-type Form={enabled:boolean;launchDate:string;title:string;description:string;videoUrl:string;flyerUrl:string;afterLaunchVideoUrl:string;afterLaunchFlyerUrl:string;flyerSeconds:number;videoDurationHours:number;videoDurationMinutes:number;videoDurationSeconds:number;useVideoDurationOverride:boolean};
-const defaults:Form={enabled:false,launchDate:"",title:"",description:"",videoUrl:"",flyerUrl:"",afterLaunchVideoUrl:"",afterLaunchFlyerUrl:"",flyerSeconds:8,videoDurationHours:0,videoDurationMinutes:0,videoDurationSeconds:0,useVideoDurationOverride:false};
+type Form={enabled:boolean;countdownEnabled:boolean;countdownVisible:boolean;launchDate:string;title:string;description:string;videoUrl:string;flyerUrl:string;afterLaunchVideoUrl:string;afterLaunchFlyerUrl:string;flyerSeconds:number;videoDurationHours:number;videoDurationMinutes:number;videoDurationSeconds:number;useVideoDurationOverride:boolean};
+const defaults:Form={enabled:false,countdownEnabled:true,countdownVisible:true,launchDate:"",title:"",description:"",videoUrl:"",flyerUrl:"",afterLaunchVideoUrl:"",afterLaunchFlyerUrl:"",flyerSeconds:8,videoDurationHours:0,videoDurationMinutes:0,videoDurationSeconds:0,useVideoDurationOverride:false};
 const mediaFields:[keyof Form,string,"video"|"image"][]=[
  ["videoUrl","Main homepage video","video"],["flyerUrl","Main homepage image / flyer","image"],
  ["afterLaunchVideoUrl","Media to show after the countdown date — video","video"],["afterLaunchFlyerUrl","Media to show after the countdown date — image","image"]
@@ -23,6 +23,7 @@ export default function HomepageMediaClient(){
    <label className="block text-sm text-neutral-400">Supporting text<textarea rows={3} value={form.description} onChange={e=>update("description",e.target.value)} placeholder="A short message above the media" className="mt-1 w-full rounded-lg border border-base-700 bg-base-900 px-3 py-3 text-neutral-100"/></label>
    <label className="block text-sm text-neutral-400">Countdown target date and time (optional)<input type="datetime-local" value={form.launchDate} onChange={e=>update("launchDate",e.target.value)} className="mt-1 w-full rounded-lg border border-base-700 bg-base-900 px-3 py-3 text-neutral-100"/></label>
    <p className="text-xs text-neutral-500">Leave the date empty if you do not need a countdown or date-based media switch.</p>
+   <div className="space-y-3 rounded-xl border border-base-800 p-4"><label className="flex items-center gap-3 text-sm text-neutral-200"><input type="checkbox" checked={form.countdownEnabled} onChange={e=>update("countdownEnabled",e.target.checked)} className="h-4 w-4 accent-cyan-400"/>Enable countdown logic and after-countdown media switching</label><label className="flex items-center gap-3 text-sm text-neutral-200"><input type="checkbox" checked={form.countdownVisible} onChange={e=>update("countdownVisible",e.target.checked)} className="h-4 w-4 accent-cyan-400"/>Show countdown publicly (the admin preview remains visible)</label><p className="text-xs text-neutral-500">Turning countdown logic off prevents the alternate media from activating. Hiding it only affects public visibility, not the timer.</p></div>
   </section>
   <section className="space-y-5 rounded-2xl border border-base-800 bg-base-950 p-5">
    <h2 className="text-lg font-semibold text-neutral-100">Main homepage media</h2>

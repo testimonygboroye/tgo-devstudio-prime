@@ -80,6 +80,7 @@ const NAV_GROUPS = [
   { title: "Site Tools", items: [
     { label: "Availability", hrefSuffix: "/availability", icon: Zap, badgeKey: null },
     { label: "Media Library", hrefSuffix: "/media", icon: Image, badgeKey: null },
+    { label: "Launch Control", hrefSuffix: "/launch-control", icon: Zap, badgeKey: null },
     { label: "Help & Guide", hrefSuffix: "/help", icon: HelpCircle, badgeKey: null },
     { label: "Manage Articles", hrefSuffix: "/help-articles", icon: BookOpen, badgeKey: null },
   ]},
@@ -201,7 +202,7 @@ export default function AdminSidebar({
               </div>
             </details>
           );
-        })}}
+        })}
       </nav>
 
       <div className="flex-shrink-0 border-t border-[var(--border-subtle)] p-4 bg-[var(--bg-surface-2)]/50">

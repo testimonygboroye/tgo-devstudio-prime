@@ -18,52 +18,52 @@ export default function ShareCurrentPage() {
 
  async function copyLink(){const currentUrl=url||window.location.href;try{await navigator.clipboard.writeText(currentUrl);}catch{const input=document.createElement("textarea");input.value=currentUrl;input.style.position="fixed";input.style.opacity="0";document.body.appendChild(input);input.select();const ok=document.execCommand("copy");input.remove();if(!ok){setError("Unable to copy the link. Please copy it manually.");return;}}setCopied(true);window.setTimeout(()=>setCopied(false),2000);}
  async function shareLink(){const currentUrl=url||window.location.href;if(navigator.share){try{await navigator.share({title,text:title,url:currentUrl});return;}catch(e){if(e instanceof Error&&e.name==="AbortError")return;}}await copyLink();}
- async function shareQrImage() {
+ async async function shareQrImage() {
   if (!qrData) return;
   const currentUrl = url || window.location.href;
   if (!navigator.share) {
     setError("This browser does not support the system sharing menu. Download the QR image instead.");
     return;
   }
-
   try {
-    // Read the exact Open Graph image declared for this page. Fetch it through
-    // our same-origin, allow-listed endpoint so Android can attach it as a file.
-    const ogImageMeta = document.querySelector<HTMLMetaElement>('meta[property="og:image"]');
-    const ogImageUrl = ogImageMeta?.content || new URL("/opengraph-image", window.location.origin).toString();
-    const ogResponse = await fetch(`/api/share-og-image?url=${encodeURIComponent(ogImageUrl)}`);
+    // Read the exact Open Graph image declared by this page, then fetch it
+    // through our same-origin, allow-listed image endpoint.
+    const declaredOgImage = document.querySelector<HTMLMetaElement>('meta[property="og:image"]')?.content;
+    if (!declaredOgImage) {
+      setError("This page has no Open Graph preview image configured, so both images cannot be shared yet.");
+      return;
+    }
+
+    const ogResponse = await fetch(`/api/share-og-image?url=${encodeURIComponent(new URL(declaredOgImage, currentUrl).toString())}`);
     if (!ogResponse.ok) {
-      throw new Error("The page preview image could not be prepared.");
+      setError("The page preview image could not be prepared. Please try again.");
+      return;
     }
-
     const ogBlob = await ogResponse.blob();
-    if (!ogBlob.type.startsWith("image/")) {
-      throw new Error("The page preview is not a valid image.");
+    if (!ogBlob.type.startsWith("image/") || ogBlob.size === 0) {
+      setError("The page preview image is not available in a shareable format.");
+      return;
     }
 
-    const ogExtension = ogBlob.type.includes("png") ? "png" : ogBlob.type.includes("webp") ? "webp" : "jpg";
+    const qrBase64 = qrData.slice(qrData.indexOf(",") + 1);
+    const qrBytes = Uint8Array.from(atob(qrBase64), (character) => character.charCodeAt(0));
+    const ogExtension = ogBlob.type.includes("jpeg") ? "jpg" : ogBlob.type.split("/")[1] || "png";
     const ogFile = new File([ogBlob], `tgo-page-preview.${ogExtension}`, { type: ogBlob.type });
-    const base64 = qrData.slice(qrData.indexOf(",") + 1);
-    const bytes = Uint8Array.from(atob(base64), (character) => character.charCodeAt(0));
-    const qrFile = new File([bytes], "tgo-page-qr.png", { type: "image/png" });
-
-    // File order is intentional: the page's OG preview first, QR code second.
+    const qrFile = new File([qrBytes], "tgo-page-qr.png", { type: "image/png" });
+    // File order is intentional: preview artwork first, QR second.
     const files = [ogFile, qrFile];
+    const shareText = `Open ${title} — scan the QR code or use the page link:`;
+
     if (!navigator.canShare?.({ files })) {
-      throw new Error("Your sharing app does not support sending both images together. Download the QR code and share the page link separately.");
+      setError("Your sharing app does not support sending the preview and QR images together. Try a different sharing app.");
+      return;
     }
 
-    // Do not repeat the URL in text: the url field supplies it once, avoiding
-    // the duplicate link visible in some Android share targets.
-    await navigator.share({
-      title,
-      text: `Open ${title} or scan the QR code.`,
-      url: currentUrl,
-      files,
-    });
+    await navigator.share({ title, text: shareText, url: currentUrl, files });
   } catch (shareError) {
     if (shareError instanceof Error && shareError.name === "AbortError") return;
-    setError(shareError instanceof Error ? shareError.message : "Could not prepare the preview and QR images for sharing.");
+    console.error("[Share] Could not share preview and QR images:", shareError);
+    setError("Could not share both images. Please try again or choose another sharing app.");
   }
 }
 function downloadQr(){if(!qrData)return;const a=document.createElement("a");a.href=qrData;a.download="tgo-page-qr.png";document.body.appendChild(a);a.click();a.remove();}
@@ -77,6 +77,6 @@ function downloadQr(){if(!qrData)return;const a=document.createElement("a");a.hr
  <button type="button" onClick={()=>setMode("qr")} className="flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition hover:border-cyan-400" style={{borderColor:"var(--border-subtle)"}}><span className="rounded-xl bg-cyan-400/10 p-3 text-cyan-400"><QrCode size={24}/></span><span className="flex-1"><span className="block font-semibold">Share as a QR code</span><span className="mt-1 block text-sm" style={{color:"var(--text-secondary)"}}>Display, download, or send the QR image.</span></span></button>
  <button type="button" onClick={copyLink} className="flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition hover:border-cyan-400" style={{borderColor:"var(--border-subtle)"}}><span className="rounded-xl bg-cyan-400/10 p-3 text-cyan-400">{copied?<Check size={24}/>:<Copy size={24}/>}</span><span className="flex-1"><span className="block font-semibold">{copied?"Link copied":"Copy link"}</span><span className="mt-1 block text-sm" style={{color:"var(--text-secondary)"}}>Copy the exact URL of this page.</span></span></button></div>}
  {mode==="link"&&<div className="mt-6"><div className="break-all rounded-xl border p-3 text-sm" style={{borderColor:"var(--border-subtle)",color:"var(--text-secondary)"}}>{url}</div><button type="button" onClick={shareLink} className="mt-4 flex w-full items-center justify-center gap-2 rounded-full px-5 py-3 font-semibold brand-gradient-bg text-base-950"><MessageCircle size={18}/>Choose an app to share</button></div>}
- {mode==="qr"&&<div className="mt-5">{qrLoading&&<p className="py-10 text-center text-sm">Generating QR code…</p>}{qrData&&<><img src={qrData} alt={`QR code for ${title}`} className="mx-auto my-4 aspect-square w-64 rounded-xl bg-white p-2"/><p className="text-center text-xs" style={{color:"var(--text-muted)"}}>The QR image and page link are shared together. Receiving apps can generate the preview from the page URL.</p><p className="break-all text-center text-xs" style={{color:"var(--text-secondary)"}}>{url}</p><div className="mt-5 grid grid-cols-2 gap-3"><button type="button" onClick={downloadQr} className="flex items-center justify-center gap-2 rounded-full border px-3 py-3 text-sm font-semibold" style={{borderColor:"var(--border-subtle)"}}><Download size={17}/>Download QR</button><button type="button" onClick={shareQrImage} className="flex items-center justify-center gap-2 rounded-full px-3 py-3 text-sm font-semibold brand-gradient-bg text-base-950 disabled:cursor-wait disabled:opacity-50"><Share2 size={17}/>Send QR + page link</button></div></>}</div>}
+ {mode==="qr"&&<div className="mt-5">{qrLoading&&<p className="py-10 text-center text-sm">Generating QR code…</p>}{qrData&&<><img src={qrData} alt={`QR code for ${title}`} className="mx-auto my-4 aspect-square w-64 rounded-xl bg-white p-2"/><p className="text-center text-xs" style={{color:"var(--text-muted)"}}>The page preview image is sent first, followed by the QR image, with the page link and caption.</p><p className="break-all text-center text-xs" style={{color:"var(--text-secondary)"}}>{url}</p><div className="mt-5 grid grid-cols-2 gap-3"><button type="button" onClick={downloadQr} className="flex items-center justify-center gap-2 rounded-full border px-3 py-3 text-sm font-semibold" style={{borderColor:"var(--border-subtle)"}}><Download size={17}/>Download QR</button><button type="button" onClick={shareQrImage} className="flex items-center justify-center gap-2 rounded-full px-3 py-3 text-sm font-semibold brand-gradient-bg text-base-950 disabled:cursor-wait disabled:opacity-50"><Share2 size={17}/>Send preview + QR + link</button></div></>}</div>}
  {error&&<p role="alert" className="mt-3 text-sm text-red-400">{error}</p>}</div></div>}</>;
 }

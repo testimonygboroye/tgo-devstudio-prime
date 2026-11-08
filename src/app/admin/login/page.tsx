@@ -148,6 +148,7 @@ function LoginForm() {
             {isSubmitting ? "Signing in..." : "Sign in"}
           </button>
         </form>
+        </>
       )}
 
       {step === "twoFactor" && (

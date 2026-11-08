@@ -49,7 +49,10 @@ function SignupForm() {
     validate();
   }, [token]);
 
-  const handleGoogleResult = (data: any) => { setSuccess(true); window.setTimeout(()=>{ window.location.href = loginPath.replace(/\/login$/, "/dashboard"); },700); };\n  const handleGoogleError = (message: string) => setError(message);\n\n  async function handleSubmit(event: React.FormEvent) {
+  const handleGoogleResult = (data: any) => { setSuccess(true); window.setTimeout(()=>{ window.location.href = loginPath.replace(/\/login$/, "/dashboard"); },700); };
+  const handleGoogleError = (message: string) => setError(message);
+
+  async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError("");
 
@@ -102,7 +105,10 @@ function SignupForm() {
           )}
 
           {!isValidating && inviteInfo && !success && (
-            <><div className="mt-8 rounded-md border border-base-800 bg-base-900 p-3 text-sm text-neutral-400">Creating an account for <span className="text-neutral-100">{inviteInfo.email}</span> as <span className="text-brand-cyan-300">{inviteInfo.roleName}</span></div>\n              <GoogleSignInButton endpoint="/api/auth/google-invite" payload={{token}} onResult={handleGoogleResult} onError={handleGoogleError}/>\n              <div className="my-5 flex items-center gap-3 text-xs text-neutral-500"><span className="h-px flex-1 bg-base-800"/><span>OR CREATE WITH PASSWORD</span><span className="h-px flex-1 bg-base-800"/></div>\n            <form onSubmit={handleSubmit} className="space-y-4">
+            <><div className="mt-8 rounded-md border border-base-800 bg-base-900 p-3 text-sm text-neutral-400">Creating an account for <span className="text-neutral-100">{inviteInfo.email}</span> as <span className="text-brand-cyan-300">{inviteInfo.roleName}</span></div>
+              <GoogleSignInButton endpoint="/api/auth/google-invite" payload={{token}} onResult={handleGoogleResult} onError={handleGoogleError}/>
+              <div className="my-5 flex items-center gap-3 text-xs text-neutral-500"><span className="h-px flex-1 bg-base-800"/><span>OR CREATE WITH PASSWORD</span><span className="h-px flex-1 bg-base-800"/></div>
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="rounded-md border border-base-800 bg-base-900 p-3 text-sm text-neutral-400">
                 Creating an account for <span className="text-neutral-100">{inviteInfo.email}</span> as{" "}
                 <span className="text-brand-cyan-300">{inviteInfo.roleName}</span>

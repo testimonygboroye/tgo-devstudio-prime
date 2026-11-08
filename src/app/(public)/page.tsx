@@ -16,6 +16,8 @@ import { getPubliclyVisibleFilter } from "@/lib/utils/blogVisibility";
 import ScrollReveal from "@/components/public/ScrollReveal";
 import AvailabilityBadge from "@/components/public/AvailabilityBadge";
 import HeroMoment from "@/components/public/HeroMoment";
+import LaunchExperience from "@/components/public/LaunchExperience";
+import LaunchSettings from "@/models/LaunchSettings";
 import { getServerLocale, getTranslator } from "@/lib/i18n/serverLocale";
 import { getLocalizedContent } from "@/lib/i18n/translationHelper";
 import { TRANSLATABLE_FIELDS } from "@/lib/i18n/translatableFields";
@@ -47,6 +49,8 @@ export default async function HomePage() {
     Review.find({ status: "approved", featuredOnHomepage: true }).sort({ createdAt: -1 }).limit(3).lean(),
   ]);
 
+  const launchSettings = await LaunchSettings.findOne().lean();
+
   const rawHero = { ...HOME_DEFAULTS, ...(rawSettings || {}) };
   const hero = getLocalizedContent(rawHero, locale, TRANSLATABLE_FIELDS.HomeSettings as any);
   const projects = featuredProjects.map((p) => getLocalizedContent(p, locale, TRANSLATABLE_FIELDS.Project as any));
@@ -58,6 +62,7 @@ export default async function HomePage() {
 
   return (
     <main style={{ backgroundColor: "var(--bg-page)" }}>
+      <LaunchExperience settings={launchSettings || { enabled: false }} />
       {/* Hero */}
       <section className="ambient-glow relative flex min-h-[90vh] flex-col items-center justify-center overflow-hidden px-6 text-center sm:px-12">
         <HeroMoment />

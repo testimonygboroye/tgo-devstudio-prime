@@ -3,79 +3,63 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Share2, Copy, Check, QrCode, X, Link2, Download, ArrowLeft, MessageCircle } from "lucide-react";
 type ShareMode = "choose" | "link" | "qr" | null;
+async function composeQrShareFile(qrData:string,currentUrl:string,title:string):Promise<File>{
+ const declaredOgImage=document.querySelector<HTMLMetaElement>('meta[property="og:image"]')?.content;
+ const canvas=document.createElement("canvas");
+ const width=1200,previewHeight=630,qrSize=560,padding=48,gap=32;
+ canvas.width=width;canvas.height=padding+previewHeight+gap+qrSize+padding;
+ const context=canvas.getContext("2d");if(!context)throw new Error("This browser cannot compose the share image.");
+ context.fillStyle="#080d20";context.fillRect(0,0,canvas.width,canvas.height);
+ let previewDrawn=false;
+ if(declaredOgImage){
+  try{
+   const previewUrl=new URL("/api/share-og-image",window.location.origin);
+   previewUrl.searchParams.set("url",new URL(declaredOgImage,currentUrl).toString());
+   const response=await fetch(previewUrl.toString(),{cache:"no-store",credentials:"same-origin"});
+   if(!response.ok)throw new Error("OG preview request returned "+response.status);
+   const blob=await response.blob();if(!blob.type.startsWith("image/")||!blob.size)throw new Error("OG preview is invalid.");
+   const bitmap=await createImageBitmap(blob);context.drawImage(bitmap,0,0,width,previewHeight);bitmap.close?.();previewDrawn=true;
+  }catch(error){console.warn("[Share] OG image unavailable; using branded preview card.",error);}
+ }
+ if(!previewDrawn){
+  const gradient=context.createLinearGradient(0,0,width,previewHeight);gradient.addColorStop(0,"#0a102a");gradient.addColorStop(1,"#17103b");
+  context.fillStyle=gradient;context.fillRect(0,0,width,previewHeight);context.fillStyle="#22d3ee";context.fillRect(0,previewHeight-5,width,5);
+  context.fillStyle="#fff";context.textAlign="center";context.font="bold 58px Arial";context.fillText(title.slice(0,38),width/2,270);
+  context.font="28px Arial";context.fillStyle="#cbd5e1";context.fillText(new URL(currentUrl).hostname,width/2,335);
+ }
+ const encoded=qrData.split(",")[1];if(!encoded)throw new Error("The generated QR code data is invalid.");
+ const bytes=Uint8Array.from(atob(encoded),character=>character.charCodeAt(0));
+ const qrBitmap=await createImageBitmap(new Blob([bytes],{type:"image/png"}));
+ const qrY=padding+previewHeight+gap;
+ context.fillStyle="#fff";context.fillRect((width-qrSize)/2-16,qrY-16,qrSize+32,qrSize+32);
+ context.drawImage(qrBitmap,(width-qrSize)/2,qrY,qrSize,qrSize);qrBitmap.close?.();
+ context.fillStyle="#fff";context.textAlign="center";context.font="24px Arial";context.fillText("Scan to open this page",width/2,qrY+qrSize+padding-10);
+ const blob=await new Promise<Blob>((resolve,reject)=>canvas.toBlob(value=>value?resolve(value):reject(new Error("Could not create the combined preview image.")),"image/png"));
+ return new File([blob],"tgo-page-preview-and-qr.png",{type:"image/png"});
+}
+
 export default function ShareCurrentPage() {
  const pathname=usePathname(); const [url,setUrl]=useState(""); const [title,setTitle]=useState("TGO DevStudio");
- const [mode,setMode]=useState<ShareMode>(null); const [copied,setCopied]=useState(false); const [qrData,setQrData]=useState(""); const [qrLoading,setQrLoading]=useState(false); const [error,setError]=useState("");
+ const [mode,setMode]=useState<ShareMode>(null); const [copied,setCopied]=useState(false); const [qrData,setQrData]=useState(""); const [qrLoading,setQrLoading]=useState(false); const [combinedFile,setCombinedFile]=useState<File|null>(null); const [composing,setComposing]=useState(false); const [error,setError]=useState("");
  useEffect(()=>{
   setUrl(window.location.href);
   setTitle(document.title||"TGO DevStudio");
-  setMode(null);setQrData("");setError("");
+  setMode(null);setQrData("");setCombinedFile(null);setError("");
  },[pathname]);
  useEffect(()=>{if(mode!=="qr"||!url||qrData)return;let cancelled=false;
   async function generate(){setQrLoading(true);setError("");try{const QRCode=await import("qrcode");const image=await QRCode.toDataURL(url,{width:640,margin:3,errorCorrectionLevel:"H",color:{dark:"#101426",light:"#FFFFFF"}});if(!cancelled)setQrData(image);}catch{if(!cancelled)setError("Could not generate the QR code. Please try again.");}finally{if(!cancelled)setQrLoading(false);}}
   void generate();return()=>{cancelled=true;};
  },[mode,url,qrData]);
 
+ useEffect(()=>{if(mode!=="qr"||!qrData){setCombinedFile(null);setComposing(false);return;}let cancelled=false;setCombinedFile(null);setComposing(true);setError("");composeQrShareFile(qrData,url||window.location.href,title).then(file=>{if(!cancelled)setCombinedFile(file);}).catch(error=>{if(!cancelled)setError(error instanceof Error?error.message:"Could not prepare the combined QR image.");}).finally(()=>{if(!cancelled)setComposing(false);});return()=>{cancelled=true;};},[mode,qrData,url,title]);
  async function copyLink(){const currentUrl=url||window.location.href;try{await navigator.clipboard.writeText(currentUrl);}catch{const input=document.createElement("textarea");input.value=currentUrl;input.style.position="fixed";input.style.opacity="0";document.body.appendChild(input);input.select();const ok=document.execCommand("copy");input.remove();if(!ok){setError("Unable to copy the link. Please copy it manually.");return;}}setCopied(true);window.setTimeout(()=>setCopied(false),2000);}
  async function shareLink(){const currentUrl=url||window.location.href;if(navigator.share){try{await navigator.share({title,text:title,url:currentUrl});return;}catch(e){if(e instanceof Error&&e.name==="AbortError")return;}}await copyLink();}
- async function shareQrImage() {
-  if (!qrData) return;
-  const currentUrl = url || window.location.href;
-  if (!navigator.share) { setError("This browser does not support image sharing. Download the QR image instead."); return; }
-  try {
-    const declaredOgImage = document.querySelector<HTMLMetaElement>('meta[property="og:image"]')?.content;
-    const canvas = document.createElement("canvas");
-    const width = 1200, previewHeight = 630, qrSize = 560, padding = 48, gap = 32;
-    canvas.width = width; canvas.height = padding + previewHeight + gap + qrSize + padding;
-    const context = canvas.getContext("2d");
-    if (!context) throw new Error("This browser cannot compose the share image.");
-    context.fillStyle = "#080d20"; context.fillRect(0,0,canvas.width,canvas.height);
-    let previewDrawn = false;
-    if (declaredOgImage) {
-      try {
-        const previewUrl = new URL("/api/share-og-image", window.location.origin);
-        previewUrl.searchParams.set("url", new URL(declaredOgImage,currentUrl).toString());
-        const response = await fetch(previewUrl.toString(), { cache:"no-store", credentials:"same-origin" });
-        if (!response.ok) throw new Error("OG preview request returned "+response.status);
-        const blob = await response.blob();
-        if (!blob.type.startsWith("image/") || !blob.size) throw new Error("OG preview is not a valid image.");
-        const bitmap = await createImageBitmap(blob);
-        context.drawImage(bitmap,0,0,width,previewHeight);
-        bitmap.close?.();
-        previewDrawn = true;
-      } catch (previewError) {
-        console.warn("[Share] OG image unavailable; using branded preview card.",previewError);
-      }
-    }
-    if (!previewDrawn) {
-      const gradient=context.createLinearGradient(0,0,width,previewHeight);
-      gradient.addColorStop(0,"#0a102a");gradient.addColorStop(1,"#17103b");
-      context.fillStyle=gradient;context.fillRect(0,0,width,previewHeight);
-      context.fillStyle="#22d3ee";context.fillRect(0,previewHeight-5,width,5);
-      context.fillStyle="#ffffff";context.textAlign="center";context.font="bold 58px Arial";
-      context.fillText(title.slice(0,38),width/2,270);
-      context.font="28px Arial";context.fillStyle="#cbd5e1";
-      context.fillText(new URL(currentUrl).hostname,width/2,335);
-    }
-    const encodedQr=qrData.split(",")[1];
-    if(!encodedQr)throw new Error("The generated QR code data is invalid.");
-    const qrBytes=Uint8Array.from(atob(encodedQr),character=>character.charCodeAt(0));
-    const qrBlob=new Blob([qrBytes],{type:"image/png"});
-    const qrBitmap=await createImageBitmap(qrBlob);
-    const qrY=padding+previewHeight+gap;
-    context.fillStyle="#ffffff";context.fillRect((width-qrSize)/2-16,qrY-16,qrSize+32,qrSize+32);
-    context.drawImage(qrBitmap,(width-qrSize)/2,qrY,qrSize,qrSize);qrBitmap.close?.();
-    context.fillStyle="#ffffff";context.textAlign="center";context.font="24px Arial";
-    context.fillText("Scan to open this page",width/2,qrY+qrSize+padding-10);
-    const combinedBlob=await new Promise<Blob>((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error("Could not create the combined preview image.")),"image/png"));
-    const combinedFile=new File([combinedBlob],"tgo-page-preview-and-qr.png",{type:"image/png"});
-    if(typeof navigator.canShare==="function"&&!navigator.canShare({files:[combinedFile]})){setError("This sharing app does not accept image files. Download the combined image and attach it manually.");return;}
-    await navigator.share({title,text:title+"\n"+currentUrl,files:[combinedFile]});
-  } catch (shareError) {
-    if (shareError instanceof Error && shareError.name === "AbortError") return;
-    console.error("[Share] Combined QR sharing failed:",shareError);
-    setError(shareError instanceof Error ? shareError.message : "Could not share the combined preview image.");
-  }
+ function shareQrImage() {
+  if(!combinedFile||!navigator.share)return;
+  const data={title,text:title+"\n"+(url||window.location.href),files:[combinedFile]};
+  if(typeof navigator.canShare==="function"&&!navigator.canShare({files:[combinedFile]})){setError("This sharing app does not accept image files. Download the combined image and attach it manually.");return;}
+  try{const result=navigator.share(data);void result.catch(error=>{if(error instanceof Error&&error.name!=="AbortError")setError(error.message||"Could not open the sharing app.");});}
+  catch(error){setError(error instanceof Error?error.message:"Could not open the sharing app.");}
 }
 function downloadQr(){if(!qrData)return;const a=document.createElement("a");a.href=qrData;a.download="tgo-page-qr.png";document.body.appendChild(a);a.click();a.remove();}
  const close=()=>{setMode(null);setError("");};

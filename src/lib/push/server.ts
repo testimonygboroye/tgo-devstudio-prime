@@ -42,39 +42,32 @@ export async function sendAdminPush(
 
   const subscriptions = await PushSubscription.find(filter).lean();
 
-  let sent = 0;
-  let removed = 0;
-  let failed = 0;
-
-  for (const subscription of subscriptions) {
-    try {
-      await webpush.sendNotification(
-        {
-          endpoint: subscription.endpoint,
-          expirationTime: subscription.expirationTime ?? null,
-          keys: subscription.keys,
-        },
-        JSON.stringify(notification),
-        { TTL: 60 * 60 }
-      );
-      sent++;
-    } catch (error: unknown) {
-      const statusCode =
-        typeof error === "object" &&
-        error !== null &&
-        "statusCode" in error
-          ? Number(error.statusCode)
-          : 0;
-
-      if (statusCode === 404 || statusCode === 410) {
-        await PushSubscription.deleteOne({ _id: subscription._id });
-        removed++;
-      } else {
-        failed++;
-        console.error("[Push] Delivery failed:", statusCode || "unknown");
+  let sent = 0, removed = 0, failed = 0, cursor = 0;
+  const worker = async () => {
+    while (cursor < subscriptions.length) {
+      const subscription = subscriptions[cursor++];
+      let complete = false;
+      for (let attempt = 0; attempt < 3 && !complete; attempt++) {
+        try {
+          await webpush.sendNotification(
+            { endpoint: subscription.endpoint, expirationTime: subscription.expirationTime ?? null, keys: subscription.keys },
+            JSON.stringify(notification),
+            { TTL: 60 * 60 * 24 * 7, urgency: "high" },
+          );
+          sent++; complete = true;
+        } catch (error: unknown) {
+          const code = typeof error === "object" && error !== null && "statusCode" in error ? Number(error.statusCode) : 0;
+          if (code === 404 || code === 410) {
+            await PushSubscription.deleteOne({ _id: subscription._id }); removed++; complete = true;
+          } else if ((code === 0 || code === 429 || code >= 500) && attempt < 2) {
+            await new Promise((resolve) => setTimeout(resolve, 250 * (2 ** attempt)));
+          } else {
+            failed++; console.error("[Push] Delivery failed:", code || "unknown"); complete = true;
+          }
+        }
       }
     }
-  }
-
+  };
+  await Promise.all(Array.from({ length: Math.min(5, subscriptions.length) }, () => worker()));
   return { sent, removed, failed };
 }

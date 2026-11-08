@@ -93,21 +93,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const visitorCookie =
-      request.cookies.get(VISITOR_COOKIE)?.value;
-
-    const isNewVisitor = !visitorCookie;
-
-    const visitorId =
-      visitorCookie || randomUUID();
-
-    const sessionCookie =
-      request.cookies.get(SESSION_COOKIE)?.value;
-
-    const isNewSession = !sessionCookie;
-
-    const sessionId =
-      sessionCookie || randomUUID();
+    const visitorCookie = request.cookies.get(VISITOR_COOKIE)?.value;
+    const sessionCookie = request.cookies.get(SESSION_COOKIE)?.value;
+    const validId = (value: unknown): value is string => typeof value === "string" && /^[a-zA-Z0-9-]{12,80}$/.test(value);
+    const visitorId = visitorCookie || (validId(body?.visitorId) ? body.visitorId : randomUUID());
+    const sessionId = sessionCookie || (validId(body?.sessionId) ? body.sessionId : randomUUID());
+    const eventId = validId(body?.eventId) ? body.eventId : randomUUID();
 
     const userAgent =
       request.headers.get("user-agent") ||
@@ -183,162 +174,64 @@ export async function POST(request: NextRequest) {
         )
         .lean();
 
-    const previousPageViews =
-      existingVisitor?.totalPageViews || 0;
-
-    const previousSessions =
-      existingVisitor?.totalSessions || 0;
-
-    const totalPageViews =
-      previousPageViews + 1;
-
-    const totalSessions =
-      previousSessions +
-      (isNewSession ? 1 : 0);
-
-    const status = determineStatus({
-      isNewVisitor,
-      totalPageViews,
-      totalSessions,
-      lastSeen: existingVisitor?.lastSeen,
-      firstSeen: existingVisitor?.firstSeen,
-    });
-
-    await Visitor.findOneAndUpdate(
-      { visitorId },
-      {
-        $setOnInsert: {
-          visitorId,
-          firstSeen: now,
-          firstPath: path,
-          firstReferrer: referrer,
-          activeDays: 1,
+    const previousPageViews = existingVisitor?.totalPageViews || 0;
+    const previousSessions = existingVisitor?.totalSessions || 0;
+    let inserted = false;
+    try {
+      const result = await PageView.updateOne(
+        { eventId },
+        { $setOnInsert: {
+          eventId, path, visitorId, sessionId, userAgent, referrer,
+          host: deploymentHost, deploymentProvider, language: client.language,
+          deviceType: parsedUserAgent.deviceType, browser: parsedUserAgent.browser,
+          operatingSystem: parsedUserAgent.operatingSystem, country: geo.country,
+          countryCode: geo.countryCode, region: geo.region, city: geo.city,
+          timezone: client.timezone || geo.timezone, utmSource, utmMedium,
+          utmCampaign, utmTerm, utmContent,
+        } },
+        { upsert: true, setDefaultsOnInsert: true },
+      );
+      inserted = Number(result.upsertedCount || 0) > 0;
+    } catch (error) {
+      if (!(typeof error === "object" && error !== null && "code" in error && Number(error.code) === 11000)) throw error;
+    }
+    if (inserted) {
+      const totalPageViews = previousPageViews + 1;
+      const totalSessions = previousSessions + (sessionCookie ? 0 : (previousSessions === 0 ? 1 : 0));
+      const status = determineStatus({
+        isNewVisitor: !existingVisitor, totalPageViews, totalSessions,
+        lastSeen: existingVisitor?.lastSeen, firstSeen: existingVisitor?.firstSeen,
+      });
+      await Visitor.findOneAndUpdate(
+        { visitorId },
+        {
+          $setOnInsert: { visitorId, firstSeen: now, firstPath: path, firstReferrer: referrer, activeDays: 1 },
+          $set: {
+            lastSeen: now, latestPath: path, latestReferrer: referrer,
+            language: client.language, languages: client.languages,
+            timezone: client.timezone || geo.timezone, screenWidth: client.screenWidth,
+            screenHeight: client.screenHeight, viewportWidth: client.viewportWidth,
+            viewportHeight: client.viewportHeight, isStandalonePwa: client.isStandalonePwa,
+            cookiesEnabled: client.cookiesEnabled, deviceType: parsedUserAgent.deviceType,
+            deviceModel: parsedUserAgent.deviceModel, browser: parsedUserAgent.browser,
+            browserVersion: parsedUserAgent.browserVersion, operatingSystem: parsedUserAgent.operatingSystem,
+            operatingSystemVersion: parsedUserAgent.operatingSystemVersion,
+            country: geo.country, countryCode: geo.countryCode, region: geo.region,
+            city: geo.city, deploymentHost, deploymentProvider,
+            utmSource, utmMedium, utmCampaign, utmTerm, utmContent, status,
+          },
+          $inc: { totalPageViews: 1, ...(sessionCookie ? {} : { totalSessions: 1 }) },
         },
-
-        $set: {
-          lastSeen: now,
-          latestPath: path,
-          latestReferrer: referrer,
-
-          language: client.language,
-          languages: client.languages,
-
-          timezone:
-            client.timezone ||
-            geo.timezone,
-
-          screenWidth:
-            client.screenWidth,
-
-          screenHeight:
-            client.screenHeight,
-
-          viewportWidth:
-            client.viewportWidth,
-
-          viewportHeight:
-            client.viewportHeight,
-
-          isStandalonePwa:
-            client.isStandalonePwa,
-
-          cookiesEnabled:
-            client.cookiesEnabled,
-
-          deviceType:
-            parsedUserAgent.deviceType,
-
-          deviceModel:
-            parsedUserAgent.deviceModel,
-
-          browser:
-            parsedUserAgent.browser,
-
-          browserVersion:
-            parsedUserAgent.browserVersion,
-
-          operatingSystem:
-            parsedUserAgent.operatingSystem,
-
-          operatingSystemVersion:
-            parsedUserAgent.operatingSystemVersion,
-
-          country:
-            geo.country,
-
-          countryCode:
-            geo.countryCode,
-
-          region:
-            geo.region,
-
-          city:
-            geo.city,
-
-          deploymentHost,
-
-          deploymentProvider,
-
-          utmSource,
-          utmMedium,
-          utmCampaign,
-          utmTerm,
-          utmContent,
-
-          status,
-        },
-
-        $inc: {
-          totalPageViews: 1,
-
-          ...(isNewSession
-            ? { totalSessions: 1 }
-            : {}),
-        },
-      },
-      {
-        upsert: true,
-        setDefaultsOnInsert: true,
-      }
-    );
-
-    await PageView.create({
-      path,
-      visitorId,
-      sessionId,
-      userAgent,
-      referrer,
-
-      host: deploymentHost,
-      deploymentProvider,
-
-      language: client.language,
-      deviceType: parsedUserAgent.deviceType,
-      browser: parsedUserAgent.browser,
-      operatingSystem:
-        parsedUserAgent.operatingSystem,
-
-      country: geo.country,
-      countryCode: geo.countryCode,
-      region: geo.region,
-      city: geo.city,
-      timezone:
-        client.timezone ||
-        geo.timezone,
-
-      utmSource,
-      utmMedium,
-      utmCampaign,
-      utmTerm,
-      utmContent,
-    });
+        { upsert: true, setDefaultsOnInsert: true },
+      );
+    }
 
     const response =
       NextResponse.json({
         status: "ok",
       });
 
-    if (isNewVisitor) {
+    if (!visitorCookie) {
       response.cookies.set(
         VISITOR_COOKIE,
         visitorId,
@@ -352,7 +245,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (isNewSession) {
+    if (!sessionCookie) {
       response.cookies.set(
         SESSION_COOKIE,
         sessionId,

@@ -8,6 +8,7 @@ import {
 
 export interface IPageView extends Document {
   path: string;
+  eventId?: string;
   visitorId: string;
   sessionId?: string;
   userAgent: string;
@@ -43,6 +44,7 @@ const PageViewSchema = new Schema<IPageView>(
       required: true,
       index: true,
     },
+    eventId: { type: String, sparse: true, unique: true, index: true },
 
     visitorId: {
       type: String,

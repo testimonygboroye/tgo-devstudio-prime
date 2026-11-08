@@ -35,6 +35,38 @@ export interface VisitorGeo {
   timezone?: string;
 }
 
+export function decodeAnalyticsLabel(value: string): string {
+  const normalized = value.replace(/\\+/g, " ");
+  try { return decodeURIComponent(normalized).trim(); } catch { return normalized.trim(); }
+}
+
+export function countryName(code?: string): string | undefined {
+  if (!code) return undefined;
+  try { return new Intl.DisplayNames(["en"], { type: "region" }).of(code.toUpperCase()) || code.toUpperCase(); }
+  catch { return code.toUpperCase(); }
+}
+
+export function formatRegionName(value?: string, countryCode?: string): string | undefined {
+  if (!value) return undefined;
+  const raw = decodeAnalyticsLabel(value);
+  const code = raw.includes("-") ? raw.split("-").pop()! : raw;
+  if (!/^[A-Z0-9]{1,3}$/i.test(code)) return raw;
+  const subdivision = raw.includes("-") ? raw.toUpperCase() : countryCode ? `${countryCode.toUpperCase()}-${code.toUpperCase()}` : "";
+  if (!subdivision) return raw;
+  let name = raw;
+  try { name = new Intl.DisplayNames(["en"], { type: "region" }).of(subdivision) || raw; } catch { /* Keep provider value. */ }
+  return name.toLowerCase() === code.toLowerCase() ? raw : `${name} (${code.toUpperCase()})`;
+}
+
+export function canonicalizeDeploymentHost(value?: string): string | undefined {
+  const host = value?.trim().toLowerCase().replace(/^https?:\\/\\//, "").split("/")[0];
+  if (!host) return undefined;
+  if (host === "tgo-devstudio-prime.vercel.app" || host.endsWith(".vercel.app")) return "tgo-devstudio-prime.vercel.app";
+  if (host === "tgo-devstudio-prime.onrender.com" || host.endsWith(".onrender.com")) return "tgo-devstudio-prime.onrender.com";
+  if (host === "tgodevstudioprime.netlify.app" || host.endsWith(".netlify.app")) return "tgodevstudioprime.netlify.app";
+  return host;
+}
+
 function clean(value: unknown, maxLength = 500): string | undefined {
   if (typeof value !== "string") return undefined;
 
@@ -167,10 +199,8 @@ export function getVisitorGeo(request: NextRequest): VisitorGeo {
     40
   );
 
-  const vercelCity = clean(
-    request.headers.get("x-vercel-ip-city"),
-    120
-  );
+  const vercelCityRaw = clean(request.headers.get("x-vercel-ip-city"), 120);
+  const vercelCity = vercelCityRaw ? decodeAnalyticsLabel(vercelCityRaw) : undefined;
 
   const vercelTimezone = clean(
     request.headers.get("x-vercel-ip-timezone"),
@@ -178,9 +208,11 @@ export function getVisitorGeo(request: NextRequest): VisitorGeo {
   );
 
   if (vercelCountry || vercelRegion || vercelCity) {
+    const countryCode = vercelCountry?.toUpperCase();
     return {
-      countryCode: vercelCountry?.toUpperCase(),
-      region: vercelRegion,
+      country: countryName(countryCode),
+      countryCode,
+      region: vercelRegion ? formatRegionName(decodeAnalyticsLabel(vercelRegion), countryCode) : undefined,
       city: vercelCity,
       timezone: vercelTimezone,
     };
@@ -210,7 +242,7 @@ export function getVisitorGeo(request: NextRequest): VisitorGeo {
           10
         )?.toUpperCase(),
         region: clean(parsed.subdivision?.name, 120),
-        city: clean(parsed.city, 120),
+        city: parsed.city ? decodeAnalyticsLabel(parsed.city).slice(0, 120) : undefined,
         timezone: clean(parsed.timezone, 80),
       };
     } catch {
@@ -234,7 +266,7 @@ export function getDeploymentHost(
   const host = rawHost.split(",")[0].trim();
 
   try {
-    return new URL(`https://${host}`).hostname.toLowerCase();
+    return canonicalizeDeploymentHost(new URL(`https://${host}`).hostname) || undefined;
   } catch {
     return clean(host, 255)?.toLowerCase();
   }

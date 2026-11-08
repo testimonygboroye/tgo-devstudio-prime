@@ -3,6 +3,7 @@ import { connectToDatabase } from "@/lib/db";
 import { captureAnalyticsSnapshot } from "@/lib/push/analyticsSnapshot";
 import PageView from "@/models/PageView";
 import Visitor from "@/models/Visitor";
+import { canonicalizeDeploymentHost, countryName, decodeAnalyticsLabel, formatRegionName } from "@/lib/analytics/visitor";
 import {
   getAuthenticatedSession,
 } from "@/lib/auth/session";
@@ -111,7 +112,8 @@ export async function GET(request: NextRequest) {
 
   const host = searchParams.get("host") || undefined;
   const provider = searchParams.get("provider") || undefined;
-  const countryCode = searchParams.get("countryCode") || undefined;
+  const countryFilter = searchParams.get("countryCode") || undefined;
+  const countryCode = countryFilter?.match(/\\(([A-Z]{2})\\)$/i)?.[1]?.toUpperCase() || countryFilter;
   const region = searchParams.get("region") || undefined;
   const city = searchParams.get("city") || undefined;
   const deviceType = searchParams.get("deviceType") || undefined;
@@ -123,16 +125,25 @@ export async function GET(request: NextRequest) {
   const sort = searchParams.get("sort") || "recent";
 
   const dateFilter = getDateRange(searchParams);
+  const recordedHosts = await PageView.distinct("host");
 
   const pageViewMatch: Record<string, unknown> = {
     ...dateFilter,
   };
 
-  if (host) pageViewMatch.host = host;
+  if (host) {
+    const matches = recordedHosts.filter((value): value is string => typeof value === "string" && canonicalizeDeploymentHost(value) === host);
+    pageViewMatch.host = { $in: matches.length ? matches : [host] };
+  }
   if (provider) pageViewMatch.deploymentProvider = provider;
   if (countryCode) pageViewMatch.countryCode = countryCode;
-  if (region) pageViewMatch.region = region;
-  if (city) pageViewMatch.city = city;
+  const variants = (value: string) => [...new Set([value, decodeAnalyticsLabel(value), encodeURIComponent(value), value.replace(/ /g, "%20"), value.replace(/ /g, "+")])];
+  if (region) {
+    const code = region.match(/\\(([A-Z0-9-]+)\\)$/i)?.[1];
+    const choices = code ? [region, code, code.includes("-") ? code : countryCode ? `${countryCode}-${code}` : code] : variants(region);
+    pageViewMatch.region = { $in: choices };
+  }
+  if (city) pageViewMatch.city = { $in: variants(city) };
   if (deviceType) pageViewMatch.deviceType = deviceType;
   if (browser) pageViewMatch.browser = browser;
   if (operatingSystem) {
@@ -482,9 +493,9 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     status: "ok",
 
-    views,
+    views: views.map((view) => ({ ...view, path: decodeAnalyticsLabel(view.path), country: view.country || countryName(view.countryCode), region: formatRegionName(view.region, view.countryCode) || view.region, city: view.city ? decodeAnalyticsLabel(view.city) : view.city })),
 
-    visitors: formattedVisitors,
+    visitors: formattedVisitors.map((visitor) => ({ ...visitor, country: visitor.country || countryName(visitor.countryCode), region: formatRegionName(visitor.region, visitor.countryCode) || visitor.region, city: visitor.city ? decodeAnalyticsLabel(visitor.city) : visitor.city, hosts: [...new Set((visitor.hosts || []).map((value) => canonicalizeDeploymentHost(value)).filter(Boolean))] })),
 
     totalCount,
 
@@ -502,19 +513,19 @@ export async function GET(request: NextRequest) {
       peakDay?._id || null,
 
     deploymentHosts:
-      cleanOptions(availableHosts),
+      [...new Set(recordedHosts.filter((value): value is string => typeof value === "string").map((value) => canonicalizeDeploymentHost(value)).filter((value): value is string => Boolean(value)))].sort(),
 
     deploymentProviders:
       cleanOptions(availableProviders),
 
     countries:
-      cleanOptions(availableCountries),
+      cleanOptions(availableCountries).map((code) => `${countryName(code) || code} (${code})`),
 
     regions:
-      cleanOptions(availableRegions),
+      cleanOptions(availableRegions).map((value) => formatRegionName(value, countryCode) || value),
 
     cities:
-      cleanOptions(availableCities),
+      cleanOptions(availableCities).map((value) => decodeAnalyticsLabel(value)),
 
     deviceTypes:
       cleanOptions(availableDevices),

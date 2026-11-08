@@ -241,6 +241,13 @@ export default function AnalyticsClient() {
 
   const [selectedVisitor, setSelectedVisitor] =
     useState<VisitorEntry | null>(null);
+  const [refreshTick, setRefreshTick] = useState(0);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setRefreshTick((value) => value + 1), 30000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
@@ -291,7 +298,6 @@ export default function AnalyticsClient() {
     let cancelled = false;
 
     async function load() {
-      setIsLoading(true);
       setError("");
 
       try {
@@ -316,6 +322,7 @@ export default function AnalyticsClient() {
 
         if (!cancelled) {
           setData(json);
+          setLastUpdatedAt(new Date());
         }
       } catch (loadError) {
         if (!cancelled) {
@@ -337,7 +344,7 @@ export default function AnalyticsClient() {
     return () => {
       cancelled = true;
     };
-  }, [queryString]);
+  }, [queryString, refreshTick]);
 
   function resetFilters() {
     setHost("");
@@ -372,6 +379,9 @@ export default function AnalyticsClient() {
 
   return (
     <div className="space-y-8">
+      <div className="flex justify-end text-xs text-neutral-600" aria-live="polite">
+        {lastUpdatedAt ? `Live data · Updated ${formatDate(lastUpdatedAt.toISOString())} · Refreshes every 30 seconds` : "Loading live analytics…"}
+      </div>
       <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
           label="Total page views"

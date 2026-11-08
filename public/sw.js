@@ -1,4 +1,4 @@
-const SW_VERSION = "tgo-offline-v2";
+const SW_VERSION = "tgo-offline-v3";
 const APP_CACHE = `${SW_VERSION}-app`;
 const PAGE_CACHE = `${SW_VERSION}-public-pages`;
 const ASSET_CACHE = `${SW_VERSION}-public-assets`;
@@ -8,7 +8,7 @@ const PRECACHE_URLS = [OFFLINE_URL, "/manifest.json", "/favicon.png", "/icons/ic
 self.addEventListener("install", (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(APP_CACHE);
-    await cache.addAll([...PRECACHE_URLS, "/logo.png"].map((path) => new Request(path, { cache: "reload" })));
+    await cache.addAll([...PRECACHE_URLS, "/icons/icon-512x512.png"].map((path) => new Request(path, { cache: "reload" })));
     try {
       const home = await fetch("/", { cache: "reload", credentials: "same-origin" });
       const type = home.headers.get("content-type") || "";

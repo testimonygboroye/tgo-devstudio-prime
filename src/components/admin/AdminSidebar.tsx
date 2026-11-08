@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSwipeSidebar } from "@/hooks/useSwipeSidebar";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -86,7 +86,9 @@ export default function AdminSidebar({
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const setMobileOpen = useCallback((open: boolean) => setIsMobileOpen(open), []);
-  useSwipeSidebar(isMobileOpen, setMobileOpen, "left");
+  const drawerRef = useRef<HTMLElement>(null);
+  const backdropRef = useRef<HTMLButtonElement>(null);
+  useSwipeSidebar(isMobileOpen, setMobileOpen, "left", drawerRef, backdropRef, { maxWidth: 304, railWidth: 64 });
   useEffect(() => {
     const toggle = () => setIsMobileOpen((open) => !open);
     window.addEventListener("tgo:toggle-admin-sidebar", toggle);
@@ -137,9 +139,9 @@ export default function AdminSidebar({
 
   return (
     <>
-      {isMobileOpen && <button type="button" aria-label="Close admin navigation" onClick={() => setIsMobileOpen(false)} className="fixed inset-0 z-[60] bg-black/60 md:hidden" />}
-      <aside
-        className={`fixed inset-y-0 left-0 z-[70] flex h-dvh flex-col border-r border-[var(--border-subtle)] bg-[var(--bg-surface)] shadow-2xl transition-transform duration-150 ease-out md:static md:z-auto md:h-full md:shrink-0 md:shadow-none md:transition-[width] ${isMobileOpen ? "translate-x-0 w-[min(19rem,86vw)]" : "-translate-x-full md:translate-x-0"} ${collapsed ? "md:w-20" : "md:w-68"}`}
+      <button ref={backdropRef} type="button" aria-label="Close admin navigation" onClick={() => setIsMobileOpen(false)} className={`fixed inset-0 z-[60] bg-black/60 transition-opacity duration-150 md:hidden ${isMobileOpen ? "opacity-100" : "pointer-events-none opacity-0"}`} />
+      <aside ref={drawerRef}
+        className={`fixed inset-y-0 left-0 z-[70] flex h-dvh flex-col border-r border-[var(--border-subtle)] bg-[var(--bg-surface)] shadow-2xl transition-[width] duration-150 ease-out md:static md:z-auto md:h-full md:shrink-0 md:shadow-none ${isMobileOpen ? "w-[min(19rem,86vw)]" : "w-16"} ${collapsed ? "md:w-20" : "md:w-68"}`}
       >
       <div className="flex flex-shrink-0 items-center justify-between px-5 py-5 border-b border-[var(--border-subtle)]">
         {!collapsed && (
@@ -242,7 +244,7 @@ export default function AdminSidebar({
           className="flex w-full items-center gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm font-medium text-[var(--text-secondary)] hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30 transition-all"
         >
           <LogOut size={18} className="flex-shrink-0 text-red-400" />
-          {!isCollapsed && <span>Log out</span>}
+          {!collapsed && <span>Log out</span>}
         </button>
       </div>
       </aside>

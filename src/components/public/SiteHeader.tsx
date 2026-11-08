@@ -5,7 +5,7 @@ import { useSwipeSidebar } from "@/hooks/useSwipeSidebar";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Menu, X, Home, Layers, Briefcase, Newspaper, DoorOpen, Mail, Info, Workflow, Users, Star, PhoneCall, Boxes, HelpCircle, ChevronDown, MessageCircleQuestion, Settings } from "lucide-react";
+import { Menu, X, Home, Layers, Briefcase, Newspaper, DoorOpen, Mail, Info, Workflow, Users, Star, PhoneCall, Boxes, HelpCircle, ChevronDown, MessageCircleQuestion, Settings, ArrowLeft } from "lucide-react";
 import HelpSearchPopup from "@/components/shared/HelpSearchPopup";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 
@@ -15,7 +15,9 @@ export default function SiteHeader() {
   const prefetchOnIntent = (href: string) => router.prefetch(href);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const setMenuOpen = useCallback((open: boolean) => setIsMenuOpen(open), []);
-  useSwipeSidebar(isMenuOpen, setMenuOpen, "right");
+  const drawerRef = useRef<HTMLElement>(null);
+  const backdropRef = useRef<HTMLDivElement>(null);
+  useSwipeSidebar(isMenuOpen, setMenuOpen, "right", drawerRef, backdropRef);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
 
@@ -126,6 +128,7 @@ export default function SiteHeader() {
           </nav>
 
           <div className="flex items-center gap-2">
+            <button type="button" aria-label="Go back" onClick={() => { if (window.history.length > 1) router.back(); else router.push("/"); }} className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-neutral-300 hover:bg-base-800 sm:hidden"><ArrowLeft size={19} /></button>
             <HelpSearchPopup />
             <button
               onClick={() => setIsMenuOpen(true)}
@@ -138,57 +141,15 @@ export default function SiteHeader() {
         </div>
       </div>
 
-      {isMenuOpen && (
-        <div
-          className="fixed inset-0 z-50 bg-black/60 sm:hidden"
-          onClick={() => setIsMenuOpen(false)}
-        >
-          <nav
-            className="fixed right-0 top-0 flex h-screen w-[min(21rem,86vw)] flex-col border-l border-base-800 bg-base-950 shadow-2xl"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="flex flex-shrink-0 items-center justify-between border-b border-base-800 px-4 py-5">
-              <span className="font-mono text-xs uppercase tracking-widest text-neutral-500">
-                {t("nav.home")}
-              </span>
-              <button
-                onClick={() => setIsMenuOpen(false)}
-                aria-label="Close menu"
-                className="text-neutral-100"
-              >
-                <X size={22} />
-              </button>
-            </div>
-
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 py-3">
-              <div className="flex flex-col divide-y divide-base-800 overflow-hidden rounded-lg border border-base-800">
-                {DRAWER_NAV_LINKS.map((link) => {
-                  const Icon = link.icon;
-                  return (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      prefetch={false}
-                      onPointerEnter={() => prefetchOnIntent(link.href)}
-                      onFocus={() => prefetchOnIntent(link.href)}
-                      onTouchStart={() => prefetchOnIntent(link.href)}
-                      onClick={() => setIsMenuOpen(false)}
-                      className="flex items-center gap-3 bg-base-900 px-4 py-3.5 text-sm text-neutral-100 transition-colors hover:bg-base-800 hover:text-brand-cyan-300"
-                    >
-                      <Icon size={18} className="text-brand-cyan-400" />
-                      {link.label}
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="flex-shrink-0 border-t border-base-800 px-4 py-4 text-center">
-              <p className="text-xs text-neutral-500">© {new Date().getFullYear()} TGO DevStudio</p>
-            </div>
-          </nav>
-        </div>
-      )}
+      <div ref={backdropRef} className={`fixed inset-0 z-[60] bg-black/60 sm:hidden transition-opacity duration-150 ${isMenuOpen ? "opacity-100" : "pointer-events-none opacity-0"}`} onClick={() => setIsMenuOpen(false)} aria-hidden={!isMenuOpen}>
+        <nav ref={drawerRef} aria-label="Main navigation" aria-hidden={!isMenuOpen} className={`fixed right-0 top-0 flex h-dvh w-[min(21rem,86vw)] flex-col border-l border-base-800 bg-base-950 shadow-2xl transition-transform duration-150 ease-out ${isMenuOpen ? "translate-x-0" : "translate-x-full"}`} onClick={(event) => event.stopPropagation()}>
+          <div className="flex flex-shrink-0 items-center justify-between border-b border-base-800 px-4 py-5"><span className="font-mono text-xs uppercase tracking-widest text-neutral-500">{t("nav.home")}</span><button onClick={() => setIsMenuOpen(false)} aria-label="Close menu" className="text-neutral-100"><X size={22} /></button></div>
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 py-3"><div className="flex flex-col divide-y divide-base-800 overflow-hidden rounded-lg border border-base-800">
+            {DRAWER_NAV_LINKS.map((link) => { const Icon=link.icon; return <Link key={link.href} href={link.href} prefetch={false} onPointerEnter={() => prefetchOnIntent(link.href)} onFocus={() => prefetchOnIntent(link.href)} onTouchStart={() => prefetchOnIntent(link.href)} onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 bg-base-900 px-4 py-3.5 text-sm text-neutral-100 transition-colors hover:bg-base-800 hover:text-brand-cyan-300"><Icon size={18} className="text-brand-cyan-400" />{link.label}</Link>; })}
+          </div></div>
+          <div className="flex-shrink-0 border-t border-base-800 px-4 py-4 text-center"><p className="text-xs text-neutral-500">© {new Date().getFullYear()} TGO DevStudio</p></div>
+        </nav>
+      </div>
     </header>
   );
 }

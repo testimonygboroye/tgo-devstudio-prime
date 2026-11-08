@@ -8,7 +8,7 @@ const PRECACHE_URLS = [OFFLINE_URL, "/manifest.json", "/favicon.png", "/logo.png
 self.addEventListener("install", (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(APP_CACHE);
-    await cache.addAll([...PRECACHE_URLS, "/icons/icon-512x512.png"].map((path) => new Request(path, { cache: "reload" })));
+    await Promise.all(PRECACHE_URLS.map(async (path) => { try { const response = await fetch(new Request(path, { cache: "reload" })); if (response.ok) await cache.put(path, response); } catch { /* Optional missing assets must not block offline installation. */ } }));
     try {
       const home = await fetch("/", { cache: "reload", credentials: "same-origin" });
       const type = home.headers.get("content-type") || "";
@@ -78,7 +78,7 @@ async function handleNavigation(request) {
 
 async function handlePublicAsset(request) {
   const cache = await caches.open(ASSET_CACHE);
-  const cached = await cache.match(request);
+  const cached = await cache.match(request) || await caches.match(request);
   const refresh = fetch(request).then(async (response) => {
     if (response && (response.ok || response.type === "opaque")) {
       await cache.put(request, response.clone());

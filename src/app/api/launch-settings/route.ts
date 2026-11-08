@@ -8,10 +8,10 @@ export async function GET() {
   await connectToDatabase();
   const settings = await LaunchSettings.findOne().lean();
   return NextResponse.json({ status: "ok", settings: settings || {
-    enabled: false, launchDate: null, title: "Something exceptional is launching",
+    enabled: false, launchDate: null, title: "Something exceptional is coming",
     description: "A new chapter in intelligent digital experiences is almost here.",
     videoUrl: "", flyerUrl: "", afterLaunchVideoUrl: "", afterLaunchFlyerUrl: "",
-    videoSeconds: 8, flyerSeconds: 8
+    videoSeconds: 0, flyerSeconds: 8, videoDurationHours: 0, videoDurationMinutes: 0, videoDurationSeconds: 0, useVideoDurationOverride: false
   }});
 }
 
@@ -29,8 +29,12 @@ export async function PUT(request: NextRequest) {
     flyerUrl: String(body.flyerUrl || "").trim().slice(0, 1000),
     afterLaunchVideoUrl: String(body.afterLaunchVideoUrl || "").trim().slice(0, 1000),
     afterLaunchFlyerUrl: String(body.afterLaunchFlyerUrl || "").trim().slice(0, 1000),
-    videoSeconds: Math.min(60, Math.max(1, Number(body.videoSeconds) || 8)),
-    flyerSeconds: Math.min(60, Math.max(1, Number(body.flyerSeconds) || 8)),
+    videoSeconds: 0,
+    flyerSeconds: Math.min(3600, Math.max(1, Number(body.flyerSeconds) || 8)),
+    videoDurationHours: Math.min(24, Math.max(0, Number(body.videoDurationHours) || 0)),
+    videoDurationMinutes: Math.min(59, Math.max(0, Number(body.videoDurationMinutes) || 0)),
+    videoDurationSeconds: Math.min(59, Math.max(0, Number(body.videoDurationSeconds) || 0)),
+    useVideoDurationOverride: body.useVideoDurationOverride === true,
   };
   if (update.launchDate && Number.isNaN(update.launchDate.getTime())) return NextResponse.json({ status: "error", message: "Enter a valid launch date and time." }, { status: 400 });
   for (const field of ["videoUrl", "flyerUrl", "afterLaunchVideoUrl", "afterLaunchFlyerUrl"] as const) {

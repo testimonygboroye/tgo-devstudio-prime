@@ -1,4 +1,4 @@
-const SW_VERSION = "tgo-offline-v4";
+const SW_VERSION = "tgo-offline-v5";
 const APP_CACHE = `${SW_VERSION}-app`;
 const PAGE_CACHE = `${SW_VERSION}-public-pages`;
 const ASSET_CACHE = `${SW_VERSION}-public-assets`;
@@ -78,20 +78,17 @@ async function handleNavigation(request) {
 
 async function handlePublicAsset(request) {
   const cache = await caches.open(ASSET_CACHE);
-  const cached = await cache.match(request) || await caches.match(request);
-  const refresh = fetch(request).then(async (response) => {
+  try {
+    // Prefer the current deployed asset while online; use cache only as an offline fallback.
+    const response = await fetch(request, { cache: "no-cache" });
     if (response && (response.ok || response.type === "opaque")) {
       await cache.put(request, response.clone());
       await trimCache(ASSET_CACHE, 100);
     }
     return response;
-  });
-  if (cached) {
-    // Refresh quietly while keeping the cached resource immediately available.
-    void refresh.catch(() => {});
-    return cached;
+  } catch {
+    return (await cache.match(request)) || (await caches.match(request)) || Response.error();
   }
-  try { return await refresh; } catch { return cached || Response.error(); }
 }
 
 self.addEventListener("fetch", (event) => {

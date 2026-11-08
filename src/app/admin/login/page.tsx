@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import PasswordInput from "@/components/shared/PasswordInput";
+import GoogleSignInButton from "@/components/shared/GoogleSignInButton";
 
 type LoginStep = "credentials" | "twoFactor";
 

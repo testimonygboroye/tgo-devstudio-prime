@@ -18,7 +18,7 @@ export default function ShareCurrentPage() {
 
  async function copyLink(){const currentUrl=url||window.location.href;try{await navigator.clipboard.writeText(currentUrl);}catch{const input=document.createElement("textarea");input.value=currentUrl;input.style.position="fixed";input.style.opacity="0";document.body.appendChild(input);input.select();const ok=document.execCommand("copy");input.remove();if(!ok){setError("Unable to copy the link. Please copy it manually.");return;}}setCopied(true);window.setTimeout(()=>setCopied(false),2000);}
  async function shareLink(){const currentUrl=url||window.location.href;if(navigator.share){try{await navigator.share({title,text:title,url:currentUrl});return;}catch(e){if(e instanceof Error&&e.name==="AbortError")return;}}await copyLink();}
- async async function shareQrImage() {
+ async function shareQrImage() {
   if (!qrData) return;
   const currentUrl = url || window.location.href;
   if (!navigator.share) {

@@ -32,7 +32,7 @@ export async function POST(request:NextRequest) {
     if(await User.findOne({email:google.email})) return NextResponse.json({status:"error",message:"An account with this email already exists."},{status:409});
     const passwordHash=await hashPassword(randomBytes(48).toString("base64url"));
     const user=await User.create({name:(name||google.name||google.email.split("@")[0]).trim(),email:google.email,passwordHash,googleSub:google.sub,role:invite.role});
-    const consumed=await Invite.updateOne({_id:invite._id,usedAt:{$exists:false},approvalStatus:"approved",expiresAt:{$gt:new Date()}},{$set:{usedAt:new Date()}});
+    const consumed=await Invite.updateOne({_id:invite._id,usedAt:null,approvalStatus:"approved",expiresAt:{$gt:new Date()}},{$set:{usedAt:new Date()}});
     if(consumed.modifiedCount!==1){await User.deleteOne({_id:user._id});return NextResponse.json({status:"error",message:"This invitation has already been used or expired."},{status:409});}
     const access=signAccessToken({userId:user._id.toString(),roleId:user.role.toString(),tokenVersion:user.refreshTokenVersion});
     const refresh=signRefreshToken({userId:user._id.toString(),tokenVersion:user.refreshTokenVersion});

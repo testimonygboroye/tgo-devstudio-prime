@@ -127,6 +127,10 @@ export async function GET(request: NextRequest) {
 
   const dateFilter = getDateRange(searchParams);
   const recordedHosts = await PageView.distinct("host");
+  const regionPairs = await PageView.aggregate([
+    { $match: { region: { $exists: true, $nin: [null, ""] } } },
+    { $group: { _id: { region: "$region", countryCode: "$countryCode" } } },
+  ]);
 
   const pageViewMatch: Record<string, unknown> = {
     ...dateFilter,
@@ -142,7 +146,8 @@ export async function GET(request: NextRequest) {
   if (region) {
     const regionSuffixStart = region.lastIndexOf("(");
     const code = regionSuffixStart >= 0 && region.endsWith(")") ? region.slice(regionSuffixStart + 1, -1).toUpperCase() : undefined;
-    const choices = code ? [region, code, code.includes("-") ? code : countryCode ? `${countryCode}-${code}` : code] : variants(region);
+    const legacyRegionValues = code ? regionPairs.filter((row) => (formatRegionName(String(row._id.region), row._id.countryCode ? String(row._id.countryCode) : undefined) || decodeAnalyticsLabel(String(row._id.region))) === region).map((row) => String(row._id.region)) : [];
+    const choices = code ? [...new Set([region, code, code.includes("-") ? code : countryCode ? `${countryCode}-${code}` : code, ...legacyRegionValues])] : variants(region);
     pageViewMatch.region = { $in: choices };
   }
   if (city) pageViewMatch.city = { $in: variants(city) };
@@ -320,11 +325,6 @@ export async function GET(request: NextRequest) {
     PageView.distinct("deviceType"),
     PageView.distinct("browser"),
     PageView.distinct("operatingSystem"),
-  ]);
-
-  const regionPairs = await PageView.aggregate([
-    { $match: { region: { $exists: true, $nin: [null, ""] } } },
-    { $group: { _id: { region: "$region", countryCode: "$countryCode" } } },
   ]);
 
   const visitors = await Visitor.find(visitorQuery)

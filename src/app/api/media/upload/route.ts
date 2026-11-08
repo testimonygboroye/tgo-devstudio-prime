@@ -3,8 +3,8 @@ import { getAuthenticatedSession } from "@/lib/auth/session";
 import { unauthorizedResponse, forbiddenResponse, requireAnyContentPermission } from "@/lib/auth/authorize";
 import cloudinary from "@/lib/cloudinary";
 
-const MAX_FILE_SIZE_BYTES = 8 * 1024 * 1024;
-const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024;
+const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/avif", "video/mp4", "video/webm", "video/quicktime"];
 
 const ALLOWED_FOLDERS = [
   "case-studies",
@@ -13,6 +13,7 @@ const ALLOWED_FOLDERS = [
   "blog",
   "services",
   "job-applications",
+  "launch",
 ] as const;
 
 export async function POST(request: NextRequest) {
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
     if (!session) {
       return unauthorizedResponse();
     }
-    const permissionType = folder === "services" ? "services" : folder === "team" ? "team" : folder === "blog" ? "blog" : folder === "about" ? "about" : "caseStudies";
+    const permissionType = folder === "services" ? "services" : folder === "team" ? "team" : folder === "blog" ? "blog" : folder === "about" ? "about" : folder === "launch" ? "homeSettings" : "caseStudies";
     if (!requireAnyContentPermission(session, permissionType)) {
       return forbiddenResponse("You do not have permission to upload media.");
     }
@@ -44,14 +45,14 @@ export async function POST(request: NextRequest) {
 
   if (!ALLOWED_MIME_TYPES.includes(file.type)) {
     return NextResponse.json(
-      { status: "error", message: "Only JPEG, PNG, and WebP images are allowed." },
+      { status: "error", message: "Use JPEG, PNG, WebP, AVIF, MP4, WebM, or MOV files." },
       { status: 400 }
     );
   }
 
   if (file.size > MAX_FILE_SIZE_BYTES) {
     return NextResponse.json(
-      { status: "error", message: "File is too large. Maximum size is 8MB." },
+      { status: "error", message: "File is too large. Maximum size is 50MB." },
       { status: 400 }
     );
   }
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
   const uploadResult = await new Promise<{ secure_url: string; public_id: string }>(
     (resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
-        { folder: `tgo-devstudio-prime/${folder}` },
+        { folder: `tgo-devstudio-prime/${folder}`, resource_type: file.type.startsWith("video/") ? "video" : "image" },
         (error, result) => {
           if (error || !result) {
             reject(error);

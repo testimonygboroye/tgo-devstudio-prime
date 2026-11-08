@@ -8,7 +8,7 @@ export async function GET() {
   await connectToDatabase();
   const settings = await LaunchSettings.findOne().lean();
   return NextResponse.json({ status: "ok", settings: settings || {
-    enabled: false, launchDate: null, title: "Something exceptional is coming",
+    enabled: false, countdownEnabled: true, countdownVisible: true, launchDate: null, title: "Something exceptional is coming",
     description: "A new chapter in intelligent digital experiences is almost here.",
     videoUrl: "", flyerUrl: "", afterLaunchVideoUrl: "", afterLaunchFlyerUrl: "",
     videoSeconds: 0, flyerSeconds: 8, videoDurationHours: 0, videoDurationMinutes: 0, videoDurationSeconds: 0, useVideoDurationOverride: false
@@ -22,6 +22,8 @@ export async function PUT(request: NextRequest) {
   const body = await request.json();
   const update = {
     enabled: body.enabled === true,
+    countdownEnabled: body.countdownEnabled !== false,
+    countdownVisible: body.countdownVisible !== false,
     launchDate: body.launchDate ? new Date(body.launchDate) : null,
     title: String(body.title || "").trim().slice(0, 140),
     description: String(body.description || "").trim().slice(0, 400),

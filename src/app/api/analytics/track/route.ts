@@ -176,6 +176,7 @@ export async function POST(request: NextRequest) {
 
     const previousPageViews = existingVisitor?.totalPageViews || 0;
     const previousSessions = existingVisitor?.totalSessions || 0;
+    const existingSession = Boolean(await PageView.exists({ sessionId }));
     let inserted = false;
     try {
       const result = await PageView.updateOne(
@@ -197,7 +198,7 @@ export async function POST(request: NextRequest) {
     }
     if (inserted) {
       const totalPageViews = previousPageViews + 1;
-      const totalSessions = previousSessions + (sessionCookie ? 0 : (previousSessions === 0 ? 1 : 0));
+      const totalSessions = previousSessions + (existingSession ? 0 : 1);
       const status = determineStatus({
         isNewVisitor: !existingVisitor, totalPageViews, totalSessions,
         lastSeen: existingVisitor?.lastSeen, firstSeen: existingVisitor?.firstSeen,
@@ -220,7 +221,7 @@ export async function POST(request: NextRequest) {
             city: geo.city, deploymentHost, deploymentProvider,
             utmSource, utmMedium, utmCampaign, utmTerm, utmContent, status,
           },
-          $inc: { totalPageViews: 1, ...(sessionCookie ? {} : { totalSessions: 1 }) },
+          $inc: { totalPageViews: 1, ...(!existingSession ? { totalSessions: 1 } : {}) },
         },
         { upsert: true, setDefaultsOnInsert: true },
       );

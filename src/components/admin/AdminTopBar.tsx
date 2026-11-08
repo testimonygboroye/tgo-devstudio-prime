@@ -2,7 +2,8 @@
 
 import { usePathname } from "next/navigation";
 import HelpSearchPopup from "@/components/shared/HelpSearchPopup";
-import { Menu } from "lucide-react";
+import { Menu, ArrowLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 const SECTION_LABELS: Record<string, string> = {
   dashboard: "Dashboard",
@@ -44,6 +45,7 @@ const SETTINGS_SUBPAGE_LABELS: Record<string, string> = {
 
 export default function AdminTopBar() {
   const pathname = usePathname();
+  const router = useRouter();
   const segments = pathname.split("/").filter(Boolean);
 
   // Supports both /admin/... and a configured custom admin base path.
@@ -93,6 +95,9 @@ export default function AdminTopBar() {
       </div>
 
       <div className="flex items-center gap-3">
+        <button type="button" aria-label="Go back" onClick={() => { if (window.history.length > 1) router.back(); else router.push("/"); }} className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]">
+          <ArrowLeft size={20} />
+        </button>
         <button type="button" onClick={() => window.dispatchEvent(new Event("tgo:toggle-admin-sidebar"))} aria-label="Open admin navigation" className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] md:hidden">
           <Menu size={21} />
         </button>

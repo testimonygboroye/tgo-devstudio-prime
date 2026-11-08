@@ -131,22 +131,24 @@ export default function HomeSettingsClient() {
     setError("");
     setSavedMessage("");
 
-    const res = await fetch("/api/home-settings", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-    const data = await res.json();
-
-    if (data.status !== "ok") {
-      setError(data.message || "Failed to save.");
+    try {
+      const res = await fetch("/api/home-settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        cache: "no-store",
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (!res.ok || data.status !== "ok") throw new Error(data.message || "Failed to save homepage settings.");
+      setForm((prev) => ({ ...prev, ...data.settings }));
+      setIsDefault(false);
+      setSavedMessage("Homepage settings saved successfully.");
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Could not save homepage settings. Please try again.");
+    } finally {
       setIsSaving(false);
-      return;
     }
-
-    setIsDefault(false);
-    setSavedMessage("Saved successfully.");
-    setIsSaving(false);
   }
 
   if (isLoading) {
@@ -199,7 +201,13 @@ export default function HomeSettingsClient() {
                         <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" disabled={uploadingHero} onChange={async (event) => {
                           const file = event.target.files?.[0]; if (!file) return;
                           setError(""); setSavedMessage(""); setUploadingHero(true);
-                          try { const uploaded = await uploadMediaDirect(file, "homepage-media"); updateField("heroBackgroundImage", uploaded.url); setSavedMessage("Hero background image uploaded. Save Homepage Settings to publish it."); }
+                          try {
+                            if (!file.type.startsWith("image/")) throw new Error("Choose a valid image file.");
+                            if (file.size > 10 * 1024 * 1024) throw new Error("Hero images must be 10 MB or smaller.");
+                            const uploaded = await uploadMediaDirect(file, "homepage-media");
+                            setForm((prev) => ({ ...prev, heroBackgroundImage: uploaded.url }));
+                            setSavedMessage("Hero image uploaded successfully. Now save Homepage Settings to publish it.");
+                          }
                           catch (uploadError) { setError(uploadError instanceof Error ? uploadError.message : "Background image upload failed."); }
                           finally { setUploadingHero(false); event.target.value = ""; }
                         }} className="block w-full text-xs text-neutral-400 file:mr-3 file:rounded-lg file:border-0 file:bg-base-800 file:px-3 file:py-2 file:text-neutral-100" />

@@ -18,7 +18,7 @@ export async function GET() {
 export async function PUT(request: NextRequest) {
   const session = await getAuthenticatedSession(request);
   if (!session) return unauthorizedResponse();
-  if (!requireContentPermission(session, "homeSettings", "edit")) return forbiddenResponse("You do not have permission to manage launch settings.");
+  if (!requireContentPermission(session, "homeSettings", "edit")) return forbiddenResponse("You do not have permission to manage homepage media.");
   const body = await request.json();
   const update = {
     enabled: body.enabled === true,

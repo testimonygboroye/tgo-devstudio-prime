@@ -3,6 +3,7 @@ import type { Model } from "mongoose";
 
 export interface IHomeSettings extends Document {
   heroHeadline: string;
+  heroBackgroundImage?: string;
   heroSubheadline: string;
   primaryCtaLabel: string;
   primaryCtaHref: string;
@@ -41,6 +42,7 @@ export interface IHomeSettings extends Document {
 const HomeSettingsSchema = new Schema<IHomeSettings>(
   {
     heroHeadline: { type: String, required: true, trim: true, maxlength: 150 },
+    heroBackgroundImage: { type: String, default: "", maxlength: 1000 },
     heroSubheadline: { type: String, required: true, trim: true, maxlength: 300 },
     primaryCtaLabel: { type: String, required: true, trim: true, maxlength: 50 },
     primaryCtaHref: { type: String, required: true, trim: true },

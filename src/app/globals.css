@@ -557,3 +557,11 @@ body {
   background-color: rgba(91, 46, 232, 0.35);
   color: #FFFFFF;
 }
+
+
+/* Fast interaction mode: remove scroll-triggered delays and expensive effects. */
+html { scroll-behavior: auto !important; }
+*, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.08s !important; scroll-behavior: auto !important; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+.surface-card, .surface-card-inner, .ambient-glow, .btn-premium-secondary { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+.surface-card:hover, .btn-premium-primary:hover, .btn-premium-secondary:hover, .btn-premium-outline:hover, .values-grid li:hover { transform: none !important; }

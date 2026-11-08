@@ -36,7 +36,7 @@ export interface VisitorGeo {
 }
 
 export function decodeAnalyticsLabel(value: string): string {
-  const normalized = value.replace(/\\+/g, " ");
+  const normalized = value.split("+").join(" ");
   try { return decodeURIComponent(normalized).trim(); } catch { return normalized.trim(); }
 }
 
@@ -59,7 +59,7 @@ export function formatRegionName(value?: string, countryCode?: string): string |
 }
 
 export function canonicalizeDeploymentHost(value?: string): string | undefined {
-  const host = value?.trim().toLowerCase().replace(/^https?:\\/\\//, "").split("/")[0];
+  const host = value?.trim().toLowerCase().replace("https://", "").replace("http://", "").split("/")[0];
   if (!host) return undefined;
   if (host === "tgo-devstudio-prime.vercel.app" || host.endsWith(".vercel.app")) return "tgo-devstudio-prime.vercel.app";
   if (host === "tgo-devstudio-prime.onrender.com" || host.endsWith(".onrender.com")) return "tgo-devstudio-prime.onrender.com";

@@ -113,7 +113,8 @@ export async function GET(request: NextRequest) {
   const host = searchParams.get("host") || undefined;
   const provider = searchParams.get("provider") || undefined;
   const countryFilter = searchParams.get("countryCode") || undefined;
-  const countryCode = countryFilter?.match(/\\(([A-Z]{2})\\)$/i)?.[1]?.toUpperCase() || countryFilter;
+  const countrySuffixStart = countryFilter?.lastIndexOf("(") ?? -1;
+  const countryCode = countryFilter && countrySuffixStart >= 0 && countryFilter.endsWith(")") ? countryFilter.slice(countrySuffixStart + 1, -1).toUpperCase() : countryFilter;
   const region = searchParams.get("region") || undefined;
   const city = searchParams.get("city") || undefined;
   const deviceType = searchParams.get("deviceType") || undefined;
@@ -139,7 +140,8 @@ export async function GET(request: NextRequest) {
   if (countryCode) pageViewMatch.countryCode = countryCode;
   const variants = (value: string) => [...new Set([value, decodeAnalyticsLabel(value), encodeURIComponent(value), value.replace(/ /g, "%20"), value.replace(/ /g, "+")])];
   if (region) {
-    const code = region.match(/\\(([A-Z0-9-]+)\\)$/i)?.[1];
+    const regionSuffixStart = region.lastIndexOf("(");
+    const code = regionSuffixStart >= 0 && region.endsWith(")") ? region.slice(regionSuffixStart + 1, -1).toUpperCase() : undefined;
     const choices = code ? [region, code, code.includes("-") ? code : countryCode ? `${countryCode}-${code}` : code] : variants(region);
     pageViewMatch.region = { $in: choices };
   }

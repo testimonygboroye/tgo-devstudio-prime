@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090b16">
+<meta name="robots" content="noindex,nofollow">
+<title>You're offline | TGO DevStudio Prime</title>
+<style>
+:root{color-scheme:dark;--bg:#090b16;--panel:#111629;--line:#27314a;--muted:#a7b1c8;--white:#f5f7ff;--violet:#8257f4;--cyan:#28c8ed}
+*{box-sizing:border-box}html{min-height:100%;background:var(--bg)}body{margin:0;min-height:100vh;min-height:100svh;display:grid;place-items:center;padding:28px 18px;color:var(--white);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;background:radial-gradient(ellipse at 15% 10%,rgba(105,55,235,.22),transparent 42%),radial-gradient(ellipse at 90% 85%,rgba(26,178,219,.14),transparent 40%),var(--bg)}
+main{width:min(100%,650px);padding:clamp(25px,6vw,48px);border:1px solid rgba(139,157,198,.2);border-radius:28px;background:linear-gradient(145deg,rgba(19,25,45,.97),rgba(12,17,31,.98));box-shadow:0 28px 90px rgba(0,0,0,.4),0 0 60px rgba(91,46,232,.08)}
+.brand{display:flex;align-items:center;gap:13px;margin-bottom:42px}.mark{width:45px;height:45px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,var(--violet),var(--cyan));color:#07101c;font-weight:900;font-size:21px;box-shadow:0 8px 24px rgba(91,46,232,.25)}.brand strong{font-size:15px;letter-spacing:.02em}.brand small{display:block;margin-top:3px;color:var(--muted);font-size:11px;letter-spacing:.18em;text-transform:uppercase}
+.visual{height:112px;display:flex;align-items:center;justify-content:center;margin:0 0 28px;position:relative}.orbit{width:94px;height:94px;border:1px solid rgba(46,197,240,.28);border-radius:50%;display:grid;place-items:center;box-shadow:0 0 45px rgba(46,197,240,.08),inset 0 0 35px rgba(91,46,232,.12);position:relative}.orbit:before,.orbit:after{content:"";position:absolute;border:1px solid rgba(130,87,244,.35);border-radius:50%;inset:-13px}.orbit:after{inset:-27px;border-color:rgba(46,197,240,.13)}.signal{width:34px;height:34px;border:3px solid var(--cyan);border-left-color:transparent;border-radius:50%;transform:rotate(-35deg);position:relative}.signal:after{content:"";position:absolute;width:7px;height:7px;background:var(--violet);border-radius:50%;right:-5px;top:0;box-shadow:0 0 15px var(--violet)}
+.eyebrow{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--cyan);font-weight:800}h1{font-size:clamp(31px,7vw,48px);line-height:1.08;letter-spacing:-.045em;margin:12px 0 16px}p{font-size:16px;line-height:1.75;color:var(--muted);margin:0}.requested{margin-top:15px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;color:#c8d2e8;font-size:12px;overflow-wrap:anywhere;display:none}
+.actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}.button{min-height:49px;padding:0 20px;border-radius:13px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font:700 14px inherit;border:1px solid var(--line);cursor:pointer}.primary{color:#07101b;background:linear-gradient(110deg,var(--violet),var(--cyan));border:0}.secondary{color:var(--white);background:#171e32}.hint{font-size:12px;margin-top:25px;color:#78849f}.saved{margin-top:26px;border-top:1px solid var(--line);padding-top:21px;display:none}.saved h2{font-size:13px;margin:0 0 12px}.saved ul{padding:0;margin:0;list-style:none;display:grid;gap:8px}.saved a{color:#b9eaff;text-decoration:none;text-transform:capitalize}.footer{margin-top:32px;padding-top:18px;border-top:1px solid rgba(139,157,198,.12);font-size:11px;color:#71809d}
+@media(max-width:420px){main{border-radius:22px}.brand{margin-bottom:30px}.actions{display:grid}.button{width:100%}}
+</style>
+</head>
+<body>
+<main>
+ <div class="brand"><div class="mark">T</div><div><strong>TGO DevStudio Prime</strong><small>Engineering beyond limits</small></div></div>
+ <div class="visual" aria-hidden="true"><div class="orbit"><div class="signal"></div></div></div>
+ <div class="eyebrow">Network connection unavailable</div>
+ <h1>You're offline right now.</h1>
+ <p>We can't reach TGO DevStudio at the moment. Check your internet connection and try again. You can still revisit public pages saved on this device.</p>
+ <div class="requested" id="requested"></div>
+ <div class="actions"><button class="button primary" id="retry" type="button">Try again <span aria-hidden="true">&nbsp;↗</span></button><a class="button secondary" href="/">Back to homepage</a></div>
+ <section class="saved" id="saved"><h2>Pages available on this device</h2><ul id="saved-list"></ul></section>
+ <p class="hint">Your current browsing session is safe. Private account and administrator areas are never stored for offline use.</p>
+ <div class="footer">TGO DEVSTUDIO PRIME · BUILT TO KEEP YOU MOVING</div>
+</main>
+<script>
+(function(){
+ const params=new URLSearchParams(location.search),target=params.get("requested")||"/";
+ const requested=document.getElementById("requested");
+ if(target&&target!=="/"){requested.textContent="Page requested: "+target;requested.style.display="block";}
+ document.getElementById("retry").addEventListener("click",function(){location.replace(target.startsWith("/")&&!target.startsWith("//")?target:"/");});
+ const list=document.getElementById("saved-list"),section=document.getElementById("saved");
+ if("caches" in window)caches.open("tgo-offline-v1-public-pages").then(cache=>cache.keys()).then(keys=>{
+  const paths=keys.map(req=>new URL(req.url)).filter(url=>url.origin===location.origin&&!/^\/(admin|api|auth|login|register|account|member|portal|dashboard)(\/|$)/i.test(url.pathname));
+  const unique=[...new Map(paths.map(url=>[url.pathname,url])).values()].slice(0,12);
+  unique.forEach(url=>{const li=document.createElement("li"),a=document.createElement("a");a.href=url.pathname+url.search;a.textContent=url.pathname==="/"?"Home":url.pathname.split("/").filter(Boolean).pop().replace(/[-_]/g," ");li.appendChild(a);list.appendChild(li);});
+  if(unique.length)section.style.display="block";
+ }).catch(()=>{});
+})();
+</script>
+</body>
+</html>

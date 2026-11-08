@@ -590,3 +590,45 @@ body { background-attachment: scroll !important; }
 .btn-premium-secondary,
 .btn-premium-outline { transition-duration: 80ms !important; }
 .grain-overlay::after { display: none !important; }
+
+/* TGO connection feedback — bottom anchored, safe-area aware and non-blocking. */
+.tgo-network-toast {
+  position: fixed;
+  z-index: 9999;
+  left: 16px;
+  right: 16px;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  width: min(560px, calc(100% - 32px));
+  margin-inline: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 14px;
+  border: 1px solid rgba(148, 163, 184, .22);
+  border-radius: 17px;
+  color: #f7f8ff;
+  background: rgba(15, 20, 35, .97);
+  box-shadow: 0 14px 45px rgba(0, 0, 0, .34);
+  font-family: var(--font-body), sans-serif;
+  animation: tgo-toast-in 160ms ease-out both;
+}
+.tgo-network-toast.is-offline { border-color: rgba(251, 191, 36, .34); }
+.tgo-network-toast.is-restored { border-color: rgba(52, 211, 153, .38); background: rgba(9, 36, 34, .97); }
+.tgo-network-icon {
+  flex: 0 0 36px; width: 36px; height: 36px; display: grid; place-items: center;
+  border-radius: 12px; font-size: 20px; font-weight: 800;
+  color: #fbbf24; background: rgba(251, 191, 36, .13);
+}
+.is-restored .tgo-network-icon { color: #6ee7b7; background: rgba(52, 211, 153, .13); }
+.tgo-network-copy { min-width: 0; flex: 1; display: grid; gap: 3px; }
+.tgo-network-copy strong { font-size: 13px; line-height: 1.25; }
+.tgo-network-copy span { color: #b9c3d7; font-size: 11px; line-height: 1.4; }
+.tgo-network-retry,.tgo-network-close {
+  border: 0; cursor: pointer; color: #d8eaff; background: transparent; font: inherit;
+}
+.tgo-network-retry { padding: 8px 9px; border-radius: 9px; font-size: 12px; font-weight: 700; }
+.tgo-network-retry:disabled { opacity: .45; }
+.tgo-network-close { align-self: flex-start; padding: 0 2px; font-size: 21px; line-height: 1; color: #94a3b8; }
+@keyframes tgo-toast-in { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .tgo-network-toast { animation: none; } }
+@media (max-width: 380px) { .tgo-network-toast { left: 10px; right: 10px; width: calc(100% - 20px); gap: 8px; padding: 11px; } .tgo-network-copy span { font-size: 10px; } }

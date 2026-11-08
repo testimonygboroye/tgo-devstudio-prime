@@ -7,6 +7,7 @@ const FIELD_GROUPS = [
     title: "Hero Section",
     fields: [
       { key: "heroHeadline", label: "Headline", type: "input" },
+      { key: "heroBackgroundImage", label: "Hero Background Image URL (optional; use a subtle, wide image)", type: "input" },
       { key: "heroSubheadline", label: "Subheadline", type: "textarea" },
       { key: "primaryCtaLabel", label: "Primary Button Text", type: "input" },
       { key: "primaryCtaHref", label: "Primary Button Link", type: "input" },

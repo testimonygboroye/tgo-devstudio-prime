@@ -62,14 +62,14 @@ export function formatRegionName(value?: string, countryCode?: string): string |
   if (regions) {
     const name = regions[code];
     if (name) return `${name} (${code})`;
-    const reverse = Object.entries(regions).find(([, label]) => label.toLowerCase() === raw.replace(/\\s+state$/i, "").toLowerCase());
+    const reverse = Object.entries(regions).find(([, label]) => label.toLowerCase() === raw.replace(/\s+state$/i, "").toLowerCase());
     return reverse ? `${reverse[1]} (${reverse[0]})` : raw;
   }
   // Some older records have a subdivision code but no country code.
   // Resolve it only when the code/name is unambiguous across our supported regions.
   const candidates = Object.entries(SUBDIVISIONS).flatMap(([countryKey, entries]) =>
     Object.entries(entries).filter(([key, label]) =>
-      key === code || label.toLowerCase() === raw.replace(/\\s+state$/i, "").toLowerCase()
+      key === code || label.toLowerCase() === raw.replace(/\s+state$/i, "").toLowerCase()
     ).map(([key, label]) => ({ countryKey, key, label }))
   );
   const unique = [...new Map(candidates.map((item) => [item.label, item])).values()];

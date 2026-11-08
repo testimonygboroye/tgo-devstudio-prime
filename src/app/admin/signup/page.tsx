@@ -49,7 +49,7 @@ function SignupForm() {
     validate();
   }, [token]);
 
-  const handleGoogleResult = (data: any) => { setSuccess(true); window.setTimeout(()=>{ window.location.href=loginPath.replace(/\\/login$/, "/dashboard"); },700); };\n  const handleGoogleError = (message: string) => setError(message);\n\n  async function handleSubmit(event: React.FormEvent) {
+  const handleGoogleResult = (data: any) => { setSuccess(true); window.setTimeout(()=>{ window.location.href = loginPath.replace(/\/login$/, "/dashboard"); },700); };\n  const handleGoogleError = (message: string) => setError(message);\n\n  async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError("");
 
@@ -139,6 +139,7 @@ function SignupForm() {
                 {isSubmitting ? "Creating account..." : "Create Account"}
               </button>
             </form>
+            </>
           )}
 
           {success && (

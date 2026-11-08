@@ -31,7 +31,7 @@ export default function ShareCurrentPage() {
     const base64 = qrData.slice(qrData.indexOf(",") + 1);
     const bytes = Uint8Array.from(atob(base64), (character) => character.charCodeAt(0));
     const qrFile = new File([bytes], "tgo-page-qr.png", { type: "image/png" });
-    const shareText = `Scan this QR code to open ${title}.`;
+    const shareText = `Scan this QR code to open ${title}: ${currentUrl}`;
     const files = [qrFile];
 
     if (navigator.canShare?.({ files })) {

@@ -105,7 +105,7 @@ function LoginForm() {
       </h1>
 
       {step === "credentials" && (
-        <form onSubmit={handleCredentialsSubmit} className="mt-8 space-y-4">
+        <>\n        <div className="mt-6 flex justify-center"><GoogleSignInButton endpoint="/api/auth/google-login" onResult={(data) => { if (data.status === "2fa_required") { setTempToken(data.tempToken); setStep("twoFactor"); } else { goToDestination(); } }} onError={setError} /></div>\n        <div className="my-5 flex items-center gap-3 text-xs text-neutral-500"><span className="h-px flex-1 bg-base-800"/><span>OR CONTINUE WITH EMAIL</span><span className="h-px flex-1 bg-base-800"/></div>\n        <form onSubmit={handleCredentialsSubmit} className="mt-8 space-y-4">
           <div>
             <label htmlFor="email" className="block text-sm text-neutral-400">
               Email

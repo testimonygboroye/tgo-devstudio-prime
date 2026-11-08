@@ -636,3 +636,30 @@ body { background-attachment: scroll !important; }
 
 /* Drawer gestures capture horizontal drags while preserving vertical scrolling. */
 html, body { overscroll-behavior-x: none; touch-action: pan-y; }
+
+/* Mobile rendering stability: avoid fixed GPU backgrounds and large backdrop blurs. */
+@media (max-width: 767px) {
+  [data-theme="dark"] body,
+  [data-theme="light"] body {
+    background-attachment: scroll;
+  }
+  .surface-card-inner,
+  .surface-card {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .ambient-glow::before {
+    filter: blur(42px);
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

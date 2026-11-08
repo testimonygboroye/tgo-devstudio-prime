@@ -36,7 +36,6 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  X,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -89,11 +88,6 @@ export default function AdminSidebar({
   const drawerRef = useRef<HTMLElement>(null);
   const backdropRef = useRef<HTMLButtonElement>(null);
   useSwipeSidebar(isMobileOpen, setMobileOpen, "left", drawerRef, backdropRef, { maxWidth: 304, railWidth: 64 });
-  useEffect(() => {
-    const toggle = () => setIsMobileOpen((open) => !open);
-    window.addEventListener("tgo:toggle-admin-sidebar", toggle);
-    return () => window.removeEventListener("tgo:toggle-admin-sidebar", toggle);
-  }, []);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const pathname = usePathname();
   const router = useRouter();
@@ -156,11 +150,14 @@ export default function AdminSidebar({
         )}
 
         <button
-          onClick={() => { if (isMobileOpen) setIsMobileOpen(false); else setIsCollapsed((prev) => !prev); }}
+          onClick={() => {
+            if (window.matchMedia("(max-width: 767px)").matches) setIsMobileOpen((open) => !open);
+            else setIsCollapsed((prev) => !prev);
+          }}
           aria-label={isMobileOpen ? "Close sidebar" : isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           className="rounded-lg p-1.5 text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors ml-auto"
         >
-          <span className="md:hidden">{isMobileOpen ? <X size={18} /> : <ChevronRight size={18} />}</span><span className="hidden md:inline">{isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}</span>
+          {isMobileOpen ? <ChevronLeft size={19} /> : isCollapsed ? <ChevronRight size={19} /> : <ChevronLeft size={19} />}
         </button>
       </div>
 

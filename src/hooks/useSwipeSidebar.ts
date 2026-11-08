@@ -1,50 +1,120 @@
 "use client";
 import { useEffect } from "react";
+
 type Ref = { current: HTMLElement | null };
-export function useSwipeSidebar(isOpen: boolean, setIsOpen: (open: boolean) => void, edge: "left" | "right", drawerRef: Ref, backdropRef: Ref, options: { maxWidth?: number; railWidth?: number } = {}) {
+
+export function useSwipeSidebar(
+  isOpen: boolean,
+  setIsOpen: (open: boolean) => void,
+  edge: "left" | "right",
+  drawerRef: Ref,
+  backdropRef: Ref,
+  options: { maxWidth?: number; railWidth?: number } = {},
+) {
   useEffect(() => {
-    let pointerId: number | null = null, startX = 0, startY = 0, startExtent = 0, maxWidth = options.maxWidth ?? 336, railWidth = options.railWidth ?? 0, horizontal = false, lastX = 0, lastTime = 0, velocity = 0;
-    const sign = edge === "left" ? 1 : -1;
+    let pointerId: number | null = null;
+    let startX = 0;
+    let startY = 0;
+    let startExtent = 0;
+    let maxWidth = 0;
+    let railWidth = 0;
+    let horizontal = false;
+    let lastX = 0;
+    let lastTime = 0;
+    let velocity = 0;
+    const direction = edge === "left" ? 1 : -1;
+
     const paint = (extent: number) => {
-      const bounded = Math.max(0, Math.min(maxWidth - railWidth, extent));
-      const width = railWidth + bounded;
-      const drawer = drawerRef.current, backdrop = backdropRef.current;
-      if (drawer) { drawer.style.transition = "none"; drawer.style.width = width + "px"; drawer.style.transform = edge === "right" ? `translate3d(${maxWidth - width}px,0,0)` : "translate3d(0,0,0)"; }
-      if (backdrop) { backdrop.style.transition = "none"; backdrop.style.opacity = String(bounded / Math.max(1, maxWidth - railWidth)); }
+      const available = Math.max(1, maxWidth - railWidth);
+      const visible = Math.max(0, Math.min(available, extent));
+      const width = railWidth + visible;
+      const drawer = drawerRef.current;
+      const backdrop = backdropRef.current;
+      if (drawer) {
+        drawer.style.transition = "none";
+        drawer.style.width = width + "px";
+        drawer.style.transform = edge === "right" ? `translate3d(${maxWidth - width}px,0,0)` : "translate3d(0,0,0)";
+      }
+      if (backdrop) {
+        backdrop.style.transition = "none";
+        backdrop.style.opacity = String(visible / available);
+      }
     };
-    const clear = () => requestAnimationFrame(() => {
-      if (drawerRef.current) { drawerRef.current.style.transition = ""; drawerRef.current.style.width = ""; drawerRef.current.style.transform = ""; }
-      if (backdropRef.current) { backdropRef.current.style.transition = ""; backdropRef.current.style.opacity = ""; }
-    });
-    const down = (e: PointerEvent) => {
-      if (!e.isPrimary || (e.pointerType === "mouse" && e.button !== 0)) return;
+
+    const clearInlineStyles = () => {
+      const drawer = drawerRef.current;
+      const backdrop = backdropRef.current;
+      if (drawer) { drawer.style.transition = ""; drawer.style.width = ""; drawer.style.transform = ""; }
+      if (backdrop) { backdrop.style.transition = ""; backdrop.style.opacity = ""; }
+    };
+    const clearAfterRender = () => requestAnimationFrame(() => requestAnimationFrame(clearInlineStyles));
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (window.matchMedia("(min-width: 768px)").matches) return;
+      if (!event.isPrimary || (event.pointerType === "mouse" && event.button !== 0)) return;
       if (!drawerRef.current) return;
-      pointerId=e.pointerId; startX=e.clientX; startY=e.clientY; lastX=startX; lastTime=performance.now(); velocity=0; horizontal=false;
-      maxWidth=options.maxWidth ?? Math.min(edge === "left" ? 304 : 336, window.innerWidth * .86);
-      railWidth=options.railWidth ?? 0; startExtent=isOpen ? maxWidth-railWidth : 0;
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("input, textarea, select, [data-no-sidebar-swipe]")) return;
+      pointerId = event.pointerId;
+      startX = event.clientX;
+      startY = event.clientY;
+      lastX = startX;
+      lastTime = performance.now();
+      velocity = 0;
+      horizontal = false;
+      maxWidth = Math.min(options.maxWidth ?? (edge === "left" ? 304 : 336), window.innerWidth * 0.86);
+      railWidth = Math.min(options.railWidth ?? 0, maxWidth);
+      startExtent = isOpen ? maxWidth - railWidth : 0;
     };
-    const move = (e: PointerEvent) => {
-      if (pointerId===null || e.pointerId!==pointerId) return;
-      const dx=e.clientX-startX, dy=e.clientY-startY;
-      if (!horizontal) { if (Math.abs(dx)<7 && Math.abs(dy)<7) return; if (Math.abs(dx)<=Math.abs(dy)*1.15) { pointerId=null; return; } horizontal=true; }
-      if (e.cancelable) e.preventDefault();
-      const now=performance.now(); velocity=(e.clientX-lastX)/Math.max(1,now-lastTime); lastX=e.clientX; lastTime=now;
-      paint(startExtent+dx*sign);
+
+    const onPointerMove = (event: PointerEvent) => {
+      if (pointerId === null || event.pointerId !== pointerId) return;
+      const dx = event.clientX - startX;
+      const dy = event.clientY - startY;
+      if (!horizontal) {
+        if (Math.abs(dx) < 7 && Math.abs(dy) < 7) return;
+        if (Math.abs(dx) <= Math.abs(dy) * 1.1) { pointerId = null; return; }
+        horizontal = true;
+      }
+      if (event.cancelable) event.preventDefault();
+      const now = performance.now();
+      velocity = (event.clientX - lastX) / Math.max(1, now - lastTime);
+      lastX = event.clientX;
+      lastTime = now;
+      paint(startExtent + dx * direction);
     };
-    const up = (e: PointerEvent) => {
-      if(pointerId===null||e.pointerId!==pointerId)return;
-      const dx=e.clientX-startX, extent=Math.max(0,Math.min(maxWidth-railWidth,startExtent+dx*sign));
-      const threshold=(maxWidth-railWidth)*.24;
-      let next=isOpen;
-      if(!isOpen && horizontal && (extent>=threshold || velocity*sign>.55)) next=true;
-      if(isOpen && horizontal && (extent<=(maxWidth-railWidth)*.76 || velocity*sign<-.55)) next=false;
-      pointerId=null; if(horizontal)setIsOpen(next); clear(); horizontal=false;
+
+    const onPointerUp = (event: PointerEvent) => {
+      if (pointerId === null || event.pointerId !== pointerId) return;
+      const dx = event.clientX - startX;
+      const available = Math.max(1, maxWidth - railWidth);
+      const extent = Math.max(0, Math.min(available, startExtent + dx * direction));
+      const threshold = available * 0.16;
+      let nextOpen = isOpen;
+      if (!isOpen && horizontal && (extent >= threshold || velocity * direction > 0.45)) nextOpen = true;
+      if (isOpen && horizontal && (extent <= available - threshold || velocity * direction < -0.45)) nextOpen = false;
+      pointerId = null;
+      if (horizontal) setIsOpen(nextOpen);
+      horizontal = false;
+      clearAfterRender();
     };
-    const cancel=()=>{pointerId=null;horizontal=false;clear();};
-    window.addEventListener("pointerdown",down,{passive:true});
-    window.addEventListener("pointermove",move,{passive:false});
-    window.addEventListener("pointerup",up,{passive:true});
-    window.addEventListener("pointercancel",cancel,{passive:true});
-    return()=>{window.removeEventListener("pointerdown",down);window.removeEventListener("pointermove",move);window.removeEventListener("pointerup",up);window.removeEventListener("pointercancel",cancel);clear();};
-  },[backdropRef,drawerRef,edge,isOpen,options.maxWidth,options.railWidth,setIsOpen]);
+
+    const onPointerCancel = () => {
+      pointerId = null;
+      horizontal = false;
+      clearAfterRender();
+    };
+
+    window.addEventListener("pointerdown", onPointerDown, { passive: true });
+    window.addEventListener("pointermove", onPointerMove, { passive: false });
+    window.addEventListener("pointerup", onPointerUp, { passive: true });
+    window.addEventListener("pointercancel", onPointerCancel, { passive: true });
+    return () => {
+      window.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointercancel", onPointerCancel);
+      clearInlineStyles();
+    };
+  }, [backdropRef, drawerRef, edge, isOpen, options.maxWidth, options.railWidth, setIsOpen]);
 }

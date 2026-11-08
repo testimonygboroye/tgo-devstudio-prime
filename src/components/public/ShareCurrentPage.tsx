@@ -57,9 +57,10 @@ export default function ShareCurrentPage() {
       context.font="28px Arial";context.fillStyle="#cbd5e1";
       context.fillText(new URL(currentUrl).hostname,width/2,335);
     }
-    const qrResponse=await fetch(qrData);
-    if(!qrResponse.ok)throw new Error("The generated QR code could not be loaded.");
-    const qrBlob=await qrResponse.blob();
+    const encodedQr=qrData.split(",")[1];
+    if(!encodedQr)throw new Error("The generated QR code data is invalid.");
+    const qrBytes=Uint8Array.from(atob(encodedQr),character=>character.charCodeAt(0));
+    const qrBlob=new Blob([qrBytes],{type:"image/png"});
     const qrBitmap=await createImageBitmap(qrBlob);
     const qrY=padding+previewHeight+gap;
     context.fillStyle="#ffffff";context.fillRect((width-qrSize)/2-16,qrY-16,qrSize+32,qrSize+32);

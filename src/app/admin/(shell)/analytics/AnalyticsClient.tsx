@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 interface ViewEntry {
   _id: string;
@@ -243,10 +243,18 @@ export default function AnalyticsClient() {
     useState<VisitorEntry | null>(null);
   const [refreshTick, setRefreshTick] = useState(0);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
+  const requestInFlight = useRef(false);
 
   useEffect(() => {
-    const timer = window.setInterval(() => setRefreshTick((value) => value + 1), 30000);
-    return () => window.clearInterval(timer);
+    const refresh = () => {
+      if (document.visibilityState === "visible") setRefreshTick((value) => value + 1);
+    };
+    const timer = window.setInterval(refresh, 5000);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", refresh);
+    };
   }, []);
 
   const queryString = useMemo(() => {
@@ -298,6 +306,8 @@ export default function AnalyticsClient() {
     let cancelled = false;
 
     async function load() {
+      if (requestInFlight.current || document.visibilityState === "hidden") return;
+      requestInFlight.current = true;
       setError("");
 
       try {
@@ -333,9 +343,8 @@ export default function AnalyticsClient() {
           );
         }
       } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
+        requestInFlight.current = false;
+        if (!cancelled) setIsLoading(false);
       }
     }
 
@@ -379,8 +388,9 @@ export default function AnalyticsClient() {
 
   return (
     <div className="space-y-8">
+      <p className="text-xs leading-relaxed text-neutral-500">Unique visitor counts represent browser profiles, not verified individual people. A person using another browser, private browsing, a different domain, or cleared site storage can appear as a separate visitor.</p>
       <div className="flex justify-end text-xs text-neutral-600" aria-live="polite">
-        {lastUpdatedAt ? `Live data · Updated ${formatDate(lastUpdatedAt.toISOString())} · Refreshes every 30 seconds` : "Loading live analytics…"}
+        {lastUpdatedAt ? `Live data · Updated ${formatDate(lastUpdatedAt.toISOString())} · Refreshes every 5 seconds` : "Loading live analytics…"}
       </div>
       <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
@@ -392,7 +402,7 @@ export default function AnalyticsClient() {
         <StatCard
           label="Unique visitors"
           value={data?.uniqueVisitorCount ?? 0}
-          detail="Distinct visitor IDs"
+          detail="Distinct first-party browser IDs"
         />
 
         <StatCard

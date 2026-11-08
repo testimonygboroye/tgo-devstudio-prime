@@ -3,7 +3,7 @@ import { connectToDatabase } from "@/lib/db";
 import { captureAnalyticsSnapshot } from "@/lib/push/analyticsSnapshot";
 import PageView from "@/models/PageView";
 import Visitor from "@/models/Visitor";
-import { canonicalizeDeploymentHost, countryName, decodeAnalyticsLabel, formatRegionName } from "@/lib/analytics/visitor";
+import { canonicalizeDeploymentHost, countryName, decodeAnalyticsLabel, formatRegionName, isLikelyGeoMismatch } from "@/lib/analytics/visitor";
 import {
   getAuthenticatedSession,
 } from "@/lib/auth/session";
@@ -128,13 +128,17 @@ export async function GET(request: NextRequest) {
   const dateFilter = getDateRange(searchParams);
   const recordedHosts = await PageView.distinct("host");
   const regionPairs = await PageView.aggregate([
-    { $match: { region: { $exists: true, $nin: [null, ""] } } },
-    { $group: { _id: { region: "$region", countryCode: "$countryCode" } } },
+    { $match: { isInternal: { $ne: true }, region: { $exists: true, $nin: [null, ""] } } },
+    { $group: { _id: { region: "$region", countryCode: "$countryCode", timezone: "$timezone" } } },
   ]);
+  const cityPairs = await PageView.aggregate([
+    { $match: { isInternal: { $ne: true }, city: { $exists: true, $nin: [null, ""] } } },
+    { $group: { _id: { city: "$city", countryCode: "$countryCode", timezone: "$timezone" } } },
+  ]);
+  const trustedRegionPairs = regionPairs.filter((row) => !isLikelyGeoMismatch(row._id.timezone ? String(row._id.timezone) : undefined, row._id.countryCode ? String(row._id.countryCode) : undefined));
+  const trustedCityPairs = cityPairs.filter((row) => !isLikelyGeoMismatch(row._id.timezone ? String(row._id.timezone) : undefined, row._id.countryCode ? String(row._id.countryCode) : undefined));
 
-  const pageViewMatch: Record<string, unknown> = {
-    ...dateFilter,
-  };
+  const pageViewMatch: Record<string, unknown> = { ...dateFilter, isInternal: { $ne: true } };
 
   if (host) {
     const matches = recordedHosts.filter((value): value is string => typeof value === "string" && canonicalizeDeploymentHost(value) === host);
@@ -177,7 +181,7 @@ export async function GET(request: NextRequest) {
       )
     : null;
 
-  const visitorQuery: Record<string, unknown> = {};
+  const visitorQuery: Record<string, unknown> = { isInternal: { $ne: true } };
 
   if (matchingVisitorIds) {
     visitorQuery.visitorId = {
@@ -317,14 +321,14 @@ export async function GET(request: NextRequest) {
       },
     ]),
 
-    PageView.distinct("host"),
-    PageView.distinct("deploymentProvider"),
-    PageView.distinct("countryCode"),
-    PageView.distinct("region"),
-    PageView.distinct("city"),
-    PageView.distinct("deviceType"),
-    PageView.distinct("browser"),
-    PageView.distinct("operatingSystem"),
+    PageView.distinct("host", { isInternal: { $ne: true } }),
+    PageView.distinct("deploymentProvider", { isInternal: { $ne: true } }),
+    PageView.distinct("countryCode", { isInternal: { $ne: true } }),
+    PageView.distinct("region", { isInternal: { $ne: true } }),
+    PageView.distinct("city", { isInternal: { $ne: true } }),
+    PageView.distinct("deviceType", { isInternal: { $ne: true } }),
+    PageView.distinct("browser", { isInternal: { $ne: true } }),
+    PageView.distinct("operatingSystem", { isInternal: { $ne: true } }),
   ]);
 
   const visitors = await Visitor.find(visitorQuery)
@@ -504,9 +508,15 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     status: "ok",
 
-    views: views.map((view) => ({ ...view, path: decodeAnalyticsLabel(view.path), host: canonicalizeDeploymentHost(view.host), country: view.country || countryName(view.countryCode), region: formatRegionName(view.region, view.countryCode) || view.region, city: view.city ? decodeAnalyticsLabel(view.city) : view.city })),
+    views: views.map((view) => {
+      const unverified = isLikelyGeoMismatch(view.timezone, view.countryCode);
+      return { ...view, path: decodeAnalyticsLabel(view.path), host: canonicalizeDeploymentHost(view.host), country: view.country || countryName(view.countryCode), region: unverified ? undefined : formatRegionName(view.region, view.countryCode) || view.region, city: unverified ? undefined : view.city ? decodeAnalyticsLabel(view.city) : view.city };
+    }),
 
-    visitors: formattedVisitors.map((visitor) => ({ ...visitor, deploymentHost: canonicalizeDeploymentHost(visitor.deploymentHost), country: visitor.country || countryName(visitor.countryCode), region: formatRegionName(visitor.region, visitor.countryCode) || visitor.region, city: visitor.city ? decodeAnalyticsLabel(visitor.city) : visitor.city, hosts: [...new Set((visitor.hosts || []).map((value) => canonicalizeDeploymentHost(value)).filter(Boolean))] })),
+    visitors: formattedVisitors.map((visitor) => {
+      const unverified = isLikelyGeoMismatch(visitor.timezone, visitor.countryCode);
+      return { ...visitor, deploymentHost: canonicalizeDeploymentHost(visitor.deploymentHost), country: visitor.country || countryName(visitor.countryCode), region: unverified ? undefined : formatRegionName(visitor.region, visitor.countryCode) || visitor.region, city: unverified ? undefined : visitor.city ? decodeAnalyticsLabel(visitor.city) : visitor.city, hosts: [...new Set((visitor.hosts || []).map((value) => canonicalizeDeploymentHost(value)).filter(Boolean))] };
+    }),
 
     totalCount,
 
@@ -533,10 +543,10 @@ export async function GET(request: NextRequest) {
       cleanOptions(availableCountries).map((code) => `${countryName(code) || code} (${code})`),
 
     regions:
-      [...new Set(regionPairs.map((row) => formatRegionName(String(row._id.region), row._id.countryCode ? String(row._id.countryCode) : undefined) || decodeAnalyticsLabel(String(row._id.region))))].sort(),
+      [...new Set(trustedRegionPairs.map((row) => formatRegionName(String(row._id.region), row._id.countryCode ? String(row._id.countryCode) : undefined) || decodeAnalyticsLabel(String(row._id.region))))].sort(),
 
     cities:
-      [...new Set(cleanOptions(availableCities).map((value) => decodeAnalyticsLabel(value)))].sort(),
+      [...new Set(trustedCityPairs.map((row) => decodeAnalyticsLabel(String(row._id.city))))].sort(),
 
     deviceTypes:
       cleanOptions(availableDevices),

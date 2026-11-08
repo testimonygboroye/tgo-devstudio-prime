@@ -504,9 +504,9 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     status: "ok",
 
-    views: views.map((view) => ({ ...view, path: decodeAnalyticsLabel(view.path), country: view.country || countryName(view.countryCode), region: formatRegionName(view.region, view.countryCode) || view.region, city: view.city ? decodeAnalyticsLabel(view.city) : view.city })),
+    views: views.map((view) => ({ ...view, path: decodeAnalyticsLabel(view.path), host: canonicalizeDeploymentHost(view.host), country: view.country || countryName(view.countryCode), region: formatRegionName(view.region, view.countryCode) || view.region, city: view.city ? decodeAnalyticsLabel(view.city) : view.city })),
 
-    visitors: formattedVisitors.map((visitor) => ({ ...visitor, country: visitor.country || countryName(visitor.countryCode), region: formatRegionName(visitor.region, visitor.countryCode) || visitor.region, city: visitor.city ? decodeAnalyticsLabel(visitor.city) : visitor.city, hosts: [...new Set((visitor.hosts || []).map((value) => canonicalizeDeploymentHost(value)).filter(Boolean))] })),
+    visitors: formattedVisitors.map((visitor) => ({ ...visitor, deploymentHost: canonicalizeDeploymentHost(visitor.deploymentHost), country: visitor.country || countryName(visitor.countryCode), region: formatRegionName(visitor.region, visitor.countryCode) || visitor.region, city: visitor.city ? decodeAnalyticsLabel(visitor.city) : visitor.city, hosts: [...new Set((visitor.hosts || []).map((value) => canonicalizeDeploymentHost(value)).filter(Boolean))] })),
 
     totalCount,
 

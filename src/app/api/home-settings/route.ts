@@ -9,6 +9,7 @@ const CONTENT_TYPE = "homeSettings";
 
 const FIELDS = [
   "heroHeadline",
+  "heroBackgroundImage",
   "heroSubheadline",
   "primaryCtaLabel",
   "primaryCtaHref",

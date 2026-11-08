@@ -92,11 +92,11 @@ export default function AdminSidebar({
     window.addEventListener("tgo:toggle-admin-sidebar", toggle);
     return () => window.removeEventListener("tgo:toggle-admin-sidebar", toggle);
   }, []);
-  useEffect(() => { setIsMobileOpen(false); }, [pathname]);
-  const collapsed = isCollapsed && !isMobileOpen;
   const [counts, setCounts] = useState<Record<string, number>>({});
   const pathname = usePathname();
   const router = useRouter();
+  useEffect(() => { setIsMobileOpen(false); }, [pathname]);
+  const collapsed = isCollapsed && !isMobileOpen;
 
   const basePathSegment = basePath;
 

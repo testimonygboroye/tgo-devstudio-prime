@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomUUID } from "crypto";
 import { connectToDatabase } from "@/lib/db";
 import NewsletterSubscriber from "@/models/NewsletterSubscriber";
+import AnalyticsEvent from "@/models/AnalyticsEvent";
 import { getAuthenticatedSession } from "@/lib/auth/session";
 import { unauthorizedResponse, forbiddenResponse, requireContentPermission } from "@/lib/auth/authorize";
 import { generateRawToken, hashToken } from "@/lib/auth/tokens";
@@ -8,7 +10,24 @@ import { verifyTurnstileToken } from "@/lib/turnstile";
 
 const CONTENT_TYPE = "newsletterSubscribers";
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
+
 const RATE_LIMIT_MAX_SUBMISSIONS = 3;
+
+async function recordNewsletterConversion(request: NextRequest) {
+  try {
+    const session = await getAuthenticatedSession(request);
+    await AnalyticsEvent.create({
+      eventId: randomUUID(),
+      eventName: "newsletter_subscribed",
+      visitorId: request.cookies.get("tgo_visitor_id")?.value,
+      sessionId: request.cookies.get("tgo_session_id")?.value,
+      path: "/",
+      isInternal: Boolean(session),
+    });
+  } catch (error) {
+    console.error("[TGO Analytics] Newsletter conversion event failed:", error);
+  }
+}
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -50,6 +69,7 @@ export async function POST(request: NextRequest) {
     }
     existing.status = "subscribed";
     await existing.save();
+    await recordNewsletterConversion(request);
     return NextResponse.json({ status: "ok", message: "Welcome back! You're subscribed again." });
   }
 
@@ -59,6 +79,7 @@ export async function POST(request: NextRequest) {
     status: "subscribed",
     unsubscribeTokenHash: hashToken(rawToken),
   });
+  await recordNewsletterConversion(request);
 
   return NextResponse.json({ status: "ok", message: "Subscribed successfully." }, { status: 201 });
 }

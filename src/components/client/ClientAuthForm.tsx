@@ -25,7 +25,7 @@ export default function ClientAuthForm({ mode, rememberedEmail = "" }: { mode: "
         setMessage(data.message || "Check your email to verify your account.");
         return;
       }
-      const response = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, password }) });
+      const response = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, password, audience: "client" }) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || data.error || "Sign-in failed.");
       if (data.status === "2fa_required") {

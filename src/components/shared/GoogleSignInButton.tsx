@@ -36,7 +36,7 @@ export default function GoogleSignInButton({endpoint,payload={},onResult,onError
   if(window.google?.accounts?.oauth2)init();
   return()=>{disposed=true;window.clearInterval(poll);};
  },[clientId,initialize]);
- function continueRemembered(){if(!ready||!rememberedRef.current||!lastEmail)return;try{rememberedRef.current.requestAccessToken({prompt:"none",login_hint:lastEmail});}catch{onError("Could not start remembered Google sign-in. Use Continue with Google instead.");}}
+ function continueRemembered(){if(!ready||!rememberedRef.current||!lastEmail)return;try{rememberedRef.current.requestAccessToken({prompt:"none",hint:lastEmail});}catch{onError("Could not start remembered Google sign-in. Use Continue with Google instead.");}}
  function continueChooser(){if(!ready||!chooserRef.current)return;try{chooserRef.current.requestAccessToken({prompt:"select_account"});}catch{onError("Could not open the Google account chooser. Please try again.");}}
  const button="flex min-h-[62px] w-full items-center gap-3 rounded-full border border-neutral-200 bg-white px-4 py-2.5 text-left text-neutral-900 shadow-sm transition hover:bg-neutral-50 disabled:cursor-wait disabled:opacity-60";
  return <div className="mx-auto w-full max-w-[360px] space-y-2.5">
@@ -48,7 +48,6 @@ export default function GoogleSignInButton({endpoint,payload={},onResult,onError
   <button type="button" disabled={!ready} onClick={continueChooser} className={button+" justify-start"}>
    <GoogleMark/><span className="flex-1 text-center text-sm font-semibold">Continue with Google</span><span className="w-6 shrink-0" aria-hidden="true"/>
   </button>
-  {!ready&&!loadError&&<p className="text-center text-xs text-neutral-500">Loading Google sign-in…</p>}
   {loadError&&<p role="alert" className="text-center text-xs text-amber-300">{loadError}</p>}
  </div>;
 }

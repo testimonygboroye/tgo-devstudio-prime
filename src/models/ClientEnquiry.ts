@@ -9,6 +9,9 @@ export interface IClientEnquiry extends Document {
   status: "new" | "in_review" | "responded" | "closed";
   priority: "low" | "normal" | "high";
   assignedTo?: Types.ObjectId;
+  response?: string;
+  respondedAt?: Date;
+  respondedBy?: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -22,6 +25,9 @@ const ClientEnquirySchema = new Schema<IClientEnquiry>({
   status: { type: String, enum: ["new", "in_review", "responded", "closed"], default: "new" },
   priority: { type: String, enum: ["low", "normal", "high"], default: "normal" },
   assignedTo: { type: Schema.Types.ObjectId, ref: "User" },
+  response: { type: String, trim: true, maxlength: 5000 },
+  respondedAt: { type: Date },
+  respondedBy: { type: Schema.Types.ObjectId, ref: "User" },
 }, { timestamps: true });
 
 ClientEnquirySchema.index({ clientId: 1, createdAt: -1 });

@@ -40,10 +40,11 @@ export const PLATFORM_MODULE_REGISTRY: readonly PlatformModuleDefinition[] = [
   {
     id: "clients",
     name: "Client Management",
-    description: "Unified client profiles, relationships and account activity.",
+    description: "Client identity, CRM records, onboarding, enquiries, segmentation and account activity.",
     category: "business",
     requiredPermission: "clients.view",
-    status: "planned",
+    status: "available",
+    href: "/clients",
   },
   {
     id: "projects",

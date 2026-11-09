@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { connectToDatabase } from "@/lib/db";
 import NewsletterSubscriber from "@/models/NewsletterSubscriber";
 import AnalyticsEvent from "@/models/AnalyticsEvent";
+import Visitor from "@/models/Visitor";
 import { getAuthenticatedSession } from "@/lib/auth/session";
 import { unauthorizedResponse, forbiddenResponse, requireContentPermission } from "@/lib/auth/authorize";
 import { generateRawToken, hashToken } from "@/lib/auth/tokens";
@@ -16,13 +17,15 @@ const RATE_LIMIT_MAX_SUBMISSIONS = 3;
 async function recordNewsletterConversion(request: NextRequest) {
   try {
     const session = await getAuthenticatedSession(request);
+    const visitorId = request.cookies.get("tgo_visitor_id")?.value;
+    const visitor = visitorId ? await Visitor.findOne({ visitorId }).select("isInternal").lean() : null;
     await AnalyticsEvent.create({
       eventId: randomUUID(),
       eventName: "newsletter_subscribed",
-      visitorId: request.cookies.get("tgo_visitor_id")?.value,
+      visitorId,
       sessionId: request.cookies.get("tgo_session_id")?.value,
       path: "/",
-      isInternal: Boolean(session),
+      isInternal: Boolean(session || visitor?.isInternal),
     });
   } catch (error) {
     console.error("[TGO Analytics] Newsletter conversion event failed:", error);

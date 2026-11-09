@@ -9,6 +9,9 @@ import { getAdminBasePath } from "@/lib/adminPath";
 import { connectToDatabase } from "@/lib/db";
 import { getPlatformRuntimeConfig } from "@/lib/platform/config";
 import { PLATFORM_MODULE_REGISTRY } from "@/platform/registry/modules";
+import FounderApplicationLauncher from "@/components/admin/platform/FounderApplicationLauncher";
+import FounderUniversalSearch from "@/components/admin/platform/FounderUniversalSearch";
+import FounderNotificationCentre from "@/components/admin/platform/FounderNotificationCentre";
 import BusinessMembership from "@/models/BusinessMembership";
 import BusinessRole from "@/models/BusinessRole";
 import PlatformAuditEvent from "@/models/PlatformAuditEvent";
@@ -115,6 +118,21 @@ export default async function FounderControlCentrePage() {
           <div><p className="font-semibold">Business platform rollout flag is off</p><p className="mt-1 text-amber-100/70">The Founder Control Centre is available to you, but the global platform feature flag remains disabled. Existing CMS operations are unaffected.</p></div>
         </div>
       )}
+
+      <FounderApplicationLauncher adminBasePath={basePath} />
+
+      <FounderUniversalSearch adminBasePath={basePath} />
+
+      <section className="grid gap-4 sm:grid-cols-2">
+        <Link href={`${basePath}/security`} className="surface-card flex items-center justify-between rounded-2xl border border-[var(--border-subtle)] p-5 transition hover:border-cyan-400/40">
+          <div><p className="text-xs font-semibold uppercase tracking-[.16em] text-brand-cyan-400">Account protection</p><h3 className="mt-1 font-bold text-[var(--text-primary)]">Security settings</h3><p className="mt-1 text-sm text-[var(--text-muted)]">Review two-factor authentication and account security controls.</p></div><ShieldCheck className="shrink-0 text-cyan-300" size={23}/>
+        </Link>
+        <Link href={`${basePath}/settings`} className="surface-card flex items-center justify-between rounded-2xl border border-[var(--border-subtle)] p-5 transition hover:border-cyan-400/40">
+          <div><p className="text-xs font-semibold uppercase tracking-[.16em] text-brand-cyan-400">Preferences</p><h3 className="mt-1 font-bold text-[var(--text-primary)]">Administration settings</h3><p className="mt-1 text-sm text-[var(--text-muted)]">Open the existing administration preferences.</p></div><Gauge className="shrink-0 text-cyan-300" size={23}/>
+        </Link>
+      </section>
+
+      <FounderNotificationCentre />
 
       <section>
         <div className="mb-4 flex items-end justify-between gap-3">

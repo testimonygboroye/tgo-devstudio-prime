@@ -27,6 +27,7 @@ import {
   UserCog,
   MessageSquare,
   ShieldCheck,
+  Crown,
   Image,
   ScrollText,
   BarChart3,
@@ -49,7 +50,7 @@ interface AdminSidebarProps {
 
 const NAV_GROUPS = [
   { title: "Founder", items: [
-    { label: "Founder Control Centre", hrefSuffix: "/platform", icon: ShieldCheck, badgeKey: null },
+    { label: "Founder Control Centre", hrefSuffix: "/platform", icon: Crown, badgeKey: null },
   ]},
   { title: "Overview", items: [
     { label: "Dashboard", hrefSuffix: "/dashboard", icon: LayoutDashboard, badgeKey: null },

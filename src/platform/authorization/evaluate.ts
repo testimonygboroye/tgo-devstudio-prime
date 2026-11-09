@@ -53,18 +53,14 @@ function scopeMatches(
       return true;
     case "self":
       return Boolean(resource?.ownerId && resource.ownerId === principal.userId);
-    case "department":
-      return Boolean(
-        resource?.departmentId &&
-          (grant.resourceIds?.includes(resource.departmentId) ||
-            principal.departmentIds?.includes(resource.departmentId))
-      );
-    case "team":
-      return Boolean(
-        resource?.teamId &&
-          (grant.resourceIds?.includes(resource.teamId) ||
-            principal.teamIds?.includes(resource.teamId))
-      );
+    case "department": {
+      const allowedIds = grant.resourceIds?.length ? grant.resourceIds : principal.departmentIds || [];
+      return Boolean(resource?.departmentId && allowedIds.includes(resource.departmentId));
+    }
+    case "team": {
+      const allowedIds = grant.resourceIds?.length ? grant.resourceIds : principal.teamIds || [];
+      return Boolean(resource?.teamId && allowedIds.includes(resource.teamId));
+    }
     case "project":
       return Boolean(resource?.projectId && grant.resourceIds?.includes(resource.projectId));
     case "client":

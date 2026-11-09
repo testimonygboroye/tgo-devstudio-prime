@@ -11,6 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const t = createTranslator(await getServerLocale());
 
   return {
+    alternates: { canonical: "/process" },
     title: `${t("nav.process")} | TGO DevStudio Prime`,
     description: t("process.subtitle"),
   };

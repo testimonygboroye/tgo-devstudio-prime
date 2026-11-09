@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse, after } from "next/server";
+import { randomUUID } from "crypto";
 import { connectToDatabase } from "@/lib/db";
 import { sendAdminPush } from "@/lib/push/server";
 import { getAdminBasePath } from "@/lib/adminPath";
@@ -6,6 +7,7 @@ import ContactSubmission, {
   ContactSubject,
 } from "@/models/ContactSubmission";
 import Visitor from "@/models/Visitor";
+import AnalyticsEvent from "@/models/AnalyticsEvent";
 import {
   getAuthenticatedSession,
 } from "@/lib/auth/session";
@@ -175,6 +177,23 @@ export async function POST(
         },
       }
     );
+  }
+
+  try {
+    const trackedVisitor = visitorId
+      ? await Visitor.findOne({ visitorId }).select("isInternal").lean()
+      : null;
+    const authenticatedSession = await getAuthenticatedSession(request);
+    await AnalyticsEvent.create({
+      eventId: randomUUID(),
+      eventName: "contact_form_submitted",
+      visitorId,
+      sessionId: request.cookies.get("tgo_session_id")?.value,
+      path: "/contact",
+      isInternal: Boolean(authenticatedSession || trackedVisitor?.isInternal),
+    });
+  } catch (analyticsError) {
+    console.error("[TGO Analytics] Contact conversion event failed:", analyticsError);
   }
 
   after(async () => {

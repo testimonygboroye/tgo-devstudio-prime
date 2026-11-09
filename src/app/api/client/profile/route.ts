@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "@/lib/auth/serverSession";
 import ClientProfile from "@/models/ClientProfile";
 import ClientActivity from "@/models/ClientActivity";
+import User from "@/models/User";
 import { connectToDatabase } from "@/lib/db";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
 
@@ -38,17 +39,21 @@ export async function PATCH(request: NextRequest) {
       values[key] = String(body[key]).trim();
     }
   }
+  const accountName = body.name === undefined ? undefined : typeof body.name === "string" ? body.name.trim() : "";
+  if (accountName !== undefined && (accountName.length < 2 || accountName.length > 120)) return NextResponse.json({ error: "Name must be between 2 and 120 characters." }, { status: 400 });
   if (values.website && !/^https:\/\//i.test(values.website)) return NextResponse.json({ error: "Website must use https://." }, { status: 400 });
+  if (!Object.keys(values).length && accountName === undefined) return NextResponse.json({ error: "No profile changes were supplied." }, { status: 400 });
   await connectToDatabase();
   const current = await ClientProfile.findOne({ userId: session.user._id });
   if (!current) return NextResponse.json({ error: "Client profile not found." }, { status: 404 });
   const merged = { phone: values.phone ?? current.phone ?? "", country: values.country ?? current.country ?? "", timezone: values.timezone ?? current.timezone ?? "" };
   const onboardingStatus = merged.phone && merged.country && merged.timezone ? "completed" : "in_progress";
   const profile = await ClientProfile.findOneAndUpdate({ userId: session.user._id }, { $set: { ...values, onboardingStatus } }, { new: true, runValidators: true });
+  if (accountName !== undefined) await User.updateOne({ _id: session.user._id, accountType: "client" }, { $set: { name: accountName } });
   if (!profile) return NextResponse.json({ error: "Client profile not found." }, { status: 404 });
   await Promise.all([
-    ClientActivity.create({ clientId: session.user._id, actorId: session.user._id, actorType: "client", action: "client.profile_updated", summary: "Client updated their profile.", metadata: { fields: Object.keys(values) } }),
-    writePlatformAuditEvent({ actorType: "human", actorId: String(session.user._id), actorLabel: session.user.name, action: "client.profile_updated", module: "clients", targetType: "client", targetId: String(session.user._id), outcome: "success", metadata: { fields: Object.keys(values), onboardingStatus } }),
+    ClientActivity.create({ clientId: session.user._id, actorId: session.user._id, actorType: "client", action: "client.profile_updated", summary: "Client updated their profile.", metadata: { fields: [...Object.keys(values), ...(accountName !== undefined ? ["name"] : [])] } }),
+    writePlatformAuditEvent({ actorType: "human", actorId: String(session.user._id), actorLabel: session.user.name, action: "client.profile_updated", module: "clients", targetType: "client", targetId: String(session.user._id), outcome: "success", metadata: { fields: [...Object.keys(values), ...(accountName !== undefined ? ["name"] : [])], onboardingStatus } }),
   ]);
   return NextResponse.json({ ok: true, message: "Profile updated." });
 }

@@ -5,7 +5,7 @@ const MAX_REMEMBERED_ACCOUNTS = 5;
 export function readRememberedClientAccounts(value?: string): string[] {
   if (!value) return [];
   try {
-    const parsed: unknown = JSON.parse(decodeURIComponent(value));
+    let parsed: unknown;\n    try { parsed = JSON.parse(value); } catch { parsed = JSON.parse(decodeURIComponent(value)); }
     if (!Array.isArray(parsed)) return [];
     return [...new Set(parsed.filter((item): item is string =>
       typeof item === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(item)

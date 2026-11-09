@@ -26,7 +26,7 @@ export default function GoogleSignInButton({endpoint,payload={},onResult,onError
   try{
    let remembered="";
    try{remembered=localStorage.getItem(LAST_KEY)||"";}catch{}
-   gis.initialize({client_id:clientId,callback:handleCredential,auto_select:false,ux_mode:"popup",cancel_on_tap_outside:true,...(remembered?{login_hint:remembered}:{})});
+   gis.initialize({client_id:clientId,callback:handleCredential,auto_select:true,ux_mode:"popup",cancel_on_tap_outside:true,...(remembered?{login_hint:remembered}:{})});
    initializedRef.current=true;
    host.replaceChildren();
    gis.renderButton(host,{type:"standard",theme:"outline",size:"large",shape:"pill",text:"continue_with",logo_alignment:"left",width:Math.min(380,Math.max(260,host.clientWidth||320))});
@@ -51,7 +51,7 @@ export default function GoogleSignInButton({endpoint,payload={},onResult,onError
   catch{onError("Could not start remembered Google sign-in. Use Continue with Google instead.");}
  }
  return <div className="w-full space-y-3">
-  {lastEmail&&<button type="button" disabled={!ready} onClick={continueRemembered} className="flex min-h-12 w-full items-center justify-center gap-3 rounded-full border border-base-700 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 hover:bg-neutral-100 disabled:cursor-wait disabled:opacity-60"><span className="text-xl font-bold text-blue-600">G</span><span>Continue as {lastEmail}</span></button>}
+  {lastEmail&&<button type="button" disabled={!ready} onClick={continueRemembered} className="flex min-h-12 w-full items-center justify-center gap-3 rounded-full border border-base-700 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 hover:bg-neutral-100 disabled:cursor-wait disabled:opacity-60"><svg aria-hidden="true" viewBox="0 0 48 48" className="h-6 w-6 shrink-0"><path fill="#4285F4" d="M43.6 24.5c0-1.4-.1-2.8-.4-4.1H24v7.8h11a9.4 9.4 0 0 1-4.1 6.2v5.1h6.6c3.9-3.6 6.1-8.9 6.1-15z"/><path fill="#34A853" d="M24 44c5.5 0 10.1-1.8 13.5-4.9l-6.6-5.1c-1.8 1.2-4.1 2-6.9 2-5.3 0-9.8-3.6-11.4-8.4H5.8v5.3A20 20 0 0 0 24 44z"/><path fill="#FBBC05" d="M12.6 27.6a12 12 0 0 1 0-7.2v-5.3H5.8a20 20 0 0 0 0 17.8z"/><path fill="#EA4335" d="M24 12c3 0 5.7 1 7.8 3.1l5.8-5.8C34.1 6 29.5 4 24 4A20 20 0 0 0 5.8 15.1l6.8 5.3C14.2 15.6 18.7 12 24 12z"/></svg><span>Continue as {lastEmail}</span></button>}
   <div ref={hostRef} className="flex min-h-[48px] w-full justify-center" aria-label="Choose a different Google account"/>
   {!ready&&!loadError&&<p className="text-center text-xs text-neutral-500">Loading Google sign-in…</p>}
   {loadError&&<p role="alert" className="text-center text-xs text-amber-300">{loadError}</p>}

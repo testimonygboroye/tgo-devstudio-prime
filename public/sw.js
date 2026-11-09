@@ -1,6 +1,5 @@
 const SW_VERSION = "tgo-offline-v6";
 const APP_CACHE = `${SW_VERSION}-app`;
-const PAGE_CACHE = `${SW_VERSION}-public-pages`;
 const OFFLINE_URL = "/offline.html";
 const PRECACHE_URLS = [OFFLINE_URL, "/manifest.json", "/favicon.png", "/logo.png", "/icons/icon-192x192.png"];
 
@@ -22,7 +21,7 @@ self.addEventListener("install", (event) => {
 
 self.addEventListener("activate", (event) => {
   event.waitUntil((async () => {
-    const keep = new Set([APP_CACHE, PAGE_CACHE]);
+    const keep = new Set([APP_CACHE, ASSET_CACHE]);
     const names = await caches.keys();
     await Promise.all(names.filter((name) => name.startsWith("tgo-offline-") && !keep.has(name)).map((name) => caches.delete(name)));
     await self.clients.claim();
@@ -33,15 +32,6 @@ function isPrivatePath(pathname) {
   return /^\/(admin|api|auth|login|logout|register|account|member|members|portal|dashboard|checkout|payment|billing|settings)(\/|$)/i.test(pathname);
 }
 
-function isCacheablePublicPage(url, request, response) {
-  if (request.method !== "GET" || request.mode !== "navigate") return false;
-  if (url.origin !== self.location.origin || isPrivatePath(url.pathname)) return false;
-  if (!response || !response.ok || response.type === "opaque") return false;
-  const type = response.headers.get("content-type") || "";
-  const cacheControl = response.headers.get("cache-control") || "";
-  return type.includes("text/html") && !/private|no-store/i.test(cacheControl) && !response.headers.has("set-cookie");
-}
-
 async function trimCache(cacheName, maxEntries) {
   const cache = await caches.open(cacheName);
   const keys = await cache.keys();
@@ -50,20 +40,11 @@ async function trimCache(cacheName, maxEntries) {
 }
 
 async function handleNavigation(request) {
-  const url = new URL(request.url);
   try {
-    const response = await fetch(request);
-    if (isCacheablePublicPage(url, request, response)) {
-      const cache = await caches.open(PAGE_CACHE);
-      await cache.put(request, response.clone());
-      await trimCache(PAGE_CACHE, 40);
-    }
-    return response;
+    return await fetch(request);
   } catch {
-    if (!isPrivatePath(url.pathname)) {
-      const cachedPage = await caches.match(request, { cacheName: PAGE_CACHE, ignoreSearch: true });
-      if (cachedPage) return cachedPage;
-    }
+    // Do not replay cached HTML: it can reference deployment-specific chunks
+    // that are no longer available, leaving users with an unstyled page.
     const offline = await caches.match(OFFLINE_URL, { cacheName: APP_CACHE });
     if (offline) {
       const headers = new Headers(offline.headers);
@@ -75,30 +56,37 @@ async function handleNavigation(request) {
   }
 }
 
-// Static assets (especially Next.js CSS and JavaScript chunks) are deliberately
-// left to the browser's HTTP cache. A service-worker cache can otherwise replay
-// stale or mismatched chunks after a deployment, producing partially styled pages.
+async function handlePublicAsset(request) {
+  const cache = await caches.open(ASSET_CACHE);
+  try {
+    const response = await fetch(request, { cache: "no-cache" });
+    if (response && (response.ok || response.type === "opaque")) {
+      await cache.put(request, response.clone());
+      await trimCache(ASSET_CACHE, 150);
+    }
+    return response;
+  } catch {
+    return (await cache.match(request)) || Response.error();
+  }
+}
+
 self.addEventListener("fetch", (event) => {
   const request = event.request;
-  if (request.method !== "GET" || request.mode !== "navigate") return;
+  if (request.method !== "GET") return;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
-  event.respondWith(handleNavigation(request));
+  if (request.mode === "navigate") {
+    event.respondWith(handleNavigation(request));
+    return;
+  }
+  if (isPrivatePath(url.pathname)) return;
+  if (["image", "style", "script", "font"].includes(request.destination)) {
+    event.respondWith(handlePublicAsset(request));
+  }
 });
 
 self.addEventListener("message", (event) => {
   if (event.data && event.data.type === "TGO_SKIP_WAITING") self.skipWaiting();
-  if (event.data && event.data.type === "TGO_LIST_OFFLINE_PAGES") {
-    event.waitUntil((async () => {
-      const cache = await caches.open(PAGE_CACHE);
-      const requests = await cache.keys();
-      const pages = requests.map((request) => {
-        const url = new URL(request.url);
-        return { url: url.pathname + url.search, title: url.pathname === "/" ? "Home" : url.pathname.split("/").filter(Boolean).pop().replace(/[-_]/g, " ") };
-      });
-      event.source?.postMessage({ type: "TGO_OFFLINE_PAGES", pages });
-    })());
-  }
 });
 
 self.addEventListener("push", (event) => {

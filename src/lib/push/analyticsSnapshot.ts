@@ -17,7 +17,15 @@ export async function captureAnalyticsSnapshot(
 
   const snapshotDate = new Date().toISOString().slice(0, 10);
   const alreadyCaptured = await PushAnalyticsSnapshot.findOne({ snapshotDate }).lean();
-  if (alreadyCaptured) return;
+  if (alreadyCaptured) {
+    // Refresh today's snapshot with the latest corrected public-traffic metrics.
+    // Do not send duplicate notifications for a snapshot that already exists.
+    await PushAnalyticsSnapshot.updateOne(
+      { snapshotDate },
+      { $set: metrics },
+    );
+    return;
+  }
 
   const previous = await PushAnalyticsSnapshot.findOne({
     snapshotDate: { $lt: snapshotDate },

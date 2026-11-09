@@ -5,6 +5,10 @@ export interface IUser extends Document {
   email: string;
   passwordHash: string;
   googleSub?: string;
+  accountType: "staff" | "client";
+  isEmailVerified: boolean;
+  emailVerifiedAt?: Date;
+  authProviders: string[];
   role: Types.ObjectId;
   twoFactorEnabled: boolean;
   twoFactorSecret?: string;
@@ -25,6 +29,10 @@ const UserSchema = new Schema<IUser>(
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     passwordHash: { type: String, required: true },
     googleSub: { type: String, sparse: true, unique: true },
+    accountType: { type: String, enum: ["staff", "client"], default: "staff", index: true },
+    isEmailVerified: { type: Boolean, default: true },
+    emailVerifiedAt: { type: Date },
+    authProviders: { type: [String], enum: ["password", "google"], default: ["password"] },
     role: { type: Schema.Types.ObjectId, ref: "Role", required: true },
     twoFactorEnabled: { type: Boolean, default: false },
     twoFactorSecret: { type: String, select: false },

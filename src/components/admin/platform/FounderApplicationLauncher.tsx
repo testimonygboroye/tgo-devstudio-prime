@@ -12,7 +12,7 @@ const items: LauncherItem[] = [
   { title: "Public Website", description: "Open the live TGO DevStudio website and its public-facing services.", href: "/", status: "available", icon: Globe2, eyebrow: "Live environment" },
   { title: "Website Administration", description: "Manage website content, users, analytics and existing CMS operations.", href: "/admin/dashboard", status: "available", icon: LayoutDashboard, eyebrow: "Existing administration" },
   { title: "Business Ecosystem", description: "Manage the shared directory of internal units, clients, partners and vendors.", href: "/admin/businesses", status: "available", icon: Building2, eyebrow: "Business administration" },
-  { title: "Client Portal", description: "Client workspaces, project visibility, payments and communication.", status: "planned", icon: Users, eyebrow: "Roadmap" },
+  { title: "Client Portal", description: "Client accounts, profile settings, enquiries, notifications and relationship updates.", href: "/client/login", status: "available", icon: Users, eyebrow: "Live client environment" },
   { title: "Workforce Portal", description: "Employee responsibilities, team workspaces, tasks and schedules.", status: "planned", icon: LockKeyhole, eyebrow: "Roadmap" },
 ];
 

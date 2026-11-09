@@ -1,9 +1,7 @@
-import { randomBytes, createHash } from "node:crypto";
+import { randomBytes } from "node:crypto";
+import { hashVerificationToken } from "@/lib/clients/token";
+export { hashVerificationToken } from "@/lib/clients/token";
 import ClientEmailVerification from "@/models/ClientEmailVerification";
-
-export function hashVerificationToken(token: string) {
-  return createHash("sha256").update(token).digest("hex");
-}
 
 export async function createEmailVerification(userId: string) {
   const token = randomBytes(32).toString("base64url");

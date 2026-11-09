@@ -1,34 +1,31 @@
 # Phase 3 — Business Ecosystem Administration
 
 ## Objective
-Introduce a canonical organization directory for the business platform. It is the shared organization identity layer that future client, partner, vendor, workforce, project, commerce and portal modules can reference.
+Establish the central administrative shell and the first shared business-organization management capability without replacing the existing CMS administration.
 
-## Delivered
-- `BusinessOrganization` MongoDB model with unique normalized slug, organization type, active/suspended lifecycle, optional website/contact email/internal notes, creator attribution and timestamps.
-- Founder-only organization API:
-  - `GET /api/platform/organizations` lists directory records without caching.
-  - `POST /api/platform/organizations` validates and creates a record.
-  - `PATCH /api/platform/organizations` changes active/suspended status.
-- Founder-only admin directory at the configured admin base path plus `/businesses`.
-- Responsive directory UI with summary metrics, search, create form, contact details and suspend/reactivate action.
-- Audit trail events for organization creation and status changes.
-- Business Ecosystem Directory registered as an available platform module.
-- Founder navigation uses a distinct Crown icon; Business Ecosystem uses Building2.
-- Service worker v6 no longer intercepts/caches versioned JavaScript, CSS, fonts or image assets. The browser's HTTP cache now handles those deployment-versioned resources, avoiding stale chunk/style replay after deploys. Public-page offline fallback remains; private paths remain excluded.
+## Implemented
+- Business Ecosystem Directory is registered in the typed central module registry.
+- Founder-only administration page at the configured admin base path plus `/businesses`.
+- Organization records support internal, client, partner and vendor types.
+- Organization lifecycle supports active and suspended states.
+- Unique normalized slugs and indexes protect directory integrity.
+- Founder-only GET, POST and PATCH API operations with input validation and no-store list responses.
+- Responsive directory UI includes live database metrics, search, organization creation, contact details and suspend/reactivate actions.
+- Creation and lifecycle changes are written to the shared platform audit collection.
+- Founder navigation uses distinct icons for Founder Control Centre and Business Ecosystem.
 
-## Security and data handling
-- All directory APIs require a valid server session and founder role.
-- Non-founder sessions receive HTTP 403; unauthenticated sessions receive HTTP 401.
-- Organization writes validate name, type, email, HTTPS website and status.
-- Slugs are generated server-side and protected by a unique database index.
-- API list responses are private/no-store.
-- No account access or membership is granted by creating an organization.
-- Audit metadata contains only the organization type/slug or changed status, not free-form notes or contact details.
+## Shared-system integration
+- Existing authenticated User identity is retained.
+- Organization creation does not silently create user memberships or portal access.
+- Audit records identify the human actor and the affected organization.
+- Module availability is sourced from the platform registry, not hard-coded as operational status in the dashboard.
 
-## Scope boundaries
-This phase provides organization identity and lifecycle management. It does not yet implement organization-member assignment, client portal invitations, CRM contacts, contracts, projects, invoicing or payments. Those systems must reference this canonical organization record in their own phases. Existing CMS users/roles remain separate.
+## Explicit scope boundaries
+- The organization directory is the first installed business module, not the complete ERP administration shell.
+- Business-role CRUD and permission assignment UI, membership management, department/team configuration, global platform settings, workflow registration, dashboard widget customization and module activation controls remain separate administrative capabilities to be implemented before calling the full Phase 3 specification complete.
+- The existing CMS Roles remain separate from BusinessRole; they must not be conflated.
 
-## Verification
-- CI must run unit tests, scoped lint and production build before merge.
-- Render deployment must be confirmed live on the resulting main commit.
-- Founder-authenticated UI and non-founder denial still require a browser session walkthrough.
+## Verification gates
+- CI must pass Jest, scoped ESLint and production build.
+- Verify founder-only access, non-founder denial, duplicate slug handling, invalid payload rejection and audit writes.
+- Verify responsive behavior and no regressions in existing CMS routes.

@@ -7,6 +7,8 @@ import { verifyAndConsumeBackupCode } from "@/lib/auth/backupCodes";
 import { setAuthCookies } from "@/lib/auth/cookies";
 import { apiError, apiSuccess } from "@/lib/i18n/apiResponse";
 import { rememberClientAccount } from "@/lib/clients/account-selector";
+import ClientActivity from "@/models/ClientActivity";
+import { writePlatformAuditEvent } from "@/lib/platform/audit";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -67,6 +69,10 @@ export async function POST(request: NextRequest) {
   if (user.accountType === "client") {
     rememberClientAccount(response, request, user.email);
     response.cookies.set("tgo_client_temp_2fa", "", { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/client", maxAge: 0 });
+    await Promise.all([
+      ClientActivity.create({ clientId: user._id, actorId: user._id, actorType: "client", action: "client.two_factor_signed_in", summary: "Client completed two-factor authentication." }),
+      writePlatformAuditEvent({ actorType: "human", actorId: String(user._id), actorLabel: user.name, action: "client.two_factor_signed_in", module: "clients", targetType: "client", targetId: String(user._id), outcome: "success" }),
+    ]);
   }
   // 2FA completion is the point at which this account is fully signed in.
   response.cookies.set("tgo_last_google_account", String(user.email || "").trim().toLowerCase(), {

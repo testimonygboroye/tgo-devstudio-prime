@@ -11,11 +11,10 @@ export async function POST(request: NextRequest) {
   try { token = String((await request.json()).token || ""); } catch { return NextResponse.json({ error: "Invalid request." }, { status: 400 }); }
   if (token.length < 30 || token.length > 200) return NextResponse.json({ error: "Verification link is invalid or expired." }, { status: 400 });
   await connectToDatabase();
-  const record = await ClientEmailVerification.findOne({ tokenHash: hashVerificationToken(token), consumedAt: { $exists: false }, expiresAt: { $gt: new Date() } });
+  const record = await ClientEmailVerification.findOneAndUpdate({ tokenHash: hashVerificationToken(token), consumedAt: { $exists: false }, expiresAt: { $gt: new Date() } }, { $set: { consumedAt: new Date() } }, { new: true });
   if (!record) return NextResponse.json({ error: "Verification link is invalid or expired. Request a new link." }, { status: 400 });
   const user = await User.findOne({ _id: record.userId, accountType: "client" });
   if (!user) return NextResponse.json({ error: "Client account could not be found." }, { status: 404 });
-  record.consumedAt = new Date();
   user.isEmailVerified = true;
   user.emailVerifiedAt = new Date();
   await Promise.all([record.save(), user.save(), ClientActivity.create({

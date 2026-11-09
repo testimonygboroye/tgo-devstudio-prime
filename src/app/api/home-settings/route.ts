@@ -93,7 +93,7 @@ export async function PUT(request: NextRequest) {
   const settings = await HomeSettings.findOneAndUpdate(
     {},
     { ...update, lastUpdatedBy: session.user._id },
-    { new: true, upsert: true }
+    { returnDocument: "after", upsert: true }
   );
 
   return NextResponse.json({ status: "ok", settings }, { headers: { "Cache-Control": "no-store, max-age=0" } });

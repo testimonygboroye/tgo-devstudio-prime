@@ -83,7 +83,7 @@ export default function OrganizationManager({ initialOrganizations }: { initialO
           <button type="button" onClick={() => changeStatus(item)} className="btn-premium-secondary inline-flex shrink-0 items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold"><ShieldCheck size={15}/>{item.status === "active" ? "Suspend account" : "Reactivate account"}<ChevronDown size={13}/></button>
         </article>)}</div>}
       </div>
-      <p className="text-xs leading-5 text-[var(--text-muted)]">Organization records are currently the platform's shared directory. User memberships, invitations, client portal access, project links and billing relationships will be connected in their dedicated roadmap phases; creating an organization does not automatically grant access to anyone.</p>
+      <p className="text-xs leading-5 text-[var(--text-muted)]">Organization records are currently the platform&apos;s shared directory. User memberships, invitations, client portal access, project links and billing relationships will be connected in their dedicated roadmap phases; creating an organization does not automatically grant access to anyone.</p>
     </section>
   );
 }

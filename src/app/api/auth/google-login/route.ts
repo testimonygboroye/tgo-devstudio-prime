@@ -20,11 +20,11 @@ async function verifyGoogleCredential(credential?:string,accessToken?:string) {
   const tokenInfoResponse=await fetch("https://oauth2.googleapis.com/tokeninfo?access_token="+encodeURIComponent(accessToken),{cache:"no-store"});
   if(!tokenInfoResponse.ok)throw new Error("Google account selection returned an invalid token.");
   const tokenInfo=await tokenInfoResponse.json();
-  if(tokenInfo.aud!==clientId || Number(tokenInfo.expires_in)<=0 || !String(tokenInfo.scope||"").split(" ").includes("openid"))throw new Error("Google account token could not be verified for this application.");
+  if((tokenInfo.aud||tokenInfo.issued_to||tokenInfo.audience)!==clientId || Number(tokenInfo.expires_in)<=0 || !String(tokenInfo.scope||"").split(" ").includes("openid"))throw new Error("Google account token could not be verified for this application.");
   const profileResponse=await fetch("https://www.googleapis.com/oauth2/v3/userinfo",{headers:{Authorization:"Bearer "+accessToken},cache:"no-store"});
   if(!profileResponse.ok)throw new Error("Could not retrieve the selected Google account.");
   const profile=await profileResponse.json();
-  if(profile.email_verified!==true || !profile.sub || !profile.email)throw new Error("Google could not verify the selected email address.");
+  if(profile.email_verified!==true || !profile.sub || !profile.email || (tokenInfo.user_id && String(tokenInfo.user_id)!==String(profile.sub)) || (tokenInfo.email && String(tokenInfo.email).toLowerCase()!==String(profile.email).toLowerCase()))throw new Error("Google could not verify the selected email address.");
   return {sub:String(profile.sub),email:String(profile.email).trim().toLowerCase(),name:String(profile.name||"").trim()};
  }
 export async function POST(request:NextRequest) {

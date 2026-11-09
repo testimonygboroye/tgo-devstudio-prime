@@ -5,14 +5,14 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, CheckCircle2, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, UserRound } from "lucide-react";
 
-export default function ClientAuthForm({ mode, rememberedEmails = [], googleTempToken = "" }: { mode: "login" | "register"; rememberedEmails?: string[]; googleTempToken?: string }) {
+export default function ClientAuthForm({ mode, rememberedEmails = [], googleTempToken = "", oauthError = "" }: { mode: "login" | "register"; rememberedEmails?: string[]; googleTempToken?: string; oauthError?: string }) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState(rememberedEmails[0] || "");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(() => ({\n    google_unavailable: "Google sign-in is not configured yet.",\n    google_state_invalid: "Google sign-in could not be validated. Please try again.",\n    google_exchange_failed: "Google could not complete sign-in. Please try again.",\n    google_profile_failed: "Google account details could not be verified.",\n    google_email_unverified: "Your Google email address must be verified before continuing.",\n    google_account_conflict: "This Google email is linked to a different account type or identity. Sign in with your existing client credentials.",\n    google_account_unavailable: "This client account is unavailable. Contact TGO DevStudio support.",\n    google_sign_in_failed: "Google sign-in could not be completed. Please try again.",\n    two_factor_expired: "Your two-factor sign-in session expired. Start sign-in again.",\n  } as Record<string, string>)[oauthError] || "");
   const [message, setMessage] = useState("");
   const [tempToken, setTempToken] = useState(googleTempToken);
   const [twoFactorCode, setTwoFactorCode] = useState("");

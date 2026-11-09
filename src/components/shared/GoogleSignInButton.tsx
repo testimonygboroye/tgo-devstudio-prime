@@ -32,7 +32,7 @@ export default function GoogleSignInButton({endpoint,payload={},onResult,onError
   if(!chooserRef.current){
    let remembered="";try{remembered=localStorage.getItem(LAST_KEY)||"";}catch{}
    id.initialize({client_id:clientId,callback:(response:any)=>{if(response.credential)void completeLogin({credential:response.credential});},auto_select:true,ux_mode:"popup",cancel_on_tap_outside:true,...(remembered?{login_hint:remembered}:{})});
-   chooserRef.current=oauth.initTokenClient({client_id:clientId,scope:"openid email profile",callback:(response:any)=>{if(response.error||!response.access_token){onError(response.error==="popup_failed_to_open"?"Your browser blocked the Google sign-in window. Allow pop-ups for this site and try again.":"Google account selection was cancelled or could not complete.");return;}void completeLogin({accessToken:response.access_token});}});
+   chooserRef.current=oauth.initTokenClient({client_id:clientId,scope:"openid email profile",...(remembered?{hint:remembered}:{}),callback:(response:any)=>{if(response.error||!response.access_token){onError(response.error==="popup_failed_to_open"?"Your browser blocked the Google sign-in window. Allow pop-ups for this site and try again.":"Google account selection was cancelled or could not complete.");return;}void completeLogin({accessToken:response.access_token});}});
   }
   setReady(true);setLoadError("");return true;
  },[clientId,completeLogin,onError]);
@@ -49,13 +49,17 @@ export default function GoogleSignInButton({endpoint,payload={},onResult,onError
  },[clientId,initialize]);
  function continueRemembered(){
   if(!ready||!lastEmail||!window.google?.accounts?.id)return;
+  // Prefer the previously authorized OAuth session for this exact email.
+  // prompt:"" suppresses the account chooser/consent screen when Google can
+  // silently issue a token; the hint pins the request to the remembered user.
+  if(chooserRef.current){
+   try{chooserRef.current.requestAccessToken({prompt:"",hint:lastEmail});return;}
+   catch{/* Fall through to Google Identity Services One Tap. */}
+  }
   try{
-   // GIS was initialized once during component setup; re-initializing it here
-   // throws and leaves the remembered-account button apparently unresponsive.
-   // Prompt the existing One Tap session instead of invoking the account chooser.
    window.google.accounts.id.prompt((notification:any)=>{
     if(notification?.isNotDisplayed?.()||notification?.isSkippedMoment?.()){
-     onError("Google did not offer automatic sign-in for the remembered account. Please check that this Google account is still signed in to this browser.");
+     onError("Google could not silently verify the remembered account. Make sure that account is signed in to this browser, then use Continue with Google once to re-authorize it.");
     }
    });
   }catch{onError("Google could not start remembered-account sign-in. Please try again.");}
@@ -65,10 +69,10 @@ export default function GoogleSignInButton({endpoint,payload={},onResult,onError
  return <div className="mx-auto w-full max-w-[360px] space-y-2">
   {lastEmail&&<button type="button" disabled={!ready} onClick={continueRemembered} className={button}>
    <GoogleMark/>
-   <span className="ml-auto flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-neutral-100">
+   <span className="min-w-0 flex-1 text-center"><span className="block text-sm font-semibold leading-5">Continue as {lastName||lastEmail.split("@")[0].split(/[._-]/)[0].replace(/^./,x=>x.toUpperCase())}</span><span className="block truncate text-xs leading-4 text-neutral-500">{lastEmail}</span></span>
+   <span className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-neutral-100">
     {lastPicture?<img src={lastPicture} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover"/>:<span className="flex h-full w-full items-center justify-center rounded-full bg-[#4285F4] text-sm font-semibold text-white">{(lastName||lastEmail.split("@")[0]||"G").trim().charAt(0).toUpperCase()}</span>}
    </span>
-   <span className="min-w-0 flex-1"><span className="block text-sm font-semibold leading-5">Continue as {lastName||lastEmail.split("@")[0].split(/[._-]/)[0].replace(/^./,x=>x.toUpperCase())}</span><span className="block truncate text-xs leading-4 text-neutral-500">{lastEmail}</span></span>
   </button>}
   <button type="button" disabled={!ready} onClick={continueChooser} className={button+" justify-start"}>
    <GoogleMark/><span className="flex-1 text-center text-sm font-semibold">Continue with Google</span><span className="w-5 shrink-0" aria-hidden="true"/>

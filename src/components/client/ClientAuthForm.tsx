@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, CheckCircle2, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, UserRound } from "lucide-react";
 
-export default function ClientAuthForm({ mode, rememberedEmail = "" }: { mode: "login" | "register"; rememberedEmail?: string }) {
+export default function ClientAuthForm({ mode, rememberedEmails = [] }: { mode: "login" | "register"; rememberedEmails?: string[] }) {
   const router = useRouter();
   const [name, setName] = useState("");
-  const [email, setEmail] = useState(rememberedEmail);
+  const [email, setEmail] = useState(rememberedEmails[0] || "");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -56,7 +56,7 @@ export default function ClientAuthForm({ mode, rememberedEmail = "" }: { mode: "
     </div>
     {error && <div role="alert" className="mb-4 rounded-xl border border-rose-400/25 bg-rose-400/10 p-3 text-sm text-rose-200">{error}</div>}
     {message && <div role="status" className="mb-4 flex gap-2 rounded-xl border border-emerald-400/25 bg-emerald-400/10 p-3 text-sm text-emerald-200"><CheckCircle2 size={18} className="shrink-0"/>{message}</div>}
-    {mode === "login" && rememberedEmail && <button type="button" onClick={() => { setEmail(rememberedEmail); }} className="mb-4 flex w-full items-center justify-between rounded-xl border border-cyan-300/20 bg-cyan-300/10 p-3 text-left text-sm text-cyan-100"><span><span className="block text-xs text-cyan-200/70">Continue as</span><span className="font-semibold">{rememberedEmail}</span></span><ArrowRight size={17}/></button>}
+    {mode === "login" && rememberedEmails.length > 0 && <div className="mb-4 rounded-xl border border-cyan-300/15 bg-cyan-300/[.05] p-3"><p className="mb-2 text-[10px] font-semibold uppercase tracking-[.16em] text-cyan-200/70">Continue as an account</p><div className="space-y-2">{rememberedEmails.map(account=><button key={account} type="button" onClick={() => setEmail(account)} className={`flex w-full items-center justify-between rounded-lg border px-3 py-2.5 text-left text-xs transition ${email===account?"border-cyan-300/40 bg-cyan-300/10 text-cyan-100":"border-white/10 text-slate-300 hover:bg-white/5"}`}><span className="truncate">{account}</span>{email===account?<span className="text-[10px]">Selected</span>:<ArrowRight size={14}/>}</button>)}</div></div>}
     <form onSubmit={submit} className="space-y-4">
       {mode === "register" && <label className="block text-sm text-slate-200">Full name<div className="relative mt-2"><UserRound size={17} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"/><input required minLength={2} maxLength={120} value={name} onChange={e=>setName(e.target.value)} autoComplete="name" className="w-full rounded-xl border border-white/10 bg-white/[.06] py-3 pl-10 pr-4 text-white outline-none focus:border-violet-400" placeholder="Your full name"/></div></label>}
       <label className="block text-sm text-slate-200">Email address<div className="relative mt-2"><Mail size={17} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"/><input required type="email" maxLength={254} value={email} onChange={e=>{setEmail(e.target.value);}} autoComplete="email" className="w-full rounded-xl border border-white/10 bg-white/[.06] py-3 pl-10 pr-4 text-white outline-none focus:border-violet-400" placeholder="you@example.com"/></div></label>

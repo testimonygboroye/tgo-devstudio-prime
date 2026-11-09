@@ -6,6 +6,7 @@ export interface IPageContent extends Document {
   type: PageContentType;
   title: string;
   content: string;
+  contentVersion?: string;
   lastUpdatedBy: Types.ObjectId;
   translations?: Map<string, Record<string, unknown>> | Record<string, Record<string, unknown>>;
   createdAt: Date;

@@ -47,7 +47,20 @@ export default function GoogleSignInButton({endpoint,payload={},onResult,onError
   if(window.google?.accounts?.oauth2&&window.google?.accounts?.id)init();
   return()=>{disposed=true;window.clearInterval(poll);};
  },[clientId,initialize]);
- function continueRemembered(){if(!ready||!chooserRef.current||!lastEmail)return;try{chooserRef.current.requestAccessToken({login_hint:lastEmail});}catch{continueChooser();}}
+ function continueRemembered(){
+  if(!ready||!lastEmail||!window.google?.accounts?.id)return;
+  try{
+   window.google.accounts.id.initialize({
+    client_id:clientId,
+    callback:(response:any)=>{if(response.credential)void completeLogin({credential:response.credential});},
+    auto_select:true,
+    ux_mode:"popup",
+    cancel_on_tap_outside:true,
+    login_hint:lastEmail
+   });
+   window.google.accounts.id.prompt();
+  }catch{onError("Google could not start remembered-account sign-in. Please try again.");}
+ }
  function continueChooser(){if(!ready||!chooserRef.current)return;try{chooserRef.current.requestAccessToken({prompt:"select_account"});}catch{onError("Could not open the Google account chooser. Please try again.");}}
  const button="flex min-h-[48px] w-full items-center gap-3 rounded-full border border-neutral-200 bg-white px-3 py-2 text-left text-neutral-900 shadow-sm transition hover:bg-neutral-50 disabled:cursor-wait disabled:opacity-60";
  return <div className="mx-auto w-full max-w-[360px] space-y-2">
@@ -55,6 +68,7 @@ export default function GoogleSignInButton({endpoint,payload={},onResult,onError
    <span className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-neutral-100">
     {lastPicture?<img src={lastPicture} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover"/>:<span className="flex h-full w-full items-center justify-center rounded-full bg-[#4285F4] text-sm font-semibold text-white">{(lastName||lastEmail.split("@")[0]||"G").trim().charAt(0).toUpperCase()}</span>}
    </span>
+   <GoogleMark/>
    <span className="min-w-0 flex-1"><span className="block text-sm font-semibold leading-5">Continue as {lastName||lastEmail.split("@")[0].split(/[._-]/)[0].replace(/^./,x=>x.toUpperCase())}</span><span className="block truncate text-xs leading-4 text-neutral-500">{lastEmail}</span></span>
   </button>}
   <button type="button" disabled={!ready} onClick={continueChooser} className={button+" justify-start"}>

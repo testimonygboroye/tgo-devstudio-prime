@@ -27,7 +27,7 @@ const ClientProfileSchema = new Schema<IClientProfile>({
   website: { type: String, trim: true, maxlength: 300 },
   country: { type: String, trim: true, maxlength: 100 },
   timezone: { type: String, trim: true, maxlength: 80 },
-  lifecycle: { type: String, enum: ["lead", "onboarding", "active", "at_risk", "inactive"], default: "onboarding", index: true },
+  lifecycle: { type: String, enum: ["lead", "onboarding", "active", "at_risk", "inactive"], default: "onboarding" },
   segments: { type: [String], default: [], validate: [(v: string[]) => v.length <= 30, "Maximum 30 segments"] },
   onboardingStatus: { type: String, enum: ["not_started", "in_progress", "completed"], default: "not_started" },
   source: { type: String, enum: ["self_registration", "admin_created", "google"], required: true },

@@ -54,12 +54,11 @@ export default async function FounderControlCentrePage() {
   if (!session.role.isFounderRole) redirect(`${basePath}/dashboard`);
 
   await connectToDatabase();
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
   const [activeMemberships, suspendedMemberships, roleCount, auditToday, unreadNotifications, pendingEvents, failedEvents, recentActivity] = await Promise.all([
     BusinessMembership.countDocuments({ status: "active" }),
     BusinessMembership.countDocuments({ status: "suspended" }),
     BusinessRole.countDocuments({}),
-    PlatformAuditEvent.countDocuments({ createdAt: { $gte: since } }),
+    PlatformAuditEvent.countDocuments({}),
     PlatformNotification.countDocuments({ recipientId: session.user._id, readAt: { $exists: false } }),
     PlatformEvent.countDocuments({ status: { $in: ["pending", "processing"] } }),
     PlatformEvent.countDocuments({ status: "failed" }),
@@ -120,12 +119,12 @@ export default async function FounderControlCentrePage() {
       <section>
         <div className="mb-4 flex items-end justify-between gap-3">
           <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-cyan-400">Operational snapshot</p><h3 className="mt-1 text-xl font-bold text-[var(--text-primary)]">Platform at a glance</h3></div>
-          <span className="text-xs text-[var(--text-muted)]">Last 24 hours · live database counts</span>
+          <span className="text-xs text-[var(--text-muted)]">Live database counts</span>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard label="Active memberships" value={activeMemberships} detail={`${suspendedMemberships} suspended memberships`} icon={Users} tone="cyan" />
           <MetricCard label="Business roles" value={roleCount} detail="Configured platform roles" icon={ShieldCheck} tone="violet" />
-          <MetricCard label="Audit activity" value={auditToday} detail="Recorded actions in 24 hours" icon={Activity} tone="emerald" />
+          <MetricCard label="Audit activity" value={auditToday} detail="Total recorded platform actions" icon={Activity} tone="emerald" />
           <MetricCard label="Unread notifications" value={unreadNotifications} detail="For your founder account" icon={Bell} tone="amber" />
         </div>
       </section>
@@ -172,7 +171,7 @@ export default async function FounderControlCentrePage() {
         </div>
         {recentActivity.length ? (
           <div className="divide-y divide-[var(--border-subtle)]">
-            {recentActivity.map((entry, index) => (
+            {recentActivity.map((entry) => (
               <div key={String(entry._id)} className="flex flex-wrap items-center gap-3 px-5 py-4 sm:px-6">
                 <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${entry.outcome === "success" ? "bg-emerald-400/10 text-emerald-300" : entry.outcome === "denied" ? "bg-amber-400/10 text-amber-300" : "bg-rose-400/10 text-rose-300"}`}><Fingerprint size={17} /></span>
                 <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-[var(--text-primary)]">{entry.action}</p><p className="mt-1 truncate text-xs text-[var(--text-muted)]">{entry.actorLabel || entry.actorId} · {entry.module}{entry.targetType ? ` · ${entry.targetType}` : ""}</p></div>

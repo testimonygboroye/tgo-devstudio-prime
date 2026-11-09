@@ -33,11 +33,17 @@ export async function createClientIdentity(input: {
     isEmailVerified: input.source === "google", emailVerifiedAt: input.source === "google" ? new Date() : undefined,
     authProviders: input.source === "google" ? ["google"] : ["password"],
   });
-  await ClientProfile.create({ userId: user._id, lifecycle: "onboarding", onboardingStatus: "not_started", source: input.source });
-  await ClientActivity.create({
-    clientId: user._id, actorId: user._id, actorType: "client",
-    action: "client.account_created", summary: "Client account created.",
-    metadata: { source: input.source },
-  });
-  return user;
+  try {
+    await ClientProfile.create({ userId: user._id, lifecycle: "onboarding", onboardingStatus: "not_started", source: input.source });
+    await ClientActivity.create({
+      clientId: user._id, actorId: user._id, actorType: "client",
+      action: "client.account_created", summary: "Client account created.",
+      metadata: { source: input.source },
+    });
+    return user;
+  } catch (error) {
+    await User.deleteOne({ _id: user._id });
+    await ClientProfile.deleteOne({ userId: user._id });
+    throw error;
+  }
 }

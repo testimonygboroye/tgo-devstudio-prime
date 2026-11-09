@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedSession } from "@/lib/auth/session";
 import { connectToDatabase } from "@/lib/db";
 import PageView from "@/models/PageView";
+import AnalyticsEvent from "@/models/AnalyticsEvent";
 import Visitor, {
   type VisitorStatus,
 } from "@/models/Visitor";
@@ -107,10 +108,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ status: "ok", ignored: true });
     }
     const authenticatedSession = await getAuthenticatedSession(request);
-    if (authenticatedSession?.role?.isFounderRole) {
+    if (authenticatedSession) {
       await connectToDatabase();
       await Visitor.updateOne({ visitorId }, { $set: { isInternal: true } });
       await PageView.updateMany({ visitorId }, { $set: { isInternal: true } });
+      await AnalyticsEvent.updateMany({ visitorId }, { $set: { isInternal: true } });
       return NextResponse.json({ status: "ok", ignored: true });
     }
 

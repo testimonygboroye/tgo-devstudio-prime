@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { connectToDatabase } from "@/lib/db";
@@ -24,6 +25,10 @@ import { TRANSLATABLE_FIELDS } from "@/lib/i18n/translatableFields";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 export default async function HomePage() {
   await connectToDatabase();

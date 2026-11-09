@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Building2, Search, ShieldCheck, Users, UserRoundCog, CircleAlert, Save, RefreshCw } from "lucide-react";
 
 type Client={id:string;name:string;email:string;emailVerified:boolean;suspended:boolean;createdAt:string;lifecycle:string;segments:string[];onboardingStatus:string;organization:{id:string;name:string}|null;phone:string;country:string};
-type Organization={id:string;name:string};\ntype Activity={id:string;action:string;summary:string;actorType:string;createdAt:string};
+type Organization={id:string;name:string};
+type Activity={id:string;action:string;summary:string;actorType:string;createdAt:string};
 const lifecycleLabels:Record<string,string>={lead:"Lead",onboarding:"Onboarding",active:"Active",at_risk:"At risk",inactive:"Inactive"};
 export default function ClientManagement({initialClients,initialOrganizations}:{initialClients:Client[];initialOrganizations:Organization[]}){
  const [clients,setClients]=useState(initialClients);const [history,setHistory]=useState<Activity[]>([]);const [historyLoading,setHistoryLoading]=useState(false);const [organizations,setOrganizations]=useState(initialOrganizations);const [query,setQuery]=useState("");const [lifecycle,setLifecycle]=useState("all");const [selected,setSelected]=useState<Client|null>(null);const [segments,setSegments]=useState("");const [orgId,setOrgId]=useState("");const [onboarding,setOnboarding]=useState("not_started");const [stage,setStage]=useState("onboarding");const [busy,setBusy]=useState(false);const [error,setError]=useState("");const [success,setSuccess]=useState("");

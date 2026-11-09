@@ -101,7 +101,7 @@ export default function AdminSidebar({
   const setMobileOpen = useCallback((open: boolean) => setIsMobileOpen(open), []);
   const drawerRef = useRef<HTMLElement>(null);
   const backdropRef = useRef<HTMLButtonElement>(null);
-  useSwipeSidebar(isMobileOpen, setMobileOpen, "left", drawerRef, backdropRef, { maxWidth: 304, railWidth: 64 });
+  useSwipeSidebar(isMobileOpen, setMobileOpen, "left", drawerRef, backdropRef, { maxWidth: 304, railWidth: 64, mobileBreakpoint: 768 });
   const [counts, setCounts] = useState<Record<string, number>>({});
   const pathname = usePathname();
   const router = useRouter();

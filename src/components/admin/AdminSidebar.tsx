@@ -157,7 +157,7 @@ export default function AdminSidebar({
     if (!confirmed) return;
 
     await fetch("/api/auth/logout", { method: "POST" });
-    window.location.href = `${basePathSegment}/login`;
+    router.replace(`${basePathSegment}/login`);
   }
 
   return (

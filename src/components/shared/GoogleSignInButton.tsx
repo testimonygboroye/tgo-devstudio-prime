@@ -7,7 +7,7 @@ const LAST_KEY="tgo:last-google-account";
 function GoogleMark(){return <svg aria-hidden="true" viewBox="0 0 48 48" className="h-6 w-6 shrink-0"><path fill="#4285F4" d="M43.6 24.5c0-1.4-.1-2.8-.4-4.1H24v7.8h11a9.4 9.4 0 0 1-4.1 6.2v5.1h6.6c3.9-3.6 6.1-8.9 6.1-15z"/><path fill="#34A853" d="M24 44c5.5 0 10.1-1.8 13.5-4.9l-6.6-5.1c-1.8 1.2-4.1 2-6.9 2-5.3 0-9.8-3.6-11.4-8.4H5.8v5.3A20 20 0 0 0 24 44z"/><path fill="#FBBC05" d="M12.6 27.6a12 12 0 0 1 0-7.2v-5.3H5.8a20 20 0 0 0 0 17.8z"/><path fill="#EA4335" d="M24 12c3 0 5.7 1 7.8 3.1l5.8-5.8C34.1 6 29.5 4 24 4A20 20 0 0 0 5.8 15.1l6.8 5.3C14.2 15.6 18.7 12 24 12z"/></svg>}
 export default function GoogleSignInButton({endpoint,payload={},onResult,onError}:Props){
  const [lastEmail,setLastEmail]=useState(""),[lastName,setLastName]=useState(""),[ready,setReady]=useState(false),[loadError,setLoadError]=useState("");
- const chooserRef=useRef<TokenClient|null>(null),rememberedRef=useRef<TokenClient|null>(null);
+ const chooserRef=useRef<TokenClient|null>(null);
  const clientId=process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,payloadKey=JSON.stringify(payload);
  const submitToken=useCallback(async(accessToken:string)=>{
   try{
@@ -17,14 +17,18 @@ export default function GoogleSignInButton({endpoint,payload={},onResult,onError
    onResult(data);
   }catch{onError("Could not reach TGO authentication. Check your connection and try again.");}
  },[endpoint,payloadKey,onError,onResult]);
+ const handleRememberedCredential=useCallback(async(response:{credential:string})=>{
+  try{const result=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},credentials:"same-origin",cache:"no-store",body:JSON.stringify({...JSON.parse(payloadKey),credential:response.credential})});const data=await result.json();if(!result.ok){onError(data.message||"Google sign-in failed.");return;}try{const raw=response.credential.split(".")[1].replace(/-/g,"+").replace(/_/g,"/");const claims=JSON.parse(atob(raw));if(claims.email){const email=String(claims.email).toLowerCase(),name=String(claims.name||"");localStorage.setItem(LAST_KEY,email);localStorage.setItem("tgo:last-google-name",name);setLastEmail(email);setLastName(name);}}catch{}onResult(data);}catch{onError("Could not reach TGO authentication. Check your connection and try again.");}
+ },[endpoint,payloadKey,onError,onResult]);
  const initialize=useCallback(()=>{
-  const oauth=window.google?.accounts?.oauth2;if(!clientId||!oauth)return false;
+  const oauth=window.google?.accounts?.oauth2,id=window.google?.accounts?.id;if(!clientId||!oauth||!id)return false;
   if(!chooserRef.current){
+   let remembered="";try{remembered=localStorage.getItem(LAST_KEY)||"";}catch{}
+   id.initialize({client_id:clientId,callback:handleRememberedCredential,auto_select:true,ux_mode:"popup",cancel_on_tap_outside:true,...(remembered?{login_hint:remembered}:{})});
    chooserRef.current=oauth.initTokenClient({client_id:clientId,scope:"openid email profile",callback:(response:any)=>{if(response.error||!response.access_token){onError("Google account selection was cancelled or could not complete.");return;}void submitToken(response.access_token);}});
-   rememberedRef.current=oauth.initTokenClient({client_id:clientId,scope:"openid email profile",prompt:"none",callback:(response:any)=>{if(response.error||!response.access_token){onError("Google could not silently reuse the last account. Tap Continue with Google to select an account.");return;}void submitToken(response.access_token);}});
   }
   setReady(true);setLoadError("");return true;
- },[clientId,onError,submitToken]);
+ },[clientId,handleRememberedCredential,onError,submitToken]);
  useEffect(()=>{
   try{setLastEmail(localStorage.getItem(LAST_KEY)||"");setLastName(localStorage.getItem("tgo:last-google-name")||"");}catch{}
   if(!clientId){setLoadError("Google sign-in is not configured on this deployment.");return;}
@@ -36,7 +40,7 @@ export default function GoogleSignInButton({endpoint,payload={},onResult,onError
   if(window.google?.accounts?.oauth2)init();
   return()=>{disposed=true;window.clearInterval(poll);};
  },[clientId,initialize]);
- function continueRemembered(){if(!ready||!rememberedRef.current||!lastEmail)return;try{rememberedRef.current.requestAccessToken({prompt:"none",hint:lastEmail});}catch{onError("Could not start remembered Google sign-in. Use Continue with Google instead.");}}
+ function continueRemembered(){if(!ready||!window.google?.accounts?.id||!lastEmail)return;try{window.google.accounts.id.prompt((notice:any)=>{if(notice?.isNotDisplayed?.()||notice?.isSkippedMoment?.())onError("Google could not automatically reuse the last account. Use Continue with Google to choose an account.");});}catch{onError("Could not start remembered Google sign-in. Use Continue with Google instead.");}}
  function continueChooser(){if(!ready||!chooserRef.current)return;try{chooserRef.current.requestAccessToken({prompt:"select_account"});}catch{onError("Could not open the Google account chooser. Please try again.");}}
  const button="flex min-h-[62px] w-full items-center gap-3 rounded-full border border-neutral-200 bg-white px-4 py-2.5 text-left text-neutral-900 shadow-sm transition hover:bg-neutral-50 disabled:cursor-wait disabled:opacity-60";
  return <div className="mx-auto w-full max-w-[360px] space-y-2.5">

@@ -115,7 +115,6 @@ export default function AdminSidebar({
   const [counts, setCounts] = useState<Record<string, number>>({});
   const pathname = usePathname();
   const router = useRouter();
-  useEffect(() => { setIsMobileOpen(false); }, [pathname]);
   const collapsed = isCollapsed && !isMobileOpen;
 
   const basePathSegment = basePath;
@@ -141,10 +140,12 @@ export default function AdminSidebar({
   }, []);
 
   useEffect(() => {
-    loadCounts();
-    const interval = setInterval(loadCounts, 30000);
-
-    return () => clearInterval(interval);
+    const initialLoad = setTimeout(() => { void loadCounts(); }, 0);
+    const interval = setInterval(() => { void loadCounts(); }, 30000);
+    return () => {
+      clearTimeout(initialLoad);
+      clearInterval(interval);
+    };
   }, [loadCounts]);
 
   async function handleLogout() {
@@ -200,7 +201,7 @@ export default function AdminSidebar({
                   const Icon = item.icon;
                   const count = item.badgeKey ? counts[item.badgeKey] || 0 : 0;
                   return (
-                    <Link key={item.hrefSuffix} href={href} prefetch={false} onPointerEnter={() => router.prefetch(href)} onFocus={() => router.prefetch(href)} onTouchStart={() => router.prefetch(href)} title={item.label}
+                    <Link key={item.hrefSuffix} href={href} prefetch={false} onClick={() => setIsMobileOpen(false)} onPointerEnter={() => router.prefetch(href)} onFocus={() => router.prefetch(href)} onTouchStart={() => router.prefetch(href)} title={item.label}
                       className={`group relative flex items-center gap-3.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-75 ${isActive ? "brand-gradient-bg text-white shadow-md shadow-brand-violet-600/20" : "text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"}`}>
                       <span className="relative flex-shrink-0 flex items-center justify-center"><Icon size={18} className={isActive ? "text-white" : "text-brand-cyan-400 group-hover:scale-110 transition-transform"}/>
                         {count > 0 && <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white shadow-sm">{count > 9 ? "9+" : count}</span>}

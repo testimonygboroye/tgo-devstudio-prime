@@ -26,10 +26,19 @@ export async function GET(request: NextRequest) {
   try {
     await connectToDatabase();
 
+    const trustedTrafficFilter = {
+      isInternal: { $ne: true },
+      $nor: [
+        { userAgent: { $regex: "HeadlessChrome|PhantomJS|Playwright|Puppeteer", $options: "i" } },
+        { referrer: { $regex: "tgo-devstudio-prime-[a-z0-9]+-testimonygboroye\\.vercel\\.app", $options: "i" } },
+      ],
+    };
+
     const [uniqueVisitors, dailyVisitors] = await Promise.all([
-      PageView.distinct("visitorId"),
+      PageView.distinct("visitorId", trustedTrafficFilter),
 
       PageView.aggregate([
+        { $match: trustedTrafficFilter },
         {
           $project: {
             visitorId: 1,

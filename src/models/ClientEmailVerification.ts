@@ -9,7 +9,7 @@ export interface IClientEmailVerification extends Document {
 }
 
 const ClientEmailVerificationSchema = new Schema<IClientEmailVerification>({
-  userId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
+  userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
   tokenHash: { type: String, required: true, unique: true },
   expiresAt: { type: Date, required: true },
   consumedAt: { type: Date },

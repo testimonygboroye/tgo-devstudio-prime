@@ -6,6 +6,7 @@ import { setAuthCookies } from "@/lib/auth/cookies";
 import User from "@/models/User";
 import ClientProfile from "@/models/ClientProfile";
 import ClientActivity from "@/models/ClientActivity";
+import { rememberClientAccount } from "@/lib/clients/account-selector";
 
 type GoogleProfile = { sub?: string; email?: string; email_verified?: boolean; name?: string };
 
@@ -68,10 +69,7 @@ export async function GET(request: NextRequest) {
     const refreshToken = signRefreshToken({ userId: String(user._id), tokenVersion: user.refreshTokenVersion });
     const response = NextResponse.redirect(new URL("/client/dashboard", siteUrl));
     setAuthCookies(response, accessToken, refreshToken);
-    response.cookies.set("tgo_client_account", email, {
-      path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax",
-      secure: process.env.NODE_ENV === "production", httpOnly: false,
-    });
+    rememberClientAccount(response, request, email);
     response.cookies.delete("tgo_client_oauth_state");
     return response;
   } catch {

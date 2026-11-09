@@ -47,7 +47,7 @@ export default function GoogleSignInButton({endpoint,payload={},onResult,onError
   if(window.google?.accounts?.oauth2&&window.google?.accounts?.id)init();
   return()=>{disposed=true;window.clearInterval(poll);};
  },[clientId,initialize]);
- function continueRemembered(){if(!ready||!chooserRef.current||!lastEmail)return;try{chooserRef.current.requestAccessToken({hint:lastEmail});}catch{continueChooser();}}
+ function continueRemembered(){if(!ready||!chooserRef.current||!lastEmail)return;try{chooserRef.current.requestAccessToken({login_hint:lastEmail});}catch{continueChooser();}}
  function continueChooser(){if(!ready||!chooserRef.current)return;try{chooserRef.current.requestAccessToken({prompt:"select_account"});}catch{onError("Could not open the Google account chooser. Please try again.");}}
  const button="flex min-h-[48px] w-full items-center gap-3 rounded-full border border-neutral-200 bg-white px-3 py-2 text-left text-neutral-900 shadow-sm transition hover:bg-neutral-50 disabled:cursor-wait disabled:opacity-60";
  return <div className="mx-auto w-full max-w-[360px] space-y-2">

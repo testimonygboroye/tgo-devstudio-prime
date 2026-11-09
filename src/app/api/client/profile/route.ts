@@ -39,7 +39,11 @@ export async function PATCH(request: NextRequest) {
   }
   if (values.website && !/^https:\/\//i.test(values.website)) return NextResponse.json({ error: "Website must use https://." }, { status: 400 });
   await connectToDatabase();
-  const profile = await ClientProfile.findOneAndUpdate({ userId: session.user._id }, { $set: values }, { new: true, runValidators: true });
+  const current = await ClientProfile.findOne({ userId: session.user._id });
+  if (!current) return NextResponse.json({ error: "Client profile not found." }, { status: 404 });
+  const merged = { phone: values.phone ?? current.phone ?? "", country: values.country ?? current.country ?? "", timezone: values.timezone ?? current.timezone ?? "" };
+  const onboardingStatus = merged.phone && merged.country && merged.timezone ? "completed" : "in_progress";
+  const profile = await ClientProfile.findOneAndUpdate({ userId: session.user._id }, { $set: { ...values, onboardingStatus } }, { new: true, runValidators: true });
   if (!profile) return NextResponse.json({ error: "Client profile not found." }, { status: 404 });
   await ClientActivity.create({ clientId: session.user._id, actorId: session.user._id, actorType: "client", action: "client.profile_updated", summary: "Client updated their profile.", metadata: { fields: Object.keys(values) } });
   return NextResponse.json({ ok: true, message: "Profile updated." });

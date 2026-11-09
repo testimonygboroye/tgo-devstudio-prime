@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     const profile = byUser.get(String(user._id));
     const org = profile?.organizationId && typeof profile.organizationId === "object" && "name" in profile.organizationId ? profile.organizationId as unknown as { _id: unknown; name: string } : null;
     return {
-      id: String(user._id), name: user.name, email: user.email, emailVerified: user.isEmailVerified,
+      id: String(user._id), name: user.name, email: user.email, emailVerified: user.isEmailVerified ?? false,
       suspended: user.isBanned, createdAt: user.createdAt.toISOString(),
       profileId: profile ? String(profile._id) : null, lifecycle: profile?.lifecycle || "onboarding",
       segments: profile?.segments || [], onboardingStatus: profile?.onboardingStatus || "not_started",

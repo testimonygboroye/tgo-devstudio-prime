@@ -11,7 +11,8 @@ interface PageProps {
 const TYPE_LABELS: Record<string, string> = {
   about: "About Page",
   "privacy-policy": "Privacy Policy",
-  "terms-of-service": "Terms of Service",
+  "terms-of-service": "Consumer Terms of Service",
+  "usage-policy": "Website Usage Policy",
   accessibility: "Accessibility Statement",
 };
 
@@ -30,7 +31,7 @@ export default async function PageContentEditPage({ params }: PageProps) {
       <p className="font-mono text-xs uppercase tracking-widest text-neutral-400">Content</p>
       <h1 className="mt-1 text-3xl font-bold brand-gradient-text">{label}</h1>
       <div className="mt-8">
-        <PageContentEditClient type={type as "about" | "privacy-policy" | "terms-of-service"} />
+        <PageContentEditClient type={type as "about" | "privacy-policy" | "terms-of-service" | "usage-policy" | "accessibility"} />
         {type === "about" && (
           <div className="mt-8">
             <FounderSettingsClient />

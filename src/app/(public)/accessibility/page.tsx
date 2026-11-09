@@ -1,57 +1,27 @@
 import type { Metadata } from "next";
 import { connectToDatabase } from "@/lib/db";
 import PageContent from "@/models/PageContent";
-import { ACCESSIBILITY_DEFAULT } from "@/lib/constants/pageDefaults";
-import { sanitizeBlogHtml } from "@/lib/sanitizeHtml";
+import { PAGE_DEFAULTS } from "@/lib/constants/pageDefaults";
+import { PAGE_CONTENT_VERSION } from "@/lib/constants/legalContent";
 import { getServerLocale } from "@/lib/i18n/serverLocale";
-import { createTranslator, getLocalizedContent } from "@/lib/i18n/translationHelper";
+import { getLocalizedContent } from "@/lib/i18n/translationHelper";
+import LegalPageShell from "@/components/public/LegalPageShell";
 
 export const revalidate = 300;
+export const metadata: Metadata = {
+  title: "Accessibility Statement | TGO DevStudio Prime",
+  description: "Our ongoing commitment to accessible experiences and how to report a barrier or request assistance.",
+  alternates: { canonical: "/accessibility" },
+  openGraph: { title: "Accessibility Statement | TGO DevStudio Prime", description: "Our ongoing commitment to accessible experiences and how to report a barrier or request assistance.", url: "/accessibility", type: "article", images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "TGO DevStudio Prime" }] },
+  twitter: { card: "summary_large_image", images: ["/opengraph-image"], title: "Accessibility Statement | TGO DevStudio Prime", description: "Our ongoing commitment to accessible experiences and how to report a barrier or request assistance." },
+};
 
-export async function generateMetadata(): Promise<Metadata> {
-  const t = createTranslator(await getServerLocale());
-
-  return {
-    alternates: { canonical: "/accessibility" },
-    title: `Accessibility | TGO DevStudio Prime`,
-    description: t("common.readMore"),
-  };
-}
-
-export default async function AccessibilityPage() {
+export default async function LegalDocumentPage() {
   await connectToDatabase();
-
   const locale = await getServerLocale();
-  const t = createTranslator(locale);
-
-  const saved = await PageContent.findOne({
-    type: "accessibility",
-  }).lean();
-
-  const page = saved
+  const saved = await PageContent.findOne({ type: "accessibility" }).lean();
+  const page = saved && saved.contentVersion === PAGE_CONTENT_VERSION
     ? getLocalizedContent(saved, locale, ["title", "content"])
-    : ACCESSIBILITY_DEFAULT;
-
-  return (
-    <main className="min-h-screen px-6 py-20 sm:px-12">
-      <div className="mx-auto max-w-3xl">
-        <span className="eyebrow-label">{t("nav.more")}</span>
-
-        <h1
-          className="heading-premium mt-3 text-4xl font-bold brand-gradient-text sm:text-5xl"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
-          {page.title}
-        </h1>
-
-        <div
-          className="prose prose-invert mt-10 max-w-none"
-          style={{ color: "var(--text-secondary)" }}
-          dangerouslySetInnerHTML={{
-            __html: sanitizeBlogHtml(page.content),
-          }}
-        />
-      </div>
-    </main>
-  );
+    : PAGE_DEFAULTS["accessibility"];
+  return <LegalPageShell title={page.title} eyebrow="TGO DevStudio · Legal" description="Our ongoing commitment to accessible experiences and how to report a barrier or request assistance." content={page.content} currentPath="/accessibility" />;
 }

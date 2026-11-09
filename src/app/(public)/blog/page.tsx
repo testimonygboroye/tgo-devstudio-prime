@@ -8,6 +8,7 @@ import BrandPlaceholder from "@/components/public/BrandPlaceholder";
 import { getServerLocale } from "@/lib/i18n/serverLocale";
 import { createTranslator, getLocalizedContent } from "@/lib/i18n/translationHelper";
 import { TRANSLATABLE_FIELDS } from "@/lib/i18n/translatableFields";
+import PublicEmptyState from "@/components/public/PublicEmptyState";
 
 export const revalidate = 300;
 
@@ -51,9 +52,7 @@ export default async function BlogListPage() {
         </p>
 
         {posts.length === 0 && (
-          <p className="mt-14" style={{ color: "var(--text-muted)" }}>
-            {t("home.noPosts")}
-          </p>
+          <PublicEmptyState eyebrow="Studio insights" title="New perspectives are being prepared." description="Our articles explore software engineering, product decisions, practical technology and the craft of building dependable digital experiences. In the meantime, explore our capabilities or talk with the team." primaryHref="/services" primaryLabel="Explore services" secondaryHref="/contact" secondaryLabel="Talk to TGO" />
         )}
 
         <div className="mt-14 grid gap-7 sm:grid-cols-2">

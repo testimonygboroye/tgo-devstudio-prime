@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { getServerLocale } from "@/lib/i18n/serverLocale";
 import { createTranslator, getLocalizedContent } from "@/lib/i18n/translationHelper";
 import { TRANSLATABLE_FIELDS } from "@/lib/i18n/translatableFields";
+import PublicEmptyState from "@/components/public/PublicEmptyState";
 
 export const revalidate = 300;
 
@@ -53,9 +54,7 @@ export default async function ProcessPage() {
         </p>
 
         {steps.length === 0 ? (
-          <p className="mt-14" style={{ color: "var(--text-muted)" }}>
-            {t("common.loading")}
-          </p>
+          <PublicEmptyState eyebrow="Our approach" title="Clear thinking. Deliberate engineering. Measurable progress." description="Every engagement is shaped around its goals, constraints and people. We begin by understanding the problem, agree on scope and priorities, build in considered increments, then prepare the work for launch and continued improvement." primaryHref="/contact" primaryLabel="Discuss your project" secondaryHref="/book-a-call" secondaryLabel="Book a call" />
         ) : (
           <div className="mt-14 space-y-0">
             {steps.map((step, index) => (

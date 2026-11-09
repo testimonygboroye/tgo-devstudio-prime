@@ -12,6 +12,7 @@ import {
 import { TRANSLATABLE_FIELDS } from "@/lib/i18n/translatableFields";
 import { slugify } from "@/lib/utils/slugify";
 import { getSiteUrl } from "@/lib/siteUrl";
+import PublicEmptyState from "@/components/public/PublicEmptyState";
 
 export const revalidate = 300;
 
@@ -96,9 +97,7 @@ export default async function ServicesPage() {
         </p>
 
         {services.length === 0 ? (
-          <p className="mt-14" style={{ color: "var(--text-muted)" }}>
-            {t("home.noServices")}
-          </p>
+          <PublicEmptyState eyebrow="Capabilities" title="Let's define the right solution for your next challenge." description="Tell us what you are trying to build. We can discuss the scope, technical approach and a practical path from idea to a production-ready product." primaryHref="/contact" primaryLabel="Discuss a project" secondaryHref="/book-a-call" secondaryLabel="Book a discovery call" />
         ) : (
           <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {services.map((service) => {

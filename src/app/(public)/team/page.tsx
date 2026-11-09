@@ -6,6 +6,7 @@ import TeamMember from "@/models/TeamMember";
 import { getServerLocale } from "@/lib/i18n/serverLocale";
 import { createTranslator, getLocalizedContent } from "@/lib/i18n/translationHelper";
 import { TRANSLATABLE_FIELDS } from "@/lib/i18n/translatableFields";
+import PublicEmptyState from "@/components/public/PublicEmptyState";
 
 export const revalidate = 300;
 
@@ -50,7 +51,7 @@ export default async function TeamPage() {
           {t("team.subtitle")}
         </p>
 
-        <div className="mt-14 grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
+        {teamMembers.length === 0 ? <PublicEmptyState eyebrow="People behind the work" title="A considered, hands-on approach to engineering." description="TGO DevStudio brings together product thinking and software engineering to turn complex requirements into dependable digital experiences. Contact us to discuss the people and expertise your project needs." primaryHref="/contact" primaryLabel="Meet us through a project" secondaryHref="/about" secondaryLabel="About the studio" /> : <div className="mt-14 grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
           {teamMembers.map((member) => (
             <Link
               key={member._id.toString()}
@@ -92,7 +93,7 @@ export default async function TeamPage() {
               </div>
             </Link>
           ))}
-        </div>
+        </div>}
       </div>
     </main>
   );

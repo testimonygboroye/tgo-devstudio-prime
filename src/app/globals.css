@@ -670,3 +670,16 @@ html, body { overscroll-behavior-x: none; touch-action: auto; }
 #admin-scroll-area > * { min-width: 0; max-width: 100%; }
 [data-horizontal-scroll] { max-width: 100%; touch-action: pan-x pan-y; -webkit-overflow-scrolling: touch; }
 [data-horizontal-scroll] table { max-width: none; }
+
+
+/* Legal centre: premium editorial layout and accessible long-form typography */
+.legal-document{color:var(--text-secondary);font-size:1rem;line-height:1.9;overflow-wrap:anywhere}
+.legal-document>p:first-child{display:flex;flex-wrap:wrap;gap:.5rem 1rem;align-items:center;padding:1rem 1.25rem;margin:0 0 2rem;border:1px solid color-mix(in srgb,var(--color-brand-cyan-400) 28%,var(--border-subtle));border-radius:1rem;background:color-mix(in srgb,var(--color-brand-cyan-400) 6%,var(--bg-surface-2));font-size:.82rem}
+.legal-document h2{margin:2.6rem 0 1rem;padding:.85rem 1rem;border-left:3px solid var(--color-brand-cyan-400);border-radius:0 .9rem .9rem 0;background:linear-gradient(90deg,color-mix(in srgb,var(--color-brand-violet-600) 12%,var(--bg-surface-2)),transparent);color:var(--text-primary);font-size:clamp(1.2rem,2.3vw,1.55rem);line-height:1.35}
+.legal-document h2:first-of-type{margin-top:1.5rem}.legal-document p{margin:1rem 0}
+.legal-document ul,.legal-document ol{margin:1rem 0 1.5rem;padding-left:1.5rem}.legal-document li{margin:.65rem 0;padding-left:.25rem}.legal-document li::marker{color:var(--color-brand-cyan-400)}
+.legal-document strong{color:var(--text-primary);font-weight:700}.legal-document a{color:var(--color-brand-cyan-400);text-decoration:underline;text-underline-offset:3px}.legal-document a:hover{color:var(--color-brand-violet-500)}
+.legal-document blockquote{margin:1.5rem 0;border-left:3px solid var(--color-brand-violet-500);border-radius:0 1rem 1rem 0;background:var(--bg-surface-2);padding:1rem 1.25rem}
+.legal-document :focus-visible,.legal-page a:focus-visible{outline:3px solid var(--color-brand-cyan-400);outline-offset:3px}
+@media(max-width:640px){.legal-document{font-size:.94rem;line-height:1.8}.legal-document h2{margin-top:2rem}}
+@media(prefers-reduced-motion:reduce){.legal-page *,.legal-page *:before,.legal-page *:after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important}}

@@ -61,7 +61,7 @@ export default function ShareCurrentPage() {
 
  useEffect(()=>{if(mode!=="qr"||!qrData){setCombinedFile(null);setComposing(false);return;}let cancelled=false;setCombinedFile(null);setComposing(true);setError("");composeQrShareFile(qrData,url||window.location.href,title).then(file=>{if(!cancelled)setCombinedFile(file);}).catch(error=>{if(!cancelled)setError(error instanceof Error?error.message:"Could not prepare the combined QR image.");}).finally(()=>{if(!cancelled)setComposing(false);});return()=>{cancelled=true;};},[mode,qrData,url,title]);
  async function copyLink(){const currentUrl=url||window.location.href;try{await navigator.clipboard.writeText(currentUrl);}catch{const input=document.createElement("textarea");input.value=currentUrl;input.style.position="fixed";input.style.opacity="0";document.body.appendChild(input);input.select();const ok=document.execCommand("copy");input.remove();if(!ok){setError("Unable to copy the link. Please copy it manually.");return;}}setCopied(true);window.setTimeout(()=>setCopied(false),2000);}
- async function shareLink(){const currentUrl=url||window.location.href;if(navigator.share){try{await navigator.share({title,text:title,url:currentUrl});return;}catch(e){if(e instanceof Error&&e.name==="AbortError")return;}}await copyLink();}
+ async function shareLink(){const currentUrl=url||window.location.href;if(navigator.share){try{await navigator.share({title, text: title, url: currentUrl});return;}catch(e){if(e instanceof Error&&e.name==="AbortError")return;}}await copyLink();}
  function shareQrImage() {
   if(!combinedFile||!navigator.share)return;
   const data={title,text:title+"\n"+(url||window.location.href),files:[combinedFile]};

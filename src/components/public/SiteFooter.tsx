@@ -37,8 +37,9 @@ export default function SiteFooter() {
     { label: t("nav.help"), href: "/help" },
     { label: t("nav.faq"), href: "/faq" },
     { label: "Privacy Policy", href: "/privacy-policy" },
-    { label: "Terms of Service", href: "/terms-of-service" },
-    { label: "Accessibility", href: "/accessibility" },
+    { label: "Consumer Terms", href: "/terms-of-service" },
+    { label: "Usage Policy", href: "/usage-policy" },
+    { label: "Accessibility Statement", href: "/accessibility" },
     { label: t("common.settings"), href: "/settings" },
   ];
 

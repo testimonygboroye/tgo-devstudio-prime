@@ -25,6 +25,7 @@ import {
   BookOpen,
   MessageCircleQuestion,
   UserCog,
+  Contact,
   MessageSquare,
   ShieldCheck,
   Crown,
@@ -63,6 +64,7 @@ const NAV_GROUPS = [
   { title: "People & Access", items: [
     { label: "Invites", hrefSuffix: "/invites", icon: UserPlus, badgeKey: null },
     { label: "Users & Roles", hrefSuffix: "/users", icon: UserCog, badgeKey: null },
+    { label: "Client Management", hrefSuffix: "/clients", icon: Contact, badgeKey: null },
     { label: "Manage Roles", hrefSuffix: "/roles", icon: ShieldCheck, badgeKey: null },
     { label: "Security (2FA)", hrefSuffix: "/security", icon: KeyRound, badgeKey: null },
     { label: "Audit Log", hrefSuffix: "/audit-log", icon: ScrollText, badgeKey: null },

@@ -6,19 +6,28 @@ import {
 } from "@/lib/auth/authorize";
 import { getAdminBasePath } from "@/lib/adminPath";
 
-export function guardCanView(session: ServerSession, contentType: string) {
+function requireSession(session: ServerSession | null): asserts session is ServerSession {
+  if (!session) {
+    redirect(`${getAdminBasePath()}/login`);
+  }
+}
+
+export function guardCanView(session: ServerSession | null, contentType: string) {
+  requireSession(session);
   if (!requireAnyContentPermission(session, contentType)) {
     redirect(`${getAdminBasePath()}/dashboard`);
   }
 }
 
-export function guardCanCreate(session: ServerSession, contentType: string) {
+export function guardCanCreate(session: ServerSession | null, contentType: string) {
+  requireSession(session);
   if (!requireContentPermission(session, contentType, "create")) {
     redirect(`${getAdminBasePath()}/dashboard`);
   }
 }
 
-export function guardCanEdit(session: ServerSession, contentType: string) {
+export function guardCanEdit(session: ServerSession | null, contentType: string) {
+  requireSession(session);
   if (!requireContentPermission(session, contentType, "edit")) {
     redirect(`${getAdminBasePath()}/dashboard`);
   }

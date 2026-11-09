@@ -49,7 +49,7 @@ export default async function AdminShellLayout({
 
       <div
         id="admin-scroll-area"
-        className="ml-16 flex-1 overflow-y-auto px-6 py-8 sm:px-10 md:ml-0"
+        className="ml-16 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-6 sm:px-10 sm:py-8 md:ml-0"
       >
         <AdminTopBar />
 

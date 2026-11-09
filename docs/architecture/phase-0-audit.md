@@ -20,6 +20,7 @@ The audit inspected:
 - GitHub repository metadata, default branch, current branch list, recursive source tree, key application/configuration files, authentication and authorization code, representative API handlers, and existing tests.
 - Vercel project configuration, production deployment metadata, recent deployment history, project environment-variable names/targets (without decrypting values), and the available recent runtime-log window.
 - Existing deployment and CI configuration.
+- All 95 API route-handler files were enumerated and statically reviewed for exported methods, session/permission checks, secret-gated maintenance routes, public upload paths, and state-changing GET handlers. See the API route inventory for grouped findings.
 
 No production database records were changed. No application runtime code was changed. No production environment variables or credentials were read in decrypted form.
 

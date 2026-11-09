@@ -7,6 +7,8 @@ import { HOME_DEFAULTS } from "@/lib/constants/pageDefaults";
 
 const CONTENT_TYPE = "homeSettings";
 
+export const dynamic = "force-dynamic";
+
 const FIELDS = [
   "heroHeadline",
   "heroBackgroundImage",
@@ -47,10 +49,10 @@ export async function GET() {
 
   if (saved) {
     const merged = { ...HOME_DEFAULTS, ...saved };
-    return NextResponse.json({ status: "ok", settings: merged, isDefault: false });
+    return NextResponse.json({ status: "ok", settings: merged, isDefault: false }, { headers: { "Cache-Control": "no-store, max-age=0" } });
   }
 
-  return NextResponse.json({ status: "ok", settings: HOME_DEFAULTS, isDefault: true });
+  return NextResponse.json({ status: "ok", settings: HOME_DEFAULTS, isDefault: true }, { headers: { "Cache-Control": "no-store, max-age=0" } });
 }
 
 export async function PUT(request: NextRequest) {
@@ -94,5 +96,5 @@ export async function PUT(request: NextRequest) {
     { new: true, upsert: true }
   );
 
-  return NextResponse.json({ status: "ok", settings });
+  return NextResponse.json({ status: "ok", settings }, { headers: { "Cache-Control": "no-store, max-age=0" } });
 }

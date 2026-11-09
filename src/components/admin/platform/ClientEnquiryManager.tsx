@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { MessageSquareText, Search, RefreshCw, Save, CircleAlert } from "lucide-react";
 
 type Staff={id:string;name:string;email:string};
@@ -8,8 +8,8 @@ type Enquiry={id:string;clientId:string;clientName:string;clientEmail:string;sub
 const statusLabels:Record<string,string>={new:"New",in_review:"In review",responded:"Responded",closed:"Closed"};
 export default function ClientEnquiryManager({initialEnquiries,initialStaff}:{initialEnquiries:Enquiry[];initialStaff:Staff[]}){
  const [items,setItems]=useState(initialEnquiries);const [staff]=useState(initialStaff);const [assignedTo,setAssignedTo]=useState("");const [filter,setFilter]=useState("all");const [query,setQuery]=useState("");const [selected,setSelected]=useState<Enquiry|null>(null);const [status,setStatus]=useState("new");const [priority,setPriority]=useState("normal");const [busy,setBusy]=useState(false);const [error,setError]=useState("");const [notice,setNotice]=useState("");
- async function load(){const response=await fetch("/api/platform/client-enquiries"+(filter==="all"?"":"?status="+filter),{cache:"no-store"});const data=await response.json();if(!response.ok)throw new Error(data.error||"Enquiries could not be loaded.");setItems(data.enquiries||[]);}
- useEffect(()=>{let active=true;const timer=setTimeout(()=>{load().catch(c=>{if(active)setError(c instanceof Error?c.message:"Could not load enquiries.");});},0);return()=>{active=false;clearTimeout(timer);};},[filter]);
+ const load = useCallback(async () => { const response = await fetch("/api/platform/client-enquiries" + (filter === "all" ? "" : "?status=" + filter), { cache: "no-store" }); const data = await response.json(); if (!response.ok) throw new Error(data.error || "Enquiries could not be loaded."); setItems(data.enquiries || []); }, [filter]);
+ useEffect(() => { let active = true; const timer = setTimeout(() => { load().catch(c => { if (active) setError(c instanceof Error ? c.message : "Could not load enquiries."); }); }, 0); return () => { active = false; clearTimeout(timer); }; }, [load]);
  const filtered=items.filter(item=>[item.clientName,item.clientEmail,item.subject,item.message].join(" ").toLowerCase().includes(query.toLowerCase()));
  function open(item:Enquiry){setSelected(item);setStatus(item.status);setPriority(item.priority);setAssignedTo(item.assignedTo||"");setError("");setNotice("");}
  async function save(){if(!selected)return;setBusy(true);setError("");setNotice("");try{const response=await fetch("/api/platform/client-enquiries",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:selected.id,status,priority,assignedTo})});const data=await response.json();if(!response.ok)throw new Error(data.error||"Could not update enquiry.");setNotice(data.message);await load();setSelected(null);}catch(c){setError(c instanceof Error?c.message:"Could not update enquiry.");}finally{setBusy(false);}}

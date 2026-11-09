@@ -47,6 +47,8 @@ jobs:
         run: >-
           npx eslint
           src/app/api/platform/health/route.ts
+          src/app/api/platform/notifications/route.ts
+          src/app/api/platform/search/route.ts
           'src/app/admin/(shell)/platform/page.tsx'
           src/lib/platform
           src/models/BusinessRole.ts
@@ -58,6 +60,9 @@ jobs:
           src/app/api/platform/organizations/route.ts
           'src/app/admin/(shell)/businesses/page.tsx'
           src/components/admin/platform/OrganizationManager.tsx
+          src/components/admin/platform/FounderApplicationLauncher.tsx
+          src/components/admin/platform/FounderUniversalSearch.tsx
+          src/components/admin/platform/FounderNotificationCentre.tsx
           src/app/global-error.tsx
           src/platform
 

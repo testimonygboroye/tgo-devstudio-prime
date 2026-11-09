@@ -3,6 +3,7 @@ import { getServerSession } from "@/lib/auth/serverSession";
 import ClientProfile from "@/models/ClientProfile";
 import ClientActivity from "@/models/ClientActivity";
 import { connectToDatabase } from "@/lib/db";
+import { writePlatformAuditEvent } from "@/lib/platform/audit";
 
 export const dynamic = "force-dynamic";
 

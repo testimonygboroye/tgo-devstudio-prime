@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const rawReview = await getReview(id);
 
   if (!rawReview) {
-    return { title: "Testimonial Not Found | TGO DevStudio Prime" };
+    return { title: "Testimonial Not Found | TGO DevStudio Prime", robots: { index: false, follow: true } };
   }
 
   const review = getLocalizedContent(
@@ -45,6 +45,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title: `${review.submitterName}'s Review | TGO DevStudio Prime`,
     description: review.body.slice(0, 150),
+    alternates: { canonical: `/testimonials/${id}` },
   };
 }
 

@@ -90,6 +90,7 @@ export function useSwipeSidebar(
       finishGesture(event.clientX - startX, event.clientY - startY);
     };
 
+    const onTouchCancel = () => { trackingTouch = false; };
     const onPointerCancel = () => { trackingPointer = false; };
     const onClickCapture = (event: MouseEvent) => {
       if (Date.now() < suppressClickUntil.current) {
@@ -101,7 +102,7 @@ export function useSwipeSidebar(
     window.addEventListener("touchstart", onTouchStart, { passive: true, capture: true });
     window.addEventListener("touchmove", onTouchMove, { passive: false, capture: true });
     window.addEventListener("touchend", onTouchEnd, { passive: true, capture: true });
-    window.addEventListener("touchcancel", () => { trackingTouch = false; }, { passive: true, capture: true });
+    window.addEventListener("touchcancel", onTouchCancel, { passive: true, capture: true });
     window.addEventListener("pointerdown", onPointerDown, { passive: true });
     window.addEventListener("pointermove", onPointerMove, { passive: true });
     window.addEventListener("pointerup", onPointerUp, { passive: true });
@@ -112,6 +113,7 @@ export function useSwipeSidebar(
       window.removeEventListener("touchstart", onTouchStart, true);
       window.removeEventListener("touchmove", onTouchMove, true);
       window.removeEventListener("touchend", onTouchEnd, true);
+      window.removeEventListener("touchcancel", onTouchCancel, true);
       window.removeEventListener("pointerdown", onPointerDown);
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("pointerup", onPointerUp);

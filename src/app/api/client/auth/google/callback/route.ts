@@ -7,6 +7,7 @@ import User from "@/models/User";
 import ClientProfile from "@/models/ClientProfile";
 import ClientActivity from "@/models/ClientActivity";
 import { rememberClientAccount } from "@/lib/clients/account-selector";
+import { writePlatformAuditEvent } from "@/lib/platform/audit";
 
 type GoogleProfile = { sub?: string; email?: string; email_verified?: boolean; name?: string };
 
@@ -68,10 +69,13 @@ export async function GET(request: NextRequest) {
       return response;
     }
     await ClientProfile.updateOne({ userId: user._id }, { $setOnInsert: { userId: user._id, source: "google" } }, { upsert: true });
-    await ClientActivity.create({
-      clientId: user._id, actorId: user._id, actorType: "client",
-      action: "client.google_signed_in", summary: "Client signed in with Google.",
-    });
+    await Promise.all([
+      ClientActivity.create({
+        clientId: user._id, actorId: user._id, actorType: "client",
+        action: "client.google_signed_in", summary: "Client signed in with Google.",
+      }),
+      writePlatformAuditEvent({ actorType: "human", actorId: String(user._id), actorLabel: user.name, action: "client.google_signed_in", module: "clients", targetType: "client", targetId: String(user._id), outcome: "success" }),
+    ]);
     const accessToken = signAccessToken({ userId: String(user._id), roleId: String(user.role), tokenVersion: user.refreshTokenVersion });
     const refreshToken = signRefreshToken({ userId: String(user._id), tokenVersion: user.refreshTokenVersion });
     const response = NextResponse.redirect(new URL("/client/dashboard", siteUrl));

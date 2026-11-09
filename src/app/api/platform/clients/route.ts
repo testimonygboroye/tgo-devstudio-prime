@@ -61,12 +61,8 @@ export async function PATCH(request: NextRequest) {
   const user = await User.findOne({ _id: body.clientId, accountType: "client" });
   if (!user) return NextResponse.json({ error: "Client account not found." }, { status: 404 });
   const changes: Record<string, unknown> = {};
-  if (body.suspended !== undefined) {
-    user.isBanned = body.suspended;
-    user.bannedAt = body.suspended ? new Date() : undefined;
-    await user.save();
-    changes.accountStatus = body.suspended ? "suspended" : "active";
-  }
+  const suspensionChange = typeof body.suspended === "boolean" ? body.suspended : undefined;
+  if (suspensionChange !== undefined) changes.accountStatus = suspensionChange ? "suspended" : "active";
   if (body.lifecycle !== undefined) changes.lifecycle = body.lifecycle;
   if (body.onboardingStatus !== undefined) changes.onboardingStatus = body.onboardingStatus;
   if (body.segments !== undefined) changes.segments = [...new Set((body.segments as string[]).map(value => value.trim().toLowerCase()).filter(Boolean))];
@@ -79,7 +75,14 @@ export async function PATCH(request: NextRequest) {
     }
   }
   if (Object.keys(changes).length === 0) return NextResponse.json({ error: "No valid changes supplied." }, { status: 400 });
-  const profile = await ClientProfile.findOneAndUpdate({ userId: user._id }, { $set: changes, $setOnInsert: { userId: user._id, source: "admin_created" } }, { new: true, upsert: true, runValidators: true });
+  const profileChanges = { ...changes };
+  delete profileChanges.accountStatus;
+  const profile = await ClientProfile.findOneAndUpdate({ userId: user._id }, { $set: profileChanges, $setOnInsert: { userId: user._id, source: "admin_created" } }, { new: true, upsert: true, runValidators: true });
+  if (suspensionChange !== undefined) {
+    user.isBanned = suspensionChange;
+    user.bannedAt = suspensionChange ? new Date() : undefined;
+    await user.save();
+  }
   await Promise.all([
     ClientActivity.create({ clientId: user._id, actorId: session.user._id, actorType: "staff", action: "client.admin_updated", summary: "Client record updated by an administrator.", metadata: { fields: Object.keys(changes) } }),
     writePlatformAuditEvent({ actorType: "human", actorId: String(session.user._id), actorLabel: session.user.name, action: "client.profile_admin_updated", module: "clients", targetType: "client", targetId: String(user._id), outcome: "success", metadata: { fields: Object.keys(changes) } }),

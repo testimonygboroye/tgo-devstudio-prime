@@ -4,6 +4,8 @@ import LaunchSettings from "@/models/LaunchSettings";
 import { getAuthenticatedSession } from "@/lib/auth/session";
 import { unauthorizedResponse, forbiddenResponse, requireContentPermission } from "@/lib/auth/authorize";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   await connectToDatabase();
   const settings = await LaunchSettings.findOne().lean();
@@ -12,7 +14,7 @@ export async function GET() {
     description: "A new chapter in intelligent digital experiences is almost here.",
     videoUrl: "", flyerUrl: "", afterLaunchVideoUrl: "", afterLaunchFlyerUrl: "",
     videoSeconds: 0, flyerSeconds: 8, videoDurationHours: 0, videoDurationMinutes: 0, videoDurationSeconds: 0, useVideoDurationOverride: false
-  }});
+  }}, { headers: { "Cache-Control": "no-store, max-age=0" } });
 }
 
 export async function PUT(request: NextRequest) {
@@ -43,6 +45,6 @@ export async function PUT(request: NextRequest) {
     if (update[field] && !/^https:\/\//i.test(update[field])) return NextResponse.json({ status: "error", message: "Media URLs must use HTTPS." }, { status: 400 });
   }
   await connectToDatabase();
-  const settings = await LaunchSettings.findOneAndUpdate({}, update, { new: true, upsert: true, setDefaultsOnInsert: true });
-  return NextResponse.json({ status: "ok", settings });
+  const settings = await LaunchSettings.findOneAndUpdate({}, { $set: update }, { new: true, upsert: true, setDefaultsOnInsert: true, runValidators: true });
+  return NextResponse.json({ status: "ok", settings }, { headers: { "Cache-Control": "no-store, max-age=0" } });
 }

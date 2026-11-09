@@ -126,19 +126,27 @@ export async function GET(request: NextRequest) {
   const sort = searchParams.get("sort") || "recent";
 
   const dateFilter = getDateRange(searchParams);
-  const recordedHosts = await PageView.distinct("host");
+  // Preview deployments and automated headless checks are infrastructure traffic, not people visiting the public site.
+  const trustedTrafficFilter: Record<string, unknown> = {
+    isInternal: { $ne: true },
+    $nor: [
+      { userAgent: { $regex: "HeadlessChrome|PhantomJS|Playwright|Puppeteer", $options: "i" } },
+      { referrer: { $regex: "tgo-devstudio-prime-[a-z0-9]+-testimonygboroye\\.vercel\\.app", $options: "i" } },
+    ],
+  };
+  const recordedHosts = await PageView.distinct("host", trustedTrafficFilter);
   const regionPairs = await PageView.aggregate([
-    { $match: { isInternal: { $ne: true }, region: { $exists: true, $nin: [null, ""] } } },
+    { $match: { ...trustedTrafficFilter, region: { $exists: true, $nin: [null, ""] } } },
     { $group: { _id: { region: "$region", countryCode: "$countryCode", timezone: "$timezone" } } },
   ]);
   const cityPairs = await PageView.aggregate([
-    { $match: { isInternal: { $ne: true }, city: { $exists: true, $nin: [null, ""] } } },
+    { $match: { ...trustedTrafficFilter, city: { $exists: true, $nin: [null, ""] } } },
     { $group: { _id: { city: "$city", countryCode: "$countryCode", timezone: "$timezone" } } },
   ]);
   const trustedRegionPairs = regionPairs.filter((row) => !isLikelyGeoMismatch(row._id.timezone ? String(row._id.timezone) : undefined, row._id.countryCode ? String(row._id.countryCode) : undefined));
   const trustedCityPairs = cityPairs.filter((row) => !isLikelyGeoMismatch(row._id.timezone ? String(row._id.timezone) : undefined, row._id.countryCode ? String(row._id.countryCode) : undefined));
 
-  const pageViewMatch: Record<string, unknown> = { ...dateFilter, isInternal: { $ne: true } };
+  const pageViewMatch: Record<string, unknown> = { ...trustedTrafficFilter, ...dateFilter };
 
   if (host) {
     const matches = recordedHosts.filter((value): value is string => typeof value === "string" && canonicalizeDeploymentHost(value) === host);
@@ -174,20 +182,12 @@ export async function GET(request: NextRequest) {
       Object.keys(dateFilter).length
     );
 
-  const matchingVisitorIds = hasPageViewFilters
-    ? await PageView.distinct(
-        "visitorId",
-        pageViewMatch
-      )
-    : null;
+  const matchingVisitorIds = await PageView.distinct("visitorId", pageViewMatch);
 
-  const visitorQuery: Record<string, unknown> = { isInternal: { $ne: true } };
-
-  if (matchingVisitorIds) {
-    visitorQuery.visitorId = {
-      $in: matchingVisitorIds,
-    };
-  }
+  const visitorQuery: Record<string, unknown> = {
+    isInternal: { $ne: true },
+    visitorId: { $in: matchingVisitorIds },
+  };
 
   if (search) {
     visitorQuery.$or = [
@@ -321,14 +321,14 @@ export async function GET(request: NextRequest) {
       },
     ]),
 
-    PageView.distinct("host", { isInternal: { $ne: true } }),
-    PageView.distinct("deploymentProvider", { isInternal: { $ne: true } }),
-    PageView.distinct("countryCode", { isInternal: { $ne: true } }),
-    PageView.distinct("region", { isInternal: { $ne: true } }),
-    PageView.distinct("city", { isInternal: { $ne: true } }),
-    PageView.distinct("deviceType", { isInternal: { $ne: true } }),
-    PageView.distinct("browser", { isInternal: { $ne: true } }),
-    PageView.distinct("operatingSystem", { isInternal: { $ne: true } }),
+    PageView.distinct("host", trustedTrafficFilter),
+    PageView.distinct("deploymentProvider", trustedTrafficFilter),
+    PageView.distinct("countryCode", trustedTrafficFilter),
+    PageView.distinct("region", trustedTrafficFilter),
+    PageView.distinct("city", trustedTrafficFilter),
+    PageView.distinct("deviceType", trustedTrafficFilter),
+    PageView.distinct("browser", trustedTrafficFilter),
+    PageView.distinct("operatingSystem", trustedTrafficFilter),
   ]);
 
   const visitors = await Visitor.find(visitorQuery)
@@ -344,9 +344,8 @@ export async function GET(request: NextRequest) {
     ? await PageView.aggregate([
         {
           $match: {
-            visitorId: {
-              $in: visitorIds,
-            },
+            ...trustedTrafficFilter,
+            visitorId: { $in: visitorIds },
           },
         },
         {
@@ -390,9 +389,8 @@ export async function GET(request: NextRequest) {
     ? await PageView.aggregate([
         {
           $match: {
-            visitorId: {
-              $in: visitorIds,
-            },
+            ...trustedTrafficFilter,
+            visitorId: { $in: visitorIds },
           },
         },
         {

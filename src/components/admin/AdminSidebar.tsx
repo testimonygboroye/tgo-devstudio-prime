@@ -26,6 +26,7 @@ import {
   MessageCircleQuestion,
   UserCog,
   Contact,
+  MessageSquareText,
   MessageSquare,
   ShieldCheck,
   Crown,
@@ -85,6 +86,7 @@ const NAV_GROUPS = [
   ]},
   { title: "Messages & Leads", items: [
     { label: "Messages", hrefSuffix: "/messages", icon: MessageSquare, badgeKey: "messages" },
+    { label: "Client Enquiries", hrefSuffix: "/client-enquiries", icon: MessageSquareText, badgeKey: null },
     { label: "Contact", hrefSuffix: "/contact", icon: Mail, badgeKey: "contactSubmissions" },
     { label: "Applications", hrefSuffix: "/applications", icon: Inbox, badgeKey: "jobApplications" },
     { label: "Newsletter", hrefSuffix: "/newsletter", icon: Send, badgeKey: null },

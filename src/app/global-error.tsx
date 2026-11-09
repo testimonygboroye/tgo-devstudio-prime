@@ -41,7 +41,7 @@ export default function GlobalError({
           {error.digest && <p style={{ margin: 0, color: "#697386", fontFamily: "monospace", fontSize: 11 }}>Reference: {error.digest}</p>}
           <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 12, marginTop: 8 }}>
             <button onClick={() => reset()} style={{ ...buttonStyle, border: 0, color: "#07111D", background: "linear-gradient(135deg,#8A6BFF,#2EC5F0)" }}>Try again</button>
-            <a href="/" style={{ ...buttonStyle, border: "1px solid #343B50", color: "#E7EAF2", background: "rgba(255,255,255,.04)" }}>Return home</a>
+            <button onClick={() => window.location.assign("/")} style={{ ...buttonStyle, border: "1px solid #343B50", color: "#E7EAF2", background: "rgba(255,255,255,.04)" }}>Return home</button>
           </div>
         </main>
       </body>

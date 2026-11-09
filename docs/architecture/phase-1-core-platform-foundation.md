@@ -25,7 +25,9 @@
 | Event outbox | `PlatformEvent`, `src/lib/platform/events.ts` |
 | Platform notifications | `PlatformNotification`, `src/lib/platform/notifications.ts` |
 | Module registry | `src/platform/registry/modules.ts` |
-| Authorization tests | `src/platform/authorization/__tests__/evaluate.test.ts` |
+| Authorization tests | `src/platform/authorization/__tests__/evaluate.test.ts` and `audit.test.ts` |
+| API response envelope | `src/lib/platform/response.ts` |
+| Storage provider contract | `src/platform/storage/types.ts` |
 
 ## Security invariants
 
@@ -57,7 +59,7 @@ These items depend on subsequent modules and operational configuration. Their mo
 - Provide an isolated MongoDB database for preview/staging; do not point previews at production data.
 - Verify MongoDB replica-set/transaction support before financial workflows depend on transactions.
 - Review the existing historical cookie-export exposure and invalidate potentially affected sessions.
-- Run CI build, Jest, lint and security checks against the branch.
+- Run CI build, Jest, lint and security checks against the branch. The repository CI workflow now runs unit tests and ESLint before the production build.
 - Review permission seeds and initial founder account mapping before enabling non-founder access.
 - Configure backups and test restore procedures with the database owner.
 

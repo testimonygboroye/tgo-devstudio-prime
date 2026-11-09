@@ -17,6 +17,7 @@ const PUBLIC_SUBMISSION_PATTERNS = [
   /^\/api\/auth\/forgot-password$/,
   /^\/api\/auth\/reset-password$/,
   /^\/api\/analytics\/track$/,
+  /^\/api\/analytics\/events$/,
 ];
 
 export function proxy(request: NextRequest) {

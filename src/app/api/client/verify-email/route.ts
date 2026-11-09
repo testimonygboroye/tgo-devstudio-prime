@@ -4,6 +4,7 @@ import { hashVerificationToken } from "@/lib/clients/email";
 import ClientEmailVerification from "@/models/ClientEmailVerification";
 import ClientActivity from "@/models/ClientActivity";
 import User from "@/models/User";
+import { writePlatformAuditEvent } from "@/lib/platform/audit";
 
 export async function POST(request: NextRequest) {
   let token = "";
@@ -20,6 +21,6 @@ export async function POST(request: NextRequest) {
   await Promise.all([record.save(), user.save(), ClientActivity.create({
     clientId: user._id, actorId: user._id, actorType: "client",
     action: "client.email_verified", summary: "Client email address verified.",
-  })]);
+  }), writePlatformAuditEvent({ actorType: "human", actorId: String(user._id), actorLabel: user.name, action: "client.email_verified", module: "clients", targetType: "client", targetId: String(user._id), outcome: "success" })]);
   return NextResponse.json({ ok: true, message: "Email verified. You can now sign in." });
 }

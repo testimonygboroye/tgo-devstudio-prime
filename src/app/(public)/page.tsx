@@ -65,7 +65,7 @@ export default async function HomePage() {
     <main style={{ backgroundColor: "var(--bg-page)" }}>
       <HomepageMediaExperience settings={launchSettings || { enabled: false }} />
       {/* Hero */}
-      <section className="ambient-glow relative flex min-h-[90vh] flex-col items-center justify-center overflow-hidden bg-cover bg-center px-6 text-center sm:px-12" style={hero.heroBackgroundImage ? { backgroundImage: `linear-gradient(rgba(5, 8, 24, .76), rgba(5, 8, 24, .84)), url("${hero.heroBackgroundImage}")` } : undefined}>
+      <section className="ambient-glow relative flex min-h-[90vh] flex-col items-center justify-center overflow-hidden bg-cover bg-center px-6 text-center sm:px-12" style={hero.heroBackgroundImage ? { backgroundImage: `linear-gradient(rgba(5, 8, 24, .62), rgba(5, 8, 24, .70)), url("${hero.heroBackgroundImage}")` } : undefined}>
         <HeroMoment />
         <div className="relative z-10">
           <ScrollReveal>

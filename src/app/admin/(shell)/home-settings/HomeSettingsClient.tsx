@@ -205,8 +205,13 @@ export default function HomeSettingsClient() {
                             if (!file.type.startsWith("image/")) throw new Error("Choose a valid image file.");
                             if (file.size > 10 * 1024 * 1024) throw new Error("Hero images must be 10 MB or smaller.");
                             const uploaded = await uploadMediaDirect(file, "homepage-media");
-                            setForm((prev) => ({ ...prev, heroBackgroundImage: uploaded.url }));
-                            setSavedMessage("Hero image uploaded successfully. Now save Homepage Settings to publish it.");
+                            const nextForm = { ...form, heroBackgroundImage: uploaded.url };
+                            const saveResponse = await fetch("/api/home-settings", { method: "PUT", headers: { "Content-Type": "application/json" }, credentials: "same-origin", cache: "no-store", body: JSON.stringify(nextForm) });
+                            const saveData = await saveResponse.json();
+                            if (!saveResponse.ok || saveData.status !== "ok") throw new Error(saveData.message || "Image uploaded, but homepage settings could not be saved.");
+                            setForm((prev) => ({ ...prev, ...saveData.settings }));
+                            setIsDefault(false);
+                            setSavedMessage("Hero background uploaded and saved successfully.");
                           }
                           catch (uploadError) { setError(uploadError instanceof Error ? uploadError.message : "Background image upload failed."); }
                           finally { setUploadingHero(false); event.target.value = ""; }

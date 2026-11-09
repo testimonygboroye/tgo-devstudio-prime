@@ -18,7 +18,7 @@ export async function GET() {
   const enquiries = await ClientEnquiry.find({ clientId: session.user._id }).sort({ createdAt: -1 }).limit(50).lean();
   return NextResponse.json({ enquiries: enquiries.map((item) => ({
     id: String(item._id), subject: item.subject, message: item.message, category: item.category,
-    status: item.status, priority: item.priority, createdAt: item.createdAt.toISOString(),
+    status: item.status, priority: item.priority, response: item.response || "", respondedAt: item.respondedAt?.toISOString() || null, createdAt: item.createdAt.toISOString(),
   })) }, { headers: { "Cache-Control": "private, no-store" } });
 }
 

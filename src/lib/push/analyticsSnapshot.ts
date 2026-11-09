@@ -18,12 +18,19 @@ export async function captureAnalyticsSnapshot(
   const snapshotDate = new Date().toISOString().slice(0, 10);
   const alreadyCaptured = await PushAnalyticsSnapshot.findOne({ snapshotDate }).lean();
   if (alreadyCaptured) {
-    // Refresh today's snapshot with the latest corrected public-traffic metrics.
-    // Do not send duplicate notifications for a snapshot that already exists.
-    await PushAnalyticsSnapshot.updateOne(
-      { snapshotDate },
-      { $set: metrics },
-    );
+    const changed =
+      alreadyCaptured.uniqueVisitorCount !== metrics.uniqueVisitorCount ||
+      alreadyCaptured.averageDailyVisitors !== metrics.averageDailyVisitors ||
+      alreadyCaptured.peakDailyVisitors !== metrics.peakDailyVisitors ||
+      (alreadyCaptured.peakDay || null) !== metrics.peakDay;
+    if (changed) {
+      // Refresh today's snapshot with corrected public-traffic metrics without
+      // repeatedly writing identical values during the live dashboard refresh.
+      await PushAnalyticsSnapshot.updateOne(
+        { snapshotDate },
+        { $set: metrics },
+      );
+    }
     return;
   }
 

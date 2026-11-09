@@ -11,6 +11,7 @@ type AnalyticsData = {
 
 const EVENT_LABELS: Record<string, string> = {
   contact_form_submitted: "Contact form submissions",
+  newsletter_subscribed: "Newsletter subscriptions",
   whatsapp_click: "WhatsApp clicks",
   email_click: "Email clicks",
   book_call_click: "Book-a-call clicks",
@@ -84,8 +85,10 @@ export default function ConversionInsightsPage() {
         <MetricCard label="Page views" value={summary.pageViews.toLocaleString()} icon={Eye} hint="Recorded public page views"/>
         <MetricCard label="Sessions" value={summary.sessions.toLocaleString()} icon={BarChart3} hint="Sessions with at least one page view"/>
         <MetricCard label="Views per visitor" value={summary.pagesPerVisitor.toFixed(2)} icon={Globe2} hint="Average pages viewed by each visitor"/>
-        <MetricCard label="Contact enquiries" value={summary.contactSubmissions.toLocaleString()} icon={MessageSquare} hint="Successfully submitted contact forms tracked from now on"/>
-        <MetricCard label="Tracked conversions" value={summary.conversions.toLocaleString()} icon={MousePointerClick} hint="Contact submissions plus completed Calendly bookings"/>
+        <MetricCard label="Contact enquiries" value={summary.contactSubmissions.toLocaleString()} icon={MessageSquare} hint="Successfully submitted contact forms tracked from this release"/>
+        <MetricCard label="Newsletter subscriptions" value={(data?.summary as AnalyticsData["summary"] & { newsletterSubscriptions?: number })?.newsletterSubscriptions?.toLocaleString() || "0"} icon={MessageSquare} hint="New subscriptions and re-subscriptions"/>
+        <MetricCard label="Completed bookings" value={(data?.summary as AnalyticsData["summary"] & { completedBookings?: number })?.completedBookings?.toLocaleString() || "0"} icon={BarChart3} hint="Calendly booking confirmations"/>
+        <MetricCard label="Tracked conversions" value={summary.conversions.toLocaleString()} icon={MousePointerClick} hint="Contact submissions, subscriptions and completed bookings"/>
       </section>
 
       <section className="grid gap-5 xl:grid-cols-2">

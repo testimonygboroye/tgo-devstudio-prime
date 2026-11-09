@@ -8,6 +8,7 @@ export const revalidate = 300;
 export const metadata: Metadata = {
   title: "Our Stack | TGO DevStudio Prime",
   description: "The technology stack behind TGO DevStudio Prime, and why we chose it.",
+  alternates: { canonical: "/stack" },
 };
 
 export default async function StackPage() {

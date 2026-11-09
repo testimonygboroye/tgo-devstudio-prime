@@ -53,7 +53,7 @@ export default function GoogleSignInButton({endpoint,payload={},onResult,onError
   // prompt:"" suppresses the account chooser/consent screen when Google can
   // silently issue a token; the hint pins the request to the remembered user.
   if(chooserRef.current){
-   try{chooserRef.current.requestAccessToken({prompt:"",hint:lastEmail});return;}
+   try{chooserRef.current.requestAccessToken({prompt:"",login_hint:lastEmail});return;}
    catch{/* Fall through to Google Identity Services One Tap. */}
   }
   try{

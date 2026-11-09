@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { LayoutDashboard, UserRound, MessageSquareText, Bell, LogOut, Sparkles } from "lucide-react";
+import { LayoutDashboard, UserRound, MessageSquareText, Bell, LogOut, Sparkles, Activity } from "lucide-react";
 
 const links = [
   { href: "/client/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/client/settings", label: "Account settings", icon: UserRound },
   { href: "/client/enquiries", label: "Enquiries", icon: MessageSquareText },
+  { href: "/client/activity", label: "Activity", icon: Activity },
   { href: "/client/notifications", label: "Notifications", icon: Bell },
 ];
 

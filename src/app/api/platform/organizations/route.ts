@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
   const website = typeof body.website === "string" ? body.website.trim() : "";
   if (!name || name.length > 140) return NextResponse.json({ error: "Enter an organization name (maximum 140 characters)." }, { status: 400 });
   if (!["internal", "client", "partner", "vendor"].includes(String(type))) return NextResponse.json({ error: "Choose a valid organization type." }, { status: 400 });
+  const organizationType = String(type) as "internal" | "client" | "partner" | "vendor";
   if (contactEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) return NextResponse.json({ error: "Enter a valid contact email." }, { status: 400 });
   if (website && !/^https:\/\//i.test(website)) return NextResponse.json({ error: "Website must use https://." }, { status: 400 });
 
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
   await connectToDatabase();
   try {
     const organization = await BusinessOrganization.create({
-      name, slug, type, contactEmail: contactEmail || undefined,
+      name, slug, type: organizationType, contactEmail: contactEmail || undefined,
       website: website || undefined,
       notes: typeof body.notes === "string" ? body.notes.trim().slice(0, 2000) : undefined,
       createdBy: session.user._id,
@@ -71,7 +72,7 @@ export async function PATCH(request: NextRequest) {
   let body: Record<string, unknown>;
   try { body = await request.json(); } catch { return NextResponse.json({ error: "Invalid request body." }, { status: 400 }); }
   const id = typeof body.id === "string" ? body.id : "";
-  const status = body.status;
+  const status = body.status as "active" | "suspended";
   if (!/^[a-f\d]{24}$/i.test(id) || !["active", "suspended"].includes(String(status))) {
     return NextResponse.json({ error: "A valid organization and status are required." }, { status: 400 });
   }

@@ -58,7 +58,7 @@ jobs:
           src/app/api/platform/organizations/route.ts
           'src/app/admin/(shell)/businesses/page.tsx'
           src/components/admin/platform/OrganizationManager.tsx
-          src/components/admin/AdminSidebar.tsx
+          src/app/global-error.tsx
           src/platform
 
       - name: Type check and production build

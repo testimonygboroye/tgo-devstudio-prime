@@ -14,6 +14,7 @@ export default function SiteHeader() {
   const router = useRouter();
   const prefetchOnIntent = (href: string) => router.prefetch(href);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [openDesktopGroup, setOpenDesktopGroup] = useState<string | null>(null);
   const setMenuOpen = useCallback((open: boolean) => setIsMenuOpen(open), []);
   const drawerRef = useRef<HTMLElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
@@ -52,15 +53,19 @@ export default function SiteHeader() {
             <span className="font-display text-lg font-bold leading-9 text-neutral-100">TGO DevStudio</span>
           </Link>
 
-          <nav className="hidden items-center gap-6 sm:flex" aria-label="Main navigation">
-            <Link href="/" className="text-sm text-neutral-100/80 hover:text-brand-cyan-300">{t("nav.home")}</Link>
-            {[
-              {title:"Services & Work",links:[{label:t("nav.services"),href:"/services",icon:Layers},{label:t("nav.process"),href:"/process",icon:Workflow},{label:t("nav.portfolio"),href:"/portfolio",icon:Briefcase},{label:t("nav.stack"),href:"/stack",icon:Boxes}]},
-              {title:"Company",links:[{label:t("nav.about"),href:"/about",icon:Info},{label:t("nav.team"),href:"/team",icon:Users},{label:t("nav.testimonials"),href:"/testimonials",icon:Star},{label:t("nav.careers"),href:"/careers",icon:DoorOpen}]},
-              {title:"Insights & Support",links:[{label:t("nav.blog"),href:"/blog",icon:Newspaper},{label:t("nav.faq"),href:"/faq",icon:MessageCircleQuestion},{label:t("nav.help"),href:"/help",icon:HelpCircle}]},
-            ].map(group=><div key={group.title} className="group relative"><button type="button" className="flex items-center gap-1 text-sm text-neutral-100/80 hover:text-brand-cyan-300">{group.title}<ChevronDown size={14}/></button><div className="invisible absolute left-0 top-full z-50 mt-2 w-60 translate-y-1 overflow-hidden rounded-xl border border-base-800 bg-base-900 opacity-0 shadow-2xl transition-all group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">{group.links.map(link=>{const Icon=link.icon;return <Link key={link.href} href={link.href} prefetch={false} onPointerEnter={()=>prefetchOnIntent(link.href)} className="flex items-center gap-3 px-4 py-3 text-sm text-neutral-200 hover:bg-base-800 hover:text-brand-cyan-300"><Icon size={16} className="text-brand-cyan-400"/>{link.label}</Link>;})}</div></div>)}
-            <Link href="/contact" className="text-sm text-neutral-100/80 hover:text-brand-cyan-300">{t("nav.contact")}</Link>
-            <Link href="/book-a-call" className="text-sm text-neutral-100/80 hover:text-brand-cyan-300">{t("nav.bookACall")}</Link>
+          <nav className="hidden items-center gap-5 sm:flex" aria-label="Main navigation" onMouseLeave={() => setOpenDesktopGroup(null)}>
+            <Link href="/" onClick={() => setOpenDesktopGroup(null)} className="text-sm text-neutral-100/80 hover:text-brand-cyan-300">{t("nav.home")}</Link>
+            {DRAWER_NAV_GROUPS.map((group) => {
+              const isOpen = openDesktopGroup === group.title;
+              return <div key={group.title} className="relative">
+                <button type="button" aria-expanded={isOpen} onClick={() => setOpenDesktopGroup(isOpen ? null : group.title)} onFocus={() => setOpenDesktopGroup(group.title)} className="flex items-center gap-1 text-sm text-neutral-100/80 hover:text-brand-cyan-300">
+                  {group.title}<ChevronDown size={14} className={isOpen ? "rotate-180 transition-transform" : "transition-transform"}/>
+                </button>
+                <div className={`absolute left-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-xl border border-base-800 bg-base-900 shadow-2xl transition-all ${isOpen ? "visible translate-y-0 opacity-100" : "invisible translate-y-1 opacity-0"}`}>
+                  {group.links.map((link) => { const Icon = link.icon; return <Link key={link.href} href={link.href} prefetch={false} onPointerEnter={() => prefetchOnIntent(link.href)} onClick={() => setOpenDesktopGroup(null)} className="flex items-center gap-3 px-4 py-3 text-sm text-neutral-200 hover:bg-base-800 hover:text-brand-cyan-300"><Icon size={16} className="text-brand-cyan-400"/>{link.label}</Link>; })}
+                </div>
+              </div>;
+            })}
           </nav>
 
           <div className="flex items-center gap-2">

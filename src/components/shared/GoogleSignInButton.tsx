@@ -32,7 +32,7 @@ export default function GoogleSignInButton({endpoint,payload={},onResult,onError
   if(!chooserRef.current){
    let remembered="";try{remembered=localStorage.getItem(LAST_KEY)||"";}catch{}
    id.initialize({client_id:clientId,callback:(response:any)=>{if(response.credential)void completeLogin({credential:response.credential});},auto_select:true,ux_mode:"popup",cancel_on_tap_outside:true,...(remembered?{login_hint:remembered}:{})});
-   chooserRef.current=oauth.initTokenClient({client_id:clientId,scope:"openid email profile",callback:(response:any)=>{if(response.error||!response.access_token){if(response.error==="login_required"||response.error==="interaction_required"||response.error==="consent_required"){try{chooserRef.current?.requestAccessToken({prompt:"select_account"});}catch{onError("Google could not complete sign-in. Please use Continue with Google again.");}return;}onError("Google account selection was cancelled or could not complete.");return;}void completeLogin({accessToken:response.access_token});}});
+   chooserRef.current=oauth.initTokenClient({client_id:clientId,scope:"openid email profile",callback:(response:any)=>{if(response.error||!response.access_token){onError(response.error==="popup_failed_to_open"?"Your browser blocked the Google sign-in window. Allow pop-ups for this site and try again.":"Google account selection was cancelled or could not complete.");return;}void completeLogin({accessToken:response.access_token});}});
   }
   setReady(true);setLoadError("");return true;
  },[clientId,completeLogin,onError]);
@@ -47,7 +47,7 @@ export default function GoogleSignInButton({endpoint,payload={},onResult,onError
   if(window.google?.accounts?.oauth2&&window.google?.accounts?.id)init();
   return()=>{disposed=true;window.clearInterval(poll);};
  },[clientId,initialize]);
- function continueRemembered(){if(!ready||!chooserRef.current||!lastEmail)return;try{chooserRef.current.requestAccessToken({prompt:"none",hint:lastEmail});}catch{continueChooser();}}
+ function continueRemembered(){if(!ready||!chooserRef.current||!lastEmail)return;try{chooserRef.current.requestAccessToken({hint:lastEmail});}catch{continueChooser();}}
  function continueChooser(){if(!ready||!chooserRef.current)return;try{chooserRef.current.requestAccessToken({prompt:"select_account"});}catch{onError("Could not open the Google account chooser. Please try again.");}}
  const button="flex min-h-[48px] w-full items-center gap-3 rounded-full border border-neutral-200 bg-white px-3 py-2 text-left text-neutral-900 shadow-sm transition hover:bg-neutral-50 disabled:cursor-wait disabled:opacity-60";
  return <div className="mx-auto w-full max-w-[360px] space-y-2">

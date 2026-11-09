@@ -32,8 +32,8 @@ async function getJob(slug: string) {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const job = await getJob(slug);
-  if (!job) return { title: "Job Opening Not Found | TGO DevStudio Prime" };
-  return { title: `${job.title} | Careers | TGO DevStudio Prime`, description: job.summary };
+  if (!job) return { title: "Job Opening Not Found | TGO DevStudio Prime", robots: { index: false, follow: true } };
+  return { title: `${job.title} | Careers | TGO DevStudio Prime`, description: job.summary, alternates: { canonical: `/careers/${job.slug}` } };
 }
 
 export default async function JobDetailPage({ params }: PageProps) {

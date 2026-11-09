@@ -58,7 +58,7 @@ export default function SiteHeader() {
             {DRAWER_NAV_GROUPS.map((group) => {
               const isOpen = openDesktopGroup === group.title;
               return <div key={group.title} className="relative">
-                <button type="button" aria-expanded={isOpen} onClick={() => setOpenDesktopGroup(isOpen ? null : group.title)} onFocus={() => setOpenDesktopGroup(group.title)} className="flex items-center gap-1 text-sm text-neutral-100/80 hover:text-brand-cyan-300">
+                <button type="button" aria-expanded={isOpen} onClick={() => setOpenDesktopGroup(isOpen ? null : group.title)} onKeyDown={(event) => { if (event.key === "ArrowDown") { event.preventDefault(); setOpenDesktopGroup(group.title); } }} className="flex items-center gap-1 text-sm text-neutral-100/80 hover:text-brand-cyan-300">
                   {group.title}<ChevronDown size={14} className={isOpen ? "rotate-180 transition-transform" : "transition-transform"}/>
                 </button>
                 <div className={`absolute left-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-xl border border-base-800 bg-base-900 shadow-2xl transition-all ${isOpen ? "visible translate-y-0 opacity-100" : "invisible translate-y-1 opacity-0"}`}>

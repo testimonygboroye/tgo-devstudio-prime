@@ -15,8 +15,9 @@ export function useSwipeSidebar(
   edge: "left" | "right",
   _drawerRef: Ref,
   _backdropRef: Ref,
-  _options: { maxWidth?: number; railWidth?: number } = {},
+  options: { maxWidth?: number; railWidth?: number; mobileBreakpoint?: number } = {},
 ) {
+  const mobileBreakpoint = options.mobileBreakpoint ?? 640;
   const openRef = useRef(isOpen);
   const suppressClickUntil = useRef(0);
 
@@ -33,9 +34,17 @@ export function useSwipeSidebar(
     let startWasScrollable = false;
     const openDirection = edge === "left" ? 1 : -1;
 
-    const isHorizontalScroller = (target: EventTarget | null) =>
-      target instanceof Element &&
-      Boolean(target.closest("[data-horizontal-scroll], [data-swipe-ignore]"));
+    const isHorizontalScroller = (target: EventTarget | null) => {
+      if (!(target instanceof Element)) return false;
+      if (target.closest("[data-horizontal-scroll], [data-swipe-ignore], input, textarea, select, [contenteditable='true'], [role='slider']")) return true;
+      let node: HTMLElement | null = target as HTMLElement;
+      while (node && node !== document.documentElement) {
+        const overflowX = window.getComputedStyle(node).overflowX;
+        if ((overflowX === "auto" || overflowX === "scroll") && node.scrollWidth > node.clientWidth + 4) return true;
+        node = node.parentElement;
+      }
+      return false;
+    };
 
     const finishGesture = (endX: number, endY: number) => {
       const dx = endX - startX;
@@ -56,7 +65,7 @@ export function useSwipeSidebar(
     };
 
     const onTouchStart = (event: TouchEvent) => {
-      if (event.touches.length !== 1) {
+      if (window.innerWidth >= mobileBreakpoint || event.touches.length !== 1) {
         trackingTouch = false;
         return;
       }
@@ -103,7 +112,7 @@ export function useSwipeSidebar(
         !event.isPrimary ||
         event.pointerType === "touch" ||
         (event.pointerType === "mouse" && event.button !== 0) ||
-        window.matchMedia("(min-width: 768px)").matches ||
+        window.innerWidth >= mobileBreakpoint ||
         isHorizontalScroller(event.target)
       ) return;
 
@@ -160,5 +169,5 @@ export function useSwipeSidebar(
       window.removeEventListener("pointercancel", cancelPointer, true);
       window.removeEventListener("click", onClickCapture, true);
     };
-  }, [setIsOpen, edge]);
+  }, [setIsOpen, edge, mobileBreakpoint]);
 }

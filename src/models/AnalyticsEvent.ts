@@ -2,6 +2,7 @@ import { Schema, model, models, type Document, type Model } from "mongoose";
 
 export type AnalyticsEventName =
   | "contact_form_submitted"
+  | "newsletter_subscribed"
   | "whatsapp_click"
   | "email_click"
   | "book_call_click"

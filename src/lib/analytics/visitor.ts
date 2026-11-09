@@ -42,8 +42,15 @@ export function decodeAnalyticsLabel(value: string): string {
 
 export function countryName(code?: string): string | undefined {
   if (!code) return undefined;
-  try { return new Intl.DisplayNames(["en"], { type: "region" }).of(code.toUpperCase()) || code.toUpperCase(); }
-  catch { return code.toUpperCase(); }
+  const normalized = code.trim();
+  // Preserve already-resolved country names; Intl.DisplayNames expects an ISO
+  // alpha-2 region code or a numeric UN M.49 code, not a full country name.
+  if (!/^(?:[a-z]{2}|\\d{3})$/i.test(normalized)) return normalized;
+  try {
+    return new Intl.DisplayNames(["en"], { type: "region" }).of(normalized.toUpperCase()) || normalized;
+  } catch {
+    return normalized;
+  }
 }
 
 const SUBDIVISIONS: Record<string, Record<string, string>> = {

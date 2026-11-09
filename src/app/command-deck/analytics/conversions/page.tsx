@@ -3,10 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { BarChart3, Eye, Users, MousePointerClick, MessageSquare, RefreshCw, Globe2, Smartphone, ExternalLink } from "lucide-react";
 
-type Row = { path?: string; views?: number; visitors?: number; country?: string; device?: string; source?: string; date?: string; eventName?: string; count?: number };
+type Row = { path?: string; views?: number; visitors?: number; country?: string; device?: string; source?: string; date?: string; eventName?: string; count?: number; metricName?: string; deviceType?: string; average?: number; worst?: number; samples?: number };
 type AnalyticsData = {
   summary: { visitors: number; pageViews: number; sessions: number; pagesPerVisitor: number; contactSubmissions: number; conversions: number };
-  events: Row[]; topPages: Row[]; countries: Row[]; devices: Row[]; sources: Row[]; daily: Row[];
+  events: Row[]; webVitals: Row[]; topPages: Row[]; countries: Row[]; devices: Row[]; sources: Row[]; daily: Row[];
 };
 
 const EVENT_LABELS: Record<string, string> = {
@@ -93,6 +93,11 @@ export default function ConversionInsightsPage() {
           <h2 className="mb-4 font-semibold">Conversion and engagement events</h2>
           {data?.events.length ? <div className="space-y-3">{data.events.map((event) => <div key={event.eventName} className="flex items-center justify-between gap-4 border-b border-[var(--border-subtle)] pb-3 last:border-0"><span className="text-sm text-[var(--text-secondary)]">{EVENT_LABELS[event.eventName || ""] || event.eventName}</span><span className="font-semibold">{event.count}</span></div>)}</div> : <p className="text-sm text-[var(--text-muted)]">No conversion events yet. New clicks and successful contact submissions will appear here after deployment.</p>}
         </div>
+        <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 xl:col-span-2">
+          <h2 className="mb-2 font-semibold">Core Web Vitals · real-user performance</h2>
+          <p className="mb-4 text-xs text-[var(--text-muted)]">Measurements start after this release. LCP, INP, CLS, FCP and TTFB are grouped by device type so mobile bottlenecks can be identified.</p>
+          {data?.webVitals?.length ? <div className="overflow-x-auto"><table className="w-full min-w-[520px] text-left text-sm"><thead className="text-xs text-[var(--text-muted)]"><tr><th className="pb-3">Metric</th><th className="pb-3">Device</th><th className="pb-3">Average</th><th className="pb-3">Worst</th><th className="pb-3">Samples</th></tr></thead><tbody>{data.webVitals.map((item, index) => <tr key={item.metricName + item.deviceType + index} className="border-t border-[var(--border-subtle)]"><td className="py-3 font-semibold">{item.metricName}</td><td className="py-3 text-[var(--text-secondary)]">{item.deviceType || "Unknown"}</td><td className="py-3">{item.average}{item.metricName === "CLS" ? "" : " ms"}</td><td className="py-3">{item.worst}{item.metricName === "CLS" ? "" : " ms"}</td><td className="py-3">{item.samples}</td></tr>)}</tbody></table></div> : <p className="text-sm text-[var(--text-muted)]">No performance samples yet. Real-user measurements will appear after visitors load the updated site.</p>}
+        </section>
         <Rows title="Top public pages" rows={data?.topPages || []} nameKey="path"/>
         <Rows title="Visitor countries" rows={data?.countries || []} nameKey="country"/>
         <Rows title="Devices" rows={data?.devices || []} nameKey="device"/>

@@ -13,6 +13,7 @@ export const metadata: Metadata = {
     description: "Join TGO DevStudio. Explore current openings or learn about our culture.",
     type: "website",
   },
+  alternates: { canonical: "/careers" },
 };
 
 const EMPLOYMENT_LABELS: Record<string, string> = {

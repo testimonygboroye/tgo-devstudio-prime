@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, CheckCircle2, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, UserRound } from "lucide-react";
 
-export default function ClientAuthForm({ mode, rememberedEmails = [] }: { mode: "login" | "register"; rememberedEmails?: string[] }) {
+export default function ClientAuthForm({ mode, rememberedEmails = [], googleTempToken = "" }: { mode: "login" | "register"; rememberedEmails?: string[]; googleTempToken?: string }) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState(rememberedEmails[0] || "");
@@ -14,7 +14,7 @@ export default function ClientAuthForm({ mode, rememberedEmails = [] }: { mode: 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const [tempToken, setTempToken] = useState("");
+  const [tempToken, setTempToken] = useState(googleTempToken);
   const [twoFactorCode, setTwoFactorCode] = useState("");
   const [backupCodeMode, setBackupCodeMode] = useState(false);
 

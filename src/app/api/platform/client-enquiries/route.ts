@@ -56,6 +56,7 @@ export async function PATCH(request: NextRequest) {
   await Promise.all([
     ClientActivity.create({ clientId: enquiry.clientId, actorId: session.user._id, actorType: "staff", action: "client.enquiry_updated", summary: `Enquiry updated by the team: ${enquiry.subject}`, metadata: { enquiryId: String(enquiry._id), changed } }),
     PlatformNotification.create({ recipientId: enquiry.clientId, category: "client-enquiry", title: "Enquiry update", body: summary, href: "/client/enquiries", metadata: { enquiryId: String(enquiry._id) } }),
+    ...(enquiry.assignedTo ? [PlatformNotification.create({ recipientId: enquiry.assignedTo, category: "client-enquiry-assignment", title: "Client enquiry assigned", body: `You are assigned to “${enquiry.subject}” for ${client?.name || "a client"}.`, href: "/admin/client-enquiries", metadata: { enquiryId: String(enquiry._id), clientId: String(enquiry.clientId) } })] : []),
     writePlatformAuditEvent({ actorType: "human", actorId: String(session.user._id), actorLabel: session.user.name, action: "client.enquiry_admin_updated", module: "clients", targetType: "client-enquiry", targetId: String(enquiry._id), outcome: "success", metadata: { changed, status: enquiry.status, priority: enquiry.priority, clientId: String(enquiry.clientId) } }),
   ]);
   return NextResponse.json({ ok: true, message: "Enquiry updated and client notified.", client: client ? { name: client.name, email: client.email } : null });

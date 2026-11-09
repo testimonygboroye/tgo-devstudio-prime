@@ -107,10 +107,41 @@ export async function GET(request: NextRequest) {
     return forbiddenResponse("You do not have permission to view analytics.");
   }
 
-  const requestedRange = Number(request.nextUrl.searchParams.get("range") || 30);
-  const range = [7, 30, 90, 365].includes(requestedRange) ? requestedRange : 30;
-  const start = new Date(Date.now() - range * 24 * 60 * 60 * 1000);
-  const match = { createdAt: { $gte: start }, isInternal: { $ne: true } };
+  const rangeParam = request.nextUrl.searchParams.get("range") || "30d";
+  const fromParam = request.nextUrl.searchParams.get("from");
+  const toParam = request.nextUrl.searchParams.get("to");
+  const now = new Date();
+  const presetDurations: Record<string, number> = {
+    "1h": 60 * 60 * 1000,
+    "24h": 24 * 60 * 60 * 1000,
+    "7d": 7 * 24 * 60 * 60 * 1000,
+    "30d": 30 * 24 * 60 * 60 * 1000,
+    "90d": 90 * 24 * 60 * 60 * 1000,
+    "365d": 365 * 24 * 60 * 60 * 1000,
+    "7": 7 * 24 * 60 * 60 * 1000,
+    "30": 30 * 24 * 60 * 60 * 1000,
+    "90": 90 * 24 * 60 * 60 * 1000,
+    "365": 365 * 24 * 60 * 60 * 1000,
+  };
+  const isCustomRange = Boolean(fromParam || toParam);
+  let start: Date;
+  let end: Date;
+  if (isCustomRange) {
+    start = new Date(fromParam || "");
+    end = new Date(toParam || "");
+    if (!fromParam || !toParam || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start >= end || end > now) {
+      return NextResponse.json({ status: "error", message: "Choose a valid reporting period ending no later than the current time." }, { status: 400 });
+    }
+  } else {
+    const duration = presetDurations[rangeParam] || presetDurations["30d"];
+    end = now;
+    start = new Date(now.getTime() - duration);
+  }
+  const durationMs = end.getTime() - start.getTime();
+  const range = isCustomRange ? "custom" : rangeParam;
+  const match = { createdAt: { $gte: start, $lte: end }, isInternal: { $ne: true } };
+  const eventMatch = { createdAt: { $gte: start, $lte: end }, isInternal: { $ne: true } };
+  const bucketFormat = durationMs <= 48 * 60 * 60 * 1000 ? "%Y-%m-%d %H:00" : "%Y-%m-%d";
 
   await connectToDatabase();
   const [pageViews, visitorIds, sessionIds, topPages, countries, devices, sources, daily, eventGroups, webVitals] = await Promise.all([
@@ -121,9 +152,9 @@ export async function GET(request: NextRequest) {
     PageView.aggregate([{ $match: { ...match, country: { $exists: true, $ne: "" } } }, { $group: { _id: "$country", visitors: { $addToSet: "$visitorId" }, views: { $sum: 1 } } }, { $project: { _id: 0, country: "$_id", visitors: { $size: "$visitors" }, views: 1 } }, { $sort: { visitors: -1 } }, { $limit: 10 }]),
     PageView.aggregate([{ $match: { ...match, deviceType: { $exists: true, $ne: "" } } }, { $group: { _id: "$deviceType", visitors: { $addToSet: "$visitorId" }, views: { $sum: 1 } } }, { $project: { _id: 0, device: "$_id", visitors: { $size: "$visitors" }, views: 1 } }, { $sort: { visitors: -1 } }]),
     PageView.aggregate([{ $match: { ...match, referrer: { $exists: true, $ne: "" } } }, { $project: { host: { $arrayElemAt: [{ $split: ["$referrer", "/"] }, 2] }, visitorId: 1 } }, { $group: { _id: "$host", visitors: { $addToSet: "$visitorId" }, views: { $sum: 1 } } }, { $project: { _id: 0, source: "$_id", visitors: { $size: "$visitors" }, views: 1 } }, { $sort: { visitors: -1 } }, { $limit: 10 }]),
-    PageView.aggregate([{ $match: match }, { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }, views: { $sum: 1 }, visitors: { $addToSet: "$visitorId" } } }, { $project: { _id: 0, date: "$_id", views: 1, visitors: { $size: "$visitors" } } }, { $sort: { date: 1 } }]),
-    AnalyticsEvent.aggregate([{ $match: { createdAt: { $gte: start }, isInternal: { $ne: true }, eventName: { $ne: "web_vital" } } }, { $group: { _id: "$eventName", count: { $sum: 1 } } }, { $project: { _id: 0, eventName: "$_id", count: 1 } }, { $sort: { count: -1 } }]),
-    AnalyticsEvent.aggregate([{ $match: { createdAt: { $gte: start }, isInternal: { $ne: true }, eventName: "web_vital", metricName: { $exists: true }, metricValue: { $exists: true } } }, { $group: { _id: { metricName: "$metricName", deviceType: "$deviceType" }, samples: { $sum: 1 }, average: { $avg: "$metricValue" }, worst: { $max: "$metricValue" } } }, { $project: { _id: 0, metricName: "$_id.metricName", deviceType: "$_id.deviceType", samples: 1, average: { $round: ["$average", 2] }, worst: { $round: ["$worst", 2] } } }, { $sort: { metricName: 1, deviceType: 1 } }]),
+    PageView.aggregate([{ $match: match }, { $group: { _id: { $dateToString: { format: bucketFormat, date: "$createdAt" } }, views: { $sum: 1 }, visitors: { $addToSet: "$visitorId" } } }, { $project: { _id: 0, date: "$_id", views: 1, visitors: { $size: "$visitors" } } }, { $sort: { date: 1 } }]),
+    AnalyticsEvent.aggregate([{ $match: { ...eventMatch, eventName: { $ne: "web_vital" } } }, { $group: { _id: "$eventName", count: { $sum: 1 } } }, { $project: { _id: 0, eventName: "$_id", count: 1 } }, { $sort: { count: -1 } }]),
+    AnalyticsEvent.aggregate([{ $match: { ...eventMatch, eventName: "web_vital", metricName: { $exists: true }, metricValue: { $exists: true } } }, { $group: { _id: { metricName: "$metricName", deviceType: "$deviceType" }, samples: { $sum: 1 }, average: { $avg: "$metricValue" }, worst: { $max: "$metricValue" } } }, { $project: { _id: 0, metricName: "$_id.metricName", deviceType: "$_id.deviceType", samples: 1, average: { $round: ["$average", 2] }, worst: { $round: ["$worst", 2] } } }, { $sort: { metricName: 1, deviceType: 1 } }]),
   ]);
 
   const eventMap = Object.fromEntries(eventGroups.map((item: { eventName: string; count: number }) => [item.eventName, item.count]));
@@ -132,6 +163,7 @@ export async function GET(request: NextRequest) {
     status: "ok",
     range,
     since: start.toISOString(),
+    until: end.toISOString(),
     summary: {
       visitors: visitorIds.length,
       pageViews,

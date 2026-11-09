@@ -31,6 +31,33 @@ async function flushQueue() {
     } catch { break; }
   }
 }
+
+type TrackedEventName = "whatsapp_click" | "email_click" | "book_call_click" | "calendly_event_scheduled" | "contact_cta_click" | "portfolio_click" | "service_click" | "newsletter_signup_click" | "cta_click";
+
+function trackInteraction(eventName: TrackedEventName, target?: string) {
+  try {
+    const visitorId = stableId(localStorage, VISITOR_KEY);
+    const sessionId = stableId(sessionStorage, SESSION_KEY);
+    const eventId = makeId();
+    void fetch("/api/analytics/events", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      keepalive: true,
+      body: JSON.stringify({
+        eventId,
+        visitorId,
+        sessionId,
+        eventName,
+        path: window.location.pathname,
+        target,
+      }),
+    }).catch(() => undefined);
+  } catch {
+    // Conversion tracking must never interrupt navigation.
+  }
+}
+
 export default function AnalyticsTracker() {
   const pathname = usePathname();
   const lastPath = useRef("");
@@ -65,5 +92,67 @@ export default function AnalyticsTracker() {
     window.addEventListener("online", retry); window.addEventListener("pageshow", retry); document.addEventListener("visibilitychange", retry);
     return () => { window.removeEventListener("online", retry); window.removeEventListener("pageshow", retry); document.removeEventListener("visibilitychange", retry); };
   }, []);
+
+  useEffect(() => {
+    const handleClick = (event: MouseEvent) => {
+      const target = event.target instanceof Element ? event.target.closest("a") : null;
+      if (!target) return;
+      const href = target.getAttribute("href") || "";
+      if (!href || href.startsWith("#") || href.startsWith("javascript:")) return;
+
+      let eventName: TrackedEventName | undefined;
+      let eventTarget: string | undefined;
+      if (href.startsWith("mailto:")) {
+        eventName = "email_click";
+        eventTarget = "mailto";
+      } else if (href.startsWith("tel:")) {
+        return;
+      } else {
+        try {
+          const url = new URL(href, window.location.origin);
+          const host = url.hostname.toLowerCase();
+          if (host === "wa.me" || host.endsWith(".whatsapp.com") || host === "whatsapp.com") {
+            eventName = "whatsapp_click";
+            eventTarget = "whatsapp";
+          } else if (host === "calendly.com" || host.endsWith(".calendly.com") || url.pathname.includes("/book-a-call")) {
+            eventName = "book_call_click";
+            eventTarget = host === window.location.hostname ? url.pathname : "calendly.com";
+          } else if (url.origin === window.location.origin && url.pathname.startsWith("/contact")) {
+            eventName = "contact_cta_click";
+            eventTarget = url.pathname;
+          } else if (url.origin === window.location.origin && url.pathname.startsWith("/portfolio/")) {
+            eventName = "portfolio_click";
+            eventTarget = url.pathname;
+          } else if (url.origin === window.location.origin && url.pathname.startsWith("/services/")) {
+            eventName = "service_click";
+            eventTarget = url.pathname;
+          }
+        } catch {
+          return;
+        }
+      }
+
+      const customEvent = target.getAttribute("data-analytics-event");
+      if (customEvent === "newsletter_signup_click") eventName = "newsletter_signup_click";
+      if (customEvent === "cta_click") eventName = "cta_click";
+      if (eventName) trackInteraction(eventName, eventTarget);
+    };
+
+    const handleCalendlyMessage = (event: MessageEvent) => {
+      if (!event.origin.endsWith("calendly.com")) return;
+      const payload = event.data as { event?: string } | null;
+      if (payload?.event === "calendly.event_scheduled") {
+        trackInteraction("calendly_event_scheduled", "calendly.com");
+      }
+    };
+
+    document.addEventListener("click", handleClick, true);
+    window.addEventListener("message", handleCalendlyMessage);
+    return () => {
+      document.removeEventListener("click", handleClick, true);
+      window.removeEventListener("message", handleCalendlyMessage);
+    };
+  }, []);
+
   return null;
 }

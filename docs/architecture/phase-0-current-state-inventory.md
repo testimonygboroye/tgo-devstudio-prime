@@ -109,7 +109,7 @@ Vercel reported 27 environment-variable entries. Names only are listed; values w
 - BREVO_API_KEY
 - ADMIN_PATH
 
-The list confirms configured variable records and target scopes, not that every integration is currently healthy or that every variable is populated correctly. Do not expose or copy values into source control or documentation.
+The list confirms configured variable records and target scopes, not that every integration is currently healthy or that every variable is populated correctly. MONGODB_URI is production-only; Vercel preview builds currently fail when database-backed pages prerender because preview has no database URI. A separate staging database is required before preview deployments can be treated as a reliable validation gate. Do not expose or copy values into source control or documentation.
 
 ## Build and quality checks
 

@@ -1,5 +1,6 @@
 const SW_VERSION = "tgo-offline-v6";
 const APP_CACHE = `${SW_VERSION}-app`;
+const ASSET_CACHE = `${SW_VERSION}-public-assets`;
 const OFFLINE_URL = "/offline.html";
 const PRECACHE_URLS = [OFFLINE_URL, "/manifest.json", "/favicon.png", "/logo.png", "/icons/icon-192x192.png"];
 
@@ -7,14 +8,6 @@ self.addEventListener("install", (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(APP_CACHE);
     await Promise.all(PRECACHE_URLS.map(async (path) => { try { const response = await fetch(new Request(path, { cache: "reload" })); if (response.ok) await cache.put(path, response); } catch { /* Optional missing assets must not block offline installation. */ } }));
-    try {
-      const home = await fetch("/", { cache: "reload", credentials: "same-origin" });
-      const type = home.headers.get("content-type") || "";
-      if (home.ok && type.includes("text/html")) {
-        const pages = await caches.open(PAGE_CACHE);
-        await pages.put("/", home.clone());
-      }
-    } catch { /* Keep the offline fallback available if homepage prefetch fails. */ }
     await self.skipWaiting();
   })());
 });

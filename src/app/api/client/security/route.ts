@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
   const newPassword = typeof body.newPassword === "string" ? body.newPassword : "";
   const confirmPassword = typeof body.confirmPassword === "string" ? body.confirmPassword : "";
   if (!session.user.authProviders?.includes("password")) return NextResponse.json({ error: "This account uses Google sign-in only. Password changes require provider re-verification and are not enabled for this account." }, { status: 409 });
-  if (!currentPassword || newPassword.length < 12 || !/[A-Z]/.test(newPassword) || !/[a-z]/.test(newPassword) || !/[0-9]/.test(newPassword)) return NextResponse.json({ error: "Enter your current password and a new password with at least 12 characters, uppercase, lowercase and a number." }, { status: 400 });
+  if (!currentPassword || newPassword.length < 12 || Buffer.byteLength(newPassword, "utf8") > 72 || !/[A-Z]/.test(newPassword) || !/[a-z]/.test(newPassword) || !/[0-9]/.test(newPassword)) return NextResponse.json({ error: "Enter your current password and a new password with 12–72 UTF-8 bytes, uppercase, lowercase and a number." }, { status: 400 });
   if (newPassword !== confirmPassword) return NextResponse.json({ error: "The new password and confirmation do not match." }, { status: 400 });
   if (currentPassword === newPassword) return NextResponse.json({ error: "Choose a new password that is different from your current password." }, { status: 400 });
   if (!await verifyPassword(currentPassword, session.user.passwordHash)) return NextResponse.json({ error: "Current password is incorrect." }, { status: 403 });

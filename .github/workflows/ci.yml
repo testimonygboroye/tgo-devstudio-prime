@@ -70,6 +70,9 @@ jobs:
           src/app/global-error.tsx
           src/platform
           src/models/User.ts
+          src/app/api/auth/login/route.ts
+          src/app/api/auth/verify-2fa/route.ts
+          src/app/api/auth/logout/route.ts
           src/models/ClientProfile.ts
           src/models/ClientEnquiry.ts
           src/models/ClientActivity.ts

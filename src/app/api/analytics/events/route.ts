@@ -6,6 +6,7 @@ import { requireContentPermission, unauthorizedResponse, forbiddenResponse } fro
 import AnalyticsEvent, { type AnalyticsEventName } from "@/models/AnalyticsEvent";
 import { parseUserAgent } from "@/lib/analytics/visitor";
 import PageView from "@/models/PageView";
+import Visitor from "@/models/Visitor";
 
 export const dynamic = "force-dynamic";
 
@@ -65,6 +66,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ status: "ok", ignored: true });
     }
 
+    const knownVisitor = visitorId
+      ? await Visitor.findOne({ visitorId }).select("isInternal").lean()
+      : null;
+
     await AnalyticsEvent.updateOne(
       { eventId },
       {
@@ -82,7 +87,7 @@ export async function POST(request: NextRequest) {
           metricValue,
           metricRating,
           deviceType: eventName === "web_vital" ? parseUserAgent(userAgent).deviceType : undefined,
-          isInternal: false,
+          isInternal: Boolean(knownVisitor?.isInternal),
         },
       },
       { upsert: true, setDefaultsOnInsert: true }

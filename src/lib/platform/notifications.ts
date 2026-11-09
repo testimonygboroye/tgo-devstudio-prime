@@ -1,6 +1,7 @@
 import { connectToDatabase } from "@/lib/db";
 import PlatformNotification from "@/models/PlatformNotification";
 import type { Types } from "mongoose";
+import { sanitizePlatformMetadata } from "@/platform/audit/sanitize";
 
 export interface CreatePlatformNotificationInput {
   recipientId: string | Types.ObjectId;
@@ -26,7 +27,7 @@ export async function createPlatformNotification(input: CreatePlatformNotificati
         $setOnInsert: {
           ...input,
           href: safeHref,
-          metadata: input.metadata || {},
+          metadata: sanitizePlatformMetadata(input.metadata || {}) as Record<string, unknown>,
         },
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
@@ -36,6 +37,6 @@ export async function createPlatformNotification(input: CreatePlatformNotificati
   return PlatformNotification.create({
     ...input,
     href: safeHref,
-    metadata: input.metadata || {},
+    metadata: sanitizePlatformMetadata(input.metadata || {}) as Record<string, unknown>,
   });
 }

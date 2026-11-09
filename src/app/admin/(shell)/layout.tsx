@@ -8,6 +8,7 @@ import { getAdminBasePath } from "@/lib/adminPath";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import AdminTopBar from "@/components/admin/AdminTopBar";
 import BackToTopButton from "@/components/shared/BackToTopButton";
+import { migrateLegalPages } from "@/lib/migrateLegalPages";
 
 export default async function AdminShellLayout({
   children,
@@ -16,6 +17,10 @@ export default async function AdminShellLayout({
 }) {
   const session = await getServerSession();
   const basePath = getAdminBasePath();
+  if (session?.role?.isFounderRole) {
+    await connectToDatabase();
+    await migrateLegalPages(session.user._id);
+  }
   const visitorId = (await cookies()).get("tgo_visitor_id")?.value;
   if (session?.role?.isFounderRole && visitorId && /^[a-zA-Z0-9-]{12,80}$/.test(visitorId)) {
     await connectToDatabase();

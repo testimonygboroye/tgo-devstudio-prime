@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
+import { useReportWebVitals } from "next/web-vitals";
 
 type QueuedView = { eventId: string; visitorId: string; sessionId: string; path: string; url: string; metadata: Record<string, unknown> };
 const QUEUE_KEY = "tgo-analytics-queue-v1";
@@ -60,6 +61,32 @@ function trackInteraction(eventName: TrackedEventName, target?: string) {
 
 export default function AnalyticsTracker() {
   const pathname = usePathname();
+
+  useReportWebVitals((metric) => {
+    if (!["LCP", "INP", "CLS", "FCP", "TTFB"].includes(metric.name)) return;
+    try {
+      const visitorId = stableId(localStorage, VISITOR_KEY);
+      const sessionId = stableId(sessionStorage, SESSION_KEY);
+      void fetch("/api/analytics/events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        keepalive: true,
+        body: JSON.stringify({
+          eventId: makeId(),
+          visitorId,
+          sessionId,
+          eventName: "web_vital",
+          metricName: metric.name,
+          metricValue: metric.value,
+          metricRating: "rating" in metric ? metric.rating : undefined,
+          path: window.location.pathname,
+        }),
+      }).catch(() => undefined);
+    } catch {
+      // Performance telemetry must never affect the user experience.
+    }
+  });
   const lastPath = useRef("");
   useEffect(() => {
     if (!pathname || lastPath.current === pathname) return;

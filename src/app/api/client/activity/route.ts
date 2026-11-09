@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   const session = await getServerSession();
-  if (!session || session.user.accountType !== "client") return NextResponse.json({ error: "Client sign-in required." }, { status: 401 });
+  if (!session || session.user.accountType !== "client" || !session.user.isEmailVerified) return NextResponse.json({ error: "Verified client sign-in required." }, { status: 401 });
   await connectToDatabase();
   const activities = await ClientActivity.find({ clientId: session.user._id }).sort({ createdAt: -1 }).limit(100).lean();
   return NextResponse.json({ activities: activities.map((item) => ({

@@ -163,7 +163,7 @@ export default async function FounderControlCentrePage() {
                   <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="text-sm font-semibold text-[var(--text-primary)]">{module.name}</p><span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${isLive ? "bg-emerald-400/10 text-emerald-300" : "bg-violet-400/10 text-violet-300"}`}>{isLive ? "Available" : "Roadmap"}</span></div><p className="mt-1.5 text-xs leading-5 text-[var(--text-secondary)]">{module.description}</p></div>
                 </div>
               );
-              return <div key={module.id}>{content}</div>;
+              return module.href && isLive ? <Link key={module.id} href={`${basePath}${module.href}`} className="block h-full">{content}</Link> : <div key={module.id}>{content}</div>;
             })}
           </div>
         </div>

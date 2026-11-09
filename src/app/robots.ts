@@ -3,6 +3,10 @@ import { getSiteUrl } from "@/lib/siteUrl";
 
 export default async function robots(): Promise<MetadataRoute.Robots> {
   const siteUrl = await getSiteUrl();
+  const adminPath = process.env.ADMIN_PATH?.trim();
+  const protectedAdminPath = adminPath
+    ? (adminPath.startsWith("/") ? adminPath : `/${adminPath}`)
+    : "/command-deck";
 
   return {
     rules: [
@@ -14,6 +18,8 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
           "/admin/",
           "/settings",
           "/auth/",
+          protectedAdminPath,
+          "/command-deck",
         ],
       },
       {

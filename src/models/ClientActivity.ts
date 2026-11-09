@@ -11,7 +11,7 @@ export interface IClientActivity extends Document {
 }
 
 const ClientActivitySchema = new Schema<IClientActivity>({
-  clientId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
+  clientId: { type: Schema.Types.ObjectId, ref: "User", required: true },
   actorId: { type: Schema.Types.ObjectId, ref: "User" },
   actorType: { type: String, enum: ["client", "staff", "system"], required: true },
   action: { type: String, required: true, maxlength: 100 },

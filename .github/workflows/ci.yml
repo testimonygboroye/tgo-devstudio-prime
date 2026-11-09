@@ -47,7 +47,7 @@ jobs:
         run: >-
           npx eslint
           src/app/api/platform/health/route.ts
-          src/app/admin/(shell)/platform/page.tsx
+          'src/app/admin/(shell)/platform/page.tsx'
           src/lib/platform
           src/models/BusinessRole.ts
           src/models/BusinessMembership.ts

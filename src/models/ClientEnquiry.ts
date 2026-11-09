@@ -14,12 +14,12 @@ export interface IClientEnquiry extends Document {
 }
 
 const ClientEnquirySchema = new Schema<IClientEnquiry>({
-  clientId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
+  clientId: { type: Schema.Types.ObjectId, ref: "User", required: true },
   organizationId: { type: Schema.Types.ObjectId, ref: "BusinessOrganization" },
   subject: { type: String, required: true, trim: true, maxlength: 180 },
   message: { type: String, required: true, trim: true, maxlength: 5000 },
   category: { type: String, enum: ["general", "service", "project", "billing", "support"], default: "general" },
-  status: { type: String, enum: ["new", "in_review", "responded", "closed"], default: "new", index: true },
+  status: { type: String, enum: ["new", "in_review", "responded", "closed"], default: "new" },
   priority: { type: String, enum: ["low", "normal", "high"], default: "normal" },
   assignedTo: { type: Schema.Types.ObjectId, ref: "User" },
 }, { timestamps: true });

@@ -30,7 +30,7 @@ PlatformNotificationSchema.index({ recipientId: 1, createdAt: -1 });
 PlatformNotificationSchema.index({ recipientId: 1, readAt: 1, createdAt: -1 });
 PlatformNotificationSchema.index(
   { recipientId: 1, dedupeKey: 1 },
-  { unique: true, sparse: true }
+  { unique: true, partialFilterExpression: { dedupeKey: { $type: "string" } } }
 );
 
 const PlatformNotification: Model<IPlatformNotification> =

@@ -57,6 +57,8 @@ export async function GET(request: NextRequest) {
       }
     }
     if (user.accountType !== "client" || user.isBanned || !user.isEmailVerified) return fail("google_account_unavailable");
+    const role = await ensureClientRole();
+    if (!user.role.equals(role._id)) return fail("google_account_conflict");
     if (user.twoFactorEnabled) {
       const response = NextResponse.redirect(new URL("/client/login?two_factor=required", siteUrl));
       response.cookies.set("tgo_client_temp_2fa", signTemp2FAToken({ userId: String(user._id) }), {
@@ -65,8 +67,6 @@ export async function GET(request: NextRequest) {
       response.cookies.delete("tgo_client_oauth_state");
       return response;
     }
-    const role = await ensureClientRole();
-    if (!user.role.equals(role._id)) return fail("google_account_conflict");
     await ClientProfile.updateOne({ userId: user._id }, { $setOnInsert: { userId: user._id, source: "google" } }, { upsert: true });
     await ClientActivity.create({
       clientId: user._id, actorId: user._id, actorType: "client",

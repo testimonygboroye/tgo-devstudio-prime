@@ -1,4 +1,4 @@
-import { sanitizeAuditMetadata } from "@/lib/platform/audit";
+import { sanitizeAuditMetadata } from "@/platform/audit/sanitize";
 
 describe("sanitizeAuditMetadata", () => {
   it("redacts secret-like keys recursively", () => {

@@ -4,7 +4,7 @@ import { connectToDatabase } from "@/lib/db";
 import { getAuthenticatedSession } from "@/lib/auth/session";
 import { requireContentPermission, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/authorize";
 import AnalyticsEvent, { type AnalyticsEventName } from "@/models/AnalyticsEvent";
-import { parseUserAgent } from "@/lib/analytics/visitor";
+import { countryName, parseUserAgent } from "@/lib/analytics/visitor";
 import PageView from "@/models/PageView";
 import Visitor from "@/models/Visitor";
 
@@ -166,7 +166,7 @@ export async function GET(request: NextRequest) {
     PageView.distinct("visitorId", match),
     PageView.distinct("sessionId", { ...match, sessionId: { $exists: true, $ne: null } }),
     PageView.aggregate([{ $match: match }, { $group: { _id: "$path", views: { $sum: 1 }, visitors: { $addToSet: "$visitorId" } } }, { $project: { _id: 0, path: "$_id", views: 1, visitors: { $size: "$visitors" } } }, { $sort: { views: -1 } }, { $limit: 10 }]),
-    PageView.aggregate([{ $match: { ...match, country: { $exists: true, $ne: "" } } }, { $group: { _id: "$country", visitors: { $addToSet: "$visitorId" }, views: { $sum: 1 } } }, { $project: { _id: 0, country: "$_id", visitors: { $size: "$visitors" }, views: 1 } }, { $sort: { visitors: -1 } }, { $limit: 10 }]),
+    PageView.aggregate([{ $match: { ...match, $or: [{ countryCode: { $exists: true, $ne: "" } }, { country: { $exists: true, $ne: "" } }] } }, { $group: { _id: { $ifNull: ["$countryCode", "$country"] }, visitors: { $addToSet: "$visitorId" }, views: { $sum: 1 } } }, { $project: { _id: 0, country: "$_id", visitors: { $size: "$visitors" }, views: 1 } }, { $sort: { visitors: -1 } }, { $limit: 10 }]),
     PageView.aggregate([{ $match: { ...match, deviceType: { $exists: true, $ne: "" } } }, { $group: { _id: "$deviceType", visitors: { $addToSet: "$visitorId" }, views: { $sum: 1 } } }, { $project: { _id: 0, device: "$_id", visitors: { $size: "$visitors" }, views: 1 } }, { $sort: { visitors: -1 } }]),
     PageView.aggregate([{ $match: { ...match, referrer: { $exists: true, $ne: "" } } }, { $project: { host: { $arrayElemAt: [{ $split: ["$referrer", "/"] }, 2] }, visitorId: 1 } }, { $group: { _id: "$host", visitors: { $addToSet: "$visitorId" }, views: { $sum: 1 } } }, { $project: { _id: 0, source: "$_id", visitors: { $size: "$visitors" }, views: 1 } }, { $sort: { visitors: -1 } }, { $limit: 10 }]),
     PageView.aggregate([{ $match: match }, { $group: { _id: { $dateToString: { format: bucketFormat, date: "$createdAt" } }, views: { $sum: 1 }, visitors: { $addToSet: "$visitorId" } } }, { $project: { _id: 0, date: "$_id", views: 1, visitors: { $size: "$visitors" } } }, { $sort: { date: 1 } }]),
@@ -194,7 +194,7 @@ export async function GET(request: NextRequest) {
     events: eventGroups,
     webVitals,
     topPages,
-    countries,
+    countries: countries.map((item: { country: string }) => ({ ...item, country: countryName(item.country) || item.country })),
     devices,
     sources,
     daily,

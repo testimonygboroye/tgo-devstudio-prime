@@ -49,7 +49,9 @@ jobs:
           src/app/api/platform/health/route.ts
           src/app/api/platform/notifications/route.ts
           src/app/api/platform/search/route.ts
+          src/app/api/platform/roles/route.ts
           'src/app/admin/(shell)/platform/page.tsx'
+          'src/app/admin/(shell)/business-roles/page.tsx'
           src/lib/platform
           src/models/BusinessRole.ts
           src/models/BusinessMembership.ts
@@ -63,6 +65,8 @@ jobs:
           src/components/admin/platform/FounderApplicationLauncher.tsx
           src/components/admin/platform/FounderUniversalSearch.tsx
           src/components/admin/platform/FounderNotificationCentre.tsx
+          src/components/admin/platform/BusinessRoleManager.tsx
+          src/components/admin/AdminSidebar.tsx
           src/app/global-error.tsx
           src/platform
 

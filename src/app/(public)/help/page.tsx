@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Search } from "lucide-react";
+import PublicEmptyState from "@/components/public/PublicEmptyState";
 
 interface Article {
   _id: string;
@@ -85,7 +86,7 @@ export default function HelpIndexPage() {
 
         {isLoading && <p className="mt-8" style={{ color: "var(--text-muted)" }}>Loading...</p>}
         {!isLoading && articles.length === 0 && (
-          <p className="mt-8" style={{ color: "var(--text-muted)" }}>No articles found.</p>
+          <PublicEmptyState eyebrow="Help centre" title={query ? "No matching articles found." : "Our help library is being prepared."} description={query ? `We could not find an article matching “${query}”. Try a different search or send the team your question directly.` : "Search the help library for guidance, or contact the team if you need help with a project, enquiry or website feature."} primaryHref="/contact" primaryLabel="Contact support" secondaryHref="/faq" secondaryLabel="Browse FAQs" />
         )}
 
         {!isLoading && Object.keys(grouped).length > 0 && (

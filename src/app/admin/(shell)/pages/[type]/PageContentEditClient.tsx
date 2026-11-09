@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import RichTextEditor from "@/components/admin/RichTextEditor";
 
 interface PageContentEditClientProps {
-  type: "about" | "privacy-policy" | "terms-of-service" | "usage-policy" | "accessibility";
+  type: "about" | "privacy-policy" | "terms-of-service" | "accessibility";
   defaultTitle?: string;
 }
 
@@ -26,7 +26,6 @@ export default function PageContentEditClient({ type, defaultTitle }: PageConten
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
   const [savedMessage, setSavedMessage] = useState("");
-  const [isDefault, setIsDefault] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -35,7 +34,6 @@ export default function PageContentEditClient({ type, defaultTitle }: PageConten
       if (data.status === "ok" && data.page) {
         setTitle(data.page.title);
         setContent(data.page.content);
-        setIsDefault(Boolean(data.isDefault));
       }
       setIsLoading(false);
     }
@@ -60,7 +58,8 @@ export default function PageContentEditClient({ type, defaultTitle }: PageConten
       return;
     }
 
-    setSavedMessage("Saved successfully.");
+    setIsDefault(false);
+    setSavedMessage("Published successfully. The public page now uses this saved version.");
     setIsSaving(false);
   }
 
@@ -69,11 +68,7 @@ export default function PageContentEditClient({ type, defaultTitle }: PageConten
   }
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 shadow-lg">
-        <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-cyan-400">Page management</p><p className="mt-1 text-sm text-[var(--text-secondary)]">{isDefault ? "Updated editorial version loaded. Save to publish it." : "This page is using its saved database content."}</p></div><a href={type === "about" ? "/about" : `/${type}`} target="_blank" rel="noreferrer" className="rounded-xl border border-[var(--border-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] hover:border-brand-cyan-400">View public page ↗</a></div>
-      </div>
-      <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 sm:p-7">
+    <div>
       <div>
         <label className="block text-sm text-neutral-400">Page Title</label>
         <input
@@ -100,7 +95,6 @@ export default function PageContentEditClient({ type, defaultTitle }: PageConten
       >
         {isSaving ? "Saving..." : "Save Document"}
       </button>
-      </div>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import ReviewForm from "@/components/public/ReviewForm";
 import { getServerLocale } from "@/lib/i18n/serverLocale";
 import { createTranslator, getLocalizedContent } from "@/lib/i18n/translationHelper";
 import { TRANSLATABLE_FIELDS } from "@/lib/i18n/translatableFields";
+import PublicEmptyState from "@/components/public/PublicEmptyState";
 
 export const revalidate = 300;
 
@@ -53,7 +54,7 @@ export default async function TestimonialsPage() {
           {t("testimonials.subtitle")}
         </p>
 
-        <div className="mt-14 grid gap-7 sm:grid-cols-2">
+        {reviews.length === 0 ? <PublicEmptyState eyebrow="Community feedback" title="Your experience can help shape what comes next." description="There are no public testimonials to display yet. If you have worked with TGO DevStudio, you can share feedback below. Submissions are reviewed before publication." primaryHref="#review-form" primaryLabel="Share your experience" /> : <div className="mt-14 grid gap-7 sm:grid-cols-2">
           {reviews.map((review) => (
             <Link
               key={review._id.toString()}
@@ -91,7 +92,7 @@ export default async function TestimonialsPage() {
               </div>
             </Link>
           ))}
-        </div>
+        </div>}
 
         <div
           id="review-form"

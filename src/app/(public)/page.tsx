@@ -22,6 +22,7 @@ import LaunchSettings from "@/models/LaunchSettings";
 import { getServerLocale, getTranslator } from "@/lib/i18n/serverLocale";
 import { getLocalizedContent } from "@/lib/i18n/translationHelper";
 import { TRANSLATABLE_FIELDS } from "@/lib/i18n/translatableFields";
+import PublicEmptyState from "@/components/public/PublicEmptyState";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -150,7 +151,7 @@ export default async function HomePage() {
           </ScrollReveal>
 
           {featuredProjects.length === 0 ? (
-            <p className="mt-10" style={{ color: "var(--text-muted)" }}>Featured case studies are coming soon.</p>
+            <PublicEmptyState eyebrow="Selected work" title="A good project starts with a clear problem." description="We are continually documenting the work and thinking behind our engineering. Tell us what you are trying to achieve and we can explore the right solution together." primaryHref="/contact" primaryLabel="Start a project" secondaryHref="/services" secondaryLabel="Explore capabilities" />
           ) : (
             <div className="mt-12 grid gap-6 sm:grid-cols-3">
               {featuredProjects.map((project, index) => (
@@ -194,7 +195,7 @@ export default async function HomePage() {
           </ScrollReveal>
 
           {services.length === 0 ? (
-            <p className="mt-10" style={{ color: "var(--text-muted)" }}>Our service offerings are being finalized.</p>
+            <PublicEmptyState eyebrow="Capabilities" title="Bring us the challenge. We will help shape the solution." description="From websites and applications to SaaS, AI, cloud and security systems, we can discuss the right technical path for your goals." primaryHref="/contact" primaryLabel="Discuss your needs" secondaryHref="/book-a-call" secondaryLabel="Book a discovery call" />
           ) : (
             <div className="mt-12 grid gap-6 sm:grid-cols-3">
               {services.map((service, index) => {
@@ -275,7 +276,7 @@ export default async function HomePage() {
           </ScrollReveal>
 
           {teamMembers.length === 0 ? (
-            <p className="mt-10" style={{ color: "var(--text-muted)" }}>Team profiles are coming soon.</p>
+            <PublicEmptyState eyebrow="The people behind the work" title="Thoughtful engineering is a team effort." description="Our approach is built around direct communication, technical ownership and care for the details. Get in touch to meet the people who will shape your project." primaryHref="/about" primaryLabel="About the studio" secondaryHref="/contact" secondaryLabel="Talk to us" />
           ) : (
             <div className="mt-12 grid grid-cols-2 gap-6 sm:grid-cols-4">
               {teamMembers.map((member, index) => (

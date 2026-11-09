@@ -6,6 +6,7 @@ import Project from "@/models/Project";
 import { getServerLocale } from "@/lib/i18n/serverLocale";
 import { createTranslator, getLocalizedContent } from "@/lib/i18n/translationHelper";
 import { TRANSLATABLE_FIELDS } from "@/lib/i18n/translatableFields";
+import PublicEmptyState from "@/components/public/PublicEmptyState";
 
 export const revalidate = 300;
 
@@ -111,11 +112,7 @@ export default async function PortfolioPage({ searchParams }: PageProps) {
         )}
 
         {projects.length === 0 && (
-          <p className="mt-14" style={{ color: "var(--text-muted)" }}>
-            {tag
-              ? `No case studies tagged "${tag}".`
-              : "Case studies are on the way. Check back soon."}
-          </p>
+          <PublicEmptyState eyebrow="Selected work" title={tag ? "No published projects match this filter yet." : "Every strong case study begins with a real problem."} description={tag ? "Try another project category, or contact us if you are looking for a particular capability." : "We are continually shaping and documenting our work. If you have a challenge in mind, let's talk about what a thoughtful solution could look like."} primaryHref={tag ? "/portfolio" : "/contact"} primaryLabel={tag ? "View all projects" : "Start a conversation"} secondaryHref="/services" secondaryLabel="Explore capabilities" />
         )}
 
         <div className="mt-14 grid gap-7 sm:grid-cols-2">

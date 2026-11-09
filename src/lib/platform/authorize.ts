@@ -2,6 +2,7 @@ import { getServerSession } from "@/lib/auth/serverSession";
 import { connectToDatabase } from "@/lib/db";
 import BusinessMembership from "@/models/BusinessMembership";
 import BusinessRole from "@/models/BusinessRole";
+import { isPlatformPermission, type PlatformPermission } from "@/platform/permissions/catalog";
 import {
   evaluatePlatformPermission,
   type PlatformPermissionGrant,
@@ -9,7 +10,7 @@ import {
 } from "@/platform/authorization/evaluate";
 
 export async function authorizePlatformPermission(
-  permission: string,
+  permission: PlatformPermission | string,
   resource?: PlatformResourceContext
 ) {
   const session = await getServerSession();
@@ -17,12 +18,8 @@ export async function authorizePlatformPermission(
     return { allowed: false as const, reason: "unauthenticated" as const, session: null };
   }
 
-  if (session.role.isFounderRole) {
-    return {
-      allowed: true as const,
-      reason: "founder" as const,
-      session,
-    };
+  if (!isPlatformPermission(permission)) {
+    return { allowed: false as const, reason: "unknown-permission" as const, session };
   }
 
   await connectToDatabase();
@@ -31,13 +28,11 @@ export async function authorizePlatformPermission(
     status: "active",
   }).lean();
 
-  if (!membership || !membership.roleIds?.length) {
-    return { allowed: false as const, reason: "no-membership" as const, session };
-  }
-
-  const roles = await BusinessRole.find({ _id: { $in: membership.roleIds } })
-    .select("permissionGrants deniedPermissions")
-    .lean();
+  const roles = membership?.roleIds?.length
+    ? await BusinessRole.find({ _id: { $in: membership.roleIds } })
+        .select("permissionGrants deniedPermissions")
+        .lean()
+    : [];
 
   const grants = roles.flatMap((role) =>
     (role.permissionGrants || []).map((grant) => ({
@@ -51,14 +46,19 @@ export async function authorizePlatformPermission(
   const decision = evaluatePlatformPermission(
     {
       userId: String(session.user._id),
-      departmentIds: membership.departmentIds || [],
-      teamIds: membership.teamIds || [],
+      isFounder: session.role.isFounderRole === true,
+      departmentIds: membership?.departmentIds || [],
+      teamIds: membership?.teamIds || [],
       grants,
       deniedPermissions,
     },
     permission,
     resource
   );
+
+  if (!decision.allowed && !membership && !session.role.isFounderRole) {
+    return { allowed: false as const, reason: "no-membership" as const, session };
+  }
 
   return { ...decision, session };
 }

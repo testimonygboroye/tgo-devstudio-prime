@@ -15,7 +15,8 @@ Deliver a real client-facing account environment connected to the founder's clie
 - Client accounts remain unverified until a single-use, SHA-256-hashed, 24-hour verification token is redeemed.
 - Verification email delivery uses the Resend API. Delivery is not simulated; registration fails cleanly if email delivery is not configured or rejected.
 - Google sign-in uses OAuth authorization-code exchange, state-cookie validation, Google userinfo verification, and the provider's account chooser prompt. Existing verified client identities can link Google by verified matching email; staff identities are never silently converted.
-- A client account with 2FA enabled is not allowed to bypass that control through Google sign-in.
+- Password and Google sign-in both retain the existing authenticator/backup-code 2FA challenge; Google-only accounts with 2FA enabled receive a short-lived challenge cookie.
+- Password changes verify the current password and increment the shared refresh-token version to revoke existing sessions.
 
 ### Account selector
 - The sign-in page can remember up to five recently used client email identities in a non-HttpOnly, same-site cookie.
@@ -42,6 +43,7 @@ Deliver a real client-facing account environment connected to the founder's clie
 - Responsive client entry, registration, verification, sign-in, dashboard, account settings, enquiry centre and notifications.
 - Dashboard metrics are based on actual client enquiry records and onboarding fields; unavailable projects, payment, credits and rewards are explicitly marked as future modules rather than populated with invented data.
 - Client-facing APIs scope all records to the authenticated client identity and return private no-store responses.
+- Clients can review their full activity timeline and update their display name, contact details and password (password-enabled accounts).
 - Client activity is recorded with actor type and timestamp.
 
 ## Data models
@@ -63,6 +65,7 @@ Deliver a real client-facing account environment connected to the founder's clie
 - `/client/settings`
 - `/client/enquiries`
 - `/client/notifications`
+- `/client/activity`
 
 ### Client APIs
 - `POST /api/client/register`
@@ -71,6 +74,7 @@ Deliver a real client-facing account environment connected to the founder's clie
 - `GET/PATCH /api/client/profile`
 - `GET/POST /api/client/enquiries`
 - `GET /api/client/activity`
+- `POST /api/client/security`
 - `GET/PATCH /api/client/notifications`
 - `GET /api/client/auth/google`
 - `GET /api/client/auth/google/callback`
@@ -102,6 +106,7 @@ Do not put any of these secrets in client-side variables or commit them to Git. 
 - All client profile, enquiry, activity and notification reads are scoped to the authenticated client id.
 - Client management and enquiry administration endpoints require the server-verified founder role.
 - Client account sign-in cannot use the staff audience, and staff accounts cannot use the client audience.
+- Suspending a client increments the refresh-token version, invalidating existing sessions.
 - Verification tokens are random, hashed at rest, expire after 24 hours and are consumed atomically.
 - Google state is random, HttpOnly, same-site and short-lived.
 - Google verified email is required before creating/linking a client identity.

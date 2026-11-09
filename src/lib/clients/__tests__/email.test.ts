@@ -1,4 +1,4 @@
-import { hashVerificationToken } from "../email";
+import { hashVerificationToken } from "../token";
 
 describe("client email verification token hashing", () => {
   it("produces a stable SHA-256 digest without storing the raw token", () => {

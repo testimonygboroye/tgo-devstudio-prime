@@ -12,7 +12,7 @@ export async function GET() {
   return NextResponse.json({ status: "ok", settings: settings || {
     enabled: false, countdownEnabled: true, countdownVisible: true, launchDate: null, title: "Something exceptional is coming",
     description: "A new chapter in intelligent digital experiences is almost here.",
-    videoUrl: "", flyerUrl: "", afterLaunchVideoUrl: "", afterLaunchFlyerUrl: "",
+    videoUrl: "", flyerUrl: "", afterLaunchVideoUrl: "", afterLaunchFlyerUrl: "", videoAudioEnabled: false, flyerDurationMinutes: 0, flyerDurationSeconds: 8,
     videoSeconds: 0, flyerSeconds: 8, videoDurationHours: 0, videoDurationMinutes: 0, videoDurationSeconds: 0, useVideoDurationOverride: false
   }}, { headers: { "Cache-Control": "no-store, max-age=0" } });
 }
@@ -30,11 +30,14 @@ export async function PUT(request: NextRequest) {
     title: String(body.title || "").trim().slice(0, 140),
     description: String(body.description || "").trim().slice(0, 400),
     videoUrl: String(body.videoUrl || "").trim().slice(0, 1000),
+    videoAudioEnabled: body.videoAudioEnabled === true,
+    flyerDurationMinutes: Math.min(1440, Math.max(0, Number(body.flyerDurationMinutes) || 0)),
+    flyerDurationSeconds: Math.min(59, Math.max(0, Number(body.flyerDurationSeconds) || 0)),
     flyerUrl: String(body.flyerUrl || "").trim().slice(0, 1000),
     afterLaunchVideoUrl: String(body.afterLaunchVideoUrl || "").trim().slice(0, 1000),
     afterLaunchFlyerUrl: String(body.afterLaunchFlyerUrl || "").trim().slice(0, 1000),
     videoSeconds: 0,
-    flyerSeconds: Math.min(3600, Math.max(1, Number(body.flyerSeconds) || 8)),
+    flyerSeconds: Math.min(86400, Math.max(1, (Number(body.flyerDurationMinutes) || 0) * 60 + (Number.isFinite(Number(body.flyerDurationSeconds)) ? Number(body.flyerDurationSeconds) : Number(body.flyerSeconds) || 8))),
     videoDurationHours: Math.min(24, Math.max(0, Number(body.videoDurationHours) || 0)),
     videoDurationMinutes: Math.min(59, Math.max(0, Number(body.videoDurationMinutes) || 0)),
     videoDurationSeconds: Math.min(59, Math.max(0, Number(body.videoDurationSeconds) || 0)),

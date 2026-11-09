@@ -1,5 +1,6 @@
 import { connectToDatabase } from "@/lib/db";
 import PlatformEvent from "@/models/PlatformEvent";
+import { sanitizePlatformMetadata } from "@/platform/audit/sanitize";
 
 export interface EnqueuePlatformEventInput {
   eventName: string;
@@ -19,6 +20,7 @@ export async function enqueuePlatformEvent(input: EnqueuePlatformEventInput) {
       {
         $setOnInsert: {
           ...input,
+          payload: sanitizePlatformMetadata(input.payload) as Record<string, unknown>,
           status: "pending",
           attempts: 0,
           availableAt: input.availableAt || new Date(),
@@ -30,6 +32,7 @@ export async function enqueuePlatformEvent(input: EnqueuePlatformEventInput) {
 
   return PlatformEvent.create({
     ...input,
+    payload: sanitizePlatformMetadata(input.payload) as Record<string, unknown>,
     status: "pending",
     attempts: 0,
     availableAt: input.availableAt || new Date(),

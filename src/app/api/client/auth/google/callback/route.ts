@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { createClientIdentity, ensureClientRole } from "@/lib/clients/identity";
-import { signAccessToken, signRefreshToken } from "@/lib/auth/jwt";
+import { signAccessToken, signRefreshToken, signTemp2FAToken } from "@/lib/auth/jwt";
 import { setAuthCookies } from "@/lib/auth/cookies";
 import User from "@/models/User";
 import ClientProfile from "@/models/ClientProfile";
@@ -57,7 +57,14 @@ export async function GET(request: NextRequest) {
       }
     }
     if (user.accountType !== "client" || user.isBanned || !user.isEmailVerified) return fail("google_account_unavailable");
-    if (user.twoFactorEnabled) return fail("use_password_for_two_factor");
+    if (user.twoFactorEnabled) {
+      const response = NextResponse.redirect(new URL("/client/login?two_factor=required", siteUrl));
+      response.cookies.set("tgo_client_temp_2fa", signTemp2FAToken({ userId: String(user._id) }), {
+        httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/client", maxAge: 300,
+      });
+      response.cookies.delete("tgo_client_oauth_state");
+      return response;
+    }
     const role = await ensureClientRole();
     if (!user.role.equals(role._id)) return fail("google_account_conflict");
     await ClientProfile.updateOne({ userId: user._id }, { $setOnInsert: { userId: user._id, source: "google" } }, { upsert: true });

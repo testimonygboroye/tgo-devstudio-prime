@@ -51,6 +51,6 @@ export async function PUT(request: NextRequest) {
     if (update[field] && !/^https:\/\//i.test(update[field])) return NextResponse.json({ status: "error", message: "Media URLs must use HTTPS." }, { status: 400 });
   }
   await connectToDatabase();
-  const settings = await LaunchSettings.findOneAndUpdate({}, { $set: update }, { new: true, upsert: true, setDefaultsOnInsert: true, runValidators: true });
+  const settings = await LaunchSettings.findOneAndUpdate({}, { $set: update }, { returnDocument: "after", upsert: true, setDefaultsOnInsert: true, runValidators: true });
   return NextResponse.json({ status: "ok", settings }, { headers: { "Cache-Control": "no-store, max-age=0" } });
 }

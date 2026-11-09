@@ -27,7 +27,7 @@ export async function GET() {
 
 export async function PATCH(request: NextRequest) {
   const session = await getServerSession();
-  if (!session || session.user.accountType !== "client") return NextResponse.json({ error: "Client sign-in required." }, { status: 401 });
+  if (!session || session.user.accountType !== "client" || !session.user.isEmailVerified) return NextResponse.json({ error: "Verified client sign-in required." }, { status: 401 });
   let body: Record<string, unknown>;
   try { body = await request.json(); } catch { return NextResponse.json({ error: "Invalid request." }, { status: 400 }); }
   const allowed = ["phone", "jobTitle", "website", "country", "timezone"] as const;
@@ -46,6 +46,9 @@ export async function PATCH(request: NextRequest) {
   const onboardingStatus = merged.phone && merged.country && merged.timezone ? "completed" : "in_progress";
   const profile = await ClientProfile.findOneAndUpdate({ userId: session.user._id }, { $set: { ...values, onboardingStatus } }, { new: true, runValidators: true });
   if (!profile) return NextResponse.json({ error: "Client profile not found." }, { status: 404 });
-  await ClientActivity.create({ clientId: session.user._id, actorId: session.user._id, actorType: "client", action: "client.profile_updated", summary: "Client updated their profile.", metadata: { fields: Object.keys(values) } });
+  await Promise.all([
+    ClientActivity.create({ clientId: session.user._id, actorId: session.user._id, actorType: "client", action: "client.profile_updated", summary: "Client updated their profile.", metadata: { fields: Object.keys(values) } }),
+    writePlatformAuditEvent({ actorType: "human", actorId: String(session.user._id), actorLabel: session.user.name, action: "client.profile_updated", module: "clients", targetType: "client", targetId: String(session.user._id), outcome: "success", metadata: { fields: Object.keys(values), onboardingStatus } }),
+  ]);
   return NextResponse.json({ ok: true, message: "Profile updated." });
 }

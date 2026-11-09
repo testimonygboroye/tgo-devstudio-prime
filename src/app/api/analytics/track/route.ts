@@ -185,7 +185,7 @@ export async function POST(request: NextRequest) {
     const existingVisitor =
       await Visitor.findOne({ visitorId })
         .select(
-          "firstSeen lastSeen totalPageViews totalSessions"
+          "firstSeen lastSeen totalPageViews totalSessions isInternal"
         )
         .lean();
 
@@ -197,7 +197,7 @@ export async function POST(request: NextRequest) {
       const result = await PageView.updateOne(
         { eventId },
         { $setOnInsert: {
-          eventId, path, visitorId, sessionId, userAgent, referrer,
+          eventId, path, visitorId, sessionId, userAgent, referrer, isInternal: Boolean(existingVisitor?.isInternal),
           host: deploymentHost, deploymentProvider, language: client.language,
           deviceType: parsedUserAgent.deviceType, browser: parsedUserAgent.browser,
           operatingSystem: parsedUserAgent.operatingSystem, country: geo.country,

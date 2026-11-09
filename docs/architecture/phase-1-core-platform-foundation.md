@@ -25,6 +25,10 @@
 | Event outbox | `PlatformEvent`, `src/lib/platform/events.ts` |
 | Platform notifications | `PlatformNotification`, `src/lib/platform/notifications.ts` |
 | Module registry | `src/platform/registry/modules.ts` |
+| Runtime configuration | `src/lib/platform/config.ts` |
+| Authenticated health diagnostics | `GET /api/platform/health` |
+| Standard API response envelope | `src/lib/platform/response.ts` |
+| Storage provider contract | `src/platform/storage/types.ts` |
 | Authorization tests | `src/platform/authorization/__tests__/evaluate.test.ts` and `audit.test.ts` |
 | API response envelope | `src/lib/platform/response.ts` |
 | Storage provider contract | `src/platform/storage/types.ts` |

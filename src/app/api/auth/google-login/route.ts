@@ -14,7 +14,7 @@ async function verifyGoogleCredential(credential?:string,accessToken?:string) {
    if(!response.ok) throw new Error("Google credential is invalid or expired.");
    const claims=await response.json();
    if(claims.aud!==clientId || !["accounts.google.com","https://accounts.google.com"].includes(claims.iss) || Number(claims.exp)*1000<=Date.now() || claims.email_verified!=="true" || !claims.sub || !claims.email) throw new Error("Google could not verify this account.");
-   return {sub:String(claims.sub),email:String(claims.email).trim().toLowerCase(),name:String(claims.name||"").trim()};
+   return {sub:String(claims.sub),email:String(claims.email).trim().toLowerCase(),name:String(claims.name||"").trim(),picture:String(claims.picture||"")};
   }
   if(!accessToken)throw new Error("Google credential is required.");
   const tokenInfoResponse=await fetch("https://oauth2.googleapis.com/tokeninfo?access_token="+encodeURIComponent(accessToken),{cache:"no-store"});
@@ -25,7 +25,7 @@ async function verifyGoogleCredential(credential?:string,accessToken?:string) {
   if(!profileResponse.ok)throw new Error("Could not retrieve the selected Google account.");
   const profile=await profileResponse.json();
   if(profile.email_verified!==true || !profile.sub || !profile.email || (tokenInfo.user_id && String(tokenInfo.user_id)!==String(profile.sub)) || (tokenInfo.email && String(tokenInfo.email).toLowerCase()!==String(profile.email).toLowerCase()))throw new Error("Google could not verify the selected email address.");
-  return {sub:String(profile.sub),email:String(profile.email).trim().toLowerCase(),name:String(profile.name||"").trim()};
+  return {sub:String(profile.sub),email:String(profile.email).trim().toLowerCase(),name:String(profile.name||"").trim(),picture:String(profile.picture||"")};
  }
 export async function POST(request:NextRequest) {
   try {
@@ -46,6 +46,6 @@ export async function POST(request:NextRequest) {
     user.failedLoginAttempts=0;user.lockUntil=undefined;await user.save();
     const access=signAccessToken({userId:user._id.toString(),roleId:user.role.toString(),tokenVersion:user.refreshTokenVersion});
     const refresh=signRefreshToken({userId:user._id.toString(),tokenVersion:user.refreshTokenVersion});
-    const response=await apiSuccess({},"loggedIn","Logged in successfully.",200);setAuthCookies(response,access,refresh);return response;
+    const response=await apiSuccess({googleAccount:{email:google.email,name:google.name,picture:google.picture}},"loggedIn","Logged in successfully.",200);setAuthCookies(response,access,refresh);return response;
   } catch(error) { return apiError("googleSignInFailed",error instanceof Error?error.message:"Google sign-in failed.",401); }
 }

@@ -10,6 +10,10 @@ export async function POST(request: NextRequest) {
   await connectToDatabase();
   const user = await User.findOne({ email, accountType: "client", isEmailVerified: false });
   if (!user) return NextResponse.json({ ok: true, message: "If an unverified client account exists, a new verification email has been sent." });
+  const recent = await (await import("@/models/ClientEmailVerification")).default.findOne({ userId: user._id }).sort({ createdAt: -1 });
+  if (recent && Date.now() - recent.createdAt.getTime() < 60_000) {
+    return NextResponse.json({ ok: true, message: "A verification message was recently requested. Please check your inbox or wait one minute before trying again." });
+  }
   try {
     const token = await createEmailVerification(String(user._id));
     await sendClientVerificationEmail(email, user.name, token);

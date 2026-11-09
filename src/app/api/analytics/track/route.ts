@@ -104,7 +104,9 @@ export async function POST(request: NextRequest) {
     const eventId = validId(body?.eventId) ? body.eventId : randomUUID();
 
     const userAgent = request.headers.get("user-agent") || "unknown";
-    if (/bot|crawler|spider|slurp|facebookexternalhit|TelegramBot|Twitterbot|LinkedInBot|Discordbot|Google-InspectionTool/i.test(userAgent)) {
+    const requestHost = (request.headers.get("x-forwarded-host") || request.headers.get("host") || "").split(",")[0].trim().toLowerCase().split(":")[0];
+    const isVercelPreview = requestHost.endsWith(".vercel.app") && !["tgo-devstudio-prime.vercel.app", "tgo-devstudio-prime-testimonygboroye.vercel.app"].includes(requestHost);
+    if (isVercelPreview || /HeadlessChrome|PhantomJS|Playwright|Puppeteer/i.test(userAgent) || /bot|crawler|spider|slurp|facebookexternalhit|TelegramBot|Twitterbot|LinkedInBot|Discordbot|Google-InspectionTool/i.test(userAgent)) {
       return NextResponse.json({ status: "ok", ignored: true });
     }
     const authenticatedSession = await getAuthenticatedSession(request);

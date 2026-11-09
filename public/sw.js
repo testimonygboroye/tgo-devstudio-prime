@@ -1,7 +1,6 @@
-const SW_VERSION = "tgo-offline-v5";
+const SW_VERSION = "tgo-offline-v6";
 const APP_CACHE = `${SW_VERSION}-app`;
 const PAGE_CACHE = `${SW_VERSION}-public-pages`;
-const ASSET_CACHE = `${SW_VERSION}-public-assets`;
 const OFFLINE_URL = "/offline.html";
 const PRECACHE_URLS = [OFFLINE_URL, "/manifest.json", "/favicon.png", "/logo.png", "/icons/icon-192x192.png"];
 
@@ -23,7 +22,7 @@ self.addEventListener("install", (event) => {
 
 self.addEventListener("activate", (event) => {
   event.waitUntil((async () => {
-    const keep = new Set([APP_CACHE, PAGE_CACHE, ASSET_CACHE]);
+    const keep = new Set([APP_CACHE, PAGE_CACHE]);
     const names = await caches.keys();
     await Promise.all(names.filter((name) => name.startsWith("tgo-offline-") && !keep.has(name)).map((name) => caches.delete(name)));
     await self.clients.claim();
@@ -76,37 +75,15 @@ async function handleNavigation(request) {
   }
 }
 
-async function handlePublicAsset(request) {
-  const cache = await caches.open(ASSET_CACHE);
-  try {
-    // Prefer the current deployed asset while online; use cache only as an offline fallback.
-    const response = await fetch(request, { cache: "no-cache" });
-    if (response && (response.ok || response.type === "opaque")) {
-      await cache.put(request, response.clone());
-      await trimCache(ASSET_CACHE, 100);
-    }
-    return response;
-  } catch {
-    return (await cache.match(request)) || (await caches.match(request)) || Response.error();
-  }
-}
-
+// Static assets (especially Next.js CSS and JavaScript chunks) are deliberately
+// left to the browser's HTTP cache. A service-worker cache can otherwise replay
+// stale or mismatched chunks after a deployment, producing partially styled pages.
 self.addEventListener("fetch", (event) => {
   const request = event.request;
-  if (request.method !== "GET") return;
+  if (request.method !== "GET" || request.mode !== "navigate") return;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
-
-  if (request.mode === "navigate") {
-    // Never store or replay private/admin pages, even when offline.
-    event.respondWith(handleNavigation(request));
-    return;
-  }
-
-  if (isPrivatePath(url.pathname)) return;
-  if (["image", "style", "script", "font"].includes(request.destination)) {
-    event.respondWith(handlePublicAsset(request));
-  }
+  event.respondWith(handleNavigation(request));
 });
 
 self.addEventListener("message", (event) => {

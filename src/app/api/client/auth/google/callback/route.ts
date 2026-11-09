@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
         if (user.accountType !== "client" || !user.isEmailVerified) return fail("google_account_conflict");
         if (user.googleSub && user.googleSub !== profile.sub) return fail("google_account_conflict");
         user.googleSub = profile.sub;
-        if (!user.authProviders.includes("google")) user.authProviders.push("google");
+        if (!user.authProviders?.includes("google")) user.authProviders = [...(user.authProviders || []), "google"];
         await user.save();
       } else {
         user = await createClientIdentity({

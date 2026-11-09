@@ -41,7 +41,7 @@ export async function POST(request:NextRequest) {
     if(user.twoFactorEnabled) {
       let skip=false;
       if(process.env.TWO_FACTOR_ENABLED==="false"){const role=await Role.findById(user.role).select("isFounderRole");skip=Boolean(role?.isFounderRole);}
-      if(!skip) return NextResponse.json({status:"2fa_required",tempToken:signTemp2FAToken({userId:user._id.toString()})});
+      if(!skip) return NextResponse.json({status:"2fa_required",tempToken:signTemp2FAToken({userId:user._id.toString()}),googleAccount:{email:google.email,name:google.name,picture:google.picture}});
     }
     user.failedLoginAttempts=0;user.lockUntil=undefined;await user.save();
     const access=signAccessToken({userId:user._id.toString(),roleId:user.role.toString(),tokenVersion:user.refreshTokenVersion});

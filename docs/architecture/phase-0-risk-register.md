@@ -17,6 +17,7 @@
 | SEC-010 | Medium | Current project records are portfolio content, not delivery operations. | Existing Project model belongs to the public CMS/portfolio domain. | Create a separate delivery-project domain; do not repurpose the portfolio collection. |
 | SEC-011 | Medium | Existing identity model is admin-centric. | User and Role represent website administrators; no client/employee/AI identity model exists. | Define platform principals and separate client, organization, employee, contractor, and AI profile records. |
 | SEC-012 | Medium | Configured environment records do not prove integration health. | Vercel exposes 27 variable records, but values were intentionally not decrypted and runtime logs have limited retention. | Validate each provider with a non-destructive health check during its implementation phase. |
+| SEC-013 | High | Vercel preview deployments cannot build without a preview database URI. | MONGODB_URI is scoped to production only. The Phase 0 PR preview builds fail while prerendering database-backed pages, reporting a missing MONGODB_URI. | Provision an isolated staging MongoDB database and add its URI only to the preview target, or implement a deliberate preview-safe build/data strategy. Never point previews at production by default. |
 
 ## Phase 0 remediation performed
 

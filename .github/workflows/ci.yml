@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, phase-1/core-platform-foundation]
+    branches: [main, phase-1/core-platform-foundation, phase-2/founder-control-centre]
   workflow_dispatch:
   pull_request:
     branches: [main]
@@ -47,6 +47,7 @@ jobs:
         run: >-
           npx eslint
           src/app/api/platform/health/route.ts
+          'src/app/admin/(shell)/platform/page.tsx'
           src/lib/platform
           src/models/BusinessRole.ts
           src/models/BusinessMembership.ts

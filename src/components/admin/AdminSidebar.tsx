@@ -44,9 +44,13 @@ interface AdminSidebarProps {
   userEmail: string;
   roleName: string;
   basePath: string;
+  isFounder: boolean;
 }
 
 const NAV_GROUPS = [
+  { title: "Founder", items: [
+    { label: "Founder Control Centre", hrefSuffix: "/platform", icon: ShieldCheck, badgeKey: null },
+  ]},
   { title: "Overview", items: [
     { label: "Dashboard", hrefSuffix: "/dashboard", icon: LayoutDashboard, badgeKey: null },
     { label: "Visitor Analytics", hrefSuffix: "/analytics", icon: BarChart3, badgeKey: null },
@@ -95,6 +99,7 @@ export default function AdminSidebar({
   userEmail,
   roleName,
   basePath,
+  isFounder,
 }: AdminSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -176,7 +181,7 @@ export default function AdminSidebar({
       </div>
 
       <nav className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4 space-y-1">
-        {NAV_GROUPS.map((group) => {
+        {NAV_GROUPS.filter((group) => group.title !== "Founder" || isFounder).map((group) => {
           const groupActive = group.items.some((item) => pathname.startsWith(`${basePathSegment}${item.hrefSuffix}`));
           return (
             <details key={group.title} open={groupActive || undefined} className="group/nav mb-2">

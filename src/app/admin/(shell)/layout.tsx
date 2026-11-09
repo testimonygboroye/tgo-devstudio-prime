@@ -50,6 +50,7 @@ export default async function AdminShellLayout({
         userEmail={session.user.email}
         roleName={session.role.name}
         basePath={basePath}
+        isFounder={session.role.isFounderRole === true}
       />
 
       <div

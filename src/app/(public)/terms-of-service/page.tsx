@@ -2,56 +2,26 @@ import type { Metadata } from "next";
 import { connectToDatabase } from "@/lib/db";
 import PageContent from "@/models/PageContent";
 import { PAGE_DEFAULTS } from "@/lib/constants/pageDefaults";
-import { sanitizeBlogHtml } from "@/lib/sanitizeHtml";
+import { PAGE_CONTENT_VERSION } from "@/lib/constants/legalContent";
 import { getServerLocale } from "@/lib/i18n/serverLocale";
-import { createTranslator, getLocalizedContent } from "@/lib/i18n/translationHelper";
+import { getLocalizedContent } from "@/lib/i18n/translationHelper";
+import LegalPageShell from "@/components/public/LegalPageShell";
 
 export const revalidate = 300;
+export const metadata: Metadata = {
+  title: "Consumer Terms of Service | TGO DevStudio Prime",
+  description: "The terms governing your access to and use of the TGO DevStudio Prime public website and visitor features.",
+  alternates: { canonical: "/terms-of-service" },
+  openGraph: { title: "Consumer Terms of Service | TGO DevStudio Prime", description: "The terms governing your access to and use of the TGO DevStudio Prime public website and visitor features.", url: "/terms-of-service", type: "article" },
+  twitter: { card: "summary_large_image", title: "Consumer Terms of Service | TGO DevStudio Prime", description: "The terms governing your access to and use of the TGO DevStudio Prime public website and visitor features." },
+};
 
-export async function generateMetadata(): Promise<Metadata> {
-  const t = createTranslator(await getServerLocale());
-
-  return {
-    alternates: { canonical: "/terms-of-service" },
-    title: `Terms of Service | TGO DevStudio Prime`,
-    description: t("common.readMore"),
-  };
-}
-
-export default async function TermsOfServicePage() {
+export default async function LegalDocumentPage() {
   await connectToDatabase();
-
   const locale = await getServerLocale();
-  const t = createTranslator(locale);
-
-  const saved = await PageContent.findOne({
-    type: "terms-of-service",
-  }).lean();
-
-  const page = saved
+  const saved = await PageContent.findOne({ type: "terms-of-service" }).lean();
+  const page = saved && saved.contentVersion === PAGE_CONTENT_VERSION
     ? getLocalizedContent(saved, locale, ["title", "content"])
     : PAGE_DEFAULTS["terms-of-service"];
-
-  return (
-    <main className="min-h-screen px-6 py-20 sm:px-12">
-      <div className="mx-auto max-w-3xl">
-        <span className="eyebrow-label">{t("nav.more")}</span>
-
-        <h1
-          className="heading-premium mt-3 text-4xl font-bold brand-gradient-text sm:text-5xl"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
-          {page.title}
-        </h1>
-
-        <div
-          className="prose prose-invert mt-10 max-w-none"
-          style={{ color: "var(--text-secondary)" }}
-          dangerouslySetInnerHTML={{
-            __html: sanitizeBlogHtml(page.content),
-          }}
-        />
-      </div>
-    </main>
-  );
+  return <LegalPageShell title={page.title} eyebrow="TGO DevStudio · Legal" description="The terms governing your access to and use of the TGO DevStudio Prime public website and visitor features." content={page.content} currentPath="/terms-of-service" />;
 }

@@ -4,10 +4,11 @@ import PageContent, { PageContentType } from "@/models/PageContent";
 import { getAuthenticatedSession } from "@/lib/auth/session";
 import { unauthorizedResponse, forbiddenResponse, requireContentPermission } from "@/lib/auth/authorize";
 import { sanitizeBlogHtml } from "@/lib/sanitizeHtml";
-import { PAGE_DEFAULTS, ACCESSIBILITY_DEFAULT } from "@/lib/constants/pageDefaults";
+import { PAGE_DEFAULTS } from "@/lib/constants/pageDefaults";
+import { PAGE_CONTENT_VERSION } from "@/lib/constants/legalContent";
 
 const CONTENT_TYPE = "pageContent";
-const VALID_TYPES: PageContentType[] = ["about", "privacy-policy", "terms-of-service", "accessibility"];
+const VALID_TYPES: PageContentType[] = ["about", "privacy-policy", "terms-of-service", "usage-policy", "accessibility"];
 
 interface RouteParams {
   params: Promise<{ type: string }>;
@@ -25,11 +26,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   await connectToDatabase();
   const saved = await PageContent.findOne({ type: resolvedType }).lean();
 
-  if (saved) {
+  if (saved && (resolvedType === "about" || saved.contentVersion === PAGE_CONTENT_VERSION)) {
     return NextResponse.json({ status: "ok", page: saved, isDefault: false });
   }
 
-  const fallback = resolvedType === "accessibility" ? ACCESSIBILITY_DEFAULT : PAGE_DEFAULTS[resolvedType as "about" | "privacy-policy" | "terms-of-service"];
+  const fallback = PAGE_DEFAULTS[resolvedType];
   return NextResponse.json({
     status: "ok",
     page: { type: resolvedType, title: fallback.title, content: fallback.content },
@@ -73,6 +74,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       title: title.trim(),
       content: sanitizedContent,
       lastUpdatedBy: session.user._id,
+      contentVersion: PAGE_CONTENT_VERSION,
     },
     { new: true, upsert: true }
   );

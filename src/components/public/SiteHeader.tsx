@@ -5,7 +5,7 @@ import { useSwipeSidebar } from "@/hooks/useSwipeSidebar";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Menu, X, Home, Layers, Briefcase, Newspaper, DoorOpen, Mail, Info, Workflow, Users, Star, PhoneCall, Boxes, HelpCircle, ChevronDown, MessageCircleQuestion, Settings, ArrowLeft } from "lucide-react";
+import { Menu, X, Home, Layers, Briefcase, Newspaper, DoorOpen, Mail, Info, Workflow, Users, Star, PhoneCall, Boxes, HelpCircle, ChevronDown, MessageCircleQuestion, Settings, ArrowLeft, ShieldCheck, FileText } from "lucide-react";
 import HelpSearchPopup from "@/components/shared/HelpSearchPopup";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 
@@ -41,6 +41,10 @@ export default function SiteHeader() {
       { label: t("nav.bookACall"), href: "/book-a-call", icon: PhoneCall },
       { label: t("nav.help"), href: "/help", icon: HelpCircle },
       { label: t("common.settings"), href: "/settings", icon: Settings },
+      { label: "Privacy Policy", href: "/privacy-policy", icon: ShieldCheck },
+      { label: "Consumer Terms", href: "/terms-of-service", icon: FileText },
+      { label: "Usage Policy", href: "/usage-policy", icon: ShieldCheck },
+      { label: "Accessibility", href: "/accessibility", icon: FileText },
     ]},
   ];
 

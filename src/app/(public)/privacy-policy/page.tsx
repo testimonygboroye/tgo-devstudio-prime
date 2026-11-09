@@ -2,56 +2,26 @@ import type { Metadata } from "next";
 import { connectToDatabase } from "@/lib/db";
 import PageContent from "@/models/PageContent";
 import { PAGE_DEFAULTS } from "@/lib/constants/pageDefaults";
-import { sanitizeBlogHtml } from "@/lib/sanitizeHtml";
+import { PAGE_CONTENT_VERSION } from "@/lib/constants/legalContent";
 import { getServerLocale } from "@/lib/i18n/serverLocale";
-import { createTranslator, getLocalizedContent } from "@/lib/i18n/translationHelper";
+import { getLocalizedContent } from "@/lib/i18n/translationHelper";
+import LegalPageShell from "@/components/public/LegalPageShell";
 
 export const revalidate = 300;
+export const metadata: Metadata = {
+  title: "Privacy Policy | TGO DevStudio Prime",
+  description: "Understand what information TGO DevStudio collects, why it is used, how it is protected and the choices available to you.",
+  alternates: { canonical: "/privacy-policy" },
+  openGraph: { title: "Privacy Policy | TGO DevStudio Prime", description: "Understand what information TGO DevStudio collects, why it is used, how it is protected and the choices available to you.", url: "/privacy-policy", type: "article" },
+  twitter: { card: "summary_large_image", title: "Privacy Policy | TGO DevStudio Prime", description: "Understand what information TGO DevStudio collects, why it is used, how it is protected and the choices available to you." },
+};
 
-export async function generateMetadata(): Promise<Metadata> {
-  const t = createTranslator(await getServerLocale());
-
-  return {
-    alternates: { canonical: "/privacy-policy" },
-    title: `Privacy Policy | TGO DevStudio Prime`,
-    description: t("common.readMore"),
-  };
-}
-
-export default async function PrivacyPolicyPage() {
+export default async function LegalDocumentPage() {
   await connectToDatabase();
-
   const locale = await getServerLocale();
-  const t = createTranslator(locale);
-
-  const saved = await PageContent.findOne({
-    type: "privacy-policy",
-  }).lean();
-
-  const page = saved
+  const saved = await PageContent.findOne({ type: "privacy-policy" }).lean();
+  const page = saved && saved.contentVersion === PAGE_CONTENT_VERSION
     ? getLocalizedContent(saved, locale, ["title", "content"])
     : PAGE_DEFAULTS["privacy-policy"];
-
-  return (
-    <main className="min-h-screen px-6 py-20 sm:px-12">
-      <div className="mx-auto max-w-3xl">
-        <span className="eyebrow-label">{t("nav.more")}</span>
-
-        <h1
-          className="heading-premium mt-3 text-4xl font-bold brand-gradient-text sm:text-5xl"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
-          {page.title}
-        </h1>
-
-        <div
-          className="prose prose-invert mt-10 max-w-none"
-          style={{ color: "var(--text-secondary)" }}
-          dangerouslySetInnerHTML={{
-            __html: sanitizeBlogHtml(page.content),
-          }}
-        />
-      </div>
-    </main>
-  );
+  return <LegalPageShell title={page.title} eyebrow="TGO DevStudio · Legal" description="Understand what information TGO DevStudio collects, why it is used, how it is protected and the choices available to you." content={page.content} currentPath="/privacy-policy" />;
 }

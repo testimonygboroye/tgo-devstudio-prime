@@ -14,7 +14,6 @@ export default function FounderNotificationCentre() {
   const [error, setError] = useState("");
 
   const refresh = useCallback(async () => {
-    setLoading(true); setError("");
     try {
       const response = await fetch("/api/platform/notifications?limit=12", { cache: "no-store" });
       const data = await response.json();

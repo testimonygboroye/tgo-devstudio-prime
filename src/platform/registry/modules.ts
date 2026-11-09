@@ -20,6 +20,15 @@ export const PLATFORM_MODULE_REGISTRY: readonly PlatformModuleDefinition[] = [
     status: "available",
   },
   {
+    id: "business-ecosystem",
+    name: "Business Ecosystem Directory",
+    description: "Founder-managed organization records for internal units, clients, partners and vendors.",
+    category: "business",
+    requiredPermission: "platform.access",
+    status: "available",
+    href: "/businesses",
+  },
+  {
     id: "clients",
     name: "Client Management",
     description: "Unified client profiles, relationships and account activity.",

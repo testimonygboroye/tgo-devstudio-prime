@@ -4,9 +4,9 @@ import PlatformAuditEvent from "@/models/PlatformAuditEvent";
 const SECRET_KEY_PATTERN =
   /(password|secret|token|authorization|cookie|api.?key|private.?key|credential)/i;
 
-function redact(value: unknown, depth = 0): unknown {
+export function sanitizeAuditMetadata(value: unknown, depth = 0): unknown {
   if (depth > 5) return "[depth-limited]";
-  if (Array.isArray(value)) return value.slice(0, 50).map((item) => redact(item, depth + 1));
+  if (Array.isArray(value)) return value.slice(0, 50).map((item) => sanitizeAuditMetadata(item, depth + 1));
   if (!value || typeof value !== "object") {
     if (typeof value === "string") return value.slice(0, 2000);
     return value;
@@ -14,7 +14,7 @@ function redact(value: unknown, depth = 0): unknown {
 
   const result: Record<string, unknown> = {};
   for (const [key, child] of Object.entries(value as Record<string, unknown>).slice(0, 80)) {
-    result[key] = SECRET_KEY_PATTERN.test(key) ? "[redacted]" : redact(child, depth + 1);
+    result[key] = SECRET_KEY_PATTERN.test(key) ? "[redacted]" : sanitizeAuditMetadata(child, depth + 1);
   }
   return result;
 }
@@ -38,6 +38,6 @@ export async function writePlatformAuditEvent(input: WritePlatformAuditEventInpu
   await connectToDatabase();
   return PlatformAuditEvent.create({
     ...input,
-    metadata: redact(input.metadata || {}),
+    metadata: sanitizeAuditMetadata(input.metadata || {}) as Record<string, unknown>,
   });
 }

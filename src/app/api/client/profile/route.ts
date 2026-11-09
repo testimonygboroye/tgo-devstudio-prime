@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   const session = await getServerSession();
-  if (!session || session.user.accountType !== "client") return NextResponse.json({ error: "Client sign-in required." }, { status: 401 });
+  if (!session || session.user.accountType !== "client" || !session.user.isEmailVerified) return NextResponse.json({ error: "Verified client sign-in required." }, { status: 401 });
   await connectToDatabase();
   const profile = await ClientProfile.findOne({ userId: session.user._id }).populate("organizationId", "name slug").lean();
   return NextResponse.json({

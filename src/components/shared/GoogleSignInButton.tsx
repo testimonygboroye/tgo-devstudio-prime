@@ -50,25 +50,24 @@ export default function GoogleSignInButton({endpoint,payload={},onResult,onError
  function continueRemembered(){
   if(!ready||!lastEmail||!window.google?.accounts?.id)return;
   try{
-   window.google.accounts.id.initialize({
-    client_id:clientId,
-    callback:(response:any)=>{if(response.credential)void completeLogin({credential:response.credential});},
-    auto_select:true,
-    ux_mode:"popup",
-    cancel_on_tap_outside:true,
-    login_hint:lastEmail
+   // GIS was initialized once during component setup; re-initializing it here
+   // throws and leaves the remembered-account button apparently unresponsive.
+   // Prompt the existing One Tap session instead of invoking the account chooser.
+   window.google.accounts.id.prompt((notification:any)=>{
+    if(notification?.isNotDisplayed?.()||notification?.isSkippedMoment?.()){
+     onError("Google did not offer automatic sign-in for the remembered account. Please check that this Google account is still signed in to this browser.");
+    }
    });
-   window.google.accounts.id.prompt();
   }catch{onError("Google could not start remembered-account sign-in. Please try again.");}
  }
  function continueChooser(){if(!ready||!chooserRef.current)return;try{chooserRef.current.requestAccessToken({prompt:"select_account"});}catch{onError("Could not open the Google account chooser. Please try again.");}}
  const button="flex min-h-[48px] w-full items-center gap-3 rounded-full border border-neutral-200 bg-white px-3 py-2 text-left text-neutral-900 shadow-sm transition hover:bg-neutral-50 disabled:cursor-wait disabled:opacity-60";
  return <div className="mx-auto w-full max-w-[360px] space-y-2">
   {lastEmail&&<button type="button" disabled={!ready} onClick={continueRemembered} className={button}>
-   <span className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-neutral-100">
+   <GoogleMark/>
+   <span className="ml-auto flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-neutral-100">
     {lastPicture?<img src={lastPicture} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover"/>:<span className="flex h-full w-full items-center justify-center rounded-full bg-[#4285F4] text-sm font-semibold text-white">{(lastName||lastEmail.split("@")[0]||"G").trim().charAt(0).toUpperCase()}</span>}
    </span>
-   <GoogleMark/>
    <span className="min-w-0 flex-1"><span className="block text-sm font-semibold leading-5">Continue as {lastName||lastEmail.split("@")[0].split(/[._-]/)[0].replace(/^./,x=>x.toUpperCase())}</span><span className="block truncate text-xs leading-4 text-neutral-500">{lastEmail}</span></span>
   </button>}
   <button type="button" disabled={!ready} onClick={continueChooser} className={button+" justify-start"}>

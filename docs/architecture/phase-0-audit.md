@@ -82,7 +82,7 @@ AboutSettings, AnalyticsEvent, AuditLog, AvailabilityStatus, BlogPost, BookACall
 - package.json defines lint and test scripts, but the repository contains only three Jest test files (i18n, reading time, and slugify).
 - The README remains the default create-next-app guide rather than project-specific setup and architecture documentation.
 - No .env.example, .env.sample, or .env.template is present in the repository tree.
-- Vercel has 27 configured environment-variable entries across production, preview, and development targets. Names and target scopes were inventoried without exposing or decrypting values. Runtime availability and correctness of every integration key still need feature-specific health checks.
+- Vercel has 27 configured environment-variable entries across production, preview, and development targets. Names and target scopes were inventoried without exposing or decrypting values. MONGODB_URI is configured for production only, not preview. The PR preview builds therefore fail during static prerendering of database-backed pages such as /about and /blog with a missing MONGODB_URI error. Do not copy the production database URI into preview; provision an isolated staging database or an approved preview-safe data strategy first. Runtime availability and correctness of every integration key still need feature-specific health checks.
 
 ## 4. Architecture decision
 
@@ -159,7 +159,7 @@ Before implementing the platform foundation:
 4. Confirm MongoDB cluster topology, transaction support, backup schedule, retention, and restore process.
 5. Create a safe environment-variable template containing names and descriptions only, never values.
 6. Document local development and deployment procedures.
-7. Expand CI to run type checking/build, lint, unit tests, and focused integration/security tests.
+7. Expand CI to run type checking/build, lint, unit tests, and focused integration/security tests. Configure an isolated preview database before relying on Vercel preview deployments; the current preview environment is missing MONGODB_URI.
 8. Define the first identity model boundary: platform user, client account, organization membership, employee profile, and AI principal must be distinct concepts linked through explicit identity records.
 9. Agree the initial permission catalogue and module registration contract before adding protected business routes.
 

@@ -66,3 +66,4 @@ export default function GoogleSignInButton({endpoint,payload={},onResult,onError
   {!ready&&!loadError&&<p className="text-center text-xs text-neutral-500">Loading Google sign-in…</p>}
   {loadError&&<p role="alert" className="text-center text-xs text-amber-300">{loadError}</p>}
  </div>;
+}

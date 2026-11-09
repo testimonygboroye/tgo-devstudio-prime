@@ -6,7 +6,7 @@ const ContentSecurityPolicy = `
   style-src 'self' 'unsafe-inline' https://api.fontshare.com;
   img-src 'self' blob: data: https://res.cloudinary.com https://*.googleusercontent.com;
   font-src 'self' https://api.fontshare.com https://cdn.fontshare.com;
-  connect-src 'self' https://api.cloudinary.com https://challenges.cloudflare.com https://accounts.google.com;
+  connect-src 'self' https://api.cloudinary.com https://challenges.cloudflare.com https://accounts.google.com https://oauth2.googleapis.com https://www.googleapis.com;
   media-src 'self' blob: https://res.cloudinary.com;
   frame-src https://challenges.cloudflare.com https://calendly.com https://accounts.google.com;
   frame-ancestors 'none';

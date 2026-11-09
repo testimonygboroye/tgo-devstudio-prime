@@ -12,8 +12,8 @@ export const metadata: Metadata = {
   title: "Privacy Policy | TGO DevStudio Prime",
   description: "Understand what information TGO DevStudio collects, why it is used, how it is protected and the choices available to you.",
   alternates: { canonical: "/privacy-policy" },
-  openGraph: { title: "Privacy Policy | TGO DevStudio Prime", description: "Understand what information TGO DevStudio collects, why it is used, how it is protected and the choices available to you.", url: "/privacy-policy", type: "article" },
-  twitter: { card: "summary_large_image", title: "Privacy Policy | TGO DevStudio Prime", description: "Understand what information TGO DevStudio collects, why it is used, how it is protected and the choices available to you." },
+  openGraph: { title: "Privacy Policy | TGO DevStudio Prime", description: "Understand what information TGO DevStudio collects, why it is used, how it is protected and the choices available to you.", url: "/privacy-policy", type: "article", images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "TGO DevStudio Prime" }] },
+  twitter: { card: "summary_large_image", images: ["/opengraph-image"], title: "Privacy Policy | TGO DevStudio Prime", description: "Understand what information TGO DevStudio collects, why it is used, how it is protected and the choices available to you." },
 };
 
 export default async function LegalDocumentPage() {

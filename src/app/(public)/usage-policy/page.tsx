@@ -12,8 +12,8 @@ export const metadata: Metadata = {
   title: "Website Usage Policy | TGO DevStudio Prime",
   description: "The standards for safe, lawful and responsible use of TGO DevStudio Prime and its public-facing features.",
   alternates: { canonical: "/usage-policy" },
-  openGraph: { title: "Website Usage Policy | TGO DevStudio Prime", description: "The standards for safe, lawful and responsible use of TGO DevStudio Prime and its public-facing features.", url: "/usage-policy", type: "article" },
-  twitter: { card: "summary_large_image", title: "Website Usage Policy | TGO DevStudio Prime", description: "The standards for safe, lawful and responsible use of TGO DevStudio Prime and its public-facing features." },
+  openGraph: { title: "Website Usage Policy | TGO DevStudio Prime", description: "The standards for safe, lawful and responsible use of TGO DevStudio Prime and its public-facing features.", url: "/usage-policy", type: "article", images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "TGO DevStudio Prime" }] },
+  twitter: { card: "summary_large_image", images: ["/opengraph-image"], title: "Website Usage Policy | TGO DevStudio Prime", description: "The standards for safe, lawful and responsible use of TGO DevStudio Prime and its public-facing features." },
 };
 
 export default async function LegalDocumentPage() {

@@ -12,8 +12,8 @@ export const metadata: Metadata = {
   title: "Consumer Terms of Service | TGO DevStudio Prime",
   description: "The terms governing your access to and use of the TGO DevStudio Prime public website and visitor features.",
   alternates: { canonical: "/terms-of-service" },
-  openGraph: { title: "Consumer Terms of Service | TGO DevStudio Prime", description: "The terms governing your access to and use of the TGO DevStudio Prime public website and visitor features.", url: "/terms-of-service", type: "article" },
-  twitter: { card: "summary_large_image", title: "Consumer Terms of Service | TGO DevStudio Prime", description: "The terms governing your access to and use of the TGO DevStudio Prime public website and visitor features." },
+  openGraph: { title: "Consumer Terms of Service | TGO DevStudio Prime", description: "The terms governing your access to and use of the TGO DevStudio Prime public website and visitor features.", url: "/terms-of-service", type: "article", images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "TGO DevStudio Prime" }] },
+  twitter: { card: "summary_large_image", images: ["/opengraph-image"], title: "Consumer Terms of Service | TGO DevStudio Prime", description: "The terms governing your access to and use of the TGO DevStudio Prime public website and visitor features." },
 };
 
 export default async function LegalDocumentPage() {

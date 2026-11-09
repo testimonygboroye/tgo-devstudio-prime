@@ -12,8 +12,8 @@ export const metadata: Metadata = {
   title: "Accessibility Statement | TGO DevStudio Prime",
   description: "Our ongoing commitment to accessible experiences and how to report a barrier or request assistance.",
   alternates: { canonical: "/accessibility" },
-  openGraph: { title: "Accessibility Statement | TGO DevStudio Prime", description: "Our ongoing commitment to accessible experiences and how to report a barrier or request assistance.", url: "/accessibility", type: "article" },
-  twitter: { card: "summary_large_image", title: "Accessibility Statement | TGO DevStudio Prime", description: "Our ongoing commitment to accessible experiences and how to report a barrier or request assistance." },
+  openGraph: { title: "Accessibility Statement | TGO DevStudio Prime", description: "Our ongoing commitment to accessible experiences and how to report a barrier or request assistance.", url: "/accessibility", type: "article", images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "TGO DevStudio Prime" }] },
+  twitter: { card: "summary_large_image", images: ["/opengraph-image"], title: "Accessibility Statement | TGO DevStudio Prime", description: "Our ongoing commitment to accessible experiences and how to report a barrier or request assistance." },
 };
 
 export default async function LegalDocumentPage() {

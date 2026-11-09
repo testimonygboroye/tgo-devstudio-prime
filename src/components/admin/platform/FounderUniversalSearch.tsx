@@ -17,7 +17,7 @@ export default function FounderUniversalSearch({ adminBasePath }: { adminBasePat
 
   useEffect(() => {
     if (timer.current) clearTimeout(timer.current);
-    if (query.trim().length < 2) { setResults([]); setError(""); setLoading(false); return; }
+    if (query.trim().length < 2) return;
     timer.current = setTimeout(async () => {
       setLoading(true); setError("");
       try {

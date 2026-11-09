@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Types } from "mongoose";
 import { getServerSession } from "@/lib/auth/serverSession";
 import { connectToDatabase } from "@/lib/db";
 import User from "@/models/User";
@@ -50,7 +51,7 @@ export async function PATCH(request: NextRequest) {
   if (!isFounder(session)) return NextResponse.json({ error: "Founder access required." }, { status: 403 });
   let body: Record<string, unknown>;
   try { body = await request.json(); } catch { return NextResponse.json({ error: "Invalid request." }, { status: 400 }); }
-  if (typeof body.clientId !== "string") return NextResponse.json({ error: "Client id is required." }, { status: 400 });
+  if (typeof body.clientId !== "string" || !Types.ObjectId.isValid(body.clientId)) return NextResponse.json({ error: "A valid client id is required." }, { status: 400 });
   if (body.suspended !== undefined && typeof body.suspended !== "boolean") return NextResponse.json({ error: "Suspended must be a boolean." }, { status: 400 });
   const allowedLifecycle = ["lead", "onboarding", "active", "at_risk", "inactive"];
   const allowedOnboarding = ["not_started", "in_progress", "completed"];
@@ -69,6 +70,7 @@ export async function PATCH(request: NextRequest) {
   if (body.organizationId !== undefined) {
     if (body.organizationId === null || body.organizationId === "") changes.organizationId = null;
     else {
+      if (typeof body.organizationId !== "string" || !Types.ObjectId.isValid(body.organizationId)) return NextResponse.json({ error: "Choose a valid client organization." }, { status: 400 });
       const org = await BusinessOrganization.findOne({ _id: body.organizationId, type: "client", status: "active" });
       if (!org) return NextResponse.json({ error: "Choose an active client organization." }, { status: 400 });
       changes.organizationId = org._id;

@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { MessageSquareText, Search, RefreshCw, Save, CircleAlert } from "lucide-react";
 
-type Staff={id:string;name:string;email:string};\ntype Enquiry={id:string;clientId:string;clientName:string;clientEmail:string;subject:string;message:string;category:string;status:string;priority:string;assignedTo:string;assigneeName:string;createdAt:string;updatedAt:string};
+type Staff={id:string;name:string;email:string};
+type Enquiry={id:string;clientId:string;clientName:string;clientEmail:string;subject:string;message:string;category:string;status:string;priority:string;assignedTo:string;assigneeName:string;createdAt:string;updatedAt:string};
 const statusLabels:Record<string,string>={new:"New",in_review:"In review",responded:"Responded",closed:"Closed"};
 export default function ClientEnquiryManager({initialEnquiries,initialStaff}:{initialEnquiries:Enquiry[];initialStaff:Staff[]}){
  const [items,setItems]=useState(initialEnquiries);const [staff]=useState(initialStaff);const [assignedTo,setAssignedTo]=useState("");const [filter,setFilter]=useState("all");const [query,setQuery]=useState("");const [selected,setSelected]=useState<Enquiry|null>(null);const [status,setStatus]=useState("new");const [priority,setPriority]=useState("normal");const [busy,setBusy]=useState(false);const [error,setError]=useState("");const [notice,setNotice]=useState("");

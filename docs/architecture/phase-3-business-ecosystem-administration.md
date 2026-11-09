@@ -13,6 +13,10 @@ Establish the central administrative shell and the first shared business-organiz
 - Responsive directory UI includes live database metrics, search, organization creation, contact details and suspend/reactivate actions.
 - Creation and lifecycle changes are written to the shared platform audit collection.
 - Founder navigation uses distinct icons for Founder Control Centre and Business Ecosystem.
+- Founder-only Business Roles screen provides searchable business-role listing, create/edit flows and deletion safeguards.
+- The role editor is driven by the central permission catalogue and supports global, self, department and team scope selection.
+- Founder-only roles API validates permission identifiers against the canonical catalogue, protects system roles and prevents deletion while a role is assigned to memberships.
+- Role creation, edits and deletion are recorded in the platform audit trail.
 
 ## Shared-system integration
 - Existing authenticated User identity is retained.
@@ -22,7 +26,7 @@ Establish the central administrative shell and the first shared business-organiz
 
 ## Explicit scope boundaries
 - The organization directory is the first installed business module, not the complete ERP administration shell.
-- Business-role CRUD and permission assignment UI, membership management, department/team configuration, global platform settings, workflow registration, dashboard widget customization and module activation controls remain separate administrative capabilities to be implemented before calling the full Phase 3 specification complete.
+- Business membership assignment/invitation UI, department/team configuration, global platform settings, workflow registration, dashboard widget customization and module activation controls remain separate administrative capabilities to be implemented before calling the full Phase 3 specification complete.
 - The existing CMS Roles remain separate from BusinessRole; they must not be conflated.
 
 ## Verification gates

@@ -16,7 +16,8 @@ async function founderSession() {
 
 export async function GET(request: NextRequest) {
   const auth = await founderSession();
-  if (auth.response || !auth.session) return auth.response;
+  if (auth.response) return auth.response;
+  if (!auth.session) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
   await connectToDatabase();
   const limitValue = Number(request.nextUrl.searchParams.get("limit") || 20);
   const limit = Number.isFinite(limitValue) ? Math.min(50, Math.max(1, Math.floor(limitValue))) : 20;

@@ -249,7 +249,7 @@ export default function AnalyticsClient() {
     const refresh = () => {
       if (document.visibilityState === "visible") setRefreshTick((value) => value + 1);
     };
-    const timer = window.setInterval(refresh, 5000);
+    const timer = window.setInterval(refresh, 30000);
     document.addEventListener("visibilitychange", refresh);
     return () => {
       window.clearInterval(timer);
@@ -390,7 +390,7 @@ export default function AnalyticsClient() {
     <div className="space-y-8">
       <p className="text-xs leading-relaxed text-neutral-500">Unique visitor counts represent browser profiles, not verified individual people. A person using another browser, private browsing, a different domain, or cleared site storage can appear as a separate visitor.</p>
       <div className="flex justify-end text-xs text-neutral-600" aria-live="polite">
-        {lastUpdatedAt ? `Live data · Updated ${formatDate(lastUpdatedAt.toISOString())} · Refreshes every 5 seconds` : "Loading live analytics…"}
+        {lastUpdatedAt ? `Live data · Updated ${formatDate(lastUpdatedAt.toISOString())} · Refreshes every 30 seconds` : "Loading live analytics…"}
       </div>
       <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard

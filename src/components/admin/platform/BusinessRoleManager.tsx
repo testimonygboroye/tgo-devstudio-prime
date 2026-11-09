@@ -14,6 +14,7 @@ export default function BusinessRoleManager({ initialRoles, permissionCatalogue 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [grants, setGrants] = useState<Record<string, Grant["scope"]>>({});
+  const [deniedPermissions, setDeniedPermissions] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -24,10 +25,10 @@ export default function BusinessRoleManager({ initialRoles, permissionCatalogue 
     const group = key.split(".")[0]; (acc[group] ||= []).push([key, label]); return acc;
   }, {}), [permissionCatalogue]);
 
-  function reset() { setSelectedId(null); setName(""); setDescription(""); setGrants({}); setError(""); setSuccess(""); }
+  function reset() { setSelectedId(null); setName(""); setDescription(""); setGrants({}); setDeniedPermissions([]); setError(""); setSuccess(""); }
   function edit(role: Role) {
     setSelectedId(role.id); setName(role.name); setDescription(role.description || "");
-    setGrants(Object.fromEntries(role.permissionGrants.map((grant) => [grant.permission, grant.scope])));
+    setGrants(Object.fromEntries(role.permissionGrants.map((grant) => [grant.permission, grant.scope]))); setDeniedPermissions(role.deniedPermissions || []);
     setError(""); setSuccess("");
   }
 
@@ -37,7 +38,7 @@ export default function BusinessRoleManager({ initialRoles, permissionCatalogue 
     try {
       const response = await fetch("/api/platform/roles", {
         method: selectedId ? "PATCH" : "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: selectedId, name, description, permissionGrants, deniedPermissions: [] }),
+        body: JSON.stringify({ id: selectedId, name, description, permissionGrants, deniedPermissions }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Business role could not be saved.");
@@ -65,7 +66,7 @@ export default function BusinessRoleManager({ initialRoles, permissionCatalogue 
   return <div className="grid gap-5 xl:grid-cols-[.82fr_1.18fr]">
     <section className="surface-card overflow-hidden rounded-2xl border border-[var(--border-subtle)]">
       <div className="border-b border-[var(--border-subtle)] p-5"><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-[.16em] text-brand-cyan-400">Access governance</p><h2 className="mt-1 text-lg font-bold text-[var(--text-primary)]">Business roles</h2></div><button type="button" onClick={reset} className="btn-premium-primary inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-white"><Plus size={15}/> New role</button></div><div className="relative mt-4"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search roles…" className="input-premium pl-9"/></div></div>
-      <div className="divide-y divide-[var(--border-subtle)]">{filtered.map((role) => <div key={role.id} className={`flex items-center gap-3 p-4 ${selectedId === role.id ? "bg-violet-500/[.07]" : ""}`}><span className="rounded-xl bg-violet-500/10 p-2.5 text-violet-300"><ShieldCheck size={18}/></span><button type="button" onClick={() => edit(role)} className="min-w-0 flex-1 text-left"><span className="block truncate text-sm font-semibold text-[var(--text-primary)]">{role.name}</span><span className="mt-0.5 block text-xs text-[var(--text-muted)]">{role.permissionGrants.length} grants · {role.slug}</span></button>{role.isSystemRole ? <LockKeyhole size={15} className="text-amber-300"/> : <button type="button" disabled={busy} onClick={() => void remove(role)} className="rounded-lg p-2 text-[var(--text-muted)] hover:bg-rose-500/10 hover:text-rose-300 disabled:opacity-40" aria-label={`Delete ${role.name}`}><Trash2 size={15}/></button>}</div>)}
+      <div className="divide-y divide-[var(--border-subtle)]">{filtered.map((role) => <div key={role.id} className={`flex items-center gap-3 p-4 ${selectedId === role.id ? "bg-violet-500/[.07]" : ""}`}><span className="rounded-xl bg-violet-500/10 p-2.5 text-violet-300"><ShieldCheck size={18}/></span><button type="button" disabled={role.isSystemRole} onClick={() => edit(role)} title={role.isSystemRole ? "System roles are protected." : "Edit role"} className="min-w-0 flex-1 text-left disabled:cursor-not-allowed"><span className="block truncate text-sm font-semibold text-[var(--text-primary)]">{role.name}</span><span className="mt-0.5 block text-xs text-[var(--text-muted)]">{role.permissionGrants.length} grants · {role.slug}</span></button>{role.isSystemRole ? <LockKeyhole size={15} className="text-amber-300"/> : <button type="button" disabled={busy} onClick={() => void remove(role)} className="rounded-lg p-2 text-[var(--text-muted)] hover:bg-rose-500/10 hover:text-rose-300 disabled:opacity-40" aria-label={`Delete ${role.name}`}><Trash2 size={15}/></button>}</div>)}
       {filtered.length === 0 && <div className="p-8 text-center text-sm text-[var(--text-muted)]">No business roles found. Create a role to define platform access.</div>}</div>
       <div className="border-t border-[var(--border-subtle)] p-4 text-xs leading-5 text-[var(--text-muted)]">These business roles are separate from the legacy website CMS roles. System roles are protected, and roles assigned to members cannot be deleted.</div>
     </section>

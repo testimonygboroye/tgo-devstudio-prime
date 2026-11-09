@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import User from "@/models/User";
 import { verifyTemp2FAToken, signAccessToken, signRefreshToken } from "@/lib/auth/jwt";

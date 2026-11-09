@@ -22,6 +22,9 @@ export async function PUT(request: NextRequest) {
   if (!session) return unauthorizedResponse();
   if (!requireContentPermission(session, "homeSettings", "edit")) return forbiddenResponse("You do not have permission to manage homepage media.");
   const body = await request.json();
+  const flyerMinutes = Math.min(1439, Math.max(0, Number(body.flyerDurationMinutes) || 0));
+  const flyerSecondsPart = Math.min(59, Math.max(0, Number(body.flyerDurationSeconds) || 0));
+  const flyerTotalSeconds = Math.min(86400, Math.max(1, flyerMinutes * 60 + flyerSecondsPart));
   const update = {
     enabled: body.enabled === true,
     countdownEnabled: body.countdownEnabled !== false,
@@ -31,13 +34,13 @@ export async function PUT(request: NextRequest) {
     description: String(body.description || "").trim().slice(0, 400),
     videoUrl: String(body.videoUrl || "").trim().slice(0, 1000),
     videoAudioEnabled: body.videoAudioEnabled === true,
-    flyerDurationMinutes: Math.min(1440, Math.max(0, Number(body.flyerDurationMinutes) || 0)),
-    flyerDurationSeconds: Math.min(59, Math.max(0, Number(body.flyerDurationSeconds) || 0)),
+    flyerDurationMinutes: Math.floor(flyerTotalSeconds / 60),
+    flyerDurationSeconds: flyerTotalSeconds % 60,
     flyerUrl: String(body.flyerUrl || "").trim().slice(0, 1000),
     afterLaunchVideoUrl: String(body.afterLaunchVideoUrl || "").trim().slice(0, 1000),
     afterLaunchFlyerUrl: String(body.afterLaunchFlyerUrl || "").trim().slice(0, 1000),
     videoSeconds: 0,
-    flyerSeconds: Math.min(86400, Math.max(1, (Number(body.flyerDurationMinutes) || 0) * 60 + (Number.isFinite(Number(body.flyerDurationSeconds)) ? Number(body.flyerDurationSeconds) : Number(body.flyerSeconds) || 8))),
+    flyerSeconds: flyerTotalSeconds,
     videoDurationHours: Math.min(24, Math.max(0, Number(body.videoDurationHours) || 0)),
     videoDurationMinutes: Math.min(59, Math.max(0, Number(body.videoDurationMinutes) || 0)),
     videoDurationSeconds: Math.min(59, Math.max(0, Number(body.videoDurationSeconds) || 0)),

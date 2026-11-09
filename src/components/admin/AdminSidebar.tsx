@@ -50,6 +50,7 @@ const NAV_GROUPS = [
   { title: "Overview", items: [
     { label: "Dashboard", hrefSuffix: "/dashboard", icon: LayoutDashboard, badgeKey: null },
     { label: "Visitor Analytics", hrefSuffix: "/analytics", icon: BarChart3, badgeKey: null },
+    { label: "Conversion Insights", hrefSuffix: "/analytics/conversions", icon: BarChart3, badgeKey: null },
   ]},
   { title: "People & Access", items: [
     { label: "Invites", hrefSuffix: "/invites", icon: UserPlus, badgeKey: null },

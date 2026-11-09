@@ -6,6 +6,7 @@ import { verifyPassword } from "@/lib/auth/passwords";
 import { signAccessToken, signRefreshToken, signTemp2FAToken } from "@/lib/auth/jwt";
 import { setAuthCookies } from "@/lib/auth/cookies";
 import { rememberClientAccount } from "@/lib/clients/account-selector";
+import { canUseAuthenticationAudience } from "@/lib/clients/auth-audience";
 import { apiError, apiSuccess } from "@/lib/i18n/apiResponse";
 
 const MAX_FAILED_ATTEMPTS = 5;
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
     return apiError("invalidCredentials", "Invalid credentials.", 401);
   }
 
-  if ((audience === "client" && user.accountType !== "client") || (user.accountType === "client" && audience !== "client")) {
+  if (!canUseAuthenticationAudience(user.accountType, audience)) {
     return apiError("invalidCredentials", "Invalid credentials.", 401);
   }
 

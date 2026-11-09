@@ -78,8 +78,9 @@ export async function PATCH(request: NextRequest) {
   const profileChanges = { ...changes };
   delete profileChanges.accountStatus;
   const profile = await ClientProfile.findOneAndUpdate({ userId: user._id }, { $set: profileChanges, $setOnInsert: { userId: user._id, source: "admin_created" } }, { new: true, upsert: true, runValidators: true });
-  if (suspensionChange !== undefined) {
+  if (suspensionChange !== undefined && user.isBanned !== suspensionChange) {
     user.isBanned = suspensionChange;
+    user.refreshTokenVersion += 1;
     user.bannedAt = suspensionChange ? new Date() : undefined;
     await user.save();
   }

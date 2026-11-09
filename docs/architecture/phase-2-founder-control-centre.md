@@ -6,7 +6,7 @@ Introduce the first founder-facing operating surface for the TGO Business Operat
 ## Delivered in this phase increment
 - Founder-only navigation entry at the top of the admin sidebar.
 - Responsive Founder Control Centre at the configured admin base path plus `/platform`.
-- Live MongoDB-backed operational metrics for active and suspended business memberships, business roles, 24-hour audit activity, founder unread notifications, and outbox event states.
+- Live MongoDB-backed operational metrics for active and suspended business memberships, business roles, total recorded audit activity, founder unread notifications, and outbox event states.
 - Recent platform audit activity with actor, module, outcome and timestamp context.
 - Business module portfolio sourced from the central module registry, with live/roadmap status.
 - Direct navigation from the identity/governance module card to existing role administration.

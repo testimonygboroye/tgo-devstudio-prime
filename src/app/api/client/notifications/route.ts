@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Types } from "mongoose";
 import { getServerSession } from "@/lib/auth/serverSession";
 import { connectToDatabase } from "@/lib/db";
 import PlatformNotification from "@/models/PlatformNotification";
@@ -24,8 +25,8 @@ export async function PATCH(request: NextRequest) {
   await connectToDatabase();
   if (body.markAllRead === true) {
     await PlatformNotification.updateMany({ recipientId: session.user._id, readAt: { $exists: false } }, { $set: { readAt: new Date() } });
-  } else if (typeof body.id === "string") {
+  } else if (typeof body.id === "string" && Types.ObjectId.isValid(body.id)) {
     await PlatformNotification.updateOne({ _id: body.id, recipientId: session.user._id }, { $set: { readAt: new Date() } });
-  } else return NextResponse.json({ error: "A notification id or markAllRead is required." }, { status: 400 });
+  } else return NextResponse.json({ error: "Provide a valid notification id or markAllRead: true." }, { status: 400 });
   return NextResponse.json({ ok: true });
 }

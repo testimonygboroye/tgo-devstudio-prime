@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, phase-1/core-platform-foundation, phase-2/founder-control-centre]
+    branches: [main, phase-1/core-platform-foundation, phase-2/founder-control-centre, phase-3/business-ecosystem-administration]
   workflow_dispatch:
   pull_request:
     branches: [main]
@@ -54,6 +54,11 @@ jobs:
           src/models/PlatformAuditEvent.ts
           src/models/PlatformEvent.ts
           src/models/PlatformNotification.ts
+          src/models/BusinessOrganization.ts
+          src/app/api/platform/organizations/route.ts
+          'src/app/admin/(shell)/businesses/page.tsx'
+          src/components/admin/platform/OrganizationManager.tsx
+          src/components/admin/AdminSidebar.tsx
           src/platform
 
       - name: Type check and production build

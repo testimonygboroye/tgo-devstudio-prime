@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, phase-1/core-platform-foundation, phase-2/founder-control-centre, phase-3/business-ecosystem-administration]
+    branches: [main, phase-1/core-platform-foundation, phase-2/founder-control-centre, phase-3/business-ecosystem-administration, platform/phase-4-client-crm-portal]
   workflow_dispatch:
   pull_request:
     branches: [main]
@@ -69,6 +69,18 @@ jobs:
           src/components/admin/AdminSidebar.tsx
           src/app/global-error.tsx
           src/platform
+          src/models/User.ts
+          src/models/ClientProfile.ts
+          src/models/ClientEnquiry.ts
+          src/models/ClientActivity.ts
+          src/models/ClientEmailVerification.ts
+          src/lib/clients
+          src/app/api/client
+          'src/app/client'
+          src/components/client
+          src/app/api/platform/clients/route.ts
+          'src/app/admin/(shell)/clients/page.tsx'
+          src/components/admin/platform/ClientManagement.tsx
 
       - name: Type check and production build
         run: npm run build

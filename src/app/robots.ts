@@ -19,7 +19,6 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
           "/settings",
           "/auth/",
           protectedAdminPath,
-          "/command-deck",
         ],
       },
       {

@@ -8,6 +8,7 @@ export const revalidate = 300;
 export const metadata: Metadata = {
   title: "FAQ | TGO DevStudio Prime",
   description: "Frequently asked questions about TGO DevStudio.",
+  alternates: { canonical: "/faq" },
 };
 
 export default async function FaqPage() {

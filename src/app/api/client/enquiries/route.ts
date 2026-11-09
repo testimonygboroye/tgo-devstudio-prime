@@ -33,6 +33,8 @@ export async function POST(request: NextRequest) {
   if (subject.length < 4 || subject.length > 180 || message.length < 10 || message.length > 5000) return NextResponse.json({ error: "Enter a subject (4–180 characters) and message (10–5,000 characters)." }, { status: 400 });
   if (!["general", "service", "project", "billing", "support"].includes(String(category))) return NextResponse.json({ error: "Choose a valid enquiry category." }, { status: 400 });
   await connectToDatabase();
+  const recentCount = await ClientEnquiry.countDocuments({ clientId: session.user._id, createdAt: { $gte: new Date(Date.now() - 60_000) } });
+  if (recentCount >= 3) return NextResponse.json({ error: "You have submitted several requests recently. Please wait a minute before sending another." }, { status: 429 });
   const profile = await ClientProfile.findOne({ userId: session.user._id }).select("organizationId");
   const enquiry = await ClientEnquiry.create({ clientId: session.user._id, organizationId: profile?.organizationId, subject, message, category });
   const founderRoles = await Role.find({ isFounderRole: true }).select("_id");

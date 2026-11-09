@@ -4,6 +4,7 @@ import { connectToDatabase } from "@/lib/db";
 import ClientProfile from "@/models/ClientProfile";
 import ClientPortalNav from "@/components/client/ClientPortalNav";
 import ClientProfileSettings from "@/components/client/ClientProfileSettings";
+import ClientSecuritySettings from "@/components/client/ClientSecuritySettings";
 
 export const dynamic = "force-dynamic";
 export default async function ClientSettingsPage() {

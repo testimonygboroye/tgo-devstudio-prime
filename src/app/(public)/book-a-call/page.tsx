@@ -13,6 +13,7 @@ const DEFAULTS = {
 export const metadata: Metadata = {
   title: "Book a Call | TGO DevStudio Prime",
   description: "Schedule a discovery call with TGO DevStudio to discuss your project.",
+  alternates: { canonical: "/book-a-call" },
 };
 
 export default async function BookACallPage() {

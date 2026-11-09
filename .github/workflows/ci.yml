@@ -78,9 +78,12 @@ jobs:
           src/app/api/client
           'src/app/client'
           src/components/client
-          src/app/api/platform/clients/route.ts
+          src/app/api/platform/clients
+          src/app/api/platform/client-enquiries/route.ts
           'src/app/admin/(shell)/clients/page.tsx'
+          'src/app/admin/(shell)/client-enquiries/page.tsx'
           src/components/admin/platform/ClientManagement.tsx
+          src/components/admin/platform/ClientEnquiryManager.tsx
 
       - name: Type check and production build
         run: npm run build

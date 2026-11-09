@@ -36,7 +36,7 @@ export default function LaunchExperience({settings}:Props){
   if(duration<=0)return;
   const timer=window.setTimeout(advance,duration*1000);
   return()=>window.clearTimeout(timer);
- },[mediaIndex,current?.kind,current?.url,useOverride,overrideSeconds,settings.flyerSeconds,media.length]);
+ },[mediaIndex,current?.kind,current?.url,useOverride,overrideSeconds,settings.flyerSeconds,settings.flyerDurationMinutes,settings.flyerDurationSeconds,media.length]);
  if(!settings.enabled)return null;
  const countdown=countdownEnabled&&hasTarget&&!afterTarget?remainingTime(target,now):null;
  const showCountdown=Boolean(countdown&&settings.countdownVisible!==false);

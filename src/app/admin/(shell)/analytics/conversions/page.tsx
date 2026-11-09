@@ -32,7 +32,7 @@ function MetricCard({ label, value, icon: Icon, hint }: { label: string; value: 
 }
 
 function Rows({ title, rows, nameKey }: { title: string; rows: Row[]; nameKey: "path" | "country" | "device" | "source" }) {
-  return <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5">
+  return <section className="min-w-0 max-w-full rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5">
     <h2 className="mb-4 font-semibold text-[var(--text-primary)]">{title}</h2>
     {rows.length ? <div className="space-y-3">{rows.map((row, index) => {
       const name = row[nameKey] || "Unknown";
@@ -67,7 +67,7 @@ export default function ConversionInsightsPage() {
   useEffect(() => { void load(); }, [load]);
 
   const summary = data?.summary;
-  return <main className="min-h-screen space-y-6 bg-[var(--bg-base)] p-4 text-[var(--text-primary)] sm:p-6 lg:p-8">
+  return <div className="min-w-0 w-full max-w-full space-y-6 overflow-x-hidden text-[var(--text-primary)]">
     <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
       <div><p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-cyan-400">TGO DevStudio · Command Deck</p><h1 className="mt-2 text-3xl font-bold tracking-tight">Conversion Insights</h1><p className="mt-2 max-w-2xl text-sm text-[var(--text-secondary)]">Understand how visitors discover your pages and which actions turn attention into enquiries.</p></div>
       <div className="flex flex-wrap items-center gap-2">
@@ -91,15 +91,15 @@ export default function ConversionInsightsPage() {
         <MetricCard label="Tracked conversions" value={summary.conversions.toLocaleString()} icon={MousePointerClick} hint="Contact submissions, subscriptions and completed bookings"/>
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-2">
-        <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5">
+      <section className="grid min-w-0 gap-5 xl:grid-cols-2">
+        <div className="min-w-0 max-w-full rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5">
           <h2 className="mb-4 font-semibold">Conversion and engagement events</h2>
           {data?.events.length ? <div className="space-y-3">{data.events.map((event) => <div key={event.eventName} className="flex items-center justify-between gap-4 border-b border-[var(--border-subtle)] pb-3 last:border-0"><span className="text-sm text-[var(--text-secondary)]">{EVENT_LABELS[event.eventName || ""] || event.eventName}</span><span className="font-semibold">{event.count}</span></div>)}</div> : <p className="text-sm text-[var(--text-muted)]">No conversion events yet. New clicks and successful contact submissions will appear here after deployment.</p>}
         </div>
         <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 xl:col-span-2">
           <h2 className="mb-2 font-semibold">Core Web Vitals · real-user performance</h2>
           <p className="mb-4 text-xs text-[var(--text-muted)]">Measurements start after this release. LCP, INP, CLS, FCP and TTFB are grouped by device type so mobile bottlenecks can be identified.</p>
-          {data?.webVitals?.length ? <div className="overflow-x-auto"><table className="w-full min-w-[520px] text-left text-sm"><thead className="text-xs text-[var(--text-muted)]"><tr><th className="pb-3">Metric</th><th className="pb-3">Device</th><th className="pb-3">Average</th><th className="pb-3">Worst</th><th className="pb-3">Samples</th></tr></thead><tbody>{data.webVitals.map((item, index) => <tr key={(item.metricName || "metric") + (item.deviceType || "device") + index} className="border-t border-[var(--border-subtle)]"><td className="py-3 font-semibold">{item.metricName}</td><td className="py-3 text-[var(--text-secondary)]">{item.deviceType || "Unknown"}</td><td className="py-3">{item.average}{item.metricName === "CLS" ? "" : " ms"}</td><td className="py-3">{item.worst}{item.metricName === "CLS" ? "" : " ms"}</td><td className="py-3">{item.samples}</td></tr>)}</tbody></table></div> : <p className="text-sm text-[var(--text-muted)]">No performance samples yet. Real-user measurements will appear after visitors load the updated site.</p>}
+          {data?.webVitals?.length ? <div className="w-full min-w-0 max-w-full overflow-x-auto overscroll-x-contain" data-horizontal-scroll><table className="w-full min-w-[520px] table-auto text-left text-sm"><thead className="text-xs text-[var(--text-muted)]"><tr><th className="pb-3">Metric</th><th className="pb-3">Device</th><th className="pb-3">Average</th><th className="pb-3">Worst</th><th className="pb-3">Samples</th></tr></thead><tbody>{data.webVitals.map((item, index) => <tr key={(item.metricName || "metric") + (item.deviceType || "device") + index} className="border-t border-[var(--border-subtle)]"><td className="py-3 font-semibold">{item.metricName}</td><td className="py-3 text-[var(--text-secondary)]">{item.deviceType || "Unknown"}</td><td className="py-3">{item.average}{item.metricName === "CLS" ? "" : " ms"}</td><td className="py-3">{item.worst}{item.metricName === "CLS" ? "" : " ms"}</td><td className="py-3">{item.samples}</td></tr>)}</tbody></table></div> : <p className="text-sm text-[var(--text-muted)]">No performance samples yet. Real-user measurements will appear after visitors load the updated site.</p>}
         </section>
         <Rows title="Top public pages" rows={data?.topPages || []} nameKey="path"/>
         <Rows title="Visitor countries" rows={data?.countries || []} nameKey="country"/>

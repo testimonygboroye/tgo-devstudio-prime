@@ -12,6 +12,7 @@ export const revalidate = 300;
 export const metadata: Metadata = {
   title: "Testimonials | TGO DevStudio Prime",
   description: "See what people are saying about TGO DevStudio.",
+  alternates: { canonical: "/testimonials" },
 };
 
 export default async function TestimonialsPage() {

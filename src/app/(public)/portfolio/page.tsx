@@ -13,6 +13,7 @@ export const metadata: Metadata = {
   title: "Portfolio | TGO DevStudio Prime",
   description:
     "Explore case studies of full-stack software products built by TGO DevStudio.",
+  alternates: { canonical: "/portfolio" },
 };
 
 interface PageProps {

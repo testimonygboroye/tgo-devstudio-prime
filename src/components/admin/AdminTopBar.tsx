@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 
 const SECTION_LABELS: Record<string, string> = {
   dashboard: "Dashboard",
+  platform: "Founder Control Centre",
   security: "Security & 2FA",
   invites: "Invites",
   users: "Users & Roles",

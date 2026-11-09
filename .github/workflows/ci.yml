@@ -9,6 +9,23 @@ on:
 jobs:
   quality:
     runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:8.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand({ ping: 1 }).ok'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      MONGODB_URI: mongodb://127.0.0.1:27017/tgo_ci
+      JWT_ACCESS_SECRET: ci-only-access-secret-not-for-production
+      JWT_REFRESH_SECRET: ci-only-refresh-secret-not-for-production
+      JWT_TEMP_2FA_SECRET: ci-only-2fa-secret-not-for-production
+      SETUP_SECRET_KEY: ci-only-setup-secret-not-for-production
+      SITE_URL: https://example.invalid
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -31,12 +48,6 @@ jobs:
       - name: Type check and production build
         run: npm run build
         env:
-          MONGODB_URI: ${{ secrets.MONGODB_URI }}
-          JWT_ACCESS_SECRET: ${{ secrets.JWT_ACCESS_SECRET }}
-          JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
-          JWT_TEMP_2FA_SECRET: ${{ secrets.JWT_TEMP_2FA_SECRET }}
-          SETUP_SECRET_KEY: ${{ secrets.SETUP_SECRET_KEY }}
           CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
           CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
           CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
-          SITE_URL: ${{ secrets.SITE_URL }}

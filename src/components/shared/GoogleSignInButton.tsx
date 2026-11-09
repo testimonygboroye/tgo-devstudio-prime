@@ -20,26 +20,19 @@ export default function GoogleSignInButton({endpoint,payload={},onResult,onError
  },[]);
  const completeLogin=useCallback(async(credential:{credential?:string;accessToken?:string})=>{
   try{
-   let profile:any={};
-   if(credential.credential)profile=decodeClaims(credential.credential);
-   else if(credential.accessToken){
-    const profileResponse=await fetch("https://www.googleapis.com/oauth2/v3/userinfo",{headers:{Authorization:"Bearer "+credential.accessToken},cache:"no-store"});
-    if(!profileResponse.ok)throw new Error("Google could not retrieve the selected account details.");
-    profile=await profileResponse.json();
-   }
-   if(!profile.email)throw new Error("Google did not return an email address for the selected account.");
    const response=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},credentials:"same-origin",cache:"no-store",body:JSON.stringify({...JSON.parse(payloadKey),...credential})});
    const data=await response.json();if(!response.ok){onError(data.message||"Google sign-in failed.");return;}
-   persistAccount(profile);
+   const account=data.googleAccount||{},email=String(account.email||"").trim().toLowerCase();
+   if(email){const name=String(account.name||"").trim(),picture=String(account.picture||"");try{localStorage.setItem(LAST_KEY,email);localStorage.setItem(NAME_KEY,name);if(picture)localStorage.setItem(PHOTO_KEY,picture);else localStorage.removeItem(PHOTO_KEY);}catch{}setLastEmail(email);setLastName(name);setLastPicture(picture);}
    onResult(data);
   }catch(error){onError(error instanceof Error?error.message:"Google sign-in failed. Please try again.");}
- },[endpoint,payloadKey,onError,onResult,persistAccount]);
+ },[endpoint,payloadKey,onError,onResult]);
  const initialize=useCallback(()=>{
   const oauth=window.google?.accounts?.oauth2,id=window.google?.accounts?.id;if(!clientId||!oauth||!id)return false;
   if(!chooserRef.current){
    let remembered="";try{remembered=localStorage.getItem(LAST_KEY)||"";}catch{}
    id.initialize({client_id:clientId,callback:(response:any)=>{if(response.credential)void completeLogin({credential:response.credential});},auto_select:true,ux_mode:"popup",cancel_on_tap_outside:true,...(remembered?{login_hint:remembered}:{})});
-   chooserRef.current=oauth.initTokenClient({client_id:clientId,scope:"openid email profile",callback:(response:any)=>{if(response.error||!response.access_token){onError("Google account selection was cancelled or could not complete.");return;}void completeLogin({accessToken:response.access_token});}});
+   chooserRef.current=oauth.initTokenClient({client_id:clientId,scope:"openid email profile",callback:(response:any)=>{if(response.error||!response.access_token){if(response.error==="login_required"||response.error==="interaction_required"||response.error==="consent_required"){try{chooserRef.current?.requestAccessToken({prompt:"select_account"});}catch{onError("Google could not complete sign-in. Please use Continue with Google again.");}return;}onError("Google account selection was cancelled or could not complete.");return;}void completeLogin({accessToken:response.access_token});}});
   }
   setReady(true);setLoadError("");return true;
  },[clientId,completeLogin,onError]);
@@ -54,13 +47,13 @@ export default function GoogleSignInButton({endpoint,payload={},onResult,onError
   if(window.google?.accounts?.oauth2&&window.google?.accounts?.id)init();
   return()=>{disposed=true;window.clearInterval(poll);};
  },[clientId,initialize]);
- function continueRemembered(){if(!ready||!window.google?.accounts?.id||!lastEmail)return;try{window.google.accounts.id.prompt((notice:any)=>{if(notice?.isNotDisplayed?.()||notice?.isSkippedMoment?.())onError("Google could not automatically reuse the last account. Use Continue with Google to choose an account.");});}catch{onError("Could not start remembered Google sign-in. Use Continue with Google instead.");}}
+ function continueRemembered(){if(!ready||!chooserRef.current||!lastEmail)return;try{chooserRef.current.requestAccessToken({prompt:"none",hint:lastEmail});}catch{continueChooser();}}
  function continueChooser(){if(!ready||!chooserRef.current)return;try{chooserRef.current.requestAccessToken({prompt:"select_account"});}catch{onError("Could not open the Google account chooser. Please try again.");}}
  const button="flex min-h-[48px] w-full items-center gap-3 rounded-full border border-neutral-200 bg-white px-3 py-2 text-left text-neutral-900 shadow-sm transition hover:bg-neutral-50 disabled:cursor-wait disabled:opacity-60";
  return <div className="mx-auto w-full max-w-[360px] space-y-2">
   {lastEmail&&<button type="button" disabled={!ready} onClick={continueRemembered} className={button}>
    <span className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-neutral-100">
-    {lastPicture?<img src={lastPicture} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover"/>:<GoogleMark/>}
+    {lastPicture?<img src={lastPicture} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover"/>:<span className="flex h-full w-full items-center justify-center rounded-full bg-[#4285F4] text-sm font-semibold text-white">{(lastName||lastEmail.split("@")[0]||"G").trim().charAt(0).toUpperCase()}</span>}
    </span>
    <span className="min-w-0 flex-1"><span className="block text-sm font-semibold leading-5">Continue as {lastName||lastEmail.split("@")[0].split(/[._-]/)[0].replace(/^./,x=>x.toUpperCase())}</span><span className="block truncate text-xs leading-4 text-neutral-500">{lastEmail}</span></span>
   </button>}

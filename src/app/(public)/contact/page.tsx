@@ -10,6 +10,7 @@ export const metadata: Metadata = {
     description: "Get in touch with TGO DevStudio about your next project.",
     type: "website",
   },
+  alternates: { canonical: "/contact" },
 };
 
 export default function ContactPage() {

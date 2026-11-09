@@ -12,7 +12,7 @@ const LOCK_DURATION_MS = 15 * 60 * 1000;
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { email, password } = body as { email?: string; password?: string };
+  const { email, password, audience } = body as { email?: string; password?: string; audience?: string };
 
   if (!email || !password) {
     return apiError("emailPasswordRequired", "Email and password are required.", 400);
@@ -23,6 +23,10 @@ export async function POST(request: NextRequest) {
   const user = await User.findOne({ email: email.toLowerCase() });
 
   if (!user) {
+    return apiError("invalidCredentials", "Invalid credentials.", 401);
+  }
+
+  if ((audience === "client" && user.accountType !== "client") || (user.accountType === "client" && audience !== "client")) {
     return apiError("invalidCredentials", "Invalid credentials.", 401);
   }
 

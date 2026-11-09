@@ -11,6 +11,7 @@ export const revalidate = 300;
 export const metadata: Metadata = {
   title: "About | TGO DevStudio Prime",
   description: "The story, mission, and people behind TGO DevStudio.",
+  alternates: { canonical: "/about" },
 };
 
 const FOUNDER_DEFAULTS = {

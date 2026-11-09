@@ -57,7 +57,7 @@ export default async function FounderControlCentrePage() {
   if (!session.role.isFounderRole) redirect(`${basePath}/dashboard`);
 
   await connectToDatabase();
-  const [activeMemberships, suspendedMemberships, roleCount, auditToday, unreadNotifications, pendingEvents, failedEvents, recentActivity] = await Promise.all([
+  const [activeMemberships, suspendedMemberships, roleCount, auditToday, unreadNotifications, pendingEvents, failedEvents, recentActivity, recentNotifications] = await Promise.all([
     BusinessMembership.countDocuments({ status: "active" }),
     BusinessMembership.countDocuments({ status: "suspended" }),
     BusinessRole.countDocuments({}),
@@ -66,6 +66,7 @@ export default async function FounderControlCentrePage() {
     PlatformEvent.countDocuments({ status: { $in: ["pending", "processing"] } }),
     PlatformEvent.countDocuments({ status: "failed" }),
     PlatformAuditEvent.find({}).sort({ createdAt: -1 }).limit(7).select("actorType actorLabel actorId action module outcome targetType targetId createdAt").lean(),
+    PlatformNotification.find({ recipientId: session.user._id }).sort({ createdAt: -1 }).limit(12).select("category title body href readAt createdAt").lean(),
   ]);
 
   const config = getPlatformRuntimeConfig();
@@ -132,7 +133,7 @@ export default async function FounderControlCentrePage() {
         </Link>
       </section>
 
-      <FounderNotificationCentre />
+      <FounderNotificationCentre initialUnread={unreadNotifications} initialNotifications={recentNotifications.map((item) => ({ id: String(item._id), category: item.category, title: item.title, body: item.body, href: item.href || null, readAt: item.readAt?.toISOString() || null, createdAt: item.createdAt.toISOString() }))} />
 
       <section>
         <div className="mb-4 flex items-end justify-between gap-3">

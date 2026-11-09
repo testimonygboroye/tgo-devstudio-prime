@@ -14,6 +14,7 @@ export const revalidate = 300;
 export const metadata: Metadata = {
   title: "Blog | TGO DevStudio Prime",
   description: "Insights on software engineering, product, and building with TGO DevStudio.",
+  alternates: { canonical: "/blog" },
 };
 
 export default async function BlogListPage() {

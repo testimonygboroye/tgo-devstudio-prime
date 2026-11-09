@@ -6,20 +6,32 @@ import { signAccessToken, signRefreshToken, signTemp2FAToken } from "@/lib/auth/
 import { setAuthCookies } from "@/lib/auth/cookies";
 import { apiError, apiSuccess } from "@/lib/i18n/apiResponse";
 
-async function verifyGoogleCredential(credential:string) {
+async function verifyGoogleCredential(credential?:string,accessToken?:string) {
   const clientId=process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
   if(!clientId) throw new Error("Google sign-in is not configured.");
-  const response=await fetch("https://oauth2.googleapis.com/tokeninfo?id_token="+encodeURIComponent(credential),{cache:"no-store"});
-  if(!response.ok) throw new Error("Google credential is invalid or expired.");
-  const claims=await response.json();
-  if(claims.aud!==clientId || !["accounts.google.com","https://accounts.google.com"].includes(claims.iss) || Number(claims.exp)*1000<=Date.now() || claims.email_verified!=="true" || !claims.sub || !claims.email) throw new Error("Google could not verify this account.");
-  return {sub:String(claims.sub),email:String(claims.email).trim().toLowerCase(),name:String(claims.name||"").trim()};
-}
+  if(credential){
+   const response=await fetch("https://oauth2.googleapis.com/tokeninfo?id_token="+encodeURIComponent(credential),{cache:"no-store"});
+   if(!response.ok) throw new Error("Google credential is invalid or expired.");
+   const claims=await response.json();
+   if(claims.aud!==clientId || !["accounts.google.com","https://accounts.google.com"].includes(claims.iss) || Number(claims.exp)*1000<=Date.now() || claims.email_verified!=="true" || !claims.sub || !claims.email) throw new Error("Google could not verify this account.");
+   return {sub:String(claims.sub),email:String(claims.email).trim().toLowerCase(),name:String(claims.name||"").trim()};
+  }
+  if(!accessToken)throw new Error("Google credential is required.");
+  const tokenInfoResponse=await fetch("https://oauth2.googleapis.com/tokeninfo?access_token="+encodeURIComponent(accessToken),{cache:"no-store"});
+  if(!tokenInfoResponse.ok)throw new Error("Google account selection returned an invalid token.");
+  const tokenInfo=await tokenInfoResponse.json();
+  if(tokenInfo.aud!==clientId || Number(tokenInfo.expires_in)<=0 || !String(tokenInfo.scope||"").split(" ").includes("openid"))throw new Error("Google account token could not be verified for this application.");
+  const profileResponse=await fetch("https://www.googleapis.com/oauth2/v3/userinfo",{headers:{Authorization:"Bearer "+accessToken},cache:"no-store"});
+  if(!profileResponse.ok)throw new Error("Could not retrieve the selected Google account.");
+  const profile=await profileResponse.json();
+  if(profile.email_verified!==true || !profile.sub || !profile.email)throw new Error("Google could not verify the selected email address.");
+  return {sub:String(profile.sub),email:String(profile.email).trim().toLowerCase(),name:String(profile.name||"").trim()};
+ }
 export async function POST(request:NextRequest) {
   try {
-    const {credential}=await request.json() as {credential?:string};
-    if(!credential) return apiError("invalidCredentials","Google credential is required.",400);
-    const google=await verifyGoogleCredential(credential);
+    const {credential,accessToken}=await request.json() as {credential?:string;accessToken?:string};
+    if(!credential&&!accessToken) return apiError("invalidCredentials","Google credential is required.",400);
+    const google=await verifyGoogleCredential(credential,accessToken);
     await connectToDatabase();
     const user=await User.findOne({email:google.email});
     if(!user) return apiError("invalidCredentials","No existing TGO administrator account matches this verified Google email. Accept an invitation first.",403);

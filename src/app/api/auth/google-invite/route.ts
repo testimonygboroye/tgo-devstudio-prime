@@ -8,20 +8,32 @@ import { hashPassword } from "@/lib/auth/passwords";
 import { signAccessToken, signRefreshToken } from "@/lib/auth/jwt";
 import { setAuthCookies } from "@/lib/auth/cookies";
 
-async function verifyGoogleCredential(credential:string) {
+async function verifyGoogleCredential(credential?:string,accessToken?:string) {
   const clientId=process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
   if(!clientId) throw new Error("Google sign-in is not configured.");
-  const response=await fetch("https://oauth2.googleapis.com/tokeninfo?id_token="+encodeURIComponent(credential),{cache:"no-store"});
-  if(!response.ok) throw new Error("Google credential is invalid or expired.");
-  const claims=await response.json();
-  if(claims.aud!==clientId || !["accounts.google.com","https://accounts.google.com"].includes(claims.iss) || Number(claims.exp)*1000<=Date.now() || claims.email_verified!=="true" || !claims.sub || !claims.email) throw new Error("Google could not verify this account.");
-  return {sub:String(claims.sub),email:String(claims.email).trim().toLowerCase(),name:String(claims.name||"").trim()};
-}
+  if(credential){
+   const response=await fetch("https://oauth2.googleapis.com/tokeninfo?id_token="+encodeURIComponent(credential),{cache:"no-store"});
+   if(!response.ok) throw new Error("Google credential is invalid or expired.");
+   const claims=await response.json();
+   if(claims.aud!==clientId || !["accounts.google.com","https://accounts.google.com"].includes(claims.iss) || Number(claims.exp)*1000<=Date.now() || claims.email_verified!=="true" || !claims.sub || !claims.email) throw new Error("Google could not verify this account.");
+   return {sub:String(claims.sub),email:String(claims.email).trim().toLowerCase(),name:String(claims.name||"").trim()};
+  }
+  if(!accessToken)throw new Error("Google credential is required.");
+  const tokenResponse=await fetch("https://oauth2.googleapis.com/tokeninfo?access_token="+encodeURIComponent(accessToken),{cache:"no-store"});
+  if(!tokenResponse.ok)throw new Error("Google account selection returned an invalid token.");
+  const tokenInfo=await tokenResponse.json();
+  if((tokenInfo.aud||tokenInfo.issued_to||tokenInfo.audience)!==clientId || Number(tokenInfo.expires_in)<=0 || !String(tokenInfo.scope||"").split(" ").includes("openid"))throw new Error("Google account token could not be verified for this application.");
+  const profileResponse=await fetch("https://www.googleapis.com/oauth2/v3/userinfo",{headers:{Authorization:"Bearer "+accessToken},cache:"no-store"});
+  if(!profileResponse.ok)throw new Error("Could not retrieve the selected Google account.");
+  const profile=await profileResponse.json();
+  if(profile.email_verified!==true || !profile.sub || !profile.email || (tokenInfo.user_id && String(tokenInfo.user_id)!==String(profile.sub)) || (tokenInfo.email && String(tokenInfo.email).toLowerCase()!==String(profile.email).toLowerCase()))throw new Error("Google could not verify the selected email address.");
+  return {sub:String(profile.sub),email:String(profile.email).trim().toLowerCase(),name:String(profile.name||"").trim()};
+ }
 export async function POST(request:NextRequest) {
   try {
-    const {credential,token,name}=await request.json() as {credential?:string;token?:string;name?:string};
-    if(!credential||!token) return NextResponse.json({status:"error",message:"Google credential and invitation token are required."},{status:400});
-    const google=await verifyGoogleCredential(credential);
+    const {credential,accessToken,token,name}=await request.json() as {credential?:string;accessToken?:string;token?:string;name?:string};
+    if((!credential&&!accessToken)||!token) return NextResponse.json({status:"error",message:"Google credential and invitation token are required."},{status:400});
+    const google=await verifyGoogleCredential(credential,accessToken);
     await connectToDatabase();
     const invite=await Invite.findOne({tokenHash:hashToken(token)});
     if(!invite) return NextResponse.json({status:"error",message:"Invite not found or invalid."},{status:404});

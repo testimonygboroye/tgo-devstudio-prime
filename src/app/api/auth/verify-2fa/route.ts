@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
   setAuthCookies(response, accessToken, refreshToken);
   if (user.accountType === "client") {
     rememberClientAccount(response, request, user.email);
-    response.cookies.delete("tgo_client_temp_2fa");
+    response.cookies.set("tgo_client_temp_2fa", "", { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/client", maxAge: 0 });
   }
   // 2FA completion is the point at which this account is fully signed in.
   response.cookies.set("tgo_last_google_account", String(user.email || "").trim().toLowerCase(), {

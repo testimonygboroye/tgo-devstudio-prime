@@ -43,6 +43,8 @@ export default async function BookACallPage() {
             height="700"
             frameBorder="0"
             title="Book a call with TGO DevStudio"
+            loading="lazy"
+            referrerPolicy="strict-origin-when-cross-origin"
           />
         </div>
       </div>

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import {
-  Activity, ArrowUpRight, Bell, Blocks, CheckCircle2, CircleAlert,
-  Clock3, Database, Fingerprint, Gauge, Layers3, ShieldCheck, Users,
+  Activity, ArrowUpRight, Bell, CircleAlert, Clock3, Database,
+  Fingerprint, Gauge, Layers3, ShieldCheck, Users,
 } from "lucide-react";
 import { redirect } from "next/navigation";
 import { getServerSession } from "@/lib/auth/serverSession";
@@ -69,7 +69,6 @@ export default async function FounderControlCentrePage() {
   const config = getPlatformRuntimeConfig();
   const availableModules = PLATFORM_MODULE_REGISTRY.filter((module) => module.status === "available").length;
   const plannedModules = PLATFORM_MODULE_REGISTRY.length - availableModules;
-  const databaseReady = true;
 
   return (
     <div className="space-y-7 pb-10">
@@ -142,7 +141,7 @@ export default async function FounderControlCentrePage() {
               const isLive = module.status === "available";
               const href = module.id === "identity-governance" ? `${basePath}/roles` : undefined;
               const content = (
-                <div className="flex h-full gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-2)]/60 p-4 transition ${isLive ? "hover:border-brand-cyan-400/40" : "opacity-80"}">
+                <div className={`flex h-full gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-2)]/60 p-4 transition ${isLive ? "hover:border-brand-cyan-400/40" : "opacity-80"}`}>
                   <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${isLive ? "bg-cyan-400/10 text-cyan-300" : "bg-violet-400/10 text-violet-300"}`}><Layers3 size={19} /></span>
                   <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="text-sm font-semibold text-[var(--text-primary)]">{module.name}</p><span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${isLive ? "bg-emerald-400/10 text-emerald-300" : "bg-violet-400/10 text-violet-300"}`}>{isLive ? "Available" : "Roadmap"}</span></div><p className="mt-1.5 text-xs leading-5 text-[var(--text-secondary)]">{module.description}</p>{href && <p className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-cyan-300">Open governance <ArrowUpRight size={13} /></p>}</div>
                 </div>

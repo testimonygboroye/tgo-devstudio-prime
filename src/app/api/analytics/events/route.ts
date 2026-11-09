@@ -5,7 +5,6 @@ import { getAuthenticatedSession } from "@/lib/auth/session";
 import { requireContentPermission, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/authorize";
 import AnalyticsEvent, { type AnalyticsEventName } from "@/models/AnalyticsEvent";
 import PageView from "@/models/PageView";
-import ContactSubmission from "@/models/ContactSubmission";
 
 export const dynamic = "force-dynamic";
 
@@ -96,7 +95,7 @@ export async function GET(request: NextRequest) {
   const match = { createdAt: { $gte: start }, isInternal: { $ne: true } };
 
   await connectToDatabase();
-  const [pageViews, visitorIds, sessionIds, topPages, countries, devices, sources, daily, eventGroups, contactSubmissions] = await Promise.all([
+  const [pageViews, visitorIds, sessionIds, topPages, countries, devices, sources, daily, eventGroups] = await Promise.all([
     PageView.countDocuments(match),
     PageView.distinct("visitorId", match),
     PageView.distinct("sessionId", { ...match, sessionId: { $exists: true, $ne: null } }),
@@ -106,11 +105,10 @@ export async function GET(request: NextRequest) {
     PageView.aggregate([{ $match: { ...match, referrer: { $exists: true, $ne: "" } } }, { $project: { host: { $arrayElemAt: [{ $split: ["$referrer", "/"] }, 2] }, visitorId: 1 } }, { $group: { _id: "$host", visitors: { $addToSet: "$visitorId" }, views: { $sum: 1 } } }, { $project: { _id: 0, source: "$_id", visitors: { $size: "$visitors" }, views: 1 } }, { $sort: { visitors: -1 } }, { $limit: 10 }]),
     PageView.aggregate([{ $match: match }, { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }, views: { $sum: 1 }, visitors: { $addToSet: "$visitorId" } } }, { $project: { _id: 0, date: "$_id", views: 1, visitors: { $size: "$visitors" } } }, { $sort: { date: 1 } }]),
     AnalyticsEvent.aggregate([{ $match: { createdAt: { $gte: start }, isInternal: { $ne: true } } }, { $group: { _id: "$eventName", count: { $sum: 1 } } }, { $project: { _id: 0, eventName: "$_id", count: 1 } }, { $sort: { count: -1 } }]),
-    ContactSubmission.countDocuments({ createdAt: { $gte: start } }),
   ]);
 
   const eventMap = Object.fromEntries(eventGroups.map((item: { eventName: string; count: number }) => [item.eventName, item.count]));
-  const conversions = (eventMap.contact_form_submitted || 0) + (eventMap.calendly_event_scheduled || 0);
+  const conversions = (eventMap.contact_form_submitted || 0) + (eventMap.calendly_event_scheduled || 0) + (eventMap.newsletter_subscribed || 0);
   return NextResponse.json({
     status: "ok",
     range,
@@ -120,7 +118,9 @@ export async function GET(request: NextRequest) {
       pageViews,
       sessions: sessionIds.length,
       pagesPerVisitor: visitorIds.length ? Number((pageViews / visitorIds.length).toFixed(2)) : 0,
-      contactSubmissions,
+      contactSubmissions: eventMap.contact_form_submitted || 0,
+      newsletterSubscriptions: eventMap.newsletter_subscribed || 0,
+      completedBookings: eventMap.calendly_event_scheduled || 0,
       conversions,
     },
     events: eventGroups,

@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const ContentSecurityPolicy = `
   default-src 'self';
-  script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://accounts.google.com;
+  script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://accounts.google.com https://oauth2.googleapis.com https://www.googleapis.com;
   style-src 'self' 'unsafe-inline' https://api.fontshare.com;
   img-src 'self' blob: data: https://res.cloudinary.com https://*.googleusercontent.com;
   font-src 'self' https://api.fontshare.com https://cdn.fontshare.com;

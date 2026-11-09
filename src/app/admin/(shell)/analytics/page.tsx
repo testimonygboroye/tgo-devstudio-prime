@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "@/lib/auth/serverSession";
 import { getAdminBasePath } from "@/lib/adminPath";
 import Link from "next/link";
-import { BarChart3 } from "lucide-react";
 import AnalyticsClient from "./AnalyticsClient";
 
 export default async function AnalyticsPage() {
@@ -23,7 +22,7 @@ export default async function AnalyticsPage() {
       </p>
       <div className="mt-5 flex flex-wrap gap-3">
         <Link href={`${getAdminBasePath()}/analytics/conversions`} className="inline-flex items-center gap-2 rounded-xl border border-brand-cyan-400/30 bg-brand-cyan-400/10 px-4 py-2.5 text-sm font-semibold text-brand-cyan-300 transition-colors hover:bg-brand-cyan-400/15">
-          <BarChart3 size={17} /> Conversion Insights <span aria-hidden="true">→</span>
+          Open Conversion Insights <span aria-hidden="true">→</span>
         </Link>
       </div>
       <div className="mt-8">

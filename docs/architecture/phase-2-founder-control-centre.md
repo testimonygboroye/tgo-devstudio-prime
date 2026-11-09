@@ -9,7 +9,7 @@ Introduce the first founder-facing operating surface for the TGO Business Operat
 - Live MongoDB-backed operational metrics for active and suspended business memberships, business roles, total recorded audit activity, founder unread notifications, and outbox event states.
 - Recent platform audit activity with actor, module, outcome and timestamp context.
 - Business module portfolio sourced from the central module registry, with live/roadmap status.
-- Direct navigation from the identity/governance module card to existing role administration.
+- Module cards remain informational until each business module has its own platform-native management screen; existing CMS roles remain a separate legacy system.
 - Runtime environment and platform feature-flag visibility.
 - Clear disclosure that the event outbox is not yet backed by a production dispatcher.
 - Founder-only visibility in the navigation and server-side page authorization.

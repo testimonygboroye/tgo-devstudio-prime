@@ -10,7 +10,7 @@ const SchemaDefinition=new Schema<ILaunchSettings>({
  description:{type:String,default:"Explore what's next from TGO DevStudio.",maxlength:400},
  videoUrl:{type:String,default:""},flyerUrl:{type:String,default:""},videoAudioEnabled:{type:Boolean,default:false},flyerDurationMinutes:{type:Number,default:0,min:0,max:1440},flyerDurationSeconds:{type:Number,default:8,min:0,max:59},
  afterLaunchVideoUrl:{type:String,default:""},afterLaunchFlyerUrl:{type:String,default:""},
- videoSeconds:{type:Number,default:0,min:0,max:86400},flyerSeconds:{type:Number,default:8,min:1,max:3600},
+ videoSeconds:{type:Number,default:0,min:0,max:86400},flyerSeconds:{type:Number,default:8,min:1,max:86400},
  videoDurationHours:{type:Number,default:0,min:0,max:24},videoDurationMinutes:{type:Number,default:0,min:0,max:59},videoDurationSeconds:{type:Number,default:0,min:0,max:59},useVideoDurationOverride:{type:Boolean,default:false}
 },{timestamps:true});
 const LaunchSettings:Model<ILaunchSettings>=models.LaunchSettings||model<ILaunchSettings>("LaunchSettings",SchemaDefinition);

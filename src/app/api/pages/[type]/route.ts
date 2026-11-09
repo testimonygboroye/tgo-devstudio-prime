@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { connectToDatabase } from "@/lib/db";
 import PageContent, { PageContentType } from "@/models/PageContent";
 import { getAuthenticatedSession } from "@/lib/auth/session";
@@ -75,9 +76,11 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       content: sanitizedContent,
       lastUpdatedBy: session.user._id,
       contentVersion: PAGE_CONTENT_VERSION,
+      translations: resolvedType === "about" ? undefined : {},
     },
     { new: true, upsert: true }
   );
 
+  revalidatePath(resolvedType === "about" ? "/about" : `/${resolvedType}`);
   return NextResponse.json({ status: "ok", page });
 }

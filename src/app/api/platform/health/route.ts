@@ -42,7 +42,11 @@ export async function GET(request: NextRequest) {
 
     response.headers.set("Cache-Control", "no-store, max-age=0");
     return response;
-  } catch {
+  } catch (error) {
+    console.error("[platform.health] diagnostic failed", {
+      requestId,
+      errorName: error instanceof Error ? error.name : "UnknownError",
+    });
     return platformFailure(
       "HEALTH_CHECK_FAILED",
       "Platform health could not be verified. Review server diagnostics.",

@@ -59,7 +59,7 @@ export default function GoogleSignInButton({endpoint,payload={},onResult,onError
  return <div className="w-full space-y-3">
   {lastEmail&&<button type="button" disabled={!ready} onClick={continueRemembered} className="relative flex min-h-[76px] w-full items-center gap-3 rounded-full border border-neutral-200 bg-white px-4 py-3 text-left text-neutral-900 shadow-sm transition hover:bg-neutral-50 disabled:opacity-60">
    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#0b1020]"><img src="/logo.png" alt="" className="h-8 w-8 object-contain"/></span>
-   <span className="min-w-0 flex-1"><span className="block text-base font-semibold leading-5">Continue as {lastName||lastEmail.split("@")[0]}</span><span className="mt-0.5 block truncate text-sm text-neutral-500">{lastEmail}</span></span>
+   <span className="min-w-0 flex-1"><span className="block text-base font-semibold leading-5">Continue as {lastName||lastEmail.split("@")[0].split(/[._-]/)[0].replace(/^./,letter=>letter.toUpperCase())}</span><span className="mt-0.5 block truncate text-sm text-neutral-500">{lastEmail}</span></span>
    <GoogleMark/>
   </button>}
   <button type="button" disabled={!ready} onClick={continueChooser} className="flex min-h-[64px] w-full items-center justify-center gap-3 rounded-full border border-neutral-300 bg-white px-5 py-3 text-base font-semibold text-neutral-900 shadow-sm transition hover:bg-neutral-50 disabled:opacity-60"><GoogleMark/><span>Continue with Google</span></button>

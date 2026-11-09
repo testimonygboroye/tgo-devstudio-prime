@@ -92,5 +92,11 @@ export async function POST(request: NextRequest) {
 
   const response = await apiSuccess({}, "loggedIn", "Logged in successfully.", 200);
   setAuthCookies(response, accessToken, refreshToken);
+  // Keep the most recently authenticated account available to the sign-in screen,
+  // regardless of whether the user signed in with Google or email/password.
+  response.cookies.set("tgo_last_google_account", user.email.toLowerCase(), {
+    path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax",
+    secure: process.env.NODE_ENV === "production", httpOnly: false,
+  });
   return response;
 }

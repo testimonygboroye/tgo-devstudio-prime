@@ -26,6 +26,10 @@ export async function POST(request: NextRequest) {
     return apiError("invalidCredentials", "Invalid credentials.", 401);
   }
 
+  if (user.accountType === "client" && !user.isEmailVerified) {
+    return apiError("emailVerificationRequired", "Verify your email address before signing in. You can request a new verification email from the client sign-in page.", 403);
+  }
+
   if (user.isBanned) {
     return apiError(
       "accountSuspended",
@@ -94,6 +98,12 @@ export async function POST(request: NextRequest) {
   setAuthCookies(response, accessToken, refreshToken);
   // Keep the most recently authenticated account available to the sign-in screen,
   // regardless of whether the user signed in with Google or email/password.
+  if (user.accountType === "client") {
+    response.cookies.set("tgo_client_account", user.email.toLowerCase(), {
+      path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax",
+      secure: process.env.NODE_ENV === "production", httpOnly: false,
+    });
+  }
   response.cookies.set("tgo_last_google_account", user.email.toLowerCase(), {
     path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax",
     secure: process.env.NODE_ENV === "production", httpOnly: false,

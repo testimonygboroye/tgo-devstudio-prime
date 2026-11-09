@@ -6,6 +6,7 @@ import { verifyTotpToken } from "@/lib/auth/totp";
 import { verifyAndConsumeBackupCode } from "@/lib/auth/backupCodes";
 import { setAuthCookies } from "@/lib/auth/cookies";
 import { apiError, apiSuccess } from "@/lib/i18n/apiResponse";
+import { rememberClientAccount } from "@/lib/clients/account-selector";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -63,6 +64,7 @@ export async function POST(request: NextRequest) {
 
   const response = await apiSuccess({}, "loggedIn", "Logged in successfully.", 200);
   setAuthCookies(response, accessToken, refreshToken);
+  if (user.accountType === "client") rememberClientAccount(response, request, user.email);
   // 2FA completion is the point at which this account is fully signed in.
   response.cookies.set("tgo_last_google_account", String(user.email || "").trim().toLowerCase(), {
     path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax",

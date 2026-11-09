@@ -1,17 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Save, ShieldCheck } from "lucide-react";
 
 type Profile = { name:string; phone:string; jobTitle:string; website:string; country:string; timezone:string };
 export default function ClientProfileSettings({ initialProfile, name, email, verified }: { initialProfile: Profile; name:string; email:string; verified:boolean }) {
+  const router = useRouter();
   const [form,setForm]=useState(initialProfile);
   const [busy,setBusy]=useState(false);
   const [notice,setNotice]=useState("");
   const [error,setError]=useState("");
   async function save(event:React.FormEvent){
     event.preventDefault();setBusy(true);setNotice("");setError("");
-    try{const response=await fetch("/api/client/profile",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(form)});const data=await response.json();if(!response.ok)throw new Error(data.error||"Could not save profile.");setNotice(data.message||"Profile saved.");}
+    try{const response=await fetch("/api/client/profile",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(form)});const data=await response.json();if(!response.ok)throw new Error(data.error||"Could not save profile.");setNotice(data.message||"Profile saved.");router.refresh();}
     catch(cause){setError(cause instanceof Error?cause.message:"Could not save profile.");}
     finally{setBusy(false);}
   }

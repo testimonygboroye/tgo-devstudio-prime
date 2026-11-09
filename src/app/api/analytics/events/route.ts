@@ -4,13 +4,14 @@ import { connectToDatabase } from "@/lib/db";
 import { getAuthenticatedSession } from "@/lib/auth/session";
 import { requireContentPermission, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/authorize";
 import AnalyticsEvent, { type AnalyticsEventName } from "@/models/AnalyticsEvent";
+import { parseUserAgent } from "@/lib/analytics/visitor";
 import PageView from "@/models/PageView";
 
 export const dynamic = "force-dynamic";
 
 const ALLOWED_EVENTS: AnalyticsEventName[] = [
   "whatsapp_click", "email_click", "book_call_click", "calendly_event_scheduled",
-  "contact_cta_click", "portfolio_click", "service_click", "newsletter_signup_click", "cta_click",
+  "contact_cta_click", "portfolio_click", "service_click", "newsletter_signup_click", "cta_click", "web_vital",
 ];
 const ID_PATTERN = /^[a-zA-Z0-9-]{12,80}$/;
 
@@ -36,6 +37,14 @@ export async function POST(request: NextRequest) {
     const eventName = body?.eventName as AnalyticsEventName;
     if (!ALLOWED_EVENTS.includes(eventName)) {
       return NextResponse.json({ status: "error", message: "Unsupported analytics event." }, { status: 400 });
+    }
+
+    const metricNames = ["LCP", "INP", "CLS", "FCP", "TTFB"];
+    const metricName = typeof body?.metricName === "string" && metricNames.includes(body.metricName) ? body.metricName : undefined;
+    const metricValue = typeof body?.metricValue === "number" && Number.isFinite(body.metricValue) ? body.metricValue : undefined;
+    const metricRating = ["good", "needs-improvement", "poor"].includes(body?.metricRating) ? body.metricRating : undefined;
+    if (eventName === "web_vital" && (!metricName || metricValue === undefined || metricValue < 0 || metricValue > 120000)) {
+      return NextResponse.json({ status: "error", message: "A valid Core Web Vital metric is required." }, { status: 400 });
     }
 
     const userAgent = request.headers.get("user-agent") || "";
@@ -69,6 +78,10 @@ export async function POST(request: NextRequest) {
           placement: typeof body?.placement === "string" ? body.placement.slice(0, 80) : undefined,
           itemType: typeof body?.itemType === "string" ? body.itemType.slice(0, 80) : undefined,
           itemSlug: typeof body?.itemSlug === "string" ? body.itemSlug.slice(0, 160) : undefined,
+          metricName,
+          metricValue,
+          metricRating,
+          deviceType: eventName === "web_vital" ? parseUserAgent(userAgent).deviceType : undefined,
           isInternal: false,
         },
       },
@@ -95,7 +108,7 @@ export async function GET(request: NextRequest) {
   const match = { createdAt: { $gte: start }, isInternal: { $ne: true } };
 
   await connectToDatabase();
-  const [pageViews, visitorIds, sessionIds, topPages, countries, devices, sources, daily, eventGroups] = await Promise.all([
+  const [pageViews, visitorIds, sessionIds, topPages, countries, devices, sources, daily, eventGroups, webVitals] = await Promise.all([
     PageView.countDocuments(match),
     PageView.distinct("visitorId", match),
     PageView.distinct("sessionId", { ...match, sessionId: { $exists: true, $ne: null } }),
@@ -104,7 +117,8 @@ export async function GET(request: NextRequest) {
     PageView.aggregate([{ $match: { ...match, deviceType: { $exists: true, $ne: "" } } }, { $group: { _id: "$deviceType", visitors: { $addToSet: "$visitorId" }, views: { $sum: 1 } } }, { $project: { _id: 0, device: "$_id", visitors: { $size: "$visitors" }, views: 1 } }, { $sort: { visitors: -1 } }]),
     PageView.aggregate([{ $match: { ...match, referrer: { $exists: true, $ne: "" } } }, { $project: { host: { $arrayElemAt: [{ $split: ["$referrer", "/"] }, 2] }, visitorId: 1 } }, { $group: { _id: "$host", visitors: { $addToSet: "$visitorId" }, views: { $sum: 1 } } }, { $project: { _id: 0, source: "$_id", visitors: { $size: "$visitors" }, views: 1 } }, { $sort: { visitors: -1 } }, { $limit: 10 }]),
     PageView.aggregate([{ $match: match }, { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }, views: { $sum: 1 }, visitors: { $addToSet: "$visitorId" } } }, { $project: { _id: 0, date: "$_id", views: 1, visitors: { $size: "$visitors" } } }, { $sort: { date: 1 } }]),
-    AnalyticsEvent.aggregate([{ $match: { createdAt: { $gte: start }, isInternal: { $ne: true } } }, { $group: { _id: "$eventName", count: { $sum: 1 } } }, { $project: { _id: 0, eventName: "$_id", count: 1 } }, { $sort: { count: -1 } }]),
+    AnalyticsEvent.aggregate([{ $match: { createdAt: { $gte: start }, isInternal: { $ne: true }, eventName: { $ne: "web_vital" } } }, { $group: { _id: "$eventName", count: { $sum: 1 } } }, { $project: { _id: 0, eventName: "$_id", count: 1 } }, { $sort: { count: -1 } }]),
+    AnalyticsEvent.aggregate([{ $match: { createdAt: { $gte: start }, isInternal: { $ne: true }, eventName: "web_vital", metricName: { $exists: true }, metricValue: { $exists: true } } }, { $group: { _id: { metricName: "$metricName", deviceType: "$deviceType" }, samples: { $sum: 1 }, average: { $avg: "$metricValue" }, worst: { $max: "$metricValue" } } }, { $project: { _id: 0, metricName: "$_id.metricName", deviceType: "$_id.deviceType", samples: 1, average: { $round: ["$average", 2] }, worst: { $round: ["$worst", 2] } } }, { $sort: { metricName: 1, deviceType: 1 } }]),
   ]);
 
   const eventMap = Object.fromEntries(eventGroups.map((item: { eventName: string; count: number }) => [item.eventName, item.count]));
@@ -124,6 +138,7 @@ export async function GET(request: NextRequest) {
       conversions,
     },
     events: eventGroups,
+    webVitals,
     topPages,
     countries,
     devices,

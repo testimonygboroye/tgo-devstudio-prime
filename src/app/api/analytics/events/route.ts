@@ -141,11 +141,26 @@ export async function GET(request: NextRequest) {
   }
   const durationMs = end.getTime() - start.getTime();
   const range = isCustomRange ? "custom" : rangeParam;
-  const match = { createdAt: { $gte: start, $lte: end }, isInternal: { $ne: true } };
-  const eventMatch = { createdAt: { $gte: start, $lte: end }, isInternal: { $ne: true } };
+  const trustedTrafficFilter = {
+    isInternal: { $ne: true },
+    $nor: [
+      { userAgent: { $regex: "HeadlessChrome|PhantomJS|Playwright|Puppeteer", $options: "i" } },
+      { referrer: { $regex: "tgo-devstudio-prime-[a-z0-9]+-testimonygboroye\\.vercel\\.app", $options: "i" } },
+    ],
+  };
+  const match = { ...trustedTrafficFilter, createdAt: { $gte: start, $lte: end } };
   const bucketFormat = durationMs <= 48 * 60 * 60 * 1000 ? "%Y-%m-%d %H:00" : "%Y-%m-%d";
 
   await connectToDatabase();
+  const trustedVisitorIds = await PageView.distinct("visitorId", trustedTrafficFilter);
+  const eventMatch = {
+    createdAt: { $gte: start, $lte: end },
+    isInternal: { $ne: true },
+    $or: [
+      { visitorId: { $exists: false } },
+      { visitorId: { $in: trustedVisitorIds } },
+    ],
+  };
   const [pageViews, visitorIds, sessionIds, topPages, countries, devices, sources, daily, eventGroups, webVitals] = await Promise.all([
     PageView.countDocuments(match),
     PageView.distinct("visitorId", match),
@@ -156,7 +171,7 @@ export async function GET(request: NextRequest) {
     PageView.aggregate([{ $match: { ...match, referrer: { $exists: true, $ne: "" } } }, { $project: { host: { $arrayElemAt: [{ $split: ["$referrer", "/"] }, 2] }, visitorId: 1 } }, { $group: { _id: "$host", visitors: { $addToSet: "$visitorId" }, views: { $sum: 1 } } }, { $project: { _id: 0, source: "$_id", visitors: { $size: "$visitors" }, views: 1 } }, { $sort: { visitors: -1 } }, { $limit: 10 }]),
     PageView.aggregate([{ $match: match }, { $group: { _id: { $dateToString: { format: bucketFormat, date: "$createdAt" } }, views: { $sum: 1 }, visitors: { $addToSet: "$visitorId" } } }, { $project: { _id: 0, date: "$_id", views: 1, visitors: { $size: "$visitors" } } }, { $sort: { date: 1 } }]),
     AnalyticsEvent.aggregate([{ $match: { ...eventMatch, eventName: { $ne: "web_vital" } } }, { $group: { _id: "$eventName", count: { $sum: 1 } } }, { $project: { _id: 0, eventName: "$_id", count: 1 } }, { $sort: { count: -1 } }]),
-    AnalyticsEvent.aggregate([{ $match: { ...eventMatch, eventName: "web_vital", metricName: { $exists: true }, metricValue: { $exists: true } } }, { $group: { _id: { metricName: "$metricName", deviceType: "$deviceType" }, samples: { $sum: 1 }, average: { $avg: "$metricValue" }, worst: { $max: "$metricValue" } } }, { $project: { _id: 0, metricName: "$_id.metricName", deviceType: "$_id.deviceType", samples: 1, average: { $round: ["$average", 2] }, worst: { $round: ["$worst", 2] } } }, { $sort: { metricName: 1, deviceType: 1 } }]),
+    AnalyticsEvent.aggregate([{ $match: { ...eventMatch, visitorId: { $in: trustedVisitorIds }, eventName: "web_vital", metricName: { $exists: true }, metricValue: { $exists: true } } }, { $group: { _id: { metricName: "$metricName", deviceType: "$deviceType" }, samples: { $sum: 1 }, average: { $avg: "$metricValue" }, worst: { $max: "$metricValue" } } }, { $project: { _id: 0, metricName: "$_id.metricName", deviceType: "$_id.deviceType", samples: 1, average: { $round: ["$average", 2] }, worst: { $round: ["$worst", 2] } } }, { $sort: { metricName: 1, deviceType: 1 } }]),
   ]);
 
   const eventMap = Object.fromEntries(eventGroups.map((item: { eventName: string; count: number }) => [item.eventName, item.count]));

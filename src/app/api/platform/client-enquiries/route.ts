@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Types } from "mongoose";
 import { getServerSession } from "@/lib/auth/serverSession";
 import { connectToDatabase } from "@/lib/db";
 import ClientEnquiry from "@/models/ClientEnquiry";
@@ -31,7 +32,7 @@ export async function PATCH(request: NextRequest) {
   if (!session.role.isFounderRole) return NextResponse.json({ error: "Founder access required." }, { status: 403 });
   let body: Record<string, unknown>;
   try { body = await request.json(); } catch { return NextResponse.json({ error: "Invalid request." }, { status: 400 }); }
-  if (typeof body.id !== "string") return NextResponse.json({ error: "Enquiry id is required." }, { status: 400 });
+  if (typeof body.id !== "string" || !Types.ObjectId.isValid(body.id)) return NextResponse.json({ error: "A valid enquiry id is required." }, { status: 400 });
   if (body.status !== undefined && !["new", "in_review", "responded", "closed"].includes(String(body.status))) return NextResponse.json({ error: "Invalid enquiry status." }, { status: 400 });
   if (body.priority !== undefined && !["low", "normal", "high"].includes(String(body.priority))) return NextResponse.json({ error: "Invalid priority." }, { status: 400 });
   await connectToDatabase();
@@ -40,6 +41,7 @@ export async function PATCH(request: NextRequest) {
   if (body.assignedTo !== undefined) {
     if (body.assignedTo === null || body.assignedTo === "") enquiry.assignedTo = undefined;
     else {
+      if (typeof body.assignedTo !== "string" || !Types.ObjectId.isValid(body.assignedTo)) return NextResponse.json({ error: "Choose a valid staff account." }, { status: 400 });
       const assignee = await User.findOne({ _id: body.assignedTo, accountType: { $ne: "client" }, isBanned: false });
       if (!assignee) return NextResponse.json({ error: "Choose an active staff account." }, { status: 400 });
       enquiry.assignedTo = assignee._id;

@@ -11,7 +11,8 @@ export type AnalyticsEventName =
   | "portfolio_click"
   | "service_click"
   | "newsletter_signup_click"
-  | "cta_click";
+  | "cta_click"
+  | "web_vital";
 
 export interface IAnalyticsEvent extends Document {
   eventId: string;
@@ -23,6 +24,10 @@ export interface IAnalyticsEvent extends Document {
   placement?: string;
   itemType?: string;
   itemSlug?: string;
+  metricName?: string;
+  metricValue?: number;
+  metricRating?: string;
+  deviceType?: string;
   isInternal: boolean;
   createdAt: Date;
 }
@@ -38,6 +43,10 @@ const AnalyticsEventSchema = new Schema<IAnalyticsEvent>(
     placement: { type: String, maxlength: 80 },
     itemType: { type: String, maxlength: 80 },
     itemSlug: { type: String, maxlength: 160 },
+    metricName: { type: String, maxlength: 12, index: true },
+    metricValue: { type: Number, min: 0 },
+    metricRating: { type: String, maxlength: 24 },
+    deviceType: { type: String, maxlength: 32, index: true },
     isInternal: { type: Boolean, default: false, index: true },
   },
   { timestamps: { createdAt: true, updatedAt: false } }

@@ -198,7 +198,7 @@ export default function HomeSettingsClient() {
                     {field.key === "heroBackgroundImage" && (
                       <div className="mt-3 space-y-2">
                         <label className="block text-xs text-neutral-500">Or upload a wide background image</label>
-                        <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" disabled={uploadingHero} onChange={async (event) => {
+                        <label className="inline-flex cursor-pointer items-center rounded-lg border border-base-700 bg-base-800 px-4 py-2 text-sm text-neutral-100 hover:bg-base-700">{uploadingHero ? "Uploading…" : "Choose or replace background image"}<input type="file" accept="image/jpeg,image/png,image/webp,image/avif" disabled={uploadingHero} onChange={async (event) => {
                           const file = event.target.files?.[0]; if (!file) return;
                           setError(""); setSavedMessage(""); setUploadingHero(true);
                           try {
@@ -215,9 +215,9 @@ export default function HomeSettingsClient() {
                           }
                           catch (uploadError) { setError(uploadError instanceof Error ? uploadError.message : "Background image upload failed."); }
                           finally { setUploadingHero(false); event.target.value = ""; }
-                        }} className="block w-full text-xs text-neutral-400 file:mr-3 file:rounded-lg file:border-0 file:bg-base-800 file:px-3 file:py-2 file:text-neutral-100" />
+                        }} className="sr-only" /></label>
                         {uploadingHero && <p className="text-xs text-cyan-300">Uploading image…</p>}
-                        {form.heroBackgroundImage && <img src={form.heroBackgroundImage} alt="Homepage hero background preview" className="mt-2 h-32 w-full rounded-lg object-cover" />}
+                        {form.heroBackgroundImage && <div className="mt-2 space-y-2"><p className="text-xs text-emerald-300">Saved background image — ready for the public hero</p><div className="relative h-40 overflow-hidden rounded-xl border border-base-700 bg-base-900"><img src={form.heroBackgroundImage} alt="Saved homepage hero background preview" className="absolute inset-0 h-full w-full object-cover"/><div className="absolute inset-0 bg-gradient-to-r from-[#050818]/65 via-[#050818]/45 to-[#050818]/55"/><div className="relative z-10 flex h-full flex-col justify-center px-5"><span className="text-[10px] uppercase tracking-widest text-cyan-200">TGO DevStudio</span><strong className="mt-2 max-w-xs text-xl font-bold text-white">{form.heroHeadline||"Your homepage headline"}</strong><p className="mt-1 max-w-xs text-xs text-white/90">{form.heroSubheadline||"Your supporting text"}</p></div></div></div>}
                       </div>
                     )}
                   </div>

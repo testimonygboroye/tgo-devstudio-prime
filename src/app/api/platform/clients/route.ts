@@ -51,6 +51,7 @@ export async function PATCH(request: NextRequest) {
   let body: Record<string, unknown>;
   try { body = await request.json(); } catch { return NextResponse.json({ error: "Invalid request." }, { status: 400 }); }
   if (typeof body.clientId !== "string") return NextResponse.json({ error: "Client id is required." }, { status: 400 });
+  if (body.suspended !== undefined && typeof body.suspended !== "boolean") return NextResponse.json({ error: "Suspended must be a boolean." }, { status: 400 });
   const allowedLifecycle = ["lead", "onboarding", "active", "at_risk", "inactive"];
   const allowedOnboarding = ["not_started", "in_progress", "completed"];
   if (body.lifecycle !== undefined && !allowedLifecycle.includes(String(body.lifecycle))) return NextResponse.json({ error: "Invalid lifecycle." }, { status: 400 });
@@ -60,6 +61,12 @@ export async function PATCH(request: NextRequest) {
   const user = await User.findOne({ _id: body.clientId, accountType: "client" });
   if (!user) return NextResponse.json({ error: "Client account not found." }, { status: 404 });
   const changes: Record<string, unknown> = {};
+  if (body.suspended !== undefined) {
+    user.isBanned = body.suspended;
+    user.bannedAt = body.suspended ? new Date() : undefined;
+    await user.save();
+    changes.accountStatus = body.suspended ? "suspended" : "active";
+  }
   if (body.lifecycle !== undefined) changes.lifecycle = body.lifecycle;
   if (body.onboardingStatus !== undefined) changes.onboardingStatus = body.onboardingStatus;
   if (body.segments !== undefined) changes.segments = [...new Set((body.segments as string[]).map(value => value.trim().toLowerCase()).filter(Boolean))];

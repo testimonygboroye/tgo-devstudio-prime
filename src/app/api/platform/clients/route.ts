@@ -67,7 +67,7 @@ export async function PATCH(request: NextRequest) {
   if (body.onboardingStatus !== undefined) changes.onboardingStatus = body.onboardingStatus;
   if (body.segments !== undefined) changes.segments = [...new Set((body.segments as string[]).map(value => value.trim().toLowerCase()).filter(Boolean))];
   if (body.organizationId !== undefined) {
-    if (body.organizationId === null || body.organizationId === "") changes.organizationId = undefined;
+    if (body.organizationId === null || body.organizationId === "") changes.organizationId = null;
     else {
       const org = await BusinessOrganization.findOne({ _id: body.organizationId, type: "client", status: "active" });
       if (!org) return NextResponse.json({ error: "Choose an active client organization." }, { status: 400 });
@@ -77,7 +77,12 @@ export async function PATCH(request: NextRequest) {
   if (Object.keys(changes).length === 0) return NextResponse.json({ error: "No valid changes supplied." }, { status: 400 });
   const profileChanges = { ...changes };
   delete profileChanges.accountStatus;
-  const profile = await ClientProfile.findOneAndUpdate({ userId: user._id }, { $set: profileChanges, $setOnInsert: { userId: user._id, source: "admin_created" } }, { new: true, upsert: true, runValidators: true });
+  const update: Record<string, unknown> = { $set: profileChanges, $setOnInsert: { userId: user._id, source: "admin_created" } };
+  if (profileChanges.organizationId === null) {
+    delete profileChanges.organizationId;
+    update.$unset = { organizationId: 1 };
+  }
+  const profile = await ClientProfile.findOneAndUpdate({ userId: user._id }, update, { new: true, upsert: true, runValidators: true });
   if (suspensionChange !== undefined && user.isBanned !== suspensionChange) {
     user.isBanned = suspensionChange;
     user.refreshTokenVersion += 1;

@@ -13,7 +13,7 @@ const items: LauncherItem[] = [
   { title: "Website Administration", description: "Manage website content, users, analytics and existing CMS operations.", href: "/admin/dashboard", status: "available", icon: LayoutDashboard, eyebrow: "Existing administration" },
   { title: "Business Ecosystem", description: "Manage the shared directory of internal units, clients, partners and vendors.", href: "/admin/businesses", status: "available", icon: Building2, eyebrow: "Business administration" },
   { title: "Client Portal", description: "Client workspaces, project visibility, payments and communication.", status: "planned", icon: Users, eyebrow: "Roadmap" },
-  { title: "Workforce Portal", description: "Employee responsibilities, team workspaces, tasks and schedules.", status: "planned", icon: CircleLock, eyebrow: "Roadmap" },
+  { title: "Workforce Portal", description: "Employee responsibilities, team workspaces, tasks and schedules.", status: "planned", icon: LockKeyhole, eyebrow: "Roadmap" },
 ];
 
 export default function FounderApplicationLauncher({ adminBasePath }: { adminBasePath: string }) {

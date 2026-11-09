@@ -5,10 +5,10 @@ export interface IUser extends Document {
   email: string;
   passwordHash: string;
   googleSub?: string;
-  accountType: "staff" | "client";
-  isEmailVerified: boolean;
+  accountType?: "staff" | "client";
+  isEmailVerified?: boolean;
   emailVerifiedAt?: Date;
-  authProviders: string[];
+  authProviders?: string[];
   role: Types.ObjectId;
   twoFactorEnabled: boolean;
   twoFactorSecret?: string;

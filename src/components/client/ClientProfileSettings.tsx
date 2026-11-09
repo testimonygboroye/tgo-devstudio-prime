@@ -1,0 +1,26 @@
+"use client";
+
+import { useState } from "react";
+import { Save, ShieldCheck } from "lucide-react";
+
+type Profile = { phone:string; jobTitle:string; website:string; country:string; timezone:string };
+export default function ClientProfileSettings({ initialProfile, name, email, verified }: { initialProfile: Profile; name:string; email:string; verified:boolean }) {
+  const [form,setForm]=useState(initialProfile);
+  const [busy,setBusy]=useState(false);
+  const [notice,setNotice]=useState("");
+  const [error,setError]=useState("");
+  async function save(event:React.FormEvent){
+    event.preventDefault();setBusy(true);setNotice("");setError("");
+    try{const response=await fetch("/api/client/profile",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(form)});const data=await response.json();if(!response.ok)throw new Error(data.error||"Could not save profile.");setNotice(data.message||"Profile saved.");}
+    catch(cause){setError(cause instanceof Error?cause.message:"Could not save profile.");}
+    finally{setBusy(false);}
+  }
+  return <div className="grid gap-5 lg:grid-cols-[.8fr_1.2fr]">
+    <section className="rounded-2xl border border-white/10 bg-white/[.04] p-5"><p className="text-xs uppercase tracking-[.18em] text-cyan-300">Identity</p><h2 className="mt-2 text-xl font-bold text-white">{name}</h2><p className="mt-1 break-all text-sm text-slate-400">{email}</p><div className="mt-4 flex items-center gap-2 text-xs">{verified?<span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/10 px-3 py-1.5 text-emerald-200"><ShieldCheck size={14}/>Email verified</span>:<span className="rounded-full bg-amber-400/10 px-3 py-1.5 text-amber-200">Verification pending</span>}</div><p className="mt-5 text-xs leading-5 text-slate-500">Your sign-in email and identity are managed securely by TGO DevStudio. Contact support if you need to change your primary email address.</p></section>
+    <form onSubmit={save} className="rounded-2xl border border-white/10 bg-white/[.04] p-5 sm:p-6"><h2 className="text-lg font-bold text-white">Profile details</h2><p className="mt-1 text-sm text-slate-400">Keep your contact and organization details current.</p>
+      {error&&<p role="alert" className="mt-4 rounded-xl bg-rose-400/10 p-3 text-sm text-rose-200">{error}</p>}{notice&&<p role="status" className="mt-4 rounded-xl bg-emerald-400/10 p-3 text-sm text-emerald-200">{notice}</p>}
+      <div className="mt-5 grid gap-4 sm:grid-cols-2">{([{key:"phone",label:"Phone number",placeholder:"+234…"}, {key:"jobTitle",label:"Job title",placeholder:"Your role"}, {key:"website",label:"Website",placeholder:"https://example.com"}, {key:"country",label:"Country",placeholder:"Country"}, {key:"timezone",label:"Timezone",placeholder:"Africa/Lagos"}] as const).map(field=><label key={field.key} className="text-xs font-medium text-slate-300">{field.label}<input value={form[field.key]} onChange={e=>setForm(v=>({...v,[field.key]:e.target.value}))} placeholder={field.placeholder} className="mt-2 w-full rounded-xl border border-white/10 bg-[#080d20] px-3 py-3 text-sm text-white outline-none focus:border-violet-400"/></label>)}</div>
+      <button disabled={busy} className="mt-6 inline-flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white hover:bg-violet-500 disabled:opacity-50"><Save size={16}/>{busy?"Saving…":"Save profile"}</button>
+    </form>
+  </div>;
+}

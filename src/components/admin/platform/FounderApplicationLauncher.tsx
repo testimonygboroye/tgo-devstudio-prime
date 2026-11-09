@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight, Globe2, LayoutDashboard, Building2, Users, CircleLock, Sparkles } from "lucide-react";
+import { ArrowUpRight, Globe2, LayoutDashboard, Building2, Users, LockKeyhole, Sparkles } from "lucide-react";
 
 type LauncherItem = {
   title: string; description: string; href?: string; status: "available" | "planned";

@@ -116,5 +116,5 @@ export default function ConversionInsightsPage() {
       </section>
       <p className="text-xs text-[var(--text-muted)]">Analytics are privacy-conscious and do not expose visitor names, email addresses, phone numbers, or exact addresses. Contact details remain in the protected Messages/Contact area. <a href="/api/analytics/events?range=30" className="ml-1 inline-flex items-center gap-1 text-brand-cyan-400">API <ExternalLink size={11}/></a></p>
     </>}
-  </main>;
+  </div>;
 }

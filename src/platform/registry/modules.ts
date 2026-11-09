@@ -29,6 +29,15 @@ export const PLATFORM_MODULE_REGISTRY: readonly PlatformModuleDefinition[] = [
     href: "/businesses",
   },
   {
+    id: "business-governance",
+    name: "Business Roles & Permissions",
+    description: "Founder-managed business roles and the central permission catalogue.",
+    category: "foundation",
+    requiredPermission: "governance.roles.view",
+    status: "available",
+    href: "/business-roles",
+  },
+  {
     id: "clients",
     name: "Client Management",
     description: "Unified client profiles, relationships and account activity.",

@@ -12,6 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const t = createTranslator(await getServerLocale());
 
   return {
+    alternates: { canonical: "/accessibility" },
     title: `Accessibility | TGO DevStudio Prime`,
     description: t("common.readMore"),
   };

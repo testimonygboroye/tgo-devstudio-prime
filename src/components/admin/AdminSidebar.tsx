@@ -33,6 +33,7 @@ import {
   ScrollText,
   BarChart3,
   KeyRound,
+  KeySquare,
   Zap,
   Video,
   Settings,
@@ -52,6 +53,7 @@ interface AdminSidebarProps {
 const NAV_GROUPS = [
   { title: "Founder", items: [
     { label: "Founder Control Centre", hrefSuffix: "/platform", icon: Crown, badgeKey: null },
+    { label: "Business Roles", hrefSuffix: "/business-roles", icon: KeySquare, badgeKey: null },
     { label: "Business Ecosystem", hrefSuffix: "/businesses", icon: Building2, badgeKey: null },
   ]},
   { title: "Overview", items: [

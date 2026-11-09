@@ -17,7 +17,8 @@ export async function GET(request: NextRequest) {
   const filter: Record<string, unknown> = {};
   if (["new", "in_review", "responded", "closed"].includes(status)) filter.status = status;
   const enquiries = await ClientEnquiry.find(filter).populate("clientId", "name email").populate("assignedTo", "name email").sort({ createdAt: -1 }).limit(250).lean();
-  return NextResponse.json({ enquiries: enquiries.map(item => {
+  const staff = await User.find({ accountType: { $ne: "client" }, isBanned: false }).select("name email").sort({ name: 1 }).limit(100).lean();
+  return NextResponse.json({ staff: staff.map(user => ({ id: String(user._id), name: user.name, email: user.email })), enquiries: enquiries.map(item => {
     const client = item.clientId && typeof item.clientId === "object" && "email" in item.clientId ? item.clientId as unknown as { _id: unknown; name: string; email: string } : null;
     const assignee = item.assignedTo && typeof item.assignedTo === "object" && "email" in item.assignedTo ? item.assignedTo as unknown as { _id: unknown; name: string; email: string } : null;
     return { id: String(item._id), clientId: client ? String(client._id) : String(item.clientId), clientName: client?.name || "Client", clientEmail: client?.email || "", subject: item.subject, message: item.message, category: item.category, status: item.status, priority: item.priority, assignedTo: assignee ? String(assignee._id) : "", assigneeName: assignee?.name || "", createdAt: item.createdAt.toISOString(), updatedAt: item.updatedAt.toISOString() };

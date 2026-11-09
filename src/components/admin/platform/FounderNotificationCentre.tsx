@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Bell, CheckCheck, ExternalLink, Inbox, LoaderCircle } from "lucide-react";
 
@@ -13,7 +13,7 @@ export default function FounderNotificationCentre() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  async function refresh() {
+  const refresh = useCallback(async () => {
     setLoading(true); setError("");
     try {
       const response = await fetch("/api/platform/notifications?limit=12", { cache: "no-store" });
@@ -22,9 +22,9 @@ export default function FounderNotificationCentre() {
       setItems(data.notifications || []); setUnread(data.unreadCount || 0);
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Notifications could not be loaded."); }
     finally { setLoading(false); }
-  }
+  }, []);
 
-  useEffect(() => { void refresh(); }, []);
+  useEffect(() => { void refresh(); }, [refresh]);
 
   async function markRead(id?: string) {
     setBusy(true); setError("");

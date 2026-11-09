@@ -81,10 +81,6 @@ export async function generateMetadata(): Promise<Metadata> {
     creator: "TGO DevStudio",
     publisher: "TGO DevStudio",
 
-    alternates: {
-      canonical: siteUrl,
-    },
-
     manifest: "/manifest.json",
 
     icons: {
@@ -122,7 +118,6 @@ export async function generateMetadata(): Promise<Metadata> {
     },
 
     openGraph: {
-      url: siteUrl,
       siteName: "TGO DevStudio",
       title: "TGO DevStudio Prime",
       description:

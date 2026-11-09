@@ -12,6 +12,7 @@ export const revalidate = 300;
 export const metadata: Metadata = {
   title: "Team | TGO DevStudio Prime",
   description: "Meet the team behind TGO DevStudio.",
+  alternates: { canonical: "/team" },
 };
 
 export default async function TeamPage() {

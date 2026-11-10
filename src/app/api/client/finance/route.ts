@@ -22,7 +22,10 @@ export const dynamic="force-dynamic";
 function fail(message:string,status=400){return NextResponse.json({ok:false,error:message},{status});}
 function validId(value:unknown):value is string{return typeof value==="string"&&Types.ObjectId.isValid(value);}
 async function clientSession(){const session=await getServerSession();if(!session||session.user.accountType!=="client"||!session.user.isEmailVerified)return null;return session;}
-async function log(session:any,action:string,type:string,id:string,metadata:Record<string,unknown>={}){await writePlatformAuditEvent({actorType:"human",actorId:String(session.user._id),actorLabel:session.user.name,action,module:"finance",targetType:type,targetId:id,outcome:"success",metadata});}
+type ClientFinanceSession=NonNullable<Awaited<ReturnType<typeof getServerSession>>>;
+type InstallmentPlanDocument=NonNullable<Awaited<ReturnType<typeof FinanceInstallmentPlan.findOne>>>;
+type InstallmentDocument=InstallmentPlanDocument["installments"][number];
+async function log(session:ClientFinanceSession,action:string,type:string,id:string,metadata:Record<string,unknown>={}){await writePlatformAuditEvent({actorType:"human",actorId:String(session.user._id),actorLabel:session.user.name,action,module:"finance",targetType:type,targetId:id,outcome:"success",metadata});}
 function ref(prefix:string){return `TGO_${prefix}_${randomUUID().replace(/-/g,"").slice(0,20).toUpperCase()}`;}
 
 export async function GET(){
@@ -56,14 +59,14 @@ export async function POST(request:NextRequest){
  if(["cancelled","refunded","completed"].includes(order.status))return fail("This order is not eligible for payment.");
  const currency=String(order.currency||"NGN").toUpperCase();
  const totalMinor=toMinorUnits(order.amount,currency);
- let milestone:Awaited<ReturnType<typeof DeliveryMilestone.findOne>>=null;let installmentPlan:any=null;let installment:any=null;
+ let milestone:Awaited<ReturnType<typeof DeliveryMilestone.findOne>>=null;let installmentPlan:InstallmentPlanDocument|null=null;let installment:InstallmentDocument|null=null;
  if(typeof body.milestoneId==="string"){
   if(!validId(body.milestoneId))return fail("Invalid milestone id.");
   const project=await DeliveryProject.findOne({orderId:order._id,clientId:user._id});if(!project)return fail("Delivery project not found.",404);
   milestone=await DeliveryMilestone.findOne({_id:body.milestoneId,projectId:project._id});if(!milestone)return fail("Milestone not found.",404);
   if(milestone.paymentStatus==="paid")return fail("This milestone has already been paid.");
  }
- if(typeof body.installmentId==="string"){if(!validId(body.installmentId)||body.milestoneId)return fail("Invalid installment payment request.");installmentPlan=await FinanceInstallmentPlan.findOne({orderId:order._id,clientId:user._id,status:"active"});installment=installmentPlan?.installments.find((item:any)=>String(item._id)===body.installmentId);if(!installment)return fail("Installment not found in your payment schedule.",404);if(installment.status==="paid")return fail("This installment has already been paid.");if(body.amount!==undefined)return fail("Installment payments use the configured scheduled amount.");}
+ if(typeof body.installmentId==="string"){if(!validId(body.installmentId)||body.milestoneId)return fail("Invalid installment payment request.");installmentPlan=await FinanceInstallmentPlan.findOne({orderId:order._id,clientId:user._id,status:"active"});installment=installmentPlan?.installments.find(item=>String(item._id)===body.installmentId);if(!installment)return fail("Installment not found in your payment schedule.",404);if(installment.status==="paid")return fail("This installment has already been paid.");if(body.amount!==undefined)return fail("Installment payments use the configured scheduled amount.");}
  if(!milestone&&!installment&&await FinanceInstallmentPlan.findOne({orderId:order._id,clientId:user._id,status:"active"}))return fail("This order has an installment schedule. Submit a payment against a scheduled installment.");
  if(!milestone&&!installment){const project=await DeliveryProject.findOne({orderId:order._id,clientId:user._id});if(project&&await DeliveryMilestone.countDocuments({projectId:project._id,amount:{$gt:0}})>0)return fail("This order uses milestone billing. Submit payment for each milestone from the project delivery section.");}
  const paid=await PaymentTransaction.aggregate([{$match:{orderId:order._id,status:"paid",...(milestone?{milestoneId:milestone._id}:{milestoneId:{$exists:false}})}},{$group:{_id:null,total:{$sum:"$amountMinor"}}}]);
@@ -106,9 +109,9 @@ export async function POST(request:NextRequest){
     const currentPayment=created[0];paymentId=currentPayment._id;
     await ensureFinanceReceipt(currentPayment,dbSession);
     const entries=buildPaymentLedgerEntries({reference:currentPayment.reference,paymentTransactionId:String(currentPayment._id),orderId:String(order._id),clientId:String(user._id),amountMinor,currency,source:"account_credit"});
-    await FinancialLedgerEntry.insertMany(entries as any,{session:dbSession});
+    await FinancialLedgerEntry.insertMany(entries as Parameters<typeof FinancialLedgerEntry.insertMany>[0],{session:dbSession});
     if(milestone){const current=await DeliveryMilestone.findById(milestone._id).session(dbSession);if(!current)throw new Error("Milestone no longer exists.");current.paymentStatus="paid";await current.save({session:dbSession});}
-    if(installment){const plan=await FinanceInstallmentPlan.findById(installmentPlan._id).session(dbSession);const item=plan?.installments.find((entry:any)=>String(entry._id)===String(installment._id));if(!plan||!item)throw new Error("Installment schedule no longer exists.");item.paidMinor=Math.min(item.amountMinor,item.paidMinor+amountMinor);item.status=item.paidMinor>=item.amountMinor?"paid":"partially_paid";if(plan.installments.every((entry:any)=>entry.status==="paid"))plan.status="completed";await plan.save({session:dbSession});}
+    if(installment){const plan=await FinanceInstallmentPlan.findById(installmentPlan._id).session(dbSession);const item=plan?.installments.find(entry=>String(entry._id)===String(installment._id));if(!plan||!item)throw new Error("Installment schedule no longer exists.");item.paidMinor=Math.min(item.amountMinor,item.paidMinor+amountMinor);item.status=item.paidMinor>=item.amountMinor?"paid":"partially_paid";if(plan.installments.every(entry=>entry.status==="paid"))plan.status="completed";await plan.save({session:dbSession});}
     const allPaid=await PaymentTransaction.aggregate([{$match:{orderId:order._id,status:"paid"}},{$group:{_id:null,total:{$sum:"$amountMinor"}}}]).session(dbSession);
     const orderDoc=await CommercialOrder.findById(order._id).session(dbSession);if(!orderDoc)throw new Error("Order no longer exists.");
     orderDoc.paymentStatus=Number(allPaid[0]?.total||0)>=totalMinor?"paid":"partially_paid";if(orderDoc.paymentStatus==="paid")orderDoc.status="confirmed";await orderDoc.save({session:dbSession});

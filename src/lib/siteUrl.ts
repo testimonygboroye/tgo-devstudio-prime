@@ -32,7 +32,7 @@ export function getSiteUrl(): string {
     const normalized = normalizeUrl(productionDomain);
     try {
       const host = new URL(normalized).hostname.toLowerCase();
-      if (host === "tgo-devstudio-prime.vercel.app") return normalized;
+      if (!isPlatformUrl(normalized) || host === "tgo-devstudio-prime.vercel.app") return normalized;
     } catch { /* Use the stable production fallback. */ }
   }
 

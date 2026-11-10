@@ -66,6 +66,7 @@ const NAV_GROUPS = [
     { label: "Invites", hrefSuffix: "/invites", icon: UserPlus, badgeKey: null },
     { label: "Users & Roles", hrefSuffix: "/users", icon: UserCog, badgeKey: null },
     { label: "Client Management", hrefSuffix: "/clients", icon: Contact, badgeKey: null },
+    { label: "Workforce Management", hrefSuffix: "/workforce", icon: Network, badgeKey: null },
     { label: "Manage Roles", hrefSuffix: "/roles", icon: ShieldCheck, badgeKey: null },
     { label: "Security (2FA)", hrefSuffix: "/security", icon: KeyRound, badgeKey: null },
     { label: "Audit Log", hrefSuffix: "/audit-log", icon: ScrollText, badgeKey: null },

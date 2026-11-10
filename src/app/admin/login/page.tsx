@@ -26,7 +26,9 @@ function LoginForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   function goToDestination() {
-    if (redirectTarget && redirectTarget.startsWith(pathname.replace(/\/login\/?$/, ""))) {
+    const adminBasePath = pathname.replace(/\/login\/?$/, "");
+    const allowedRedirect = redirectTarget && (redirectTarget === adminBasePath || redirectTarget.startsWith(`${adminBasePath}/`) || redirectTarget === "/workforce" || redirectTarget.startsWith("/workforce/"));
+    if (allowedRedirect && redirectTarget) {
       window.location.href = redirectTarget;
       return;
     }

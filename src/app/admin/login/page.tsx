@@ -3,7 +3,7 @@
 import { Suspense, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import PasswordInput from "@/components/shared/PasswordInput";
 import GoogleSignInButton from "@/components/shared/GoogleSignInButton";
 
@@ -11,6 +11,7 @@ type LoginStep = "credentials" | "twoFactor";
 
 function LoginForm() {
   const pathname = usePathname();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const forgotPasswordPath = pathname.replace(/\/login\/?$/, "/forgot-password");
   const recover2FAPath = pathname.replace(/\/login\/?$/, "/recover-2fa");
@@ -29,11 +30,11 @@ function LoginForm() {
     const adminBasePath = pathname.replace(/\/login\/?$/, "");
     const allowedRedirect = redirectTarget && (redirectTarget === adminBasePath || redirectTarget.startsWith(`${adminBasePath}/`) || redirectTarget === "/workforce" || redirectTarget.startsWith("/workforce/"));
     if (allowedRedirect && redirectTarget) {
-      window.location.href = redirectTarget;
+      router.replace(redirectTarget);
       return;
     }
-    const dashboardPath = window.location.pathname.replace(/\/login\/?$/, "/dashboard");
-    window.location.href = dashboardPath;
+    const dashboardPath = pathname.replace(/\/login\/?$/, "/dashboard");
+    router.replace(dashboardPath);
   }
 
   async function handleCredentialsSubmit(event: React.FormEvent) {

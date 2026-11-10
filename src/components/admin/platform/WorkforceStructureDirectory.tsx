@@ -1,13 +1,13 @@
 "use client";
-import {useEffect,useState} from "react";
+import {useCallback,useEffect,useState} from "react";
 import {Network,Archive,RefreshCw} from "lucide-react";
 type Row={id:string;name?:string;title?:string;departmentName?:string;status:string;level?:number;head?:string;managerName?:string};
 type Directory={departments:Row[];teams:Row[];positions:Row[]};
 export default function WorkforceStructureDirectory(){
  const [data,setData]=useState<Directory>({departments:[],teams:[],positions:[]});
  const [busy,setBusy]=useState("");const [error,setError]=useState("");
- async function load(){const response=await fetch("/api/platform/workforce",{cache:"no-store"});const result=await response.json();if(!response.ok)throw new Error(result.error||"Could not load structure.");setData(result);}
- useEffect(()=>{void load().catch(e=>setError(e instanceof Error?e.message:"Could not load structure."));},[]);
+ const load=useCallback(async()=>{const response=await fetch("/api/platform/workforce",{cache:"no-store"});const result=await response.json();if(!response.ok)throw new Error(result.error||"Could not load structure.");setData(result);},[]);
+ useEffect(()=>{const timer=window.setTimeout(()=>{void load().catch(e=>setError(e instanceof Error?e.message:"Could not load structure."));},0);return()=>window.clearTimeout(timer);},[load]);
  async function toggle(type:string,row:Row){setBusy(row.id);setError("");try{const response=await fetch("/api/platform/workforce/structure/"+row.id,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({type,status:row.status==="active"?"archived":"active"})});const result=await response.json();if(!response.ok)throw new Error(result.error||"Could not update record.");await load();}catch(e){setError(e instanceof Error?e.message:"Could not update record.");}finally{setBusy("");}}
  const groups=[{type:"department",label:"Departments",rows:data.departments.map(x=>({...x,title:x.name}))},{type:"team",label:"Teams",rows:data.teams.map(x=>({...x,title:x.name}))},{type:"position",label:"Positions",rows:data.positions}];
  return <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5">

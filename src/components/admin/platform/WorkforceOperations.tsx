@@ -1,5 +1,5 @@
 "use client";
-import {useEffect,useState} from "react";
+import {useCallback,useEffect,useState} from "react";
 import {CalendarClock,ClipboardCheck,MessageSquareText,Save,CheckCircle2} from "lucide-react";
 type Employee={userId:string;name:string;email:string;employeeCode:string};type RequestRow={id:string;userId:string;employeeName:string;employeeEmail:string;requestType:string;category:string;subject:string;description:string;startDate:string|null;endDate:string|null;status:string;createdAt:string};
 const days=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
@@ -8,8 +8,8 @@ export default function WorkforceOperations(){
  const [scheduleUser,setScheduleUser]=useState(""),[timezone,setTimezone]=useState("Africa/Lagos"),[effectiveFrom,setEffectiveFrom]=useState(new Date().toISOString().slice(0,10)),[week,setWeek]=useState(days.map((_,i)=>({dayOfWeek:i,enabled:i>=1&&i<=5,startTime:"09:00",endTime:"17:00",breakMinutes:60})));
  const [review,setReview]=useState({employeeId:"",periodStart:"",periodEnd:"",strengths:"",improvementAreas:"",goals:""});
  const [ratings,setRatings]=useState([{competency:"Quality of work",score:3,notes:""},{competency:"Collaboration",score:3,notes:""},{competency:"Ownership",score:3,notes:""}]);
- async function load(){const [a,b]=await Promise.all([fetch("/api/platform/workforce",{cache:"no-store"}),fetch("/api/workforce/requests",{cache:"no-store"})]);const aj=await a.json(),bj=await b.json();if(!a.ok||!b.ok)throw new Error(aj.error||bj.error||"Could not load workforce operations.");setEmployees(aj.employees);setRequests(bj.requests);}
- useEffect(()=>{void load().catch(e=>setError(e instanceof Error?e.message:"Unable to load operations."));},[]);
+ const load=useCallback(async()=>{const [a,b]=await Promise.all([fetch("/api/platform/workforce",{cache:"no-store"}),fetch("/api/workforce/requests",{cache:"no-store"})]);const aj=await a.json(),bj=await b.json();if(!a.ok||!b.ok)throw new Error(aj.error||bj.error||"Could not load workforce operations.");setEmployees(aj.employees);setRequests(bj.requests);},[]);
+ useEffect(()=>{const timer=window.setTimeout(()=>{void load().catch(e=>setError(e instanceof Error?e.message:"Unable to load operations."));},0);return()=>window.clearTimeout(timer);},[load]);
  async function send(url:string,method:string,payload:Record<string,unknown>){setBusy(true);setError("");setNotice("");try{const r=await fetch(url,{method,headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});const j=await r.json();if(!r.ok)throw new Error(j.error||"The operation failed.");setNotice("Changes saved and recorded in the audit history.");await load();}catch(e){setError(e instanceof Error?e.message:"The operation failed.");}finally{setBusy(false);}}
  const input="mt-1 w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface-2)] px-3 py-2 text-xs text-[var(--text-primary)]";
  const card="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5";

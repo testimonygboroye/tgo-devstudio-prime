@@ -14,7 +14,7 @@ export async function GET() {
   const profile=await ClientProfile.findOne({userId:session.user._id}).populate("organizationId","name slug").lean();
   const account=await User.findById(session.user._id).select("firstName middleName lastName").lean();
   const organization=profile?.organizationId&&typeof profile.organizationId==="object"&&"name" in profile.organizationId?profile.organizationId as unknown as {name:string;slug:string}:null;
-  return NextResponse.json({profile:profile?{id:String(profile._id),phone:profile.phone||"",jobTitle:profile.jobTitle||"",website:profile.website||"",country:profile.country||"",timezone:profile.timezone||"",lifecycle:profile.lifecycle,segments:profile.segments,onboardingStatus:profile.onboardingStatus,organization:organization?{name:organization.name,slug:organization.slug}:null}:null,user:{name:session.user.name,firstName:account?.firstName||"",middleName:account?.middleName||"",lastName:account?.lastName||"",email:session.user.email,emailVerified:session.user.isEmailVerified}},{headers:{"Cache-Control":"private, no-store"}});
+  return NextResponse.json({profile:profile?{id:String(profile._id),phone:profile.phone||"",phoneVerifiedAt:profile.phoneVerifiedAt||null,jobTitle:profile.jobTitle||"",website:profile.website||"",country:profile.country||"",timezone:profile.timezone||"",lifecycle:profile.lifecycle,segments:profile.segments,onboardingStatus:profile.onboardingStatus,organization:organization?{name:organization.name,slug:organization.slug}:null}:null,user:{name:session.user.name,firstName:account?.firstName||"",middleName:account?.middleName||"",lastName:account?.lastName||"",email:session.user.email,emailVerified:session.user.isEmailVerified}},{headers:{"Cache-Control":"private, no-store"}});
 }
 export async function PATCH(request:NextRequest) {
   const session=await getServerSession();
@@ -34,9 +34,13 @@ export async function PATCH(request:NextRequest) {
   if(!Object.keys(values).length&&firstName===undefined&&middleName===undefined&&lastName===undefined)return NextResponse.json({error:"No profile changes were supplied."},{status:400});
   await connectToDatabase();
   const current=await ClientProfile.findOne({userId:session.user._id});if(!current)return NextResponse.json({error:"Client profile not found."},{status:404});
+  const phoneChanged=values.phone!==undefined&&values.phone!==(current.phone||"");
   const merged={phone:values.phone??current.phone??"",country:values.country??current.country??"",timezone:values.timezone??current.timezone??""};
-  const onboardingStatus=merged.phone&&merged.country&&merged.timezone?"completed":"in_progress";
-  const profile=await ClientProfile.findOneAndUpdate({userId:session.user._id},{$set:{...values,onboardingStatus}},{new:true,runValidators:true});
+  const hasVerifiedPhone=phoneChanged?false:Boolean(current.phoneVerifiedAt);
+  const onboardingStatus=hasVerifiedPhone&&merged.phone&&merged.country&&merged.timezone?"completed":"in_progress";
+  const update:Record<string,unknown>={$set:{...values,onboardingStatus}};
+  if(phoneChanged)update.$unset={phoneVerifiedAt:1};
+  const profile=await ClientProfile.findOneAndUpdate({userId:session.user._id},update,{new:true,runValidators:true});
   const accountUpdate:Record<string,unknown>={};
   if(firstName!==undefined)accountUpdate.firstName=firstName;
   if(middleName!==undefined)accountUpdate.middleName=middleName||undefined;

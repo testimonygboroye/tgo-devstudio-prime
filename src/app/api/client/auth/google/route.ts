@@ -15,7 +15,10 @@ export async function GET(request: NextRequest) {
   url.searchParams.set("response_type", "code");
   url.searchParams.set("scope", "openid email profile");
   url.searchParams.set("state", state);
-  url.searchParams.set("prompt", "select_account");
+  const rememberedEmail = request.cookies.get("tgo_client_account")?.value || "";
+  const loginHint = request.nextUrl.searchParams.get("login_hint") || rememberedEmail;
+  if (loginHint && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginHint)) url.searchParams.set("login_hint", loginHint.toLowerCase());
+  url.searchParams.set("prompt", request.nextUrl.searchParams.get("prompt") === "none" ? "none" : "select_account");
   const response = NextResponse.redirect(url);
   response.cookies.set("tgo_client_oauth_state", state, {
     httpOnly: true, secure: process.env.NODE_ENV === "production",

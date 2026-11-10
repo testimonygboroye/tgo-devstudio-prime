@@ -1,6 +1,6 @@
 import type { NextRequest, NextResponse } from "next/server";
 
-const MAX_REMEMBERED_ACCOUNTS = 5;
+const MAX_REMEMBERED_ACCOUNTS = 1;
 
 export function readRememberedClientAccounts(value?: string): string[] {
   if (!value) return [];
@@ -18,7 +18,7 @@ export function readRememberedClientAccounts(value?: string): string[] {
 
 export function rememberClientAccount(response: NextResponse, request: NextRequest, email: string) {
   const normalized = email.trim().toLowerCase();
-  const accounts = [normalized, ...readRememberedClientAccounts(request.cookies.get("tgo_client_accounts")?.value).filter(item => item !== normalized)].slice(0, MAX_REMEMBERED_ACCOUNTS);
+  const accounts = [normalized].slice(0, MAX_REMEMBERED_ACCOUNTS);
   response.cookies.set("tgo_client_accounts", encodeURIComponent(JSON.stringify(accounts)), {
     path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax",
     secure: process.env.NODE_ENV === "production", httpOnly: false,

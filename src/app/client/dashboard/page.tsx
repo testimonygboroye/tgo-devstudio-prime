@@ -22,11 +22,11 @@ export default async function ClientDashboardPage() {
     ClientEnquiry.countDocuments({ clientId: session.user._id, status: { $in: ["new", "in_review"] } }),
     ClientActivity.find({ clientId: session.user._id }).sort({ createdAt: -1 }).limit(5).lean(),
   ]);
-  const onboardingComplete = profile?.onboardingStatus === "completed";
+  const onboardingComplete = Boolean(profile?.phoneVerifiedAt && profile?.country && profile?.timezone);
   const stats = [
     { label: "Enquiries submitted", value: enquiryCount, icon: MessageSquareText, hint: "Your requests to our team" },
     { label: "Awaiting response", value: openEnquiries, icon: CircleHelp, hint: "Requests being handled" },
-    { label: "Profile completion", value: profile?.phone && profile?.country && profile?.timezone ? "Ready" : "In progress", icon: CheckCircle2, hint: "Keep your contact details current" },
+    { label: "Profile completion", value: profile?.phoneVerifiedAt && profile?.country && profile?.timezone ? "Ready" : "In progress", icon: CheckCircle2, hint: "Keep your contact details current" },
   ];
   return <div className="min-h-screen bg-[#080d20] text-white"><ClientPortalNav name={session.user.name} email={session.user.email}/><main className="mx-auto max-w-7xl space-y-7 px-4 py-7 sm:px-6 sm:py-10">
     <section className="relative overflow-hidden rounded-3xl border border-violet-300/15 bg-[radial-gradient(circle_at_85%_15%,rgba(34,211,238,.18),transparent_30%),linear-gradient(120deg,#17153a,#111a35_65%,#0e1b32)] p-6 sm:p-9"><div className="absolute -right-12 -top-20 h-64 w-64 rounded-full bg-violet-500/20 blur-3xl"/><div className="relative max-w-3xl"><span className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[.2em] text-cyan-200"><Sparkles size={13}/>Client workspace</span><h1 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">Good to see you, {session.user.name.split(" ")[0]}.</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">Your TGO DevStudio relationship, requests and account details are brought together here. Use the workspace to keep your information current and reach our team.</p><div className="mt-6 flex flex-wrap gap-3"><Link href="/client/enquiries" className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white hover:bg-violet-500">Contact your team<ArrowRight size={16}/></Link><Link href="/client/settings" className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm font-semibold text-white hover:bg-white/10">Complete your profile</Link></div></div></section>

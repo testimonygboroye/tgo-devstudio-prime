@@ -9,6 +9,8 @@ export default function ClientSignOutButton() {
   const [busy, setBusy] = useState(false);
   async function signOut() {
     if (busy) return;
+    const confirmed = window.confirm("Are you sure you want to sign out of your TGO DevStudio client portal?");
+    if (!confirmed) return;
     setBusy(true);
     try {
       await fetch("/api/auth/logout", { method: "POST" });

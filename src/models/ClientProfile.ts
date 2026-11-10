@@ -6,6 +6,7 @@ export interface IClientProfile extends Document {
   userId: Types.ObjectId;
   organizationId?: Types.ObjectId;
   phone?: string;
+  phoneVerifiedAt?: Date;
   jobTitle?: string;
   website?: string;
   country?: string;
@@ -23,6 +24,7 @@ const ClientProfileSchema = new Schema<IClientProfile>({
   userId: { type: Schema.Types.ObjectId, ref: "User", required: true, unique: true },
   organizationId: { type: Schema.Types.ObjectId, ref: "BusinessOrganization" },
   phone: { type: String, trim: true, maxlength: 40 },
+  phoneVerifiedAt: { type: Date },
   jobTitle: { type: String, trim: true, maxlength: 120 },
   website: { type: String, trim: true, maxlength: 300 },
   country: { type: String, trim: true, maxlength: 100 },

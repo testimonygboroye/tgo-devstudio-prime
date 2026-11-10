@@ -56,6 +56,7 @@ AIAgentSchema.index({ department: 1, enabled: 1 });
 
 export interface AITask extends Document {
   agentId: Types.ObjectId;
+  parentTaskId?: Types.ObjectId;
   title: string;
   input: string;
   status: "queued" | "awaiting_approval" | "running" | "completed" | "failed" | "cancelled";
@@ -75,6 +76,7 @@ export interface AITask extends Document {
 }
 const AITaskSchema = new Schema<AITask>({
   agentId: { type: Schema.Types.ObjectId, ref: "AIAgent", required: true },
+  parentTaskId: { type: Schema.Types.ObjectId, ref: "AITask" },
   title: { type: String, required: true, maxlength: 180 },
   input: { type: String, required: true, maxlength: 20000 },
   status: { type: String, enum: ["queued", "awaiting_approval", "running", "completed", "failed", "cancelled"], default: "queued" },

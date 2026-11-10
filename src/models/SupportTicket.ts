@@ -32,7 +32,8 @@ const TicketSchema = new Schema<ISupportTicket>({
   resolutionDueAt:{type:Date,required:true,index:true},
   firstRespondedAt:{type:Date},
   resolvedAt:{type:Date},
-  closedAt:{type:Date},\n  lastEscalatedAt:{type:Date,index:true},
+  closedAt:{type:Date},
+  lastEscalatedAt:{type:Date,index:true},
   messages:{type:[MessageSchema],default:[]},
   satisfaction:{rating:{type:Number,min:1,max:5},feedback:{type:String,trim:true,maxlength:2000},submittedAt:{type:Date}},
 },{timestamps:true});

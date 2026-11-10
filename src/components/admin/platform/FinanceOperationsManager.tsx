@@ -22,7 +22,7 @@ export default function FinanceOperationsManager(){
  async function saveSettings(e:React.FormEvent){e.preventDefault();await run("settings.update",{...settings,enabledCurrencies:settings.enabledCurrencies.split(",").map(x=>x.trim().toUpperCase()).filter(Boolean),taxRateBps:Math.round(Number(settings.taxRate||0)*100)});}
  async function createExpense(e:React.FormEvent){e.preventDefault();if(await run("expense.create",expense))setExpense(v=>({...v,category:"",vendor:"",description:"",amount:""}));}
  async function issueCredit(e:React.FormEvent){e.preventDefault();if(await run("credit.issue",credit))setCredit(v=>({...v,clientId:"",amount:"",reason:""}));}
- async function requestRefund(e:React.FormEvent){e.preventDefault();if(await run("refund.request",refund))setRefund({paymentTransactionId:"",amount:"",reason:""});}
+ async function requestRefund(e:React.FormEvent){e.preventDefault();const payload={paymentTransactionId:refund.paymentTransactionId,reason:refund.reason,...(refund.amount.trim()?{amount:Number(refund.amount)}:{})};if(await run("refund.request",payload))setRefund({paymentTransactionId:"",amount:"",reason:""});}
  async function createInstallments(e:React.FormEvent){e.preventDefault();try{const parsed=JSON.parse(installment.schedule);await run("installments.create",{orderId:installment.orderId,installments:parsed});}catch(e){setError(e instanceof Error?e.message:"Installment schedule must be valid JSON.");}}
  async function runReconciliation(e:React.FormEvent){e.preventDefault();await run("reconciliation.run",reconcile);}
  const pendingTransfers=data.payments.filter(p=>p.provider==="bank_transfer"&&p.status==="pending_review");

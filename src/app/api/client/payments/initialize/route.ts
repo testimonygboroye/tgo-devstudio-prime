@@ -16,7 +16,7 @@ import {getPublicSiteUrl} from "@/lib/site-url";
 import {fromMinorUnits,toMinorUnits} from "@/lib/payments/money";
 import {getPaymentProvider} from "@/lib/payments/provider";
 export const dynamic="force-dynamic";
-const supported=new Set(["NGN","GHS","ZAR","USD","KES","XOF"]);
+const PAYSTACK_CURRENCIES_BY_COUNTRY:Record<string,string[]>={NG:["NGN","USD"],GH:["GHS"],KE:["KES","USD"],ZA:["ZAR"],CI:["XOF"]};
 function fail(error:string,status=400){return NextResponse.json({ok:false,error},{status});}
 
 export async function POST(request:NextRequest){
@@ -36,7 +36,7 @@ export async function POST(request:NextRequest){
  if(["cancelled","refunded","completed"].includes(order.status))return fail("This order is not eligible for payment.");
  if(!settings?.paystackEnabled)return fail("Paystack checkout is currently disabled by TGO DevStudio.",503);
  const currency=String(order.currency||"NGN").toUpperCase();
- if(!supported.has(currency)||!settings.enabledCurrencies.includes(currency))return fail(`Paystack checkout is not enabled for the ${currency} currency on this account.`,422);
+ const eligibleCurrencies=PAYSTACK_CURRENCIES_BY_COUNTRY[settings.paystackMerchantCountry]||[];if(!eligibleCurrencies.includes(currency)||!settings.enabledCurrencies.includes(currency))return fail(`Paystack checkout is not enabled for the ${currency} currency on this merchant account.`);
 
  let amountMinor=0;let milestoneId:string|undefined;let invoiceId:string|undefined;let installmentId:string|undefined;
  let existingQuery:Record<string,unknown>;

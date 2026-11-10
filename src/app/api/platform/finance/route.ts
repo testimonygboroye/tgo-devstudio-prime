@@ -85,6 +85,8 @@ export async function POST(request:NextRequest){
    const order=await CommercialOrder.findById(body.orderId);if(!order)return fail("Order not found.",404);
    const existing=await FinanceInvoice.findOne({orderId:order._id});if(existing)return fail("An invoice already exists for this order.",409);
    const settings=await FinanceSettings.findOne({key:"global"});
+   const numbering=await FinanceSettings.findOneAndUpdate({key:"global"},{$inc:{nextInvoiceNumber:1}},{new:true,upsert:true,setDefaultsOnInsert:true});
+   const invoiceNumber=(settings?.invoicePrefix||"TGO-INV")+"-"+String(Math.max(1,Number(numbering?.nextInvoiceNumber||1))).padStart(6,"0");
    const currency=String(order.currency||settings?.baseCurrency||"NGN").toUpperCase();
    const quote=await CommercialQuote.findById(order.quoteId).lean();
    const totalMinor=toMinorUnits(order.amount,currency);
@@ -94,7 +96,7 @@ export async function POST(request:NextRequest){
    if(subtotalMinor-discountMinor+taxMinor!==totalMinor)taxMinor=Math.max(0,totalMinor-subtotalMinor+discountMinor);
    const invoiceItems=quote?.lineItems?.length?quote.lineItems.map((line:any)=>({description:line.description,quantity:line.quantity,unitAmountMinor:toMinorUnits(line.unitPrice,currency),lineTotalMinor:toMinorUnits(line.amount,currency)})):[{description:order.title,quantity:1,unitAmountMinor:totalMinor,lineTotalMinor:totalMinor}];
    const invoice=await FinanceInvoice.create({
-    reference:ref(settings?.invoicePrefix||"TGO-INV"),clientId:order.clientId,orderId:order._id,currency,
+    reference:invoiceNumber,clientId:order.clientId,orderId:order._id,currency,
     items:invoiceItems,
     subtotalMinor,discountMinor,taxMinor,taxName:settings?.taxName,taxRateBps:settings?.taxRateBps,taxRegistrationNumber:settings?.taxRegistrationNumber,totalMinor,amountPaidMinor:0,balanceMinor:totalMinor,
     status:"draft",dueAt:body.dueAt?new Date(body.dueAt):undefined,terms:String(body.terms||"Payment is due by the invoice due date."),
@@ -171,8 +173,9 @@ export async function POST(request:NextRequest){
   if(action==="refund.request"){
    if(!validId(body.paymentTransactionId))return fail("Valid payment transaction id required.");
    const payment=await PaymentTransaction.findById(body.paymentTransactionId);if(!payment||payment.status!=="paid"||payment.provider!=="paystack")return fail("Only verified Paystack payments can be refunded through the automated refund flow.",409);
-   const amount=body.amount===undefined?payment.amount:Number(body.amount);if(!Number.isFinite(amount)||amount<=0)return fail("Refund amount must be positive.");
-   const amountMinor=toMinorUnits(amount,payment.currency);const prior=await FinanceRefund.aggregate([{$match:{paymentTransactionId:payment._id,status:{$nin:["failed"]}}},{$group:{_id:null,total:{$sum:"$amountMinor"}}}]);
+   const prior=await FinanceRefund.aggregate([{$match:{paymentTransactionId:payment._id,status:{$nin:["failed"]}}},{$group:{_id:null,total:{$sum:"$amountMinor"}}}]);
+   const remainingMinor=payment.amountMinor-Number(prior[0]?.total||0);if(remainingMinor<1)return fail("This payment has no refundable balance.",409);
+   const amountMinor=body.amount===undefined?remainingMinor:toMinorUnits(Number(body.amount),payment.currency);if(amountMinor<1||amountMinor>remainingMinor)return fail("Refund amount exceeds the remaining refundable balance.",409);
    if(amountMinor>payment.amountMinor-Number(prior[0]?.total||0))return fail("Refund amount exceeds the unrefunded captured payment.",409);
    if(typeof body.reason!=="string"||body.reason.trim().length<5)return fail("Provide a reason for the refund.");
    const refund=await FinanceRefund.create({reference:ref("RFD"),paymentTransactionId:payment._id,clientId:payment.clientId,orderId:payment.orderId,amountMinor,currency:payment.currency,reason:body.reason.trim(),status:"requested",requestedBy:session.user._id});
@@ -212,7 +215,7 @@ export async function POST(request:NextRequest){
    return NextResponse.json({ok:true,item:plan},{status:201});
   }
   if(action==="reconciliation.run"){
-   const fromDate=new Date(body.fromDate);const toDate=new Date(body.toDate);const currency=String(body.currency||"NGN").toUpperCase();
+   const fromDate=new Date(String(body.fromDate));const toDate=new Date(String(body.toDate)+"T23:59:59.999Z");const currency=String(body.currency||"NGN").toUpperCase();
    if(!Number.isFinite(fromDate.getTime())||!Number.isFinite(toDate.getTime())||toDate<=fromDate)return fail("Choose a valid reconciliation date range.");
    if(!process.env.PAYSTACK_SECRET_KEY)return fail("PAYSTACK_SECRET_KEY is required to reconcile Paystack transactions.",503);
    const payments=await PaymentTransaction.find({provider:"paystack",currency,createdAt:{$gte:fromDate,$lte:toDate}}).sort({createdAt:1}).limit(500);

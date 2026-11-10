@@ -6,7 +6,6 @@ import { createClientIdentity } from "@/lib/clients/identity";
 import { rememberClientAccount } from "@/lib/clients/account-selector";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import ClientRegistrationVerification from "@/models/ClientRegistrationVerification";
-import User from "@/models/User";
 
 export const dynamic = "force-dynamic";
 

@@ -2,6 +2,7 @@ import { Schema, model, models, type Document, type Model } from "mongoose";
 
 export interface IClientRegistrationVerification extends Document {
   email: string;
+  googleSub?: string;
   tokenHash: string;
   expiresAt: Date;
   verifiedAt?: Date;
@@ -11,6 +12,7 @@ export interface IClientRegistrationVerification extends Document {
 
 const schema = new Schema<IClientRegistrationVerification>({
   email: { type: String, required: true, lowercase: true, trim: true, index: true },
+  googleSub: { type: String },
   tokenHash: { type: String, required: true, unique: true },
   expiresAt: { type: Date, required: true },
   verifiedAt: { type: Date },

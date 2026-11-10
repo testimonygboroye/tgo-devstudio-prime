@@ -1,7 +1,7 @@
 "use client";
 import { useCallback,useEffect,useState } from "react";
 import { LifeBuoy,RefreshCw,Send,AlertTriangle,Users,Clock3,ChevronDown } from "lucide-react";
-type Ticket={_id:string;reference:string;subject:string;description:string;category:string;status:string;priority:string;escalationLevel:number;firstResponseDueAt:string;resolutionDueAt:string;firstRespondedAt?:string;messages:Array<{senderType:string;body:string;createdAt:string}>;clientId?:{name?:string;email?:string};assignedTo?:{name?:string;email?:string}};
+type Ticket={_id:string;reference:string;subject:string;description:string;category:string;status:string;priority:string;escalationLevel:number;firstResponseDueAt:string;resolutionDueAt:string;firstRespondedAt?:string;messages:Array<{senderType:string;body:string;createdAt:string}>;clientId?:{name?:string;email?:string};assignedTo?:{_id?:string;name?:string;email?:string}};
 type Summary={open:number;overdue:number;unassigned:number};\ntype Staff={_id:string;name:string;email:string};
 export default function SupportOperationsManager(){
  const [tickets,setTickets]=useState<Ticket[]>([]),[staff,setStaff]=useState<Staff[]>([]),[summary,setSummary]=useState<Summary>({open:0,overdue:0,unassigned:0}),[loading,setLoading]=useState(true),[error,setError]=useState(""),[selected,setSelected]=useState(""),[reply,setReply]=useState(""),[busy,setBusy]=useState(false);

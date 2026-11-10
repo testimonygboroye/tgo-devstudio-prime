@@ -8,6 +8,8 @@ import DeliveryProject from "@/models/DeliveryProject";
 import DeliveryMilestone from "@/models/DeliveryMilestone";
 import {toMinorUnits} from "@/lib/payments/money";
 import {getPaymentProvider} from "@/lib/payments/provider";
+import FinanceInvoice from "@/models/FinanceInvoice";
+import FinanceInstallmentPlan from "@/models/FinanceInstallmentPlan";
 export async function verifyAndRecordPaystackPayment(reference:string){
  await connectToDatabase();
  const initial=await PaymentTransaction.findOne({reference});if(!initial)throw new Error("Payment reference was not found.");
@@ -41,6 +43,24 @@ export async function verifyAndRecordPaystackPayment(reference:string){
     order.paymentProviderReference=payment.reference;
     order.paymentVerifiedAt=new Date();
     await order.save({session});
+   }
+   const invoice=payment.invoiceId?await FinanceInvoice.findOne({_id:payment.invoiceId,orderId:payment.orderId,clientId:payment.clientId}).session(session):await FinanceInvoice.findOne({orderId:payment.orderId,clientId:payment.clientId,status:{$nin:["draft","void"]}}).session(session);
+   if(invoice){
+    const invoicePaid=await PaymentTransaction.aggregate([{$match:{orderId:payment.orderId,status:"paid"}},{$group:{_id:null,total:{$sum:"$amountMinor"}}}]).session(session);
+    invoice.amountPaidMinor=Math.min(invoice.totalMinor,Number(invoicePaid[0]?.total||0));
+    invoice.balanceMinor=Math.max(0,invoice.totalMinor-invoice.amountPaidMinor);
+    invoice.status=invoice.balanceMinor===0?"paid":invoice.amountPaidMinor>0?"partially_paid":"issued";
+    await invoice.save({session});
+   }
+   if(payment.installmentId){
+    const plan=await FinanceInstallmentPlan.findOne({orderId:payment.orderId,clientId:payment.clientId,"installments._id":payment.installmentId}).session(session);
+    if(!plan)throw new Error("The linked installment plan could not be found.");
+    const installment=plan.installments.id(payment.installmentId);
+    if(!installment)throw new Error("The linked installment could not be found.");
+    installment.paidMinor=Math.min(installment.amountMinor,installment.paidMinor+payment.amountMinor);
+    installment.status=installment.paidMinor>=installment.amountMinor?"paid":"partially_paid";
+    if(plan.installments.every(item=>item.status==="paid"))plan.status="completed";
+    await plan.save({session});
    }
    const ledgerEntries=buildPaymentLedgerEntries({reference:payment.reference,paymentTransactionId:String(payment._id),orderId:String(payment.orderId),clientId:String(payment.clientId),amountMinor:payment.amountMinor,currency:payment.currency,providerTransactionId:payment.providerTransactionId});
    await FinancialLedgerEntry.insertMany(ledgerEntries as unknown as Parameters<typeof FinancialLedgerEntry.insertMany>[0],{session});

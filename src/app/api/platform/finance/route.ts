@@ -28,6 +28,7 @@ import {sendNotificationEmail} from "@/lib/email/sendEmail";
 import {getPublicSiteUrl} from "@/lib/site-url";
 
 export const dynamic="force-dynamic";
+const PAYSTACK_CURRENCIES_BY_COUNTRY:Record<string,string[]>={NG:["NGN","USD"],GH:["GHS"],KE:["KES","USD"],ZA:["ZAR"],CI:["XOF"]};
 function fail(message:string,status=400){return NextResponse.json({ok:false,error:message},{status});}
 function validId(value:unknown):value is string{return typeof value==="string"&&Types.ObjectId.isValid(value);}
 function escapeHtml(value:string){return value.replace(/[&<>"\']/g,(character)=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","\'":"&#39;"}[character]||character));}
@@ -66,19 +67,22 @@ export async function POST(request:NextRequest){
  try{
   if(action==="settings.update"){
    const baseCurrency=String(body.baseCurrency||"NGN").toUpperCase();
+   const paystackMerchantCountry=String(body.paystackMerchantCountry||"NG").toUpperCase();
+   const eligibleCurrencies=PAYSTACK_CURRENCIES_BY_COUNTRY[paystackMerchantCountry];
+   if(!eligibleCurrencies)return fail("Select a Paystack merchant country supported by the provider.");
    const enabledCurrencies=Array.isArray(body.enabledCurrencies)?[...new Set(body.enabledCurrencies.map((x:unknown)=>String(x).toUpperCase()))]:[baseCurrency];
-   if(!/^[A-Z]{3}$/.test(baseCurrency)||enabledCurrencies.some((x:string)=>!/^[A-Z]{3}$/.test(x)))return fail("Use valid three-letter ISO currency codes.");if(!enabledCurrencies.includes(baseCurrency))return fail("The base currency must also be included in enabled currencies.");
+   if(!/^[A-Z]{3}$/.test(baseCurrency)||enabledCurrencies.some((x:string)=>!/^[A-Z]{3}$/.test(x)))return fail("Use valid three-letter ISO currency codes.");if(!enabledCurrencies.includes(baseCurrency))return fail("The base currency must also be included in enabled currencies.");if(enabledCurrencies.some((currency:string)=>!eligibleCurrencies.includes(currency)))return fail("One or more enabled currencies are not supported for the selected Paystack merchant country.");if(!eligibleCurrencies.includes(baseCurrency))return fail("The base currency is not available for the selected Paystack merchant country.");
    const taxRateBps=Number(body.taxRateBps||0);if(!Number.isInteger(taxRateBps)||taxRateBps<0||taxRateBps>10000)return fail("Tax rate must be between 0 and 10000 basis points.");
    const bankTransferEnabled=body.bankTransferEnabled===true;
    if(bankTransferEnabled&&(!String(body.bankName||"").trim()||!String(body.bankAccountName||"").trim()||!String(body.bankAccountNumber||"").trim()))return fail("Bank name, account name and account number are required before enabling bank transfer.");
    const settings=await FinanceSettings.findOneAndUpdate({key:"global"},{$set:{
    if(!settings)return fail("Finance settings could not be saved.",500);
-    baseCurrency,enabledCurrencies,invoicePrefix:String(body.invoicePrefix||"TGO-INV").trim().slice(0,20),allowPartialPayments:body.allowPartialPayments!==false,
+    baseCurrency,enabledCurrencies,paystackMerchantCountry,invoicePrefix:String(body.invoicePrefix||"TGO-INV").trim().slice(0,20),allowPartialPayments:body.allowPartialPayments!==false,
     taxEnabled:body.taxEnabled===true,taxName:String(body.taxName||"VAT").trim().slice(0,40),taxRateBps,taxRegistrationNumber:String(body.taxRegistrationNumber||"").trim(),
     paystackEnabled:body.paystackEnabled===true,bankTransferEnabled,bankName:String(body.bankName||"").trim(),bankAccountName:String(body.bankAccountName||"").trim(),
     bankAccountNumber:String(body.bankAccountNumber||"").trim(),bankCode:String(body.bankCode||"").trim(),bankTransferInstructions:String(body.bankTransferInstructions||"").trim(),
    }}, {upsert:true,new:true,setDefaultsOnInsert:true});
-   await audit(session,"finance.settings_updated","finance_settings",String(settings._id),{baseCurrency,enabledCurrencies,taxEnabled:settings.taxEnabled,paystackEnabled:settings.paystackEnabled,bankTransferEnabled});
+   await audit(session,"finance.settings_updated","finance_settings",String(settings._id),{baseCurrency,enabledCurrencies,paystackMerchantCountry,taxEnabled:settings.taxEnabled,paystackEnabled:settings.paystackEnabled,bankTransferEnabled});
    return NextResponse.json({ok:true,item:settings,message:"Finance settings saved."});
   }
   if(action==="invoice.create"){

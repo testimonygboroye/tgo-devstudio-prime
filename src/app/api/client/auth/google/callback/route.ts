@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
     await connectToDatabase();
     let user = await User.findOne({ googleSub: profile.sub });
     if (!user) {
-      user = await User.findOne({ email });
+      user = await User.findOne({ email, accountType: "client" });
       if (user) {
         if (user.accountType !== "client" || !user.isEmailVerified) return fail("google_account_conflict");
         if (user.googleSub && user.googleSub !== profile.sub) return fail("google_account_conflict");

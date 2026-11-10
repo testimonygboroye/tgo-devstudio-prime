@@ -77,12 +77,12 @@ export async function POST(request:NextRequest){
    const bankTransferEnabled=body.bankTransferEnabled===true;
    if(bankTransferEnabled&&(!String(body.bankName||"").trim()||!String(body.bankAccountName||"").trim()||!String(body.bankAccountNumber||"").trim()))return fail("Bank name, account name and account number are required before enabling bank transfer.");
    const settings=await FinanceSettings.findOneAndUpdate({key:"global"},{$set:{
-   if(!settings)return fail("Finance settings could not be saved.",500);
     baseCurrency,enabledCurrencies,paystackMerchantCountry,invoicePrefix:String(body.invoicePrefix||"TGO-INV").trim().slice(0,20),allowPartialPayments:body.allowPartialPayments!==false,
     taxEnabled:body.taxEnabled===true,taxName:String(body.taxName||"VAT").trim().slice(0,40),taxRateBps,taxRegistrationNumber:String(body.taxRegistrationNumber||"").trim(),
     paystackEnabled:body.paystackEnabled===true,bankTransferEnabled,bankName:String(body.bankName||"").trim(),bankAccountName:String(body.bankAccountName||"").trim(),
     bankAccountNumber:String(body.bankAccountNumber||"").trim(),bankCode:String(body.bankCode||"").trim(),bankTransferInstructions:String(body.bankTransferInstructions||"").trim(),
    }}, {upsert:true,new:true,setDefaultsOnInsert:true});
+   if(!settings)return fail("Finance settings could not be saved.",500);
    await audit(session,"finance.settings_updated","finance_settings",String(settings._id),{baseCurrency,enabledCurrencies,paystackMerchantCountry,taxEnabled:settings.taxEnabled,paystackEnabled:settings.paystackEnabled,bankTransferEnabled});
    return NextResponse.json({ok:true,item:settings,message:"Finance settings saved."});
   }

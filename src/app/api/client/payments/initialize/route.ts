@@ -8,13 +8,14 @@ import DeliveryProject from "@/models/DeliveryProject";
 import DeliveryMilestone from "@/models/DeliveryMilestone";
 import PaymentTransaction from "@/models/PaymentTransaction";
 import {writePlatformAuditEvent} from "@/lib/platform/audit";
+import {getSiteUrl} from "@/lib/siteUrl";
 export const dynamic="force-dynamic";
 const supported=new Set(["NGN","GHS","ZAR","USD","KES","XOF","EGP"]);
 function fail(error:string,status=400){return NextResponse.json({ok:false,error},{status});}
 export async function POST(request:NextRequest){
  const session=await getServerSession();if(!session||session.user.accountType!=="client"||!session.user.isEmailVerified)return fail("Verified client sign-in required.",401);
  let body:Record<string,unknown>;try{body=await request.json();}catch{return fail("Invalid payment request.");}
- const secret=process.env.PAYSTACK_SECRET_KEY;const siteUrl=process.env.SITE_URL||request.nextUrl.origin;if(!secret)return fail("Online payments are not configured yet. Contact TGO DevStudio to arrange a payment method.",503);
+ const secret=process.env.PAYSTACK_SECRET_KEY;const siteUrl=getSiteUrl();if(!secret)return fail("Online payments are not configured yet. Contact TGO DevStudio to arrange a payment method.",503);
  if(typeof body.orderId!=="string")return fail("Order id is required.");
  await connectToDatabase();
  const [user,order]=await Promise.all([User.findOne({_id:session.user._id,accountType:"client",isEmailVerified:true}),CommercialOrder.findOne({_id:body.orderId,clientId:session.user._id})]);

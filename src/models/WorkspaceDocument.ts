@@ -1,0 +1,5 @@
+import {Schema,model,models,Document,Model,Types} from "mongoose";
+export interface IWorkspaceDocument extends Document {workspaceId:Types.ObjectId;title:string;content:string;version:number;status:"draft"|"in_review"|"approved"|"rejected";createdBy:Types.ObjectId;updatedBy:Types.ObjectId;approvedBy?:Types.ObjectId;approvedAt?:Date;createdAt:Date;updatedAt:Date}
+const S=new Schema<IWorkspaceDocument>({workspaceId:{type:Schema.Types.ObjectId,ref:"Workspace",required:true},title:{type:String,required:true,trim:true,maxlength:180},content:{type:String,default:"",maxlength:100000},version:{type:Number,default:1,min:1},status:{type:String,enum:["draft","in_review","approved","rejected"],default:"draft"},createdBy:{type:Schema.Types.ObjectId,ref:"User",required:true},updatedBy:{type:Schema.Types.ObjectId,ref:"User",required:true},approvedBy:{type:Schema.Types.ObjectId,ref:"User"},approvedAt:Date},{timestamps:true});
+S.index({workspaceId:1,updatedAt:-1});S.index({workspaceId:1,status:1});
+const M:Model<IWorkspaceDocument>=models.WorkspaceDocument||model<IWorkspaceDocument>("WorkspaceDocument",S);export default M;

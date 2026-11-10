@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, phase-1/core-platform-foundation, phase-2/founder-control-centre, phase-3/business-ecosystem-administration, platform/phase-4-client-crm-portal, platform/phase-5-workforce-management]
+    branches: [main, phase-1/core-platform-foundation, phase-2/founder-control-centre, phase-3/business-ecosystem-administration, platform/phase-4-client-crm-portal, platform/phase-5-workforce-management, platform/phase-6-universal-workspace]
   workflow_dispatch:
   pull_request:
     branches: [main]
@@ -109,6 +109,20 @@ jobs:
           src/components/admin/platform/WorkforceEmployeeAssignments.tsx
           src/components/admin/platform/WorkforceAttendanceReport.tsx
           src/app/admin/login/page.tsx
+          src/models/Workspace.ts
+          src/models/WorkspaceMembership.ts
+          src/models/WorkspaceChannel.ts
+          src/models/WorkspaceMessage.ts
+          src/models/WorkspaceTask.ts
+          src/models/WorkspaceMilestone.ts
+          src/models/WorkspaceDocument.ts
+          src/models/WorkspaceActivity.ts
+          src/models/WorkspaceComment.ts
+          src/models/WorkspaceApproval.ts
+          src/lib/workspaces
+          src/app/api/workspaces
+          src/app/workspaces
+          src/__tests__/workspaces
 
       - name: Type check and production build
         run: npm run build

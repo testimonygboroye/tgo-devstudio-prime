@@ -1,0 +1,5 @@
+import {Schema,model,models,Document,Model,Types} from "mongoose";
+export interface IWorkspaceActivity extends Document {workspaceId:Types.ObjectId;actorId:Types.ObjectId;actorType:"human"|"ai"|"system";action:string;targetType:string;targetId?:Types.ObjectId;summary:string;metadata:Record<string,unknown>;createdAt:Date}
+const S=new Schema<IWorkspaceActivity>({workspaceId:{type:Schema.Types.ObjectId,ref:"Workspace",required:true},actorId:{type:Schema.Types.ObjectId,ref:"User",required:true},actorType:{type:String,enum:["human","ai","system"],default:"human"},action:{type:String,required:true,trim:true,maxlength:100},targetType:{type:String,required:true,trim:true,maxlength:80},targetId:Schema.Types.ObjectId,summary:{type:String,required:true,trim:true,maxlength:500},metadata:{type:Schema.Types.Mixed,default:{}}},{timestamps:{createdAt:true,updatedAt:false}});
+S.index({workspaceId:1,createdAt:-1});S.index({actorId:1,createdAt:-1});
+const M:Model<IWorkspaceActivity>=models.WorkspaceActivity||model<IWorkspaceActivity>("WorkspaceActivity",S);export default M;

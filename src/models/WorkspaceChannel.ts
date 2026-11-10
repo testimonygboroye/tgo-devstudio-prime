@@ -1,0 +1,5 @@
+import {Schema,model,models,Document,Model,Types} from "mongoose";
+export interface IWorkspaceChannel extends Document {workspaceId:Types.ObjectId;name:string;slug:string;description?:string;kind:"public"|"private"|"announcement";createdBy:Types.ObjectId;memberIds:Types.ObjectId[];archivedAt?:Date;createdAt:Date;updatedAt:Date}
+const S=new Schema<IWorkspaceChannel>({workspaceId:{type:Schema.Types.ObjectId,ref:"Workspace",required:true},name:{type:String,required:true,trim:true,maxlength:80},slug:{type:String,required:true,lowercase:true,trim:true,maxlength:100},description:{type:String,trim:true,maxlength:500},kind:{type:String,enum:["public","private","announcement"],default:"public"},createdBy:{type:Schema.Types.ObjectId,ref:"User",required:true},memberIds:[{type:Schema.Types.ObjectId,ref:"User"}],archivedAt:Date},{timestamps:true});
+S.index({workspaceId:1,slug:1},{unique:true});S.index({workspaceId:1,archivedAt:1});
+const M:Model<IWorkspaceChannel>=models.WorkspaceChannel||model<IWorkspaceChannel>("WorkspaceChannel",S);export default M;

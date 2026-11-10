@@ -9,6 +9,7 @@ import { rememberClientAccount } from "@/lib/clients/account-selector";
 import ClientActivity from "@/models/ClientActivity";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import { apiError, apiSuccess } from "@/lib/i18n/apiResponse";
+import { getUserAudienceFilter } from "@/lib/clients/audience";
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCK_DURATION_MS = 15 * 60 * 1000;
@@ -24,10 +25,7 @@ export async function POST(request: NextRequest) {
   await connectToDatabase();
 
   const normalizedEmail = email.trim().toLowerCase();
-  const user = await User.findOne({
-    email: normalizedEmail,
-    accountType: audience === "client" ? "client" : { $ne: "client" },
-  });
+  const user = await User.findOne(getUserAudienceFilter(normalizedEmail, audience === "client" ? "client" : "staff"));
 
   if (!user) {
     return apiError("invalidCredentials", "Invalid credentials.", 401);

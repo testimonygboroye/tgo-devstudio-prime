@@ -267,7 +267,7 @@ export async function POST(request:NextRequest) {
       return NextResponse.json({ok:true,item:change});
     }
     if(action==="review.update"){
-      if(!validId(body.id)||typeof body.status!=="string"||!["submitted","reviewed","featured","archived"].includes(body.status))return fail("Choose a valid project-review status.");
+      if(!validId(body.id)||typeof body.status!=="string"||!["submitted","reviewed","archived"].includes(body.status))return fail("Choose a valid project-review status.");
       const review=await ProjectClientReview.findById(String(body.id));if(!review)return fail("Project review not found.",404);
       review.status=body.status as typeof review.status;review.reviewedBy=session.user._id;review.reviewedAt=new Date();await review.save();
       await audit(session,"client.project_review_status_changed","project_client_review",String(review._id),{status:review.status});

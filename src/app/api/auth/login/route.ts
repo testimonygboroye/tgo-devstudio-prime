@@ -6,7 +6,6 @@ import { verifyPassword } from "@/lib/auth/passwords";
 import { signAccessToken, signRefreshToken, signTemp2FAToken } from "@/lib/auth/jwt";
 import { setAuthCookies } from "@/lib/auth/cookies";
 import { rememberClientAccount } from "@/lib/clients/account-selector";
-import { canUseAuthenticationAudience } from "@/lib/clients/auth-audience";
 import ClientActivity from "@/models/ClientActivity";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import { apiError, apiSuccess } from "@/lib/i18n/apiResponse";
@@ -28,14 +27,6 @@ export async function POST(request: NextRequest) {
 
   if (!user) {
     return apiError("invalidCredentials", "Invalid credentials.", 401);
-  }
-
-  if (!canUseAuthenticationAudience(user.accountType, audience)) {
-    return apiError("invalidCredentials", "Invalid credentials.", 401);
-  }
-
-  if (user.accountType === "client" && !user.isEmailVerified) {
-    return apiError("emailVerificationRequired", "Verify your email address before signing in. You can request a new verification email from the client sign-in page.", 403);
   }
 
   if (user.isBanned) {
@@ -74,6 +65,17 @@ export async function POST(request: NextRequest) {
   user.failedLoginAttempts = 0;
   user.lockUntil = undefined;
   await user.save();
+
+  // Only disclose account type after the submitted password has been verified.
+  if (audience === "client" && user.accountType !== "client") {
+    return apiError("staffAccountUseStaffSignIn", "These valid credentials belong to a TGO staff account. Use the staff sign-in page instead. Staff and client identities are kept separate; no account has been changed.", 403);
+  }
+  if (audience !== "client" && user.accountType === "client") {
+    return apiError("invalidCredentials", "Invalid credentials.", 401);
+  }
+  if (user.accountType === "client" && !user.isEmailVerified) {
+    return apiError("emailVerificationRequired", "Your client account has not been verified. Use the Resend verification email action below to receive a fresh activation link.", 403);
+  }
 
   if (user.twoFactorEnabled) {
     let skipTwoFactor = false;

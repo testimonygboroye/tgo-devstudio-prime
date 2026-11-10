@@ -35,6 +35,7 @@ import {
   Network,
   Image,
   ScrollText,
+  ShoppingCart,
   BarChart3,
   KeyRound,
   KeySquare,
@@ -59,6 +60,9 @@ const NAV_GROUPS = [
     { label: "Founder Control Centre", hrefSuffix: "/platform", icon: Crown, badgeKey: null },
     { label: "Business Roles", hrefSuffix: "/business-roles", icon: KeySquare, badgeKey: null },
     { label: "Business Ecosystem", hrefSuffix: "/businesses", icon: Building2, badgeKey: null },
+  ]},
+  { title: "Commercial & Delivery", items: [
+    { label: "Sales & Delivery", hrefSuffix: "/commercial", icon: ShoppingCart, badgeKey: null },
   ]},
   { title: "Overview", items: [
     { label: "Dashboard", hrefSuffix: "/dashboard", icon: LayoutDashboard, badgeKey: null },
@@ -195,8 +199,8 @@ export default function AdminSidebar({
       </div>
 
       <nav className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4 space-y-1">
-        {NAV_GROUPS.filter((group) => group.title !== "Founder" || isFounder).map((group) => {
-          const groupActive = group.items.some((item) => item.hrefSuffix === "/workspaces" ? pathname.startsWith("/workspaces") : pathname.startsWith(`${basePathSegment}${item.hrefSuffix}`));
+        {NAV_GROUPS.filter((group) => (group.title !== "Founder" && group.title !== "Commercial & Delivery") || isFounder).map((group) => {
+          const groupActive = group.items.some((item) => pathname.startsWith(`${basePathSegment}${item.hrefSuffix}`));
           return (
             <details key={group.title} open={groupActive || undefined} className="group/nav mb-2">
               <summary title={group.title} className={`flex cursor-pointer list-none items-center justify-between rounded-lg px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)] hover:bg-[var(--surface-hover)] ${collapsed ? "justify-center" : ""}`}>
@@ -204,7 +208,7 @@ export default function AdminSidebar({
               </summary>
               <div className="mt-1 space-y-1">
                 {group.items.map((item) => {
-                  const href = item.hrefSuffix === "/workforce" && !isFounder ? "/workforce" : item.hrefSuffix === "/workspaces" ? "/workspaces" : `${basePathSegment}${item.hrefSuffix}`;
+                  const href = item.hrefSuffix === "/workforce" && !isFounder ? "/workforce" : `${basePathSegment}${item.hrefSuffix}`;
                   const isActive = item.hrefSuffix === "/dashboard" || item.hrefSuffix === "/help" ? pathname === href : pathname.startsWith(href);
                   const Icon = item.icon;
                   const count = item.badgeKey ? counts[item.badgeKey] || 0 : 0;

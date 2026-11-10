@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, phase-1/core-platform-foundation, phase-2/founder-control-centre, phase-3/business-ecosystem-administration, platform/phase-4-client-crm-portal, platform/phase-5-workforce-management, platform/phase-6-universal-workspace]
+    branches: [main, phase-1/core-platform-foundation, phase-2/founder-control-centre, phase-3/business-ecosystem-administration, platform/phase-4-client-crm-portal, platform/phase-5-workforce-management, platform/phase-6-universal-workspace, platform/client-portal-phase-7]
   workflow_dispatch:
   pull_request:
     branches: [main]
@@ -123,6 +123,50 @@ jobs:
           src/app/api/workspaces
           src/app/workspaces
           src/__tests__/workspaces
+          src/models/CommercialService.ts
+          src/models/SalesLead.ts
+          src/models/CommercialProposal.ts
+          src/models/CommercialQuote.ts
+          src/models/CommercialContract.ts
+          src/models/CommercialOrder.ts
+          src/models/DeliveryProject.ts
+          src/models/DeliveryMilestone.ts
+          src/models/DeliveryTask.ts
+          src/models/ProjectResourceAllocation.ts
+          src/models/ProjectDeliverable.ts
+          src/models/ProjectChangeRequest.ts
+          src/models/ProjectQualityReview.ts
+          src/models/MaintenanceWarranty.ts
+          src/models/ConsultationBooking.ts
+          src/models/ProjectTemplate.ts
+          src/models/ProjectClientReview.ts
+          src/models/PaymentTransaction.ts
+          src/models/FinancialLedgerEntry.ts
+          src/lib/commercial
+          src/lib/payments
+          src/lib/finance
+          src/app/api/platform/commercial
+          src/app/api/platform/commercial-actions
+          src/app/api/client/payments
+          src/app/api/webhooks/paystack
+          src/app/api/client/commercial
+          src/app/api/client/register/route.ts
+          src/app/api/client/resend-verification/route.ts
+          src/app/api/client/profile/route.ts
+          src/app/api/auth/login/route.ts
+          src/app/client/payments
+          src/app/client/services
+          'src/app/admin/(shell)/commercial/page.tsx'
+          src/components/admin/platform/CommercialOperationsManager.tsx
+          src/components/client/ClientCommercialHub.tsx
+          src/components/client/ClientPaymentCallback.tsx
+          src/components/client/ClientPortalFrame.tsx
+          src/components/client/ClientProfileSettings.tsx
+          src/components/client/ClientAuthForm.tsx
+          src/components/public/SiteHeader.tsx
+          'src/app/(public)/services/catalogue/page.tsx'
+          'src/app/(public)/services/page.tsx'
+          src/lib/clients/__tests__/validation.test.ts
 
       - name: Type check and production build
         run: npm run build

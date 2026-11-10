@@ -96,6 +96,11 @@ export default async function ServicesPage() {
           {t("services.subtitle")}
         </p>
 
+        <div className="mt-7 flex flex-wrap gap-3">
+          <Link href="/services/catalogue" className="inline-flex items-center gap-2 rounded-xl brand-gradient-bg px-5 py-3 text-sm font-semibold text-base-950">View service packages and pricing options →</Link>
+          <Link href="/client/register" className="inline-flex items-center gap-2 rounded-xl border border-base-700 px-5 py-3 text-sm font-semibold text-neutral-200 hover:border-brand-cyan-400">Create a client account</Link>
+        </div>
+
         {services.length === 0 ? (
           <PublicEmptyState eyebrow="Capabilities" title="Let's define the right solution for your next challenge." description="Tell us what you are trying to build. We can discuss the scope, technical approach and a practical path from idea to a production-ready product." primaryHref="/contact" primaryLabel="Discuss a project" secondaryHref="/book-a-call" secondaryLabel="Book a discovery call" />
         ) : (

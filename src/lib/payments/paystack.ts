@@ -6,6 +6,7 @@ import {buildPaymentLedgerEntries} from "@/lib/finance/ledger";
 import CommercialOrder from "@/models/CommercialOrder";
 import DeliveryProject from "@/models/DeliveryProject";
 import DeliveryMilestone from "@/models/DeliveryMilestone";
+import {toMinorUnits} from "@/lib/payments/money";
 export async function verifyAndRecordPaystackPayment(reference:string){
  const secret=process.env.PAYSTACK_SECRET_KEY;if(!secret)throw new Error("Paystack payment verification is not configured.");
  await connectToDatabase();
@@ -31,11 +32,17 @@ export async function verifyAndRecordPaystackPayment(reference:string){
     const paid=await PaymentTransaction.aggregate([{$match:{orderId:payment.orderId,status:"paid"}},{$group:{_id:null,total:{$sum:"$amountMinor"}}}]).session(session);
     const order=await CommercialOrder.findById(payment.orderId).session(session);
     if(!order)throw new Error("The paid order could not be found.");
-    const totalPaid=Number(paid[0]?.total||0);order.paymentStatus=totalPaid>=Math.round(order.amount*100)?"paid":"partially_paid";order.paymentProviderReference=payment.reference;order.paymentVerifiedAt=new Date();if(order.paymentStatus==="paid")order.status="confirmed";await order.save({session});
+    const totalPaid=Number(paid[0]?.total||0);order.paymentStatus=totalPaid>=toMinorUnits(order.amount,order.currency)?"paid":"partially_paid";order.paymentProviderReference=payment.reference;order.paymentVerifiedAt=new Date();if(order.paymentStatus==="paid")order.status="confirmed";await order.save({session});
    }else{
     const order=await CommercialOrder.findOne({_id:payment.orderId,clientId:payment.clientId}).session(session);
     if(!order)throw new Error("The paid order could not be found.");
-    order.paymentStatus="paid";order.status="confirmed";order.paymentProviderReference=payment.reference;order.paymentVerifiedAt=new Date();await order.save({session});
+    const paid=await PaymentTransaction.aggregate([{$match:{orderId:payment.orderId,status:"paid",milestoneId:{$exists:false}}},{$group:{_id:null,total:{$sum:"$amountMinor"}}}]).session(session);
+    const totalPaid=Number(paid[0]?.total||0);
+    order.paymentStatus=totalPaid>=toMinorUnits(order.amount,order.currency)?"paid":"partially_paid";
+    if(order.paymentStatus==="paid")order.status="confirmed";
+    order.paymentProviderReference=payment.reference;
+    order.paymentVerifiedAt=new Date();
+    await order.save({session});
    }
    const ledgerEntries=buildPaymentLedgerEntries({reference:payment.reference,paymentTransactionId:String(payment._id),orderId:String(payment.orderId),clientId:String(payment.clientId),amountMinor:payment.amountMinor,currency:payment.currency,providerTransactionId:payment.providerTransactionId});
    await FinancialLedgerEntry.insertMany(ledgerEntries as unknown as Parameters<typeof FinancialLedgerEntry.insertMany>[0],{session});

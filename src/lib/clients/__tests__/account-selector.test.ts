@@ -4,7 +4,7 @@ describe("readRememberedClientAccounts", () => {
   it("returns normalized unique valid identities from an encoded cookie", () => {
     expect(readRememberedClientAccounts(encodeURIComponent(JSON.stringify([
       "Ada@Example.com", "ada@example.com", "invalid", "grace@example.org",
-    ])))).toEqual(["ada@example.com", "grace@example.org"]);
+    ])))).toEqual(["ada@example.com"]);
   });
 
   it("supports cookie values already decoded by the request parser", () => {

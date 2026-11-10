@@ -14,6 +14,7 @@ import DeliveryMilestone from "@/models/DeliveryMilestone";
 import FinancialLedgerEntry from "@/models/FinancialLedgerEntry";
 import {toMinorUnits,fromMinorUnits} from "@/lib/payments/money";
 import {buildPaymentLedgerEntries} from "@/lib/finance/ledger";
+import {ensureFinanceReceipt} from "@/lib/finance/receipts";
 import {writePlatformAuditEvent} from "@/lib/platform/audit";
 
 export const dynamic="force-dynamic";
@@ -98,6 +99,7 @@ export async function POST(request:NextRequest){
     currentAccount.balanceMinor-=amountMinor;await currentAccount.save({session:dbSession});
     const currentPayment=await PaymentTransaction.findById(payment._id).session(dbSession);if(!currentPayment)throw new Error("Payment record could not be found.");
     currentPayment.status="paid";currentPayment.verifiedAt=new Date();currentPayment.providerTransactionId="account-credit";await currentPayment.save({session:dbSession});
+    await ensureFinanceReceipt(currentPayment,dbSession);
     const entries=buildPaymentLedgerEntries({reference:currentPayment.reference,paymentTransactionId:String(currentPayment._id),orderId:String(order._id),clientId:String(user._id),amountMinor,currency,source:"account_credit"});
     await FinancialLedgerEntry.insertMany(entries as any,{session:dbSession});
     if(milestone){const current=await DeliveryMilestone.findById(milestone._id).session(dbSession);if(!current)throw new Error("Milestone no longer exists.");current.paymentStatus="paid";await current.save({session:dbSession});}

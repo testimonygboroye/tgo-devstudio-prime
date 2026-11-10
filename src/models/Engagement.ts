@@ -63,11 +63,11 @@ const EventSchema = new Schema<IEngagementEvent>({
 EventSchema.index({ clientId: 1, eventKey: 1 }, { unique: true });
 
 export interface IRedemption extends Document {
-  clientId: Types.ObjectId; rewardId: Types.ObjectId; pointsSpent: number; status: "completed" | "rejected"; reference: string; couponCode?: string; createdAt: Date;
+  clientId: Types.ObjectId; rewardId: Types.ObjectId; pointsSpent: number; status: "completed" | "rejected"; reference: string; couponCode?: string; couponStatus?: "issued" | "reserved" | "used" | "expired"; couponExpiresAt?: Date; couponPaymentReference?: string; createdAt: Date;
 }
 const RedemptionSchema = new Schema<IRedemption>({
   clientId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true }, rewardId: { type: Schema.Types.ObjectId, ref: "EngagementReward", required: true },
-  pointsSpent: { type: Number, required: true, min: 1 }, status: { type: String, enum: ["completed", "rejected"], default: "completed" }, reference: { type: String, required: true, unique: true }, couponCode: { type: String, unique: true, sparse: true },
+  pointsSpent: { type: Number, required: true, min: 1 }, status: { type: String, enum: ["completed", "rejected"], default: "completed" }, reference: { type: String, required: true, unique: true }, couponCode: { type: String, unique: true, sparse: true }, couponStatus: { type: String, enum: ["issued", "reserved", "used", "expired"] }, couponExpiresAt: Date, couponPaymentReference: { type: String, unique: true, sparse: true },
 }, { timestamps: { createdAt: true, updatedAt: false } });
 
 export const EngagementProfile = (models.EngagementProfile || model<IEngagementProfile>("EngagementProfile", ProfileSchema)) as Model<IEngagementProfile>;

@@ -8,7 +8,7 @@ export interface IFinanceSettings extends Document {
 const D=new Schema<IFinanceSettings>({
  key:{type:String,default:"global",unique:true},
  baseCurrency:{type:String,default:"NGN",uppercase:true},
- enabledCurrencies:{type:[String],default:["NGN","USD"],uppercase:true},
+ enabledCurrencies:{type:[String],default:["NGN"],uppercase:true},
  invoicePrefix:{type:String,default:"TGO-INV"},
  nextInvoiceNumber:{type:Number,default:0,min:0},
  allowPartialPayments:{type:Boolean,default:true},

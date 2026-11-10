@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LayoutDashboard, UserRound, MessageSquareText, Bell, Sparkles, Activity } from "lucide-react";
+import { LayoutDashboard, UserRound, MessageSquareText, Bell, Sparkles, Activity, BriefcaseBusiness } from "lucide-react";
 import ClientSignOutButton from "@/components/client/ClientSignOutButton";
 
 const links = [
@@ -8,6 +8,7 @@ const links = [
   { href: "/client/enquiries", label: "Enquiries", icon: MessageSquareText },
   { href: "/client/activity", label: "Activity", icon: Activity },
   { href: "/client/notifications", label: "Notifications", icon: Bell },
+  { href: "/workspaces", label: "Collaboration", icon: BriefcaseBusiness },
 ];
 
 export default function ClientPortalNav({ name, email }: { name: string; email: string }) {

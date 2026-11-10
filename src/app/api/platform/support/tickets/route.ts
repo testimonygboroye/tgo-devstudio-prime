@@ -19,12 +19,12 @@ export async function GET(request:NextRequest){
   if(priority)query.priority=priority;
   const tickets=await SupportTicket.find(query).populate("clientId","name email").populate("assignedTo","name email").sort({priority:-1,firstResponseDueAt:1,updatedAt:-1}).limit(200).lean();
   const now=new Date();
-  const [open,overdue,unassigned]=await Promise.all([
+  const [open,overdue,unassigned,staff]=await Promise.all([
     SupportTicket.countDocuments({status:{$in:["open","in_progress","waiting_on_team"]}}),
     SupportTicket.countDocuments({status:{$nin:["resolved","closed"]},$or:[{firstResponseDueAt:{$lt:now},firstRespondedAt:{$exists:false}},{resolutionDueAt:{$lt:now}}]}),
     SupportTicket.countDocuments({status:{$in:["open","in_progress"]},assignedTo:{$exists:false}}),
   ]);
-  return NextResponse.json({ok:true,tickets,summary:{open,overdue,unassigned}},{headers:{"Cache-Control":"private, no-store"}});
+  return NextResponse.json({ok:true,tickets,summary:{open,overdue,unassigned},staff},{headers:{"Cache-Control":"private, no-store"}});
 }
 export async function PATCH(request:NextRequest){
   const auth=await authorizePlatformPermission("support.tickets.manage");

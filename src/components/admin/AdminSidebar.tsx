@@ -31,6 +31,7 @@ import {
   ShieldCheck,
   Crown,
   Building2,
+  Network,
   Image,
   ScrollText,
   BarChart3,

@@ -38,7 +38,7 @@ export async function verifyAndRecordPaystackPayment(reference:string){
     order.paymentStatus="paid";order.status="confirmed";order.paymentProviderReference=payment.reference;order.paymentVerifiedAt=new Date();await order.save({session});
    }
    const ledgerEntries=buildPaymentLedgerEntries({reference:payment.reference,paymentTransactionId:String(payment._id),orderId:String(payment.orderId),clientId:String(payment.clientId),amountMinor:payment.amountMinor,currency:payment.currency,providerTransactionId:payment.providerTransactionId});
-   await FinancialLedgerEntry.insertMany(ledgerEntries as unknown as Partial<import("@/models/FinancialLedgerEntry").IFinancialLedgerEntry>[],{session});
+   await FinancialLedgerEntry.insertMany(ledgerEntries as unknown as Parameters<typeof FinancialLedgerEntry.insertMany>[0],{session});
   });
  }finally{await session.endSession();}
  const verified=await PaymentTransaction.findOne({reference});if(!verified)throw new Error("Verified payment record was not found.");return verified;

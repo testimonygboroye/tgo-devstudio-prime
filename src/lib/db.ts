@@ -40,6 +40,8 @@ async function ensureIdentityIndexes(): Promise<void> {
         if (!index.unique || !keys || Object.keys(keys).length !== 1) continue;
         if (keys.email === 1 || keys.googleSub === 1) await users.dropIndex(String(index.name));
       }
+      const payments = database.collection("paymenttransactions");
+      await payments.createIndex({ bankTransferReference: 1 }, { unique: true, partialFilterExpression: { provider: "bank_transfer", bankTransferReference: { $type: "string" } }, name: "bank_transfer_reference_unique" });
       const ledger = database.collection("financialledgerentries");
       await ledger.createIndex({ sourceReference: 1, accountCode: 1 }, { unique: true, name: "source_account_unique" });
       const ledgerIndexes = await ledger.listIndexes().toArray();

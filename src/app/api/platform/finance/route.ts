@@ -15,6 +15,7 @@ import {ensureFinanceReceipt} from "@/lib/finance/receipts";
 import ClientCreditAccount from "@/models/ClientCreditAccount";
 import PaymentTransaction from "@/models/PaymentTransaction";
 import CommercialOrder from "@/models/CommercialOrder";
+import CommercialQuote from "@/models/CommercialQuote";
 import DeliveryProject from "@/models/DeliveryProject";
 import DeliveryMilestone from "@/models/DeliveryMilestone";
 import User from "@/models/User";
@@ -81,11 +82,17 @@ export async function POST(request:NextRequest){
    const existing=await FinanceInvoice.findOne({orderId:order._id});if(existing)return fail("An invoice already exists for this order.",409);
    const settings=await FinanceSettings.findOne({key:"global"});
    const currency=String(order.currency||settings?.baseCurrency||"NGN").toUpperCase();
+   const quote=await CommercialQuote.findById(order.quoteId).lean();
    const totalMinor=toMinorUnits(order.amount,currency);
+   const subtotalMinor=quote?toMinorUnits(quote.subtotal,currency):totalMinor;
+   const discountMinor=quote?toMinorUnits(quote.discount,currency):0;
+   let taxMinor=quote?toMinorUnits(quote.tax,currency):Math.max(0,totalMinor-subtotalMinor+discountMinor);
+   if(subtotalMinor-discountMinor+taxMinor!==totalMinor)taxMinor=Math.max(0,totalMinor-subtotalMinor+discountMinor);
+   const invoiceItems=quote?.lineItems?.length?quote.lineItems.map((line:any)=>({description:line.description,quantity:line.quantity,unitAmountMinor:toMinorUnits(line.unitPrice,currency),lineTotalMinor:toMinorUnits(line.amount,currency)})):[{description:order.title,quantity:1,unitAmountMinor:totalMinor,lineTotalMinor:totalMinor}];
    const invoice=await FinanceInvoice.create({
     reference:ref(settings?.invoicePrefix||"TGO-INV"),clientId:order.clientId,orderId:order._id,currency,
-    items:[{description:order.title,quantity:1,unitAmountMinor:totalMinor,lineTotalMinor:totalMinor}],
-    subtotalMinor:totalMinor,discountMinor:0,taxMinor:0,totalMinor,amountPaidMinor:0,balanceMinor:totalMinor,
+    items:invoiceItems,
+    subtotalMinor,discountMinor,taxMinor,totalMinor,amountPaidMinor:0,balanceMinor:totalMinor,
     status:"draft",dueAt:body.dueAt?new Date(body.dueAt):undefined,terms:String(body.terms||"Payment is due by the invoice due date."),
     createdBy:session.user._id,
    });

@@ -1,9 +1,9 @@
 import {randomUUID} from "node:crypto";
-import type {ClientSession} from "mongoose";
+import {Types, type ClientSession} from "mongoose";
 import FinanceReceipt from "@/models/FinanceReceipt";
 
 export async function ensureFinanceReceipt(payment:{
- _id:unknown;clientId:unknown;orderId:unknown;invoiceId?:unknown;amountMinor:number;currency:string;paymentMethod?:string;provider:string;reference:string;bankTransferReference?:string;
+ _id:Types.ObjectId;clientId:Types.ObjectId;orderId:Types.ObjectId;invoiceId?:Types.ObjectId;amountMinor:number;currency:string;paymentMethod?:string;provider:string;reference:string;bankTransferReference?:string;
 },session?:ClientSession){
  const query=FinanceReceipt.findOne({paymentTransactionId:payment._id});
  if(session)query.session(session);

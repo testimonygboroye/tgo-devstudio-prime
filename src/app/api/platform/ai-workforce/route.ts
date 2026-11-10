@@ -37,10 +37,19 @@ export async function POST(request: NextRequest) {
       const provider = String(body.provider || "");
       const supportedProviders = ["google", "openai", "anthropic", "openai-compatible"] as const;
       if (!name || !apiKey || !supportedProviders.includes(provider as (typeof supportedProviders)[number])) return NextResponse.json({ status: "error", message: "Provider name, supported provider type and API key are required." }, { status: 400 });
-      if (provider === "openai-compatible" && !/^https:\/\//i.test(String(body.baseUrl || ""))) return NextResponse.json({ status: "error", message: "A valid HTTPS base URL is required for compatible providers." }, { status: 400 });
+      if (provider === "openai-compatible") { try { const endpoint = new URL(String(body.baseUrl || "")); const host = endpoint.hostname.toLowerCase(); if (endpoint.protocol !== "https:" || !host.includes(".") || host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host.endsWith(".internal") || /^(10\\.|127\\.|192\\.168\\.|169\\.254\\.|172\\.(1[6-9]|2[0-9]|3[01])\\.)/.test(host) || host === "::1") throw new Error(); } catch { return NextResponse.json({ status: "error", message: "A public HTTPS base URL is required for compatible providers." }, { status: 400 }); } }
       const created = await AIProvider.create({ name, provider: provider as (typeof supportedProviders)[number], baseUrl: body.baseUrl, encryptedApiKey: encryptProviderSecret(apiKey), createdBy: actorId });
       await writePlatformAuditEvent({ actorType: "human", actorId, actorLabel: session.user.name, action: "ai.provider.created", module: "ai-workforce", targetType: "AIProvider", targetId: String(created._id), outcome: "success", metadata: { provider, name } });
       return NextResponse.json({ status: "ok", provider: { id: created._id, name: created.name, provider: created.provider } }, { status: 201 });
+    }
+    if (body.action === "provider.enable" || body.action === "provider.disable") {
+      const provider = await AIProvider.findById(body.providerId);
+      if (!provider) return NextResponse.json({ status: "error", message: "Provider not found." }, { status: 404 });
+      provider.enabled = body.action === "provider.enable";
+      if (!provider.enabled) await AIAgent.updateMany({ providerId: provider._id }, { $set: { enabled: false } });
+      await provider.save();
+      await writePlatformAuditEvent({ actorType: "human", actorId, action: body.action === "provider.enable" ? "ai.provider.enabled" : "ai.provider.disabled", module: "ai-workforce", targetType: "AIProvider", targetId: String(provider._id), outcome: "success" });
+      return NextResponse.json({ status: "ok", message: provider.enabled ? "Provider enabled." : "Provider disabled; dependent agents were also disabled." });
     }
     if (body.action === "provider.test") {
       const provider = await AIProvider.findById(body.providerId).select("+encryptedApiKey");
@@ -48,7 +57,7 @@ export async function POST(request: NextRequest) {
       const key = decryptProviderSecret(provider.encryptedApiKey);
       let endpoint = "";
       let headers: Record<string, string> = {};
-      if (provider.provider === "google") { endpoint = "https://generativelanguage.googleapis.com/v1beta/models?key=" + encodeURIComponent(key); }
+      if (provider.provider === "google") { endpoint = "https://generativelanguage.googleapis.com/v1beta/models"; headers = { "x-goog-api-key": key }; }
       else if (provider.provider === "anthropic") { endpoint = "https://api.anthropic.com/v1/models"; headers = { "x-api-key": key, "anthropic-version": "2023-06-01" }; }
       else { endpoint = (provider.baseUrl || "https://api.openai.com/v1").replace(/\/$/, "") + "/models"; headers = { Authorization: "Bearer " + key }; }
       const response = await fetch(endpoint, { headers, signal: AbortSignal.timeout(12000), cache: "no-store" });

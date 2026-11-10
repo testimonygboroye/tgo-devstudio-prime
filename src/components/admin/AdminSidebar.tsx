@@ -23,7 +23,7 @@ import {
   UserPlus,
   Send,
   BookOpen,
-  MessageCircleQuestion,
+  MessageCircleQuestion,\n  MessageCircle,
   UserCog,
   Contact,
   MessageSquareText,
@@ -67,7 +67,7 @@ const NAV_GROUPS = [
     { label: "Invites", hrefSuffix: "/invites", icon: UserPlus, badgeKey: null },
     { label: "Users & Roles", hrefSuffix: "/users", icon: UserCog, badgeKey: null },
     { label: "Client Management", hrefSuffix: "/clients", icon: Contact, badgeKey: null },
-    { label: "Workforce Management", hrefSuffix: "/workforce", icon: Network, badgeKey: null },
+    { label: "Workforce Management", hrefSuffix: "/workforce", icon: Network, badgeKey: null },\n    { label: "Universal Workspaces", hrefSuffix: "/workspaces", icon: MessageCircle, badgeKey: null },
     { label: "Manage Roles", hrefSuffix: "/roles", icon: ShieldCheck, badgeKey: null },
     { label: "Security (2FA)", hrefSuffix: "/security", icon: KeyRound, badgeKey: null },
     { label: "Audit Log", hrefSuffix: "/audit-log", icon: ScrollText, badgeKey: null },
@@ -194,7 +194,7 @@ export default function AdminSidebar({
 
       <nav className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4 space-y-1">
         {NAV_GROUPS.filter((group) => group.title !== "Founder" || isFounder).map((group) => {
-          const groupActive = group.items.some((item) => pathname.startsWith(`${basePathSegment}${item.hrefSuffix}`));
+          const groupActive = group.items.some((item) => item.hrefSuffix === "/workspaces" ? pathname.startsWith("/workspaces") : pathname.startsWith(`${basePathSegment}${item.hrefSuffix}`));
           return (
             <details key={group.title} open={groupActive || undefined} className="group/nav mb-2">
               <summary title={group.title} className={`flex cursor-pointer list-none items-center justify-between rounded-lg px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)] hover:bg-[var(--surface-hover)] ${collapsed ? "justify-center" : ""}`}>
@@ -202,7 +202,7 @@ export default function AdminSidebar({
               </summary>
               <div className="mt-1 space-y-1">
                 {group.items.map((item) => {
-                  const href = item.hrefSuffix === "/workforce" && !isFounder ? "/workforce" : `${basePathSegment}${item.hrefSuffix}`;
+                  const href = item.hrefSuffix === "/workforce" && !isFounder ? "/workforce" : item.hrefSuffix === "/workspaces" ? "/workspaces" : `${basePathSegment}${item.hrefSuffix}`;
                   const isActive = item.hrefSuffix === "/dashboard" || item.hrefSuffix === "/help" ? pathname === href : pathname.startsWith(href);
                   const Icon = item.icon;
                   const count = item.badgeKey ? counts[item.badgeKey] || 0 : 0;

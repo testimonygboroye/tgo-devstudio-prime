@@ -101,7 +101,7 @@ function LoginForm() {
         TGO DevStudio Prime
       </p>
       <h1 className="mt-1 text-center text-2xl font-bold brand-gradient-text">
-        Admin Sign In
+        {redirectTarget?.startsWith("/workforce") ? "Workforce Sign In" : "Admin Sign In"}
       </h1>
 
       {step === "credentials" && (

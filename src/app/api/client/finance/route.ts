@@ -26,14 +26,15 @@ function ref(prefix:string){return `TGO_${prefix}_${randomUUID().replace(/-/g,""
 export async function GET(){
  const session=await clientSession();if(!session)return fail("Verified client sign-in required.",401);
  await connectToDatabase();
- const [settings,invoices,credits,payments,installmentPlans]=await Promise.all([
+ const [settings,invoices,credits,payments,installmentPlans,orders]=await Promise.all([
   FinanceSettings.findOne({key:"global"}).lean(),
   FinanceInvoice.find({clientId:session.user._id,status:{$nin:["draft","void"]}}).sort({createdAt:-1}).lean(),
   ClientCreditAccount.find({clientId:session.user._id}).lean(),
   PaymentTransaction.find({clientId:session.user._id}).select("-accessCode -authorizationUrl").sort({createdAt:-1}).limit(100).lean(),
   FinanceInstallmentPlan.find({clientId:session.user._id,status:"active"}).sort({createdAt:-1}).lean(),
+  CommercialOrder.find({clientId:session.user._id}).sort({createdAt:-1}).lean(),
  ]);
- return NextResponse.json({ok:true,bankTransfer:settings?.bankTransferEnabled?{enabled:true,bankName:settings.bankName,accountName:settings.bankAccountName,accountNumber:settings.bankAccountNumber,bankCode:settings.bankCode,instructions:settings.bankTransferInstructions}: {enabled:false},invoices,credits,payments,installmentPlans},{headers:{"Cache-Control":"private, no-store"}});
+ return NextResponse.json({ok:true,bankTransfer:settings?.bankTransferEnabled?{enabled:true,bankName:settings.bankName,accountName:settings.bankAccountName,accountNumber:settings.bankAccountNumber,bankCode:settings.bankCode,instructions:settings.bankTransferInstructions}: {enabled:false},invoices,credits,payments,installmentPlans,orders},{headers:{"Cache-Control":"private, no-store"}});
 }
 
 export async function POST(request:NextRequest){

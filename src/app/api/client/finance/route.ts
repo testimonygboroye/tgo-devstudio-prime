@@ -51,17 +51,18 @@ export async function POST(request:NextRequest){
  if(["cancelled","refunded","completed"].includes(order.status))return fail("This order is not eligible for payment.");
  const currency=String(order.currency||"NGN").toUpperCase();
  const totalMinor=toMinorUnits(order.amount,currency);
- let milestone:Awaited<ReturnType<typeof DeliveryMilestone.findOne>>=null;
+ let milestone:Awaited<ReturnType<typeof DeliveryMilestone.findOne>>=null;let installmentPlan:any=null;let installment:any=null;
  if(typeof body.milestoneId==="string"){
   if(!validId(body.milestoneId))return fail("Invalid milestone id.");
   const project=await DeliveryProject.findOne({orderId:order._id,clientId:user._id});if(!project)return fail("Delivery project not found.",404);
   milestone=await DeliveryMilestone.findOne({_id:body.milestoneId,projectId:project._id});if(!milestone)return fail("Milestone not found.",404);
   if(milestone.paymentStatus==="paid")return fail("This milestone has already been paid.");
  }
- if(!milestone){const project=await DeliveryProject.findOne({orderId:order._id,clientId:user._id});if(project&&await DeliveryMilestone.countDocuments({projectId:project._id,amount:{$gt:0}})>0)return fail("This order uses milestone billing. Submit payment for each milestone from the project delivery section.");}
+ if(typeof body.installmentId==="string"){if(!validId(body.installmentId)||body.milestoneId)return fail("Invalid installment payment request.");installmentPlan=await FinanceInstallmentPlan.findOne({orderId:order._id,clientId:user._id,status:"active"});installment=installmentPlan?.installments.find((item:any)=>String(item._id)===body.installmentId);if(!installment)return fail("Installment not found in your payment schedule.",404);if(installment.status==="paid")return fail("This installment has already been paid.");if(body.amount!==undefined)return fail("Installment payments use the configured scheduled amount.");}
+ if(!milestone&&!installment){const project=await DeliveryProject.findOne({orderId:order._id,clientId:user._id});if(project&&await DeliveryMilestone.countDocuments({projectId:project._id,amount:{$gt:0}})>0)return fail("This order uses milestone billing. Submit payment for each milestone from the project delivery section.");}
  const paid=await PaymentTransaction.aggregate([{$match:{orderId:order._id,status:"paid",...(milestone?{milestoneId:milestone._id}:{milestoneId:{$exists:false}})}},{$group:{_id:null,total:{$sum:"$amountMinor"}}}]);
  const paidMinor=Number(paid[0]?.total||0);
- const targetMinor=milestone?toMinorUnits(milestone.amount,currency):totalMinor;
+ const targetMinor=installment?Number(installment.amountMinor):milestone?toMinorUnits(milestone.amount,currency):totalMinor;
  const remainingMinor=targetMinor-paidMinor;
  if(remainingMinor<=0)return fail("There is no outstanding balance for this payment.");
  let amountMinor=remainingMinor;
@@ -70,6 +71,7 @@ export async function POST(request:NextRequest){
   amountMinor=toMinorUnits(body.amount,currency);
   if(amountMinor<1||amountMinor>remainingMinor)return fail("Payment amount must not exceed the outstanding balance.");
  }
+ if(installment&&amountMinor!==remainingMinor)return fail("Installments must be paid at their configured scheduled amount.");
  if(milestone&&amountMinor!==remainingMinor)return fail("Milestone payments must be paid in full. Partial payments are available for order balances.");
  const amount=fromMinorUnits(amountMinor,currency);
  const transactionReference=ref("PAY");
@@ -78,7 +80,7 @@ export async function POST(request:NextRequest){
   if(!settings?.bankTransferEnabled)return fail("Bank transfer is not currently enabled. Contact TGO DevStudio for payment options.",503);
   const transferReference=String(body.transferReference||"").trim();
   if(transferReference.length<4||transferReference.length>160)return fail("Enter the bank transfer reference or narration from your bank receipt.");
-  const payment=await PaymentTransaction.create({reference:transactionReference,provider:"bank_transfer",paymentMethod:"bank_transfer",clientId:user._id,orderId:order._id,milestoneId:milestone?._id,amount,amountMinor,currency,status:"pending_review",bankTransferReference:transferReference,proofUrl:typeof body.proofUrl==="string"?body.proofUrl:undefined});
+  const payment=await PaymentTransaction.create({reference:transactionReference,provider:"bank_transfer",paymentMethod:"bank_transfer",clientId:user._id,orderId:order._id,milestoneId:milestone?._id,installmentId:installment?._id,amount,amountMinor,currency,status:"pending_review",bankTransferReference:transferReference,proofUrl:typeof body.proofUrl==="string"?body.proofUrl:undefined});
   if(order.paymentStatus!=="partially_paid"){order.paymentStatus="pending";await order.save();}
   await log(session,"finance.bank_transfer_submitted","payment_transaction",String(payment._id),{reference:payment.reference,amountMinor,currency,transferReference});
   return NextResponse.json({ok:true,item:payment,message:"Bank transfer details submitted. Your payment remains pending until TGO verifies the funds."},{status:201});
@@ -87,7 +89,7 @@ export async function POST(request:NextRequest){
  if(body.action==="account_credit.apply"){
   const account=await ClientCreditAccount.findOne({clientId:user._id,currency});
   if(!account||account.balanceMinor<amountMinor)return fail("Your available account credit is not enough to cover this payment.");
-  const payment=await PaymentTransaction.create({reference:transactionReference,provider:"account_credit",paymentMethod:"account_credit",clientId:user._id,orderId:order._id,milestoneId:milestone?._id,amount,amountMinor,currency,status:"pending"});
+  const payment=await PaymentTransaction.create({reference:transactionReference,provider:"account_credit",paymentMethod:"account_credit",clientId:user._id,orderId:order._id,milestoneId:milestone?._id,installmentId:installment?._id,amount,amountMinor,currency,status:"pending"});
   const dbSession=await mongoose.startSession();
   try{
    await dbSession.withTransaction(async()=>{
@@ -99,6 +101,7 @@ export async function POST(request:NextRequest){
     const entries=buildPaymentLedgerEntries({reference:currentPayment.reference,paymentTransactionId:String(currentPayment._id),orderId:String(order._id),clientId:String(user._id),amountMinor,currency,source:"account_credit"});
     await FinancialLedgerEntry.insertMany(entries as any,{session:dbSession});
     if(milestone){const current=await DeliveryMilestone.findById(milestone._id).session(dbSession);if(!current)throw new Error("Milestone no longer exists.");current.paymentStatus="paid";await current.save({session:dbSession});}
+    if(installment){const plan=await FinanceInstallmentPlan.findById(installmentPlan._id).session(dbSession);const item=plan?.installments.find((entry:any)=>String(entry._id)===String(installment._id));if(!plan||!item)throw new Error("Installment schedule no longer exists.");item.paidMinor=Math.min(item.amountMinor,item.paidMinor+amountMinor);item.status=item.paidMinor>=item.amountMinor?"paid":"partially_paid";if(plan.installments.every((entry:any)=>entry.status==="paid"))plan.status="completed";await plan.save({session:dbSession});}
     const allPaid=await PaymentTransaction.aggregate([{$match:{orderId:order._id,status:"paid"}},{$group:{_id:null,total:{$sum:"$amountMinor"}}}]).session(dbSession);
     const orderDoc=await CommercialOrder.findById(order._id).session(dbSession);if(!orderDoc)throw new Error("Order no longer exists.");
     orderDoc.paymentStatus=Number(allPaid[0]?.total||0)>=totalMinor?"paid":"partially_paid";if(orderDoc.paymentStatus==="paid")orderDoc.status="confirmed";await orderDoc.save({session:dbSession});

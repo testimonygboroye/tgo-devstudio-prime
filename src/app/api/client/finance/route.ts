@@ -34,7 +34,7 @@ export async function GET(){
   FinanceInstallmentPlan.find({clientId:session.user._id,status:"active"}).sort({createdAt:-1}).lean(),
   CommercialOrder.find({clientId:session.user._id}).sort({createdAt:-1}).lean(),
  ]);
- return NextResponse.json({ok:true,bankTransfer:settings?.bankTransferEnabled?{enabled:true,bankName:settings.bankName,accountName:settings.bankAccountName,accountNumber:settings.bankAccountNumber,bankCode:settings.bankCode,instructions:settings.bankTransferInstructions}: {enabled:false},invoices,credits,payments,installmentPlans,orders},{headers:{"Cache-Control":"private, no-store"}});
+ return NextResponse.json({ok:true,bankTransfer:settings?.bankTransferEnabled?{enabled:true,bankName:settings.bankName,accountName:settings.bankAccountName,accountNumber:settings.bankAccountNumber,bankCode:settings.bankCode,instructions:settings.bankTransferInstructions}: {enabled:false},invoices,credits,payments,installmentPlans,orders,paymentConfigured:Boolean(settings?.paystackEnabled&&process.env.PAYSTACK_SECRET_KEY)},{headers:{"Cache-Control":"private, no-store"}});
 }
 
 export async function POST(request:NextRequest){

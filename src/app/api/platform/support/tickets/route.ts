@@ -4,7 +4,9 @@ import { authorizePlatformPermission } from "@/lib/platform/authorize";
 import { connectToDatabase } from "@/lib/db";
 import SupportTicket from "@/models/SupportTicket";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
-import User from "@/models/User";\nimport SupportSettings from "@/models/SupportSettings";\nimport {sendSupportNotification} from "@/lib/support/notifications";
+import User from "@/models/User";
+import SupportSettings from "@/models/SupportSettings";
+import {sendSupportNotification} from "@/lib/support/notifications";
 
 export const dynamic = "force-dynamic";
 function fail(error:string,status=400){return NextResponse.json({ok:false,error},{status});}

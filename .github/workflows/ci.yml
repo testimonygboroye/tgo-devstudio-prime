@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, phase-1/core-platform-foundation, phase-2/founder-control-centre, phase-3/business-ecosystem-administration, platform/phase-4-client-crm-portal]
+    branches: [main, phase-1/core-platform-foundation, phase-2/founder-control-centre, phase-3/business-ecosystem-administration, platform/phase-4-client-crm-portal, platform/phase-5-workforce-management]
   workflow_dispatch:
   pull_request:
     branches: [main]
@@ -88,6 +88,27 @@ jobs:
           src/components/admin/platform/ClientManagement.tsx
           src/components/admin/platform/ClientEnquiryManager.tsx
           src/components/public/SiteFooter.tsx
+          src/models/Department.ts
+          src/models/Team.ts
+          src/models/Position.ts
+          src/models/EmployeeProfile.ts
+          src/models/AttendanceRecord.ts
+          src/models/WorkforceRequest.ts
+          src/models/EmployeeSchedule.ts
+          src/models/PerformanceReview.ts
+          src/lib/workforce
+          src/app/api/platform/workforce
+          src/app/api/workforce
+          'src/app/admin/(shell)/workforce/page.tsx'
+          'src/app/workforce'
+          src/components/workforce
+          src/components/admin/platform/WorkforceManager.tsx
+          src/components/admin/platform/WorkforceOperations.tsx
+          src/components/admin/platform/WorkforceStructureDirectory.tsx
+          src/components/admin/platform/WorkforceHierarchyAssignments.tsx
+          src/components/admin/platform/WorkforceEmployeeAssignments.tsx
+          src/components/admin/platform/WorkforceAttendanceReport.tsx
+          src/app/admin/login/page.tsx
 
       - name: Type check and production build
         run: npm run build

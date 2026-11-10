@@ -11,6 +11,7 @@ import FinanceRefund from "@/models/FinanceRefund";
 import FinanceInstallmentPlan from "@/models/FinanceInstallmentPlan";
 import FinanceApproval from "@/models/FinanceApproval";
 import FinanceReconciliation from "@/models/FinanceReconciliation";
+import {ensureFinanceReceipt} from "@/lib/finance/receipts";
 import ClientCreditAccount from "@/models/ClientCreditAccount";
 import PaymentTransaction from "@/models/PaymentTransaction";
 import CommercialOrder from "@/models/CommercialOrder";
@@ -135,6 +136,7 @@ export async function POST(request:NextRequest){
    try{await dbSession.withTransaction(async()=>{
     const current=await PaymentTransaction.findOne({_id:payment._id,provider:"bank_transfer",status:"pending_review"}).session(dbSession);if(!current)throw new Error("Bank transfer has already been reviewed.");
     current.status="paid";current.verifiedAt=new Date();current.providerTransactionId=current.bankTransferReference||"";await current.save({session:dbSession});
+    await ensureFinanceReceipt(current,dbSession);
     const entries=buildPaymentLedgerEntries({reference:current.reference,paymentTransactionId:String(current._id),orderId:String(current.orderId),clientId:String(current.clientId),amountMinor:current.amountMinor,currency:current.currency,source:"bank_transfer"});await FinancialLedgerEntry.insertMany(entries as any,{session:dbSession});
     if(current.milestoneId){const project=await DeliveryProject.findOne({orderId:current.orderId,clientId:current.clientId}).session(dbSession);if(!project)throw new Error("Linked delivery project was not found.");const milestone=await DeliveryMilestone.findOne({_id:current.milestoneId,projectId:project._id}).session(dbSession);if(!milestone)throw new Error("Linked milestone was not found.");milestone.paymentStatus="paid";await milestone.save({session:dbSession});}
     if(current.installmentId){const plan=await FinanceInstallmentPlan.findOne({orderId:current.orderId,clientId:current.clientId,"installments._id":current.installmentId}).session(dbSession);const item=plan?.installments.find((entry:any)=>String(entry._id)===String(current.installmentId));if(!plan||!item)throw new Error("Linked installment schedule was not found.");item.paidMinor=Math.min(item.amountMinor,item.paidMinor+current.amountMinor);item.status=item.paidMinor>=item.amountMinor?"paid":"partially_paid";if(plan.installments.every((entry:any)=>entry.status==="paid"))plan.status="completed";await plan.save({session:dbSession});}

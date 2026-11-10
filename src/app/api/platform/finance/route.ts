@@ -105,7 +105,7 @@ export async function POST(request:NextRequest){
     reference:invoiceNumber,clientId:order.clientId,orderId:order._id,currency,
     items:invoiceItems,
     subtotalMinor,discountMinor,taxMinor,taxName:settings?.taxName,taxRateBps:settings?.taxRateBps,taxRegistrationNumber:settings?.taxRegistrationNumber,totalMinor,amountPaidMinor:0,balanceMinor:totalMinor,
-    status:"draft",dueAt:body.dueAt?new Date(body.dueAt):undefined,terms:String(body.terms||"Payment is due by the invoice due date."),
+    status:"draft",dueAt:body.dueAt?new Date(String(body.dueAt)):undefined,terms:String(body.terms||"Payment is due by the invoice due date."),
     createdBy:session.user._id,
    });
    await audit(session,"finance.invoice_created","finance_invoice",String(invoice._id),{reference:invoice.reference,orderId:String(order._id),totalMinor});
@@ -126,13 +126,13 @@ export async function POST(request:NextRequest){
   if(action==="expense.create"){
    const amount=Number(body.amount);const currency=String(body.currency||"NGN").toUpperCase();
    if(typeof body.category!=="string"||!body.category.trim()||typeof body.vendor!=="string"||!body.vendor.trim()||typeof body.description!=="string"||body.description.trim().length<5||!Number.isFinite(amount)||amount<=0||!body.incurredAt)return fail("Category, vendor, description, positive amount and incurred date are required.");
-   const expense=await FinanceExpense.create({reference:ref("EXP"),category:body.category.trim(),vendor:body.vendor.trim(),description:body.description.trim(),amountMinor:toMinorUnits(amount,currency),currency,incurredAt:new Date(body.incurredAt),status:"submitted",receiptUrl:typeof body.receiptUrl==="string"?body.receiptUrl:undefined,requestedBy:session.user._id});
+   const expense=await FinanceExpense.create({reference:ref("EXP"),category:body.category.trim(),vendor:body.vendor.trim(),description:body.description.trim(),amountMinor:toMinorUnits(amount,currency),currency,incurredAt:new Date(String(body.incurredAt)),status:"submitted",receiptUrl:typeof body.receiptUrl==="string"?body.receiptUrl:undefined,requestedBy:session.user._id});
    const approval=await FinanceApproval.create({action:"expense_payment",targetId:expense._id,amountMinor:expense.amountMinor,currency,requestedBy:session.user._id,status:"pending"});
    await audit(session,"finance.expense_submitted","finance_expense",String(expense._id),{reference:expense.reference,approvalId:String(approval._id)});
    return NextResponse.json({ok:true,item:expense,approval},{status:201});
   }
   if(action==="expense.decide"){
-   if(!validId(body.id)||!["approved","rejected"].includes(body.status))return fail("Expense and approval decision are required.");
+   if(!validId(body.id)||(body.status!=="approved"&&body.status!=="rejected"))return fail("Expense and approval decision are required.");
    const expense=await FinanceExpense.findById(body.id);if(!expense||expense.status!=="submitted")return fail("Only submitted expenses can be reviewed.",404);
    expense.status=body.status;expense.approvedBy=session.user._id;expense.approvedAt=new Date();await expense.save();
    await FinanceApproval.updateOne({targetId:expense._id,action:"expense_payment",status:"pending"},{$set:{status:body.status,decidedBy:session.user._id,decidedAt:new Date(),decisionNote:String(body.note||"")}});
@@ -148,7 +148,7 @@ export async function POST(request:NextRequest){
    return NextResponse.json({ok:true,message:"Expense payment recorded and posted to the immutable ledger."});
   }
   if(action==="bank_transfer.decide"){
-   if(!validId(body.id)||!["verified","rejected"].includes(body.decision))return fail("Choose a bank transfer and confirm whether it was verified or rejected.");
+   if(!validId(body.id)||(body.decision!=="verified"&&body.decision!=="rejected"))return fail("Choose a bank transfer and confirm whether it was verified or rejected.");
    const payment=await PaymentTransaction.findOne({_id:body.id,provider:"bank_transfer",status:"pending_review"});if(!payment)return fail("Pending bank transfer was not found.",404);
    if(body.decision==="rejected"){payment.status="failed";payment.failureReason=String(body.note||"Bank transfer could not be verified.");await payment.save();await audit(session,"finance.bank_transfer_rejected","payment_transaction",String(payment._id),{reference:payment.reference});return NextResponse.json({ok:true,item:payment,message:"Bank transfer rejected. The order remains unpaid."});}
    const dbSession=await mongoose.startSession();
@@ -190,7 +190,7 @@ export async function POST(request:NextRequest){
    return NextResponse.json({ok:true,item:refund,approval},{status:201});
   }
   if(action==="refund.decide"){
-   if(!validId(body.id)||!["approved","rejected"].includes(body.status))return fail("Refund and approval decision are required.");
+   if(!validId(body.id)||(body.status!=="approved"&&body.status!=="rejected"))return fail("Refund and approval decision are required.");
    const refund=await FinanceRefund.findById(body.id);if(!refund||refund.status!=="requested")return fail("Only requested refunds can be reviewed.",404);
    if(body.status==="rejected"){refund.status="failed";refund.failureReason=String(body.note||"Refund request rejected.");}else{refund.status="approved";refund.approvedBy=session.user._id;refund.approvedAt=new Date();}
    await refund.save();await FinanceApproval.updateOne({targetId:refund._id,action:"refund",status:"pending"},{$set:{status:body.status,decidedBy:session.user._id,decidedAt:new Date(),decisionNote:String(body.note||"")}});

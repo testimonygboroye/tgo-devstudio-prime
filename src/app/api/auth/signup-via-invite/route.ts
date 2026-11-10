@@ -59,6 +59,7 @@ export async function POST(request: NextRequest) {
     email: invite.email,
     passwordHash,
     role: invite.role,
+    accountType: "staff",
   });
 
   invite.usedAt = new Date();

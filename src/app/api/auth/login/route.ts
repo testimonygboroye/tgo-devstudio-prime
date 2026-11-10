@@ -23,7 +23,8 @@ export async function POST(request: NextRequest) {
 
   await connectToDatabase();
 
-  const user = await User.findOne({ email: email.toLowerCase() });
+  const normalizedEmail = email.trim().toLowerCase();
+  const user = await User.findOne({ email: normalizedEmail, accountType: audience === "client" ? "client" : { $ne: "client" } });
 
   if (!user) {
     return apiError("invalidCredentials", "Invalid credentials.", 401);

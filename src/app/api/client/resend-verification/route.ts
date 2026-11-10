@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import User from "@/models/User";
 import { createEmailVerification, sendClientVerificationEmail } from "@/lib/clients/email";
+import { getSiteUrl } from "@/lib/siteUrl";
 
 export async function POST(request: NextRequest) {
   let email = "";
@@ -16,7 +17,7 @@ export async function POST(request: NextRequest) {
   }
   try {
     const token = await createEmailVerification(String(user._id));
-    await sendClientVerificationEmail(email, user.name, token, request.nextUrl.origin);
+    await sendClientVerificationEmail(email, user.name, token, getSiteUrl());
   } catch {
     return NextResponse.json({ error: "Verification email could not be sent. Please try again later." }, { status: 503 });
   }

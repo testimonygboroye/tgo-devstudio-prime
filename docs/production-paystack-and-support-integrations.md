@@ -78,14 +78,14 @@ The client sign-in page now uses the same Google Identity Services popup/token f
 3. Open **Google Auth Platform → Clients** and select the existing **Web application** OAuth client used by TGO.
 4. Under **Authorized JavaScript origins**, add exactly:
    `https://tgo-devstudio-prime.vercel.app`
-5. Under **Authorized redirect URIs**, add exactly:
+5. The normal client login and signup buttons use the popup/token flow, so they do not need an Authorized redirect URI. If you intentionally use the legacy callback route, add this fallback URI:
    `https://tgo-devstudio-prime.vercel.app/api/client/auth/google/callback`
 6. Click **Save**. Do not add a trailing slash or use the Render/preview URL.
-7. Copy that same client's **Client ID** and **Client secret**.
-8. In Vercel → Settings → Environment Variables, add the following to **Production**:
+7. Copy the Web application **Client ID**.
+8. In Vercel → Settings → Environment Variables, ensure these Production values are set:
    - `GOOGLE_CLIENT_ID` = the Web application Client ID
    - `NEXT_PUBLIC_GOOGLE_CLIENT_ID` = the same Client ID
-      - `SITE_URL` = `https://tgo-devstudio-prime.vercel.app`
+   - `SITE_URL` = `https://tgo-devstudio-prime.vercel.app`
 9. Save and redeploy Production. Then test `/client/login` and `/client/register`.
 
 The two Client ID variables must belong to the same Web application OAuth client. The current popup/token flow does not need a Client Secret. If Google's consent screen is in Testing mode, add the testing Google account under **Google Auth Platform → Audience → Test users**.

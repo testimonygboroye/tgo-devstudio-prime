@@ -37,7 +37,8 @@ export async function verifyAndRecordPaystackPayment(reference:string){
     if(!order)throw new Error("The paid order could not be found.");
     order.paymentStatus="paid";order.status="confirmed";order.paymentProviderReference=payment.reference;order.paymentVerifiedAt=new Date();await order.save({session});
    }
-   await FinancialLedgerEntry.create(buildPaymentLedgerEntries({reference:payment.reference,paymentTransactionId:payment._id,orderId:payment.orderId,clientId:payment.clientId,amountMinor:payment.amountMinor,currency:payment.currency,providerTransactionId:payment.providerTransactionId}),{session});
+   const ledgerEntries=buildPaymentLedgerEntries({reference:payment.reference,paymentTransactionId:String(payment._id),orderId:String(payment.orderId),clientId:String(payment.clientId),amountMinor:payment.amountMinor,currency:payment.currency,providerTransactionId:payment.providerTransactionId});
+   await FinancialLedgerEntry.create(ledgerEntries as unknown as Parameters<typeof FinancialLedgerEntry.create>[0],{session});
   });
  }finally{await session.endSession();}
  return PaymentTransaction.findOne({reference});

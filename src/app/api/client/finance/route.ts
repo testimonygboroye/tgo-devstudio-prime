@@ -68,6 +68,7 @@ export async function POST(request:NextRequest){
   amountMinor=toMinorUnits(body.amount,currency);
   if(amountMinor<1||amountMinor>remainingMinor)return fail("Payment amount must not exceed the outstanding balance.");
  }
+ if(milestone&&amountMinor!==remainingMinor)return fail("Milestone payments must be paid in full. Partial payments are available for order balances.");
  const amount=fromMinorUnits(amountMinor,currency);
  const transactionReference=ref("PAY");
 

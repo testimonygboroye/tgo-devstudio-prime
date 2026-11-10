@@ -11,8 +11,8 @@ export async function ensureClientRole(){
  return role;
 }
 export async function createClientIdentity(input:{name:string;firstName?:string;middleName?:string;lastName?:string;email:string;password?:string;googleSub?:string;source:"self_registration"|"google"}){
- await connectToDatabase();const email=input.email.toLowerCase().trim();const existing=await User.findOne({email});
- if(existing)throw new Error("An account with this email already exists. If it is a staff account, use the staff sign-in page. Client and staff identities cannot be merged automatically.");
+ await connectToDatabase();const email=input.email.toLowerCase().trim();const existing=await User.findOne({email,accountType:"client"});
+ if(existing)throw new Error("A client account with this email already exists. Sign in to the existing client account instead.");
  const role=await ensureClientRole();const user=await User.create({name:input.name.trim(),firstName:input.firstName?.trim(),middleName:input.middleName?.trim()||undefined,lastName:input.lastName?.trim(),email,passwordHash:await hashPassword(input.password||randomUUID()),googleSub:input.googleSub,role:role._id,accountType:"client",isEmailVerified:input.source==="google",emailVerifiedAt:input.source==="google"?new Date():undefined,authProviders:input.source==="google"?["google"]:["password"]});
  try{await ClientProfile.create({userId:user._id,lifecycle:"onboarding",onboardingStatus:"not_started",source:input.source});await ClientActivity.create({clientId:user._id,actorId:user._id,actorType:"client",action:"client.account_created",summary:"Client account created.",metadata:{source:input.source}});return user;}
  catch(error){await User.deleteOne({_id:user._id});await ClientProfile.deleteOne({userId:user._id});throw error;}

@@ -5,7 +5,7 @@ import { getServerSession } from "@/lib/auth/serverSession";
 import { connectToDatabase } from "@/lib/db";
 import SupportTicket from "@/models/SupportTicket";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
-import ClientActivity from "@/models/ClientActivity";
+import ClientActivity from "@/models/ClientActivity";\nimport SupportSettings from "@/models/SupportSettings";\nimport User from "@/models/User";\nimport {sendSupportNotification} from "@/lib/support/notifications";
 
 export const dynamic = "force-dynamic";
 const CATEGORIES = ["General enquiry", "Project delivery", "Billing and payments", "Account access", "Technical issue", "Other"];
@@ -43,6 +43,11 @@ export async function POST(request:NextRequest){
     writePlatformAuditEvent({actorType:"human",actorId:String(session.user._id),actorLabel:session.user.name,action:"support.ticket_created",module:"support",targetType:"support_ticket",targetId:String(ticket._id),outcome:"success",metadata:{reference:ticket.reference,category,priority}}),
     ClientActivity.create({clientId:session.user._id,actorId:session.user._id,actorType:"client",action:"client.support_ticket_created",summary:"Created support ticket "+ticket.reference,metadata:{ticketId:String(ticket._id)}}),
   ]);
+  if(settings?.notifications?.emailEnabled!==false){
+    const founderEmail=process.env.FOUNDER_NOTIFICATION_EMAIL;
+    if(founderEmail)void sendSupportNotification({toEmail:founderEmail,toName:"TGO Support Team",subject:"New support request "+ticket.reference,message:ticket.subject+" — "+ticket.description}).catch(e=>console.error("Support notification failed",e));
+  }
+  if(settings?.notifications?.whatsappEnabled&&process.env.SUPPORT_WHATSAPP_TO)void sendSupportNotification({subject:"New support request "+ticket.reference,message:ticket.subject,whatsappTo:process.env.SUPPORT_WHATSAPP_TO}).catch(e=>console.error("Support WhatsApp notification failed",e));
   return NextResponse.json({ok:true,ticket:{id:String(ticket._id),reference:ticket.reference,status:ticket.status,subject:ticket.subject},message:"Your support request has been submitted."},{status:201});
 }
 
@@ -67,6 +72,8 @@ export async function PATCH(request:NextRequest){
       writePlatformAuditEvent({actorType:"human",actorId:String(session.user._id),actorLabel:session.user.name,action:"support.client_replied",module:"support",targetType:"support_ticket",targetId:String(ticket._id),outcome:"success",metadata:{reference:ticket.reference}}),
       ClientActivity.create({clientId:session.user._id,actorId:session.user._id,actorType:"client",action:"client.support_ticket_replied",summary:"Replied to support ticket "+ticket.reference,metadata:{ticketId:String(ticket._id)}}),
     ]);
+    const client=await User.findById(session.user._id).select("email name").lean();
+    if(client?.email)void sendSupportNotification({toEmail:client.email,toName:client.name,subject:"Update on support request "+ticket.reference,message:"Our support team has replied to your request. Sign in to your portal to view the response and continue the conversation."}).catch(e=>console.error("Client support email failed",e));
     return NextResponse.json({ok:true,ticket});
   }
   if(body.action==="satisfaction"){

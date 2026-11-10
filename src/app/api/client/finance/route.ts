@@ -67,7 +67,7 @@ export async function POST(request:NextRequest){
  if(!milestone&&!installment&&await FinanceInstallmentPlan.findOne({orderId:order._id,clientId:user._id,status:"active"}))return fail("This order has an installment schedule. Submit a payment against a scheduled installment.");
  if(!milestone&&!installment){const project=await DeliveryProject.findOne({orderId:order._id,clientId:user._id});if(project&&await DeliveryMilestone.countDocuments({projectId:project._id,amount:{$gt:0}})>0)return fail("This order uses milestone billing. Submit payment for each milestone from the project delivery section.");}
  const paid=await PaymentTransaction.aggregate([{$match:{orderId:order._id,status:"paid",...(milestone?{milestoneId:milestone._id}:{milestoneId:{$exists:false}})}},{$group:{_id:null,total:{$sum:"$amountMinor"}}}]);
- const paidMinor=Number(paid[0]?.total||0);
+ const paidMinor=installment?Number(installment.paidMinor||0):Number(paid[0]?.total||0);
  const targetMinor=installment?Number(installment.amountMinor):milestone?toMinorUnits(milestone.amount,currency):totalMinor;
  const remainingMinor=targetMinor-paidMinor;
  if(remainingMinor<=0)return fail("There is no outstanding balance for this payment.");
@@ -95,15 +95,14 @@ export async function POST(request:NextRequest){
  if(body.action==="account_credit.apply"){
   const account=await ClientCreditAccount.findOne({clientId:user._id,currency});
   if(!account||account.balanceMinor<amountMinor)return fail("Your available account credit is not enough to cover this payment.");
-  const payment=await PaymentTransaction.create({reference:transactionReference,provider:"account_credit",paymentMethod:"account_credit",clientId:user._id,orderId:order._id,milestoneId:milestone?._id,installmentId:installment?._id,amount,amountMinor,currency,status:"pending"});
-  const dbSession=await mongoose.startSession();
+  const dbSession=await mongoose.startSession();let paymentId:Types.ObjectId|null=null;
   try{
    await dbSession.withTransaction(async()=>{
     const currentAccount=await ClientCreditAccount.findOne({clientId:user._id,currency}).session(dbSession);
     if(!currentAccount||currentAccount.balanceMinor<amountMinor)throw new Error("Available account credit changed. Refresh and try again.");
     currentAccount.balanceMinor-=amountMinor;await currentAccount.save({session:dbSession});
-    const currentPayment=await PaymentTransaction.findById(payment._id).session(dbSession);if(!currentPayment)throw new Error("Payment record could not be found.");
-    currentPayment.status="paid";currentPayment.verifiedAt=new Date();currentPayment.providerTransactionId="account-credit";await currentPayment.save({session:dbSession});
+    const created=await PaymentTransaction.create([{reference:transactionReference,provider:"account_credit",paymentMethod:"account_credit",clientId:user._id,orderId:order._id,milestoneId:milestone?._id,installmentId:installment?._id,amount,amountMinor,currency,status:"paid",verifiedAt:new Date(),providerTransactionId:"account-credit"}],{session:dbSession});
+    const currentPayment=created[0];paymentId=currentPayment._id;
     await ensureFinanceReceipt(currentPayment,dbSession);
     const entries=buildPaymentLedgerEntries({reference:currentPayment.reference,paymentTransactionId:String(currentPayment._id),orderId:String(order._id),clientId:String(user._id),amountMinor,currency,source:"account_credit"});
     await FinancialLedgerEntry.insertMany(entries as any,{session:dbSession});
@@ -113,11 +112,12 @@ export async function POST(request:NextRequest){
     const orderDoc=await CommercialOrder.findById(order._id).session(dbSession);if(!orderDoc)throw new Error("Order no longer exists.");
     orderDoc.paymentStatus=Number(allPaid[0]?.total||0)>=totalMinor?"paid":"partially_paid";if(orderDoc.paymentStatus==="paid")orderDoc.status="confirmed";await orderDoc.save({session:dbSession});
     const invoice=await FinanceInvoice.findOne({orderId:order._id,status:{$nin:["void","draft"]}}).session(dbSession);
-    if(invoice){invoice.amountPaidMinor=Math.min(invoice.totalMinor,invoice.amountPaidMinor+amountMinor);invoice.balanceMinor=Math.max(0,invoice.totalMinor-invoice.amountPaidMinor);invoice.status=invoice.balanceMinor===0?"paid":"partially_paid";await invoice.save({session:dbSession});}
+    if(invoice){invoice.amountPaidMinor=Math.min(invoice.totalMinor,Number(allPaid[0]?.total||0));invoice.balanceMinor=Math.max(0,invoice.totalMinor-invoice.amountPaidMinor);invoice.status=invoice.balanceMinor===0?"paid":invoice.amountPaidMinor>0?"partially_paid":"issued";await invoice.save({session:dbSession});}
    });
   }finally{await dbSession.endSession();}
-  await log(session,"finance.account_credit_applied","payment_transaction",String(payment._id),{reference:payment.reference,amountMinor,currency,orderId:String(order._id)});
-  return NextResponse.json({ok:true,message:"Account credit applied to your order.",reference:payment.reference});
+  if(!paymentId)return fail("The account-credit payment could not be recorded.",500);
+  await log(session,"finance.account_credit_applied","payment_transaction",String(paymentId),{reference:transactionReference,amountMinor,currency,orderId:String(order._id)});
+  return NextResponse.json({ok:true,message:"Account credit applied to your order.",reference:transactionReference});
  }
  return fail("Unsupported client finance action.");
 }

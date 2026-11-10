@@ -200,7 +200,7 @@ export default function AdminSidebar({
               </summary>
               <div className="mt-1 space-y-1">
                 {group.items.map((item) => {
-                  const href = `${basePathSegment}${item.hrefSuffix}`;
+                  const href = item.hrefSuffix === "/workforce" && !isFounder ? "/workforce" : `${basePathSegment}${item.hrefSuffix}`;
                   const isActive = item.hrefSuffix === "/dashboard" || item.hrefSuffix === "/help" ? pathname === href : pathname.startsWith(href);
                   const Icon = item.icon;
                   const count = item.badgeKey ? counts[item.badgeKey] || 0 : 0;

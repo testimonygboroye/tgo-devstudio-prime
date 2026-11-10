@@ -3,6 +3,7 @@ import { hashVerificationToken } from "@/lib/clients/token";
 export { hashVerificationToken } from "@/lib/clients/token";
 import ClientEmailVerification from "@/models/ClientEmailVerification";
 import { sendNotificationEmail } from "@/lib/email/sendEmail";
+import { getPublicSiteUrl } from "@/lib/site-url";
 
 export async function createEmailVerification(userId: string) {
   const token = randomBytes(32).toString("base64url");
@@ -25,7 +26,8 @@ export async function sendClientVerificationEmail(email: string, name: string, t
   if (!process.env.BREVO_API_KEY || !process.env.BREVO_SENDER_EMAIL) {
     throw new Error("Client verification email is not configured. Set BREVO_API_KEY and BREVO_SENDER_EMAIL.");
   }
-  const verifyUrl = new URL("/client/verify-email", siteUrl);
+  const publicOrigin = getPublicSiteUrl();
+  const verifyUrl = new URL("/client/verify-email", publicOrigin);
   verifyUrl.searchParams.set("token", token);
   const result = await sendNotificationEmail({
     toEmail: email,

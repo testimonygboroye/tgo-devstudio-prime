@@ -34,7 +34,8 @@ function validId(value:unknown):value is string{return typeof value==="string"&&
 function escapeHtml(value:string){return value.replace(/[&<>"\']/g,(character)=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","\'":"&#39;"}[character]||character));}
 function ref(prefix:string){return `${prefix}-${new Date().toISOString().slice(0,10).replace(/-/g,"")}-${randomUUID().slice(0,8).toUpperCase()}`;}
 async function requireFounder(){const session=await getServerSession();if(!session)return {session:null,response:fail("Authentication required.",401)};if(!session.role?.isFounderRole)return {session:null,response:fail("Founder finance permissions are required.",403)};await connectToDatabase();return {session,response:null};}
-async function audit(session:any,action:string,type:string,id:string,metadata:Record<string,unknown>={}){await writePlatformAuditEvent({actorType:"human",actorId:String(session.user._id),actorLabel:session.user.name,action,module:"finance",targetType:type,targetId:id,outcome:"success",metadata});}
+type FinanceAdminSession=NonNullable<Awaited<ReturnType<typeof getServerSession>>>;
+async function audit(session:FinanceAdminSession,action:string,type:string,id:string,metadata:Record<string,unknown>={}){await writePlatformAuditEvent({actorType:"human",actorId:String(session.user._id),actorLabel:session.user.name,action,module:"finance",targetType:type,targetId:id,outcome:"success",metadata});}
 
 export async function GET(request:NextRequest){
  const auth=await requireFounder();if(auth.response)return auth.response;
@@ -62,7 +63,7 @@ export async function GET(request:NextRequest){
 
 export async function POST(request:NextRequest){
  const auth=await requireFounder();if(auth.response)return auth.response;const session=auth.session!;
- let body:Record<string,any>;try{body=await request.json();}catch{return fail("Invalid finance request body.");}
+ let body:Record<string,unknown>;try{body=await request.json();}catch{return fail("Invalid finance request body.");}
  const action=String(body.action||"");
  try{
   if(action==="settings.update"){
@@ -99,7 +100,7 @@ export async function POST(request:NextRequest){
    const discountMinor=quote?toMinorUnits(quote.discount,currency):0;
    let taxMinor=quote?toMinorUnits(quote.tax,currency):Math.max(0,totalMinor-subtotalMinor+discountMinor);
    if(subtotalMinor-discountMinor+taxMinor!==totalMinor)taxMinor=Math.max(0,totalMinor-subtotalMinor+discountMinor);
-   const invoiceItems=quote?.lineItems?.length?quote.lineItems.map((line:any)=>({description:line.description,quantity:line.quantity,unitAmountMinor:toMinorUnits(line.unitPrice,currency),lineTotalMinor:toMinorUnits(line.amount,currency)})):[{description:order.title,quantity:1,unitAmountMinor:totalMinor,lineTotalMinor:totalMinor}];
+   const invoiceItems=quote?.lineItems?.length?quote.lineItems.map(line=>({description:line.description,quantity:line.quantity,unitAmountMinor:toMinorUnits(line.unitPrice,currency),lineTotalMinor:toMinorUnits(line.amount,currency)})):[{description:order.title,quantity:1,unitAmountMinor:totalMinor,lineTotalMinor:totalMinor}];
    const invoice=await FinanceInvoice.create({
     reference:invoiceNumber,clientId:order.clientId,orderId:order._id,currency,
     items:invoiceItems,
@@ -142,7 +143,7 @@ export async function POST(request:NextRequest){
    if(!validId(body.id))return fail("Valid expense id required.");
    const expense=await FinanceExpense.findById(body.id);if(!expense||expense.status!=="approved")return fail("Only approved expenses can be paid.",409);
    const dbSession=await mongoose.startSession();
-   try{await dbSession.withTransaction(async()=>{const current=await FinanceExpense.findOne({_id:expense._id,status:"approved"}).session(dbSession);if(!current)throw new Error("Expense is no longer approved.");const entries=buildExpenseLedgerEntries({reference:current.reference,expenseId:String(current._id),amountMinor:current.amountMinor,currency:current.currency});await FinancialLedgerEntry.insertMany(entries as any,{session:dbSession});current.status="paid";current.paidAt=new Date();current.paymentReference=String(body.paymentReference||"");await current.save({session:dbSession});});}finally{await dbSession.endSession();}
+   try{await dbSession.withTransaction(async()=>{const current=await FinanceExpense.findOne({_id:expense._id,status:"approved"}).session(dbSession);if(!current)throw new Error("Expense is no longer approved.");const entries=buildExpenseLedgerEntries({reference:current.reference,expenseId:String(current._id),amountMinor:current.amountMinor,currency:current.currency});await FinancialLedgerEntry.insertMany(entries as Parameters<typeof FinancialLedgerEntry.insertMany>[0],{session:dbSession});current.status="paid";current.paidAt=new Date();current.paymentReference=String(body.paymentReference||"");await current.save({session:dbSession});});}finally{await dbSession.endSession();}
    await audit(session,"finance.expense_paid","finance_expense",String(expense._id),{reference:expense.reference});
    return NextResponse.json({ok:true,message:"Expense payment recorded and posted to the immutable ledger."});
   }
@@ -157,7 +158,7 @@ export async function POST(request:NextRequest){
     await ensureFinanceReceipt(current,dbSession);
     const entries=buildPaymentLedgerEntries({reference:current.reference,paymentTransactionId:String(current._id),orderId:String(current.orderId),clientId:String(current.clientId),amountMinor:current.amountMinor,currency:current.currency,source:"bank_transfer"});await FinancialLedgerEntry.insertMany(entries as any,{session:dbSession});
     if(current.milestoneId){const project=await DeliveryProject.findOne({orderId:current.orderId,clientId:current.clientId}).session(dbSession);if(!project)throw new Error("Linked delivery project was not found.");const milestone=await DeliveryMilestone.findOne({_id:current.milestoneId,projectId:project._id}).session(dbSession);if(!milestone)throw new Error("Linked milestone was not found.");milestone.paymentStatus="paid";await milestone.save({session:dbSession});}
-    if(current.installmentId){const plan=await FinanceInstallmentPlan.findOne({orderId:current.orderId,clientId:current.clientId,"installments._id":current.installmentId}).session(dbSession);const item=plan?.installments.find((entry:any)=>String(entry._id)===String(current.installmentId));if(!plan||!item)throw new Error("Linked installment schedule was not found.");item.paidMinor=Math.min(item.amountMinor,item.paidMinor+current.amountMinor);item.status=item.paidMinor>=item.amountMinor?"paid":"partially_paid";if(plan.installments.every((entry:any)=>entry.status==="paid"))plan.status="completed";await plan.save({session:dbSession});}
+    if(current.installmentId){const plan=await FinanceInstallmentPlan.findOne({orderId:current.orderId,clientId:current.clientId,"installments._id":current.installmentId}).session(dbSession);const item=plan?.installments.find(entry=>String(entry._id)===String(current.installmentId));if(!plan||!item)throw new Error("Linked installment schedule was not found.");item.paidMinor=Math.min(item.amountMinor,item.paidMinor+current.amountMinor);item.status=item.paidMinor>=item.amountMinor?"paid":"partially_paid";if(plan.installments.every(entry=>entry.status==="paid"))plan.status="completed";await plan.save({session:dbSession});}
     const paid=await PaymentTransaction.aggregate([{$match:{orderId:current.orderId,status:"paid"}},{$group:{_id:null,total:{$sum:"$amountMinor"}}}]).session(dbSession);
     const order=await CommercialOrder.findById(current.orderId).session(dbSession);if(!order)throw new Error("Linked order was not found.");
     order.paymentStatus=Number(paid[0]?.total||0)>=toMinorUnits(order.amount,order.currency)?"paid":"partially_paid";if(order.paymentStatus==="paid")order.status="confirmed";order.paymentProviderReference=current.reference;order.paymentVerifiedAt=new Date();await order.save({session:dbSession});
@@ -246,8 +247,8 @@ export async function POST(request:NextRequest){
    const order=await CommercialOrder.findById(body.orderId);if(!order)return fail("Order not found.",404);
    const existing=await FinanceInstallmentPlan.findOne({orderId:order._id});if(existing)return fail("An installment plan already exists for this order.",409);
    const currency=order.currency;const totalMinor=toMinorUnits(order.amount,currency);
-   const installments=body.installments.map((item:any,index:number)=>({sequence:index+1,dueAt:new Date(item.dueAt),amountMinor:Number(item.amountMinor),paidMinor:0,status:"pending"}));
-   if(installments.some((x:any)=>!Number.isFinite(x.dueAt.getTime())||!Number.isSafeInteger(x.amountMinor)||x.amountMinor<1)||installments.reduce((sum:number,x:any)=>sum+x.amountMinor,0)!==totalMinor)return fail("Installment dates and amounts must be valid, and installment amounts must exactly equal the order total in minor currency units.");
+   const installments=body.installments.map((item:unknown,index:number)=>{const value=item&&typeof item==="object"&&!Array.isArray(item)?item as Record<string,unknown>:{};return {sequence:index+1,dueAt:new Date(String(value.dueAt||"")),amountMinor:Number(value.amountMinor),paidMinor:0,status:"pending" as const};});
+   if(installments.some(x=>!Number.isFinite(x.dueAt.getTime())||!Number.isSafeInteger(x.amountMinor)||x.amountMinor<1)||installments.reduce((sum,x)=>sum+x.amountMinor,0)!==totalMinor)return fail("Installment dates and amounts must be valid, and installment amounts must exactly equal the order total in minor currency units.");
    const plan=await FinanceInstallmentPlan.create({orderId:order._id,clientId:order.clientId,currency,totalMinor,installments,status:"active",createdBy:session.user._id});
    await audit(session,"finance.installment_plan_created","finance_installment_plan",String(plan._id),{orderId:String(order._id),installmentCount:installments.length,totalMinor});
    return NextResponse.json({ok:true,item:plan},{status:201});

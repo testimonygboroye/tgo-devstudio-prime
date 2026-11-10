@@ -140,8 +140,10 @@ jobs:
           src/models/ConsultationBooking.ts
           src/models/ProjectTemplate.ts
           src/models/PaymentTransaction.ts
+          src/models/FinancialLedgerEntry.ts
           src/lib/commercial
           src/lib/payments
+          src/lib/finance
           src/app/api/platform/commercial
           src/app/api/platform/commercial-actions
           src/app/api/client/payments

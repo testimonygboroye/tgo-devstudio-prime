@@ -22,10 +22,11 @@ import MaintenanceWarranty from "@/models/MaintenanceWarranty";
 import ConsultationBooking from "@/models/ConsultationBooking";
 import ProjectTemplate from "@/models/ProjectTemplate";
 import PaymentTransaction from "@/models/PaymentTransaction";
+import FinancialLedgerEntry from "@/models/FinancialLedgerEntry";
 
 export const dynamic = "force-dynamic";
-type Resource = "services"|"leads"|"proposals"|"quotes"|"contracts"|"orders"|"projects"|"milestones"|"tasks"|"resources"|"deliverables"|"changeRequests"|"qa"|"maintenance"|"consultations"|"templates"|"payments";
-const models: Record<Resource, any> = { services:CommercialService,leads:SalesLead,proposals:CommercialProposal,quotes:CommercialQuote,contracts:CommercialContract,orders:CommercialOrder,projects:DeliveryProject,milestones:DeliveryMilestone,tasks:DeliveryTask,resources:ProjectResourceAllocation,deliverables:ProjectDeliverable,changeRequests:ProjectChangeRequest,qa:ProjectQualityReview,maintenance:MaintenanceWarranty,consultations:ConsultationBooking,templates:ProjectTemplate,payments:PaymentTransaction };
+type Resource = "services"|"leads"|"proposals"|"quotes"|"contracts"|"orders"|"projects"|"milestones"|"tasks"|"resources"|"deliverables"|"changeRequests"|"qa"|"maintenance"|"consultations"|"templates"|"payments"|"ledger";
+const models: Record<Resource, any> = { services:CommercialService,leads:SalesLead,proposals:CommercialProposal,quotes:CommercialQuote,contracts:CommercialContract,orders:CommercialOrder,projects:DeliveryProject,milestones:DeliveryMilestone,tasks:DeliveryTask,resources:ProjectResourceAllocation,deliverables:ProjectDeliverable,changeRequests:ProjectChangeRequest,qa:ProjectQualityReview,maintenance:MaintenanceWarranty,consultations:ConsultationBooking,templates:ProjectTemplate,payments:PaymentTransaction,ledger:FinancialLedgerEntry };
 function fail(message:string,status=400){return NextResponse.json({ok:false,error:message},{status});}
 function validId(value:unknown){return typeof value==="string"&&Types.ObjectId.isValid(value);}
 function reference(prefix:string){return `${prefix}-${new Date().toISOString().slice(0,10).replace(/-/g,"")}-${randomUUID().slice(0,8).toUpperCase()}`;}

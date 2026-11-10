@@ -20,7 +20,7 @@ Phase 7 adds a commercial delivery domain separate from the public portfolio CMS
 - Founder operations UI: /admin/commercial
 - Public commercial catalogue: /services/catalogue
 - Client commercial workspace: /client/services
-- Founder API: /api/platform/commercial
+- Founder API: /api/platform/commercial\n- Read-only financial ledger: /admin/commercial (Immutable ledger tab)
 - Founder workflow actions: /api/platform/commercial-actions
 - Client API: /api/client/commercial
 - Secure deliverable upload: /api/platform/commercial/deliverables/upload
@@ -49,7 +49,7 @@ https://tgo-devstudio-prime.onrender.com/api/webhooks/paystack
 
 The server verifies the webhook HMAC signature and independently verifies the transaction with Paystack before recording payment. The verified amount, currency and reference must match the internal payment transaction. Payment initialization is idempotent while a checkout remains pending. A provider callback alone never marks an order or milestone as paid.
 
-The current adapter accepts NGN, GHS, ZAR, USD, KES, XOF and EGP. Confirm the selected Paystack account supports the currency and intended cross-border use before enabling live payments.
+The current adapter accepts NGN, GHS, ZAR, USD, KES, XOF and EGP. Confirm the selected Paystack account supports the currency and intended cross-border use before enabling live payments. Each verified payment is written in a MongoDB transaction with two immutable ledger entries: debit cash and credit client advances. Unique source keys prevent duplicate postings. The MongoDB deployment must support replica-set transactions (MongoDB Atlas does). Ledger records have no update/delete API; founder access is read-only.
 
 ### Private deliverable storage
 

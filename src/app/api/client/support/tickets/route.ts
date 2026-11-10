@@ -7,7 +7,6 @@ import SupportTicket from "@/models/SupportTicket";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import ClientActivity from "@/models/ClientActivity";
 import SupportSettings from "@/models/SupportSettings";
-import User from "@/models/User";
 import {sendSupportNotification} from "@/lib/support/notifications";
 
 export const dynamic = "force-dynamic";
@@ -78,8 +77,10 @@ export async function PATCH(request:NextRequest){
       writePlatformAuditEvent({actorType:"human",actorId:String(session.user._id),actorLabel:session.user.name,action:"support.client_replied",module:"support",targetType:"support_ticket",targetId:String(ticket._id),outcome:"success",metadata:{reference:ticket.reference}}),
       ClientActivity.create({clientId:session.user._id,actorId:session.user._id,actorType:"client",action:"client.support_ticket_replied",summary:"Replied to support ticket "+ticket.reference,metadata:{ticketId:String(ticket._id)}}),
     ]);
-    const client=await User.findById(session.user._id).select("email name").lean();
-    if(client?.email)void sendSupportNotification({toEmail:client.email,toName:client.name,subject:"Update on support request "+ticket.reference,message:"Our support team has replied to your request. Sign in to your portal to view the response and continue the conversation."}).catch(e=>console.error("Client support email failed",e));
+    const settings=await SupportSettings.findOne({key:"global"}).lean();
+    const notifyText="Client "+session.user.name+" replied to support request "+ticket.reference+": "+message;
+    if(settings?.notifications?.emailEnabled!==false&&process.env.FOUNDER_NOTIFICATION_EMAIL)void sendSupportNotification({toEmail:process.env.FOUNDER_NOTIFICATION_EMAIL,toName:"TGO Support Team",subject:"Client reply: "+ticket.reference,message:notifyText}).catch(e=>console.error("Support team email failed",e));
+    if(settings?.notifications?.whatsappEnabled&&process.env.SUPPORT_WHATSAPP_TO)void sendSupportNotification({subject:"Client reply: "+ticket.reference,message:ticket.subject,whatsappTo:process.env.SUPPORT_WHATSAPP_TO}).catch(e=>console.error("Support team WhatsApp failed",e));
     return NextResponse.json({ok:true,ticket});
   }
   if(body.action==="satisfaction"){

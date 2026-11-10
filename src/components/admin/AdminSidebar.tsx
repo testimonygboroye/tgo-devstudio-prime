@@ -46,6 +46,7 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  LifeBuoy,
 } from "lucide-react";
 
 interface AdminSidebarProps {

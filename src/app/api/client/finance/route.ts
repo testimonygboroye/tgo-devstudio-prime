@@ -28,6 +28,8 @@ function ref(prefix:string){return `TGO_${prefix}_${randomUUID().replace(/-/g,""
 export async function GET(){
  const session=await clientSession();if(!session)return fail("Verified client sign-in required.",401);
  await connectToDatabase();
+ await FinanceInvoice.updateMany({status:{$in:["issued","partially_paid"]},dueAt:{$lt:new Date()},balanceMinor:{$gt:0}},{$set:{status:"overdue"}});
+ await FinanceInstallmentPlan.updateMany({status:"active",installments:{$elemMatch:{status:{$in:["pending","partially_paid"]},dueAt:{$lt:new Date()}}}},{$set:{"installments.$[due].status":"overdue"}},{arrayFilters:[{"due.status":{$in:["pending","partially_paid"]},"due.dueAt":{$lt:new Date()}}]});
  const [settings,invoices,credits,payments,installmentPlans,orders,receipts]=await Promise.all([
   FinanceSettings.findOne({key:"global"}).lean(),
   FinanceInvoice.find({clientId:session.user._id,status:{$nin:["draft","void"]}}).sort({createdAt:-1}).lean(),

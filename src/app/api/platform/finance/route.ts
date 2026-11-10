@@ -14,10 +14,12 @@ import FinanceReconciliation from "@/models/FinanceReconciliation";
 import ClientCreditAccount from "@/models/ClientCreditAccount";
 import PaymentTransaction from "@/models/PaymentTransaction";
 import CommercialOrder from "@/models/CommercialOrder";
+import DeliveryProject from "@/models/DeliveryProject";
+import DeliveryMilestone from "@/models/DeliveryMilestone";
 import User from "@/models/User";
 import FinancialLedgerEntry from "@/models/FinancialLedgerEntry";
 import {toMinorUnits} from "@/lib/payments/money";
-import {buildCreditAdjustmentEntries,buildExpenseLedgerEntries,buildPaymentLedgerEntries,buildRefundLedgerEntries} from "@/lib/finance/ledger";
+import {buildCreditAdjustmentEntries,buildExpenseLedgerEntries,buildPaymentLedgerEntries} from "@/lib/finance/ledger";
 import {verifyAndRecordPaystackPayment} from "@/lib/payments/paystack";
 import {getPaymentProvider} from "@/lib/payments/provider";
 import {sendNotificationEmail} from "@/lib/email/sendEmail";
@@ -133,11 +135,11 @@ export async function POST(request:NextRequest){
     const current=await PaymentTransaction.findOne({_id:payment._id,provider:"bank_transfer",status:"pending_review"}).session(dbSession);if(!current)throw new Error("Bank transfer has already been reviewed.");
     current.status="paid";current.verifiedAt=new Date();current.providerTransactionId=current.bankTransferReference||"";await current.save({session:dbSession});
     const entries=buildPaymentLedgerEntries({reference:current.reference,paymentTransactionId:String(current._id),orderId:String(current.orderId),clientId:String(current.clientId),amountMinor:current.amountMinor,currency:current.currency,source:"bank_transfer"});await FinancialLedgerEntry.insertMany(entries as any,{session:dbSession});
-    if(current.milestoneId){const milestone=await (await import("@/models/DeliveryMilestone")).default.findOne({_id:current.milestoneId,projectId:undefined}).session(dbSession);if(!milestone)throw new Error("Linked milestone was not found.");milestone.paymentStatus="paid";await milestone.save({session:dbSession});}
+    if(current.milestoneId){const project=await DeliveryProject.findOne({orderId:current.orderId,clientId:current.clientId}).session(dbSession);if(!project)throw new Error("Linked delivery project was not found.");const milestone=await DeliveryMilestone.findOne({_id:current.milestoneId,projectId:project._id}).session(dbSession);if(!milestone)throw new Error("Linked milestone was not found.");milestone.paymentStatus="paid";await milestone.save({session:dbSession});}
     const paid=await PaymentTransaction.aggregate([{$match:{orderId:current.orderId,status:"paid"}},{$group:{_id:null,total:{$sum:"$amountMinor"}}}]).session(dbSession);
     const order=await CommercialOrder.findById(current.orderId).session(dbSession);if(!order)throw new Error("Linked order was not found.");
     order.paymentStatus=Number(paid[0]?.total||0)>=toMinorUnits(order.amount,order.currency)?"paid":"partially_paid";if(order.paymentStatus==="paid")order.status="confirmed";order.paymentProviderReference=current.reference;order.paymentVerifiedAt=new Date();await order.save({session:dbSession});
-    const invoice=await FinanceInvoice.findOne({orderId:order._id,clientId:current.clientId,status:{$nin:["draft","void"]}}).session(dbSession);if(invoice){invoice.amountPaidMinor=Math.min(invoice.totalMinor,invoice.amountPaidMinor+current.amountMinor);invoice.balanceMinor=Math.max(0,invoice.totalMinor-invoice.amountPaidMinor);invoice.status=invoice.balanceMinor===0?"paid":"partially_paid";await invoice.save({session:dbSession});}
+    const invoice=await FinanceInvoice.findOne({orderId:order._id,clientId:current.clientId,status:{$nin:["draft","void"]}}).session(dbSession);if(invoice){const invoicePaid=await PaymentTransaction.aggregate([{$match:{orderId:order._id,status:"paid"}},{$group:{_id:null,total:{$sum:"$amountMinor"}}}]).session(dbSession);invoice.amountPaidMinor=Math.min(invoice.totalMinor,Number(invoicePaid[0]?.total||0));invoice.balanceMinor=Math.max(0,invoice.totalMinor-invoice.amountPaidMinor);invoice.status=invoice.balanceMinor===0?"paid":invoice.amountPaidMinor>0?"partially_paid":"issued";await invoice.save({session:dbSession});}
    });}finally{await dbSession.endSession();}
    await audit(session,"finance.bank_transfer_verified","payment_transaction",String(payment._id),{reference:payment.reference,amountMinor:payment.amountMinor,currency:payment.currency,bankReference:payment.bankTransferReference});
    return NextResponse.json({ok:true,message:"Bank transfer verified and posted to the immutable ledger."});

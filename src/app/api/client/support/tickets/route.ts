@@ -5,7 +5,10 @@ import { getServerSession } from "@/lib/auth/serverSession";
 import { connectToDatabase } from "@/lib/db";
 import SupportTicket from "@/models/SupportTicket";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
-import ClientActivity from "@/models/ClientActivity";\nimport SupportSettings from "@/models/SupportSettings";\nimport User from "@/models/User";\nimport {sendSupportNotification} from "@/lib/support/notifications";
+import ClientActivity from "@/models/ClientActivity";
+import SupportSettings from "@/models/SupportSettings";
+import User from "@/models/User";
+import {sendSupportNotification} from "@/lib/support/notifications";
 
 export const dynamic = "force-dynamic";
 const CATEGORIES = ["General enquiry", "Project delivery", "Billing and payments", "Account access", "Technical issue", "Other"];

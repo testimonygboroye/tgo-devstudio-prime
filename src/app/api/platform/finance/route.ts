@@ -156,7 +156,7 @@ export async function POST(request:NextRequest){
     const current=await PaymentTransaction.findOne({_id:payment._id,provider:"bank_transfer",status:"pending_review"}).session(dbSession);if(!current)throw new Error("Bank transfer has already been reviewed.");
     current.status="paid";current.verifiedAt=new Date();current.providerTransactionId=current.bankTransferReference||"";await current.save({session:dbSession});
     await ensureFinanceReceipt(current,dbSession);
-    const entries=buildPaymentLedgerEntries({reference:current.reference,paymentTransactionId:String(current._id),orderId:String(current.orderId),clientId:String(current.clientId),amountMinor:current.amountMinor,currency:current.currency,source:"bank_transfer"});await FinancialLedgerEntry.insertMany(entries as any,{session:dbSession});
+    const entries=buildPaymentLedgerEntries({reference:current.reference,paymentTransactionId:String(current._id),orderId:String(current.orderId),clientId:String(current.clientId),amountMinor:current.amountMinor,currency:current.currency,source:"bank_transfer"});await FinancialLedgerEntry.insertMany(entries as Parameters<typeof FinancialLedgerEntry.insertMany>[0],{session:dbSession});
     if(current.milestoneId){const project=await DeliveryProject.findOne({orderId:current.orderId,clientId:current.clientId}).session(dbSession);if(!project)throw new Error("Linked delivery project was not found.");const milestone=await DeliveryMilestone.findOne({_id:current.milestoneId,projectId:project._id}).session(dbSession);if(!milestone)throw new Error("Linked milestone was not found.");milestone.paymentStatus="paid";await milestone.save({session:dbSession});}
     if(current.installmentId){const plan=await FinanceInstallmentPlan.findOne({orderId:current.orderId,clientId:current.clientId,"installments._id":current.installmentId}).session(dbSession);const item=plan?.installments.find(entry=>String(entry._id)===String(current.installmentId));if(!plan||!item)throw new Error("Linked installment schedule was not found.");item.paidMinor=Math.min(item.amountMinor,item.paidMinor+current.amountMinor);item.status=item.paidMinor>=item.amountMinor?"paid":"partially_paid";if(plan.installments.every(entry=>entry.status==="paid"))plan.status="completed";await plan.save({session:dbSession});}
     const paid=await PaymentTransaction.aggregate([{$match:{orderId:current.orderId,status:"paid"}},{$group:{_id:null,total:{$sum:"$amountMinor"}}}]).session(dbSession);
@@ -172,7 +172,7 @@ export async function POST(request:NextRequest){
    const client=await User.findOne({_id:body.clientId,accountType:"client"});if(!client)return fail("Client account not found.",404);
    const amount=Number(body.amount);const currency=String(body.currency||"NGN").toUpperCase();if(!Number.isFinite(amount)||amount<=0||typeof body.reason!=="string"||body.reason.trim().length<4)return fail("Positive credit amount and reason are required.");
    const amountMinor=toMinorUnits(amount,currency);const reference=ref("CRD");const dbSession=await mongoose.startSession();
-   try{await dbSession.withTransaction(async()=>{const account=await ClientCreditAccount.findOneAndUpdate({clientId:client._id,currency},{$inc:{balanceMinor:amountMinor}},{upsert:true,new:true,setDefaultsOnInsert:true,session:dbSession});const entries=buildCreditAdjustmentEntries({reference,clientId:String(client._id),amountMinor,currency,reason:body.reason.trim()});await FinancialLedgerEntry.insertMany(entries as any,{session:dbSession});});}finally{await dbSession.endSession();}
+   try{await dbSession.withTransaction(async()=>{await ClientCreditAccount.findOneAndUpdate({clientId:client._id,currency},{$inc:{balanceMinor:amountMinor}},{upsert:true,new:true,setDefaultsOnInsert:true,session:dbSession});const entries=buildCreditAdjustmentEntries({reference,clientId:String(client._id),amountMinor,currency,reason:String(body.reason||"").trim()});await FinancialLedgerEntry.insertMany(entries as Parameters<typeof FinancialLedgerEntry.insertMany>[0],{session:dbSession});});}finally{await dbSession.endSession();}
    await audit(session,"finance.client_credit_issued","client_credit_account",String(client._id),{reference,amountMinor,currency,reason:body.reason.trim()});
    return NextResponse.json({ok:true,message:"Client credit issued and recorded in the ledger.",reference});
   }
@@ -224,10 +224,10 @@ export async function POST(request:NextRequest){
      if(payment.provider==="account_credit"){
       await ClientCreditAccount.findOneAndUpdate({clientId:currentPayment.clientId,currency:currentPayment.currency},{$inc:{balanceMinor:currentRefund.amountMinor}},{upsert:true,new:true,setDefaultsOnInsert:true,session:dbSession});
       const entries=buildCreditRestorationEntries({reference:currentRefund.reference,paymentTransactionId:String(currentPayment._id),orderId:String(currentPayment.orderId),clientId:String(currentPayment.clientId),amountMinor:currentRefund.amountMinor,currency:currentRefund.currency});
-      await FinancialLedgerEntry.insertMany(entries as any,{session:dbSession});
+      await FinancialLedgerEntry.insertMany(entries as Parameters<typeof FinancialLedgerEntry.insertMany>[0],{session:dbSession});
      }else{
       const entries=buildRefundLedgerEntries({reference:currentRefund.reference,refundId:String(currentRefund._id),paymentTransactionId:String(currentPayment._id),orderId:String(currentPayment.orderId),clientId:String(currentPayment.clientId),amountMinor:currentRefund.amountMinor,currency:currentRefund.currency});
-      await FinancialLedgerEntry.insertMany(entries as any,{session:dbSession});
+      await FinancialLedgerEntry.insertMany(entries as Parameters<typeof FinancialLedgerEntry.insertMany>[0],{session:dbSession});
      }
      const order=await CommercialOrder.findById(currentPayment.orderId).session(dbSession);
      if(order){

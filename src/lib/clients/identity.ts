@@ -7,7 +7,7 @@ import ClientActivity from "@/models/ClientActivity";
 import {hashPassword} from "@/lib/auth/passwords";
 export async function ensureClientRole(){
  let role=await Role.findOne({slug:"client"});
- if(!role)role=await Role.create({name:"Client",slug:"client",hierarchyLevel:1000,isSystemRole:true,isFounderRole:false,canManageRoles:false,canManageUsers:false,canBanUsers:false,canDeleteUsers:false,requiresTwoFactor:false,contentPermissions:new Map()});
+ if(!role)role=await Role.create({name:"Client",slug:"client",hierarchyLevel:1000,isSystemRole:true,isFounderRole:false,canManageRoles:false,canManageUsers:false,canBanUsers:false,canDeleteUsers:false,requiresTwoFactor:false,contentPermissions:new Map(),analyticsPermissions:{viewOwnContentAnalytics:false,viewSiteWideAnalytics:false,viewFormSubmissionData:false}});
  return role;
 }
 export async function createClientIdentity(input:{name:string;firstName?:string;middleName?:string;lastName?:string;email:string;password?:string;googleSub?:string;source:"self_registration"|"google"}){

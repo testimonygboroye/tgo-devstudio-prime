@@ -153,7 +153,7 @@ jobs:
           src/app/api/auth/login/route.ts
           src/app/client/payments
           src/app/client/services
-          src/app/admin/(shell)/commercial/page.tsx
+          'src/app/admin/(shell)/commercial/page.tsx'
           src/components/admin/platform/CommercialOperationsManager.tsx
           src/components/client/ClientCommercialHub.tsx
           src/components/client/ClientPaymentCallback.tsx

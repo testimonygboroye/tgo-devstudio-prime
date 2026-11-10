@@ -2,10 +2,10 @@ import mongoose from "mongoose";
 import { EngagementEvent, EngagementProfile, EngagementEarnRule, EngagementCampaign, EngagementBadge, EngagementBadgeAward } from "@/models/Engagement";
 import { tierForLifetimePoints } from "@/lib/engagement/tiers";
 
-export async function awardEngagementPoints(input: { clientId: string; eventKey: string; eventType: string; metadata?: Record<string, unknown> }) {
+export async function awardEngagementPoints(input: { clientId: string; eventKey: string; eventType: string; metadata?: Record<string, unknown>; pointsOverride?: number }) {
   if (!mongoose.isValidObjectId(input.clientId) || !input.eventKey || input.eventKey.length > 180) return { awarded: false, reason: "invalid" };
   const rule = await EngagementEarnRule.findOne({ eventType: input.eventType, active: true }).lean();
-  let points = rule?.points ?? ({ invoice_paid: 100, payment_verified: 100, project_completed: 500, review_submitted: 75, profile_completed: 100, referral_qualified: 300 } as Record<string, number>)[input.eventType] ?? 0;
+  let points = input.pointsOverride ?? rule?.points ?? ({ invoice_paid: 100, payment_verified: 100, project_completed: 500, review_submitted: 75, profile_completed: 100, referral_qualified: 300 } as Record<string, number>)[input.eventType] ?? 0;
   if (!points || !Number.isSafeInteger(points) || points < 1) return { awarded: false, reason: "no-rule" };
   const now = new Date();
   const defaults = [

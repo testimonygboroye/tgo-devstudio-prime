@@ -74,7 +74,8 @@ export async function POST(request: NextRequest) {
     await dbSession.withTransaction(async () => {
       const reward = await EngagementReward.findById(body.rewardId).session(dbSession);
       if (!reward || !reward.active || (reward.stock !== -1 && reward.redeemed >= reward.stock)) throw new Error("This reward is no longer available.");
-      const stockUpdate = await EngagementReward.collection.updateOne({ _id: reward._id, active: true, redeemed: reward.redeemed }, { $inc: { redeemed: 1 } }, { session: dbSession });
+      const stockFilter: Record<string, unknown> = { _id: reward._id, active: true }; if (reward.stock !== -1) stockFilter.redeemed = reward.redeemed;
+      const stockUpdate = await EngagementReward.collection.updateOne(stockFilter, { $inc: { redeemed: 1 } }, { session: dbSession });
       if (stockUpdate.modifiedCount !== 1) throw new Error("This reward was just redeemed by another request. Please retry.");
       const profile = await EngagementProfile.findOneAndUpdate(
         { clientId, points: { $gte: reward.pointsCost } },

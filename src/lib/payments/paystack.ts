@@ -10,6 +10,7 @@ import {toMinorUnits} from "@/lib/payments/money";
 import {getPaymentProvider} from "@/lib/payments/provider";
 import FinanceInvoice from "@/models/FinanceInvoice";
 import FinanceInstallmentPlan from "@/models/FinanceInstallmentPlan";
+import {ensureFinanceReceipt} from "@/lib/finance/receipts";
 export async function verifyAndRecordPaystackPayment(reference:string){
  await connectToDatabase();
  const initial=await PaymentTransaction.findOne({reference});if(!initial)throw new Error("Payment reference was not found.");
@@ -23,6 +24,7 @@ export async function verifyAndRecordPaystackPayment(reference:string){
    const payment=await PaymentTransaction.findOne({reference}).session(session);if(!payment)throw new Error("Payment reference was not found.");
    if(payment.status==="paid")return;
    payment.status="paid";payment.providerTransactionId=data.transactionId||"";payment.verifiedAt=new Date();await payment.save({session});
+    await ensureFinanceReceipt(payment,session);
    if(payment.milestoneId){
     const project=await DeliveryProject.findOne({orderId:payment.orderId,clientId:payment.clientId}).session(session);
     if(!project)throw new Error("The delivery project is no longer linked to this order.");

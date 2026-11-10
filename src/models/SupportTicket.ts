@@ -7,7 +7,7 @@ export interface ISupportTicket extends Document {
   reference: string; clientId: Types.ObjectId; subject: string; description: string; category: string;
   status: SupportTicketStatus; priority: SupportTicketPriority; assignedTo?: Types.ObjectId;
   escalationLevel: number; firstResponseDueAt: Date; resolutionDueAt: Date; firstRespondedAt?: Date;
-  resolvedAt?: Date; closedAt?: Date; messages: ISupportMessage[];
+  resolvedAt?: Date; closedAt?: Date; lastEscalatedAt?: Date; messages: ISupportMessage[];
   satisfaction?: { rating: number; feedback?: string; submittedAt: Date };
   createdAt: Date; updatedAt: Date;
 }
@@ -33,6 +33,7 @@ const TicketSchema = new Schema<ISupportTicket>({
   firstRespondedAt:{type:Date},
   resolvedAt:{type:Date},
   closedAt:{type:Date},
+  lastEscalatedAt:{type:Date,index:true},
   messages:{type:[MessageSchema],default:[]},
   satisfaction:{rating:{type:Number,min:1,max:5},feedback:{type:String,trim:true,maxlength:2000},submittedAt:{type:Date}},
 },{timestamps:true});

@@ -34,7 +34,7 @@ async function audit(session:any,action:string,type:string,id:string,metadata:Re
 
 export async function GET(request:NextRequest){
  const auth=await requireFounder();if(auth.response)return auth.response;
- const [settings,invoices,expenses,refunds,installments,approvals,reconciliations,credits,payments,ledger]=await Promise.all([
+ const [settings,invoices,expenses,refunds,installments,approvals,reconciliations,credits,payments,ledger,orders]=await Promise.all([
   FinanceSettings.findOne({key:"global"}).lean(),
   FinanceInvoice.find({}).sort({createdAt:-1}).limit(100).lean(),
   FinanceExpense.find({}).sort({createdAt:-1}).limit(100).lean(),
@@ -45,11 +45,12 @@ export async function GET(request:NextRequest){
   ClientCreditAccount.find({balanceMinor:{$gt:0}}).sort({updatedAt:-1}).limit(100).lean(),
   PaymentTransaction.find({}).select("-accessCode -authorizationUrl").sort({createdAt:-1}).limit(100).lean(),
   FinancialLedgerEntry.find({}).sort({postedAt:-1}).limit(500).lean(),
+  CommercialOrder.find({}).sort({createdAt:-1}).limit(100).lean(),
  ]);
  const summary=await FinancialLedgerEntry.aggregate([
   {$group:{_id:{currency:"$currency",accountCode:"$accountCode",direction:"$direction"},total:{$sum:"$amountMinor"},entries:{$sum:1}}},
  ]);
- return NextResponse.json({ok:true,settings:settings||null,invoices,expenses,refunds,installments,approvals,reconciliations,credits,payments,ledger,summary},{headers:{"Cache-Control":"private, no-store"}});
+ return NextResponse.json({ok:true,settings:settings||null,invoices,expenses,refunds,installments,approvals,reconciliations,credits,payments,ledger,orders,summary},{headers:{"Cache-Control":"private, no-store"}});
 }
 
 export async function POST(request:NextRequest){

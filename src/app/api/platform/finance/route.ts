@@ -37,6 +37,8 @@ async function audit(session:any,action:string,type:string,id:string,metadata:Re
 
 export async function GET(request:NextRequest){
  const auth=await requireFounder();if(auth.response)return auth.response;
+ await FinanceInvoice.updateMany({status:{$in:["issued","partially_paid"]},dueAt:{$lt:new Date()},balanceMinor:{$gt:0}},{$set:{status:"overdue"}});
+ await FinanceInstallmentPlan.updateMany({status:"active",installments:{$elemMatch:{status:{$in:["pending","partially_paid"]},dueAt:{$lt:new Date()}}}},{$set:{"installments.$[due].status":"overdue"}},{arrayFilters:[{"due.status":{$in:["pending","partially_paid"]},"due.dueAt":{$lt:new Date()}}]});
  const [settings,invoices,expenses,refunds,installments,approvals,reconciliations,credits,payments,ledger,orders]=await Promise.all([
   FinanceSettings.findOne({key:"global"}).lean(),
   FinanceInvoice.find({}).sort({createdAt:-1}).limit(100).lean(),

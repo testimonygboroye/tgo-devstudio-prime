@@ -53,7 +53,7 @@ export async function GET() {
     CommercialQuote.find({clientId:session.user._id,status:{$in:["issued","accepted"]}}).sort({createdAt:-1}).lean(),
     CommercialContract.find({clientId:session.user._id,status:{$in:["issued","accepted"]}}).sort({createdAt:-1}).lean(),
   ]);
-  return NextResponse.json({ok:true,services,orders,projects,milestones,tasks,deliverables,changeRequests,consultations,maintenance,payments,proposals,quotes,contracts},{headers:{"Cache-Control":"private, no-store"}});
+  return NextResponse.json({ok:true,services,orders,projects,milestones,tasks,deliverables,changeRequests,consultations,maintenance,payments,proposals,quotes,contracts,paymentConfigured:Boolean(process.env.PAYSTACK_SECRET_KEY)},{headers:{"Cache-Control":"private, no-store"}});
 }
 
 export async function POST(request:NextRequest) {

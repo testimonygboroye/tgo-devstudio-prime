@@ -11,10 +11,10 @@ describe("readRememberedClientAccounts", () => {
     expect(readRememberedClientAccounts(JSON.stringify(["one@example.com"]))).toEqual(["one@example.com"]);
   });
 
-  it("limits remembered identities to five", () => {
+  it("remembers only the most recently used identity", () => {
     expect(readRememberedClientAccounts(encodeURIComponent(JSON.stringify([
       "a@example.com", "b@example.com", "c@example.com", "d@example.com", "e@example.com", "f@example.com",
-    ])))).toHaveLength(5);
+    ])))).toEqual(["a@example.com"]);
   });
 
   it("fails closed on malformed cookie data", () => {

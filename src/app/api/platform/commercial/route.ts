@@ -25,6 +25,10 @@ import ProjectTemplate from "@/models/ProjectTemplate";
 import PaymentTransaction from "@/models/PaymentTransaction";
 import FinancialLedgerEntry from "@/models/FinancialLedgerEntry";
 import ProjectClientReview from "@/models/ProjectClientReview";
+import Workspace from "@/models/Workspace";
+import WorkspaceMembership from "@/models/WorkspaceMembership";
+import WorkspaceChannel from "@/models/WorkspaceChannel";
+import WorkspaceActivity from "@/models/WorkspaceActivity";
 
 export const dynamic = "force-dynamic";
 type Resource = "services"|"leads"|"proposals"|"quotes"|"contracts"|"orders"|"projects"|"milestones"|"tasks"|"resources"|"deliverables"|"changeRequests"|"qa"|"maintenance"|"consultations"|"templates"|"payments"|"ledger"|"reviews";
@@ -169,14 +173,33 @@ export async function POST(request:NextRequest) {
       const teamIds=Array.isArray(body.teamMembers)?body.teamMembers.filter(validId):[];
       if(teamIds.length){const staff=await User.find({_id:{$in:teamIds},accountType:"staff",isBanned:false}).select("_id");if(staff.length!==teamIds.length)return fail("Every project team member must be an active staff account.");}
       const project=await DeliveryProject.create({reference:reference("PRJ"),orderId:order._id,clientId:order.clientId,name:String(body.name||order.title).slice(0,200),summary:String(body.summary||""),status:"planning",priority:["low","normal","high","critical"].includes(body.priority)?body.priority:"normal",projectManager,teamMembers:teamIds,templateKey:template?.key,startDate:body.startDate?new Date(body.startDate):new Date(),targetDate:body.targetDate?new Date(body.targetDate):undefined,createdBy:session.user._id});
-      if(template){
-        for(const [index,milestoneTemplate] of template.milestones.entries()){
-          const milestone=await DeliveryMilestone.create({projectId:project._id,title:milestoneTemplate.title,description:milestoneTemplate.description,sequence:index,amount:milestoneTemplate.amount,currency:order.currency,paymentStatus:milestoneTemplate.amount===0?"not_required":"unconfigured",qaStatus:"not_started",clientApprovalStatus:milestoneTemplate.clientApprovalRequired?"pending":"not_required",createdBy:session.user._id});
-          for(const taskTemplate of milestoneTemplate.tasks)await DeliveryTask.create({projectId:project._id,milestoneId:milestone._id,title:taskTemplate.title,description:taskTemplate.description,priority:taskTemplate.priority,status:"todo",createdBy:session.user._id});
+      let workspace:Awaited<ReturnType<typeof Workspace.create>>|null=null;
+      const previousOrderStatus=order.status;
+      try{
+        const workspaceSlug=String(project.name).toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,90)+"-"+new Types.ObjectId().toString().slice(-6);
+        workspace=await Workspace.create({name:(project.name.slice(0,108)+" Workspace"),slug:workspaceSlug,description:project.summary||"Private collaboration space for this delivery project.",kind:"project",visibility:"private",ownerId:session.user._id,clientId:order.clientId,deliveryProjectId:project._id,status:"active",settings:{allowMemberInvites:false,allowClientMembers:true,allowAiAgents:false}});
+        const memberMap=new Map<string,{workspaceId:Types.ObjectId;userId:Types.ObjectId;memberType:"human";role:"owner"|"manager"|"member"|"guest";permissions:string[];status:"active";invitedBy:Types.ObjectId;joinedAt:Date}>();
+        const addMember=(userId:Types.ObjectId,role:"owner"|"manager"|"member"|"guest")=>{const permissions=role==="owner"?["workspace:manage","members:manage","channels:manage","tasks:manage","documents:manage","approvals:manage"]:role==="guest"?["workspace:read","messages:write","documents:read","deliverables:review"]:role==="manager"?["workspace:read","messages:write","tasks:manage","documents:manage","deliverables:manage"]:["workspace:read","messages:write","tasks:manage","files:upload"];memberMap.set(String(userId),{workspaceId:workspace!._id,userId,memberType:"human",role,permissions,status:"active",invitedBy:session.user._id,joinedAt:new Date()});};
+        addMember(session.user._id,"owner");addMember(order.clientId,"guest");if(projectManager&&!memberMap.has(String(projectManager)))addMember(projectManager,"manager");for(const memberId of teamIds)if(!memberMap.has(String(memberId)))addMember(memberId,"member");
+        const members=[...memberMap.values()];
+        await WorkspaceMembership.insertMany(members);
+        await WorkspaceChannel.create({workspaceId:workspace._id,name:"General",slug:"general",description:"Project-wide discussion and delivery updates.",kind:"public",createdBy:session.user._id,memberIds:members.map(member=>member.userId)});
+        await WorkspaceActivity.create({workspaceId:workspace._id,actorId:session.user._id,actorType:"human",action:"project.workspace_created",targetType:"DeliveryProject",targetId:project._id,summary:"Project collaboration workspace was provisioned.",metadata:{projectId:String(project._id),orderId:String(order._id)}});
+        project.workspaceId=workspace._id;await project.save();
+        if(template){
+          for(const [index,milestoneTemplate] of template.milestones.entries()){
+            const milestone=await DeliveryMilestone.create({projectId:project._id,title:milestoneTemplate.title,description:milestoneTemplate.description,sequence:index,amount:milestoneTemplate.amount,currency:order.currency,paymentStatus:milestoneTemplate.amount===0?"not_required":"unconfigured",qaStatus:"not_started",clientApprovalStatus:milestoneTemplate.clientApprovalRequired?"pending":"not_required",createdBy:session.user._id});
+            for(const taskTemplate of milestoneTemplate.tasks)await DeliveryTask.create({projectId:project._id,milestoneId:milestone._id,title:taskTemplate.title,description:taskTemplate.description,priority:taskTemplate.priority,status:"todo",createdBy:session.user._id});
+          }
         }
+        order.status="confirmed";await order.save();
+      }catch(error){
+        if(workspace){await Promise.all([WorkspaceMembership.deleteMany({workspaceId:workspace._id}),WorkspaceChannel.deleteMany({workspaceId:workspace._id}),WorkspaceActivity.deleteMany({workspaceId:workspace._id}),Workspace.deleteOne({_id:workspace._id})]);}
+        await Promise.all([DeliveryTask.deleteMany({projectId:project._id}),DeliveryMilestone.deleteMany({projectId:project._id}),DeliveryProject.deleteOne({_id:project._id})]);
+        order.status=previousOrderStatus;await order.save();throw error;
       }
-      order.status="confirmed";await order.save();await audit(session,"delivery.project_created","delivery_project",String(project._id),{reference:project.reference,orderId:String(order._id),templateKey:template?.key||null});
-      return NextResponse.json({ok:true,item:project},{status:201});
+      await audit(session,"delivery.project_created","delivery_project",String(project._id),{reference:project.reference,orderId:String(order._id),templateKey:template?.key||null,workspaceId:workspace?._id?String(workspace._id):null});
+      return NextResponse.json({ok:true,item:project,workspace:{id:String(workspace?._id),name:workspace?.name,href:"/workspaces"}},{status:201});
     }
     if(action==="milestone.create") {
       if(!validId(body.projectId)||typeof body.title!=="string"||!body.title.trim())return fail("Project and milestone title are required.");

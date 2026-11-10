@@ -8,7 +8,7 @@ Phase 7 adds a commercial delivery domain separate from the public portfolio CMS
 - **Sales:** SalesLead records and pipeline stages (new, qualified, discovery, proposal, negotiation, won, lost).
 - **Commercial documents:** versioned proposals, quotations and contracts with references, scope, exclusions, line items, totals, validity and client acceptance.
 - **Orders:** order records are created only after the client accepts the contract and quotation.
-- **Delivery:** order-linked projects, reusable project templates, milestones, tasks, employee/team assignment and capacity-checked resource allocation.
+- **Delivery:** order-linked projects, reusable project templates, milestones, tasks, employee/team assignment and capacity-checked resource allocation. Creating a delivery project automatically provisions a private Phase 6 collaboration workspace, a general channel, and active client/staff memberships.
 - **Quality and client review:** per-deliverable QA checklists, client review and approval, change requests and decisions.
 - **Progressive Delivery Engine:** a deliverable can be released only after that deliverable passes QA, the client approves it, and its milestone payment is verified (or the milestone is explicitly zero-value / payment-not-required).
 - **Completion and aftercare:** project completion checks all tasks, milestones and deliverables; warranty and maintenance records attach to completed projects.

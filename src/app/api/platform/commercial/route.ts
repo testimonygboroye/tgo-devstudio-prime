@@ -42,15 +42,21 @@ async function founder() {
 
 export async function GET(request:NextRequest) {
   const auth=await founder(); if(auth.response)return auth.response;
-  const resource=request.nextUrl.searchParams.get("resource") as Resource|null;
+  const resourceParam=request.nextUrl.searchParams.get("resource");
+  if(resourceParam==="summary"){
+    const keys=Object.keys(models) as Resource[];
+    const values=await Promise.all(keys.map(async key=>[key,await models[key].countDocuments({})] as const));
+    return NextResponse.json({ok:true,counts:Object.fromEntries(values)},{headers:{"Cache-Control":"private, no-store"}});
+  }
+  const resource=resourceParam as Resource|null;
   if(!resource||!models[resource])return fail("Choose a supported commercial resource.");
   const status=request.nextUrl.searchParams.get("status");
   const limit=Math.min(200,Math.max(1,Number(request.nextUrl.searchParams.get("limit")||50)));
   const query:Record<string,unknown>={};
   if(status)query.status=status;
   let cursor=models[resource].find(query);if(resource==="payments")cursor=cursor.select("-accessCode -authorizationUrl");
-  const rows=await cursor.sort({updatedAt:-1}).limit(limit).lean();
-  return NextResponse.json({ok:true,resource,items:rows},{headers:{"Cache-Control":"private, no-store"}});
+  const [rows,total]=await Promise.all([cursor.sort({updatedAt:-1}).limit(limit).lean(),models[resource].countDocuments(query)]);
+  return NextResponse.json({ok:true,resource,items:rows,total},{headers:{"Cache-Control":"private, no-store"}});
 }
 
 export async function POST(request:NextRequest) {

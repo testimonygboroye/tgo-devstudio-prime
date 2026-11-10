@@ -1,7 +1,6 @@
 import {NextRequest,NextResponse} from "next/server";
 import {createHmac,timingSafeEqual} from "node:crypto";
 import {verifyAndRecordPaystackPayment} from "@/lib/payments/paystack";
-import PaymentTransaction from "@/models/PaymentTransaction";
 import {writePlatformAuditEvent} from "@/lib/platform/audit";
 export const runtime="nodejs";export const dynamic="force-dynamic";
 export async function POST(request:NextRequest){

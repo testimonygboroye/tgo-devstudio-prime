@@ -13,14 +13,13 @@ export async function GET() {
   if (!session || session.user.accountType !== "client" || !session.user.isEmailVerified) return NextResponse.json({ error: "Verified client sign-in required." }, { status: 401 });
   await connectToDatabase();
   const profile = await ClientProfile.findOne({ userId: session.user._id }).populate("organizationId", "name slug").lean();
+  const organization = profile?.organizationId && typeof profile.organizationId === "object" && "name" in profile.organizationId ? profile.organizationId as unknown as { name: string; slug: string } : null;
   return NextResponse.json({
     profile: profile ? {
       id: String(profile._id), phone: profile.phone || "", jobTitle: profile.jobTitle || "",
       website: profile.website || "", country: profile.country || "", timezone: profile.timezone || "",
       lifecycle: profile.lifecycle, segments: profile.segments, onboardingStatus: profile.onboardingStatus,
-      organization: profile.organizationId && typeof profile.organizationId === "object" && "name" in profile.organizationId ? {
-        name: profile.organizationId.name, slug: profile.organizationId.slug,
-      } : null,
+      organization: organization ? { name: organization.name, slug: organization.slug } : null,
     } : null,
     user: { name: session.user.name, email: session.user.email, emailVerified: session.user.isEmailVerified },
   }, { headers: { "Cache-Control": "private, no-store" } });
@@ -33,9 +32,10 @@ export async function PATCH(request: NextRequest) {
   try { body = await request.json(); } catch { return NextResponse.json({ error: "Invalid request." }, { status: 400 }); }
   const allowed = ["phone", "jobTitle", "website", "country", "timezone"] as const;
   const values: Record<string, string> = {};
+  const maxLengths: Record<(typeof allowed)[number], number> = { phone: 40, jobTitle: 120, website: 300, country: 100, timezone: 80 };
   for (const key of allowed) {
     if (body[key] !== undefined) {
-      if (typeof body[key] !== "string" || String(body[key]).length > (key === "website" ? 300 : 120)) return NextResponse.json({ error: "One or more profile fields are invalid." }, { status: 400 });
+      if (typeof body[key] !== "string" || String(body[key]).length > maxLengths[key]) return NextResponse.json({ error: "One or more profile fields are invalid." }, { status: 400 });
       values[key] = String(body[key]).trim();
     }
   }

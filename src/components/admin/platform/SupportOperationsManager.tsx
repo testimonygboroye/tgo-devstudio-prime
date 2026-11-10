@@ -1,6 +1,6 @@
 "use client";
 import { useCallback,useEffect,useState } from "react";
-import { LifeBuoy,RefreshCw,Send,AlertTriangle,Users,Clock3,ChevronDown } from "lucide-react";
+import { LifeBuoy,RefreshCw,Send,AlertTriangle,Users,Clock3 } from "lucide-react";
 type Ticket={_id:string;reference:string;subject:string;description:string;category:string;status:string;priority:string;escalationLevel:number;firstResponseDueAt:string;resolutionDueAt:string;firstRespondedAt?:string;messages:Array<{senderType:string;body:string;createdAt:string}>;clientId?:{name?:string;email?:string};assignedTo?:{_id?:string;name?:string;email?:string}};
 type Summary={open:number;overdue:number;unassigned:number};
 type Staff={_id:string;name:string;email:string};

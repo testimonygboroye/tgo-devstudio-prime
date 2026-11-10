@@ -57,7 +57,7 @@ export async function verifyAndRecordPaystackPayment(reference:string){
    if(payment.installmentId){
     const plan=await FinanceInstallmentPlan.findOne({orderId:payment.orderId,clientId:payment.clientId,"installments._id":payment.installmentId}).session(session);
     if(!plan)throw new Error("The linked installment plan could not be found.");
-    const installment=plan.installments.find((item:any)=>String(item._id)===String(payment.installmentId));
+    const installment=plan.installments.find(item=>String(item._id)===String(payment.installmentId));
     if(!installment)throw new Error("The linked installment could not be found.");
     installment.paidMinor=Math.min(installment.amountMinor,installment.paidMinor+payment.amountMinor);
     installment.status=installment.paidMinor>=installment.amountMinor?"paid":"partially_paid";

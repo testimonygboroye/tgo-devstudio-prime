@@ -1,4 +1,4 @@
-import { Schema, model, models, Document, Model } from "mongoose";
+import { Schema, model, models, Document, Model, Types } from "mongoose";
 
 export interface IAIProvider extends Document {
   name: string;
@@ -27,8 +27,8 @@ export interface IAIAgent extends Document {
   role: string;
   department: string;
   description: string;
-  providerId: Schema.Types.ObjectId;
-  model: string;
+  providerId: Types.ObjectId;
+  modelName: string;
   systemInstructions: string;
   permissions: string[];
   requiresApproval: boolean;
@@ -42,7 +42,7 @@ const AIAgentSchema = new Schema<IAIAgent>({
   department: { type: String, required: true, maxlength: 100 },
   description: { type: String, default: "", maxlength: 1000 },
   providerId: { type: Schema.Types.ObjectId, ref: "AIProvider", required: true },
-  model: { type: String, required: true, maxlength: 120 },
+  modelName: { type: String, required: true, maxlength: 120 },
   systemInstructions: { type: String, required: true, maxlength: 12000 },
   permissions: { type: [String], default: [] },
   requiresApproval: { type: Boolean, default: true },
@@ -53,7 +53,7 @@ const AIAgentSchema = new Schema<IAIAgent>({
 AIAgentSchema.index({ department: 1, enabled: 1 });
 
 export interface AITask extends Document {
-  agentId: Schema.Types.ObjectId;
+  agentId: Types.ObjectId;
   title: string;
   input: string;
   status: "queued" | "awaiting_approval" | "running" | "completed" | "failed" | "cancelled";

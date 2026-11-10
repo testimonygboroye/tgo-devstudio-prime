@@ -69,14 +69,13 @@ export async function POST(request: NextRequest) {
   }
   if (body.action !== "reward.redeem" || typeof body.rewardId !== "string" || !mongoose.isValidObjectId(body.rewardId)) return NextResponse.json({ error: "Unsupported rewards action." }, { status: 400 });
   const dbSession = await mongoose.startSession();
-  let result: { reference: string; couponCode?: string } | null = null;
+  let result: any = null;
   try {
     await dbSession.withTransaction(async () => {
-      const reward = await EngagementReward.findOneAndUpdate(
-        { _id: body.rewardId, active: true, $or: [{ stock: -1 }, { $expr: { $gt: ["$stock", "$redeemed"] } }] },
-        { $inc: { redeemed: 1 } }, { new: true, session: dbSession }
-      );
-      if (!reward) throw new Error("This reward is no longer available.");
+      const reward = await EngagementReward.findById(body.rewardId).session(dbSession);
+      if (!reward || !reward.active || (reward.stock !== -1 && reward.redeemed >= reward.stock)) throw new Error("This reward is no longer available.");
+      const stockUpdate = await EngagementReward.collection.updateOne({ _id: reward._id, active: true, redeemed: reward.redeemed }, { $inc: { redeemed: 1 } }, { session: dbSession });
+      if (stockUpdate.modifiedCount !== 1) throw new Error("This reward was just redeemed by another request. Please retry.");
       const profile = await EngagementProfile.findOneAndUpdate(
         { clientId, points: { $gte: reward.pointsCost } },
         { $inc: { points: -reward.pointsCost } }, { new: true, session: dbSession }

@@ -2,7 +2,7 @@
 import {useCallback,useEffect,useState} from "react";
 import {Banknote,CheckCircle2,Clock3,FileText,LoaderCircle,RefreshCw,WalletCards} from "lucide-react";
 
-type Order={_id:string;reference:string;title:string;amount:number;currency:string;paymentStatus:string};
+type Order={_id:string;reference:string;title:string;amount:number;currency:string;paymentStatus:string;status:string};
 type Invoice={_id:string;orderId:string;reference:string;currency:string;totalMinor:number;amountPaidMinor:number;balanceMinor:number;status:string;dueAt?:string;issuedAt?:string};
 type Credit={_id:string;currency:string;balanceMinor:number};
 type Installment={_id:string;sequence:number;dueAt:string;amountMinor:number;paidMinor:number;status:string};

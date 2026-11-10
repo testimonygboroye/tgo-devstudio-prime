@@ -58,6 +58,7 @@ export async function POST(request:NextRequest){
   milestone=await DeliveryMilestone.findOne({_id:body.milestoneId,projectId:project._id});if(!milestone)return fail("Milestone not found.",404);
   if(milestone.paymentStatus==="paid")return fail("This milestone has already been paid.");
  }
+ if(!milestone){const project=await DeliveryProject.findOne({orderId:order._id,clientId:user._id});if(project&&await DeliveryMilestone.countDocuments({projectId:project._id,amount:{$gt:0}})>0)return fail("This order uses milestone billing. Submit payment for each milestone from the project delivery section.");}
  const paid=await PaymentTransaction.aggregate([{$match:{orderId:order._id,status:"paid",...(milestone?{milestoneId:milestone._id}:{milestoneId:{$exists:false}})}},{$group:{_id:null,total:{$sum:"$amountMinor"}}}]);
  const paidMinor=Number(paid[0]?.total||0);
  const targetMinor=milestone?toMinorUnits(milestone.amount,currency):totalMinor;

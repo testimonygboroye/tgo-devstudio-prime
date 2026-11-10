@@ -41,3 +41,12 @@ export function buildCreditAdjustmentEntries(input:{reference:string;clientId:st
   {entryKey:`${input.reference}:client-credit-credit`,...common,accountCode:"client_credit" as const,direction:"credit" as const},
  ];
 }
+
+export function buildCreditRestorationEntries(input:{reference:string;paymentTransactionId:string;orderId:string;clientId:string;amountMinor:number;currency:string},postedAt=new Date()){
+ assertAmount(input.amountMinor);
+ const common={paymentTransactionId:input.paymentTransactionId,orderId:input.orderId,clientId:input.clientId,amountMinor:input.amountMinor,currency:input.currency,source:"refund" as const,sourceReference:input.reference,postedAt,metadata:{refundMethod:"account_credit_restoration"}};
+ return [
+  {entryKey:`${input.reference}:client-advance-debit`,...common,accountCode:"client_advance" as const,direction:"debit" as const},
+  {entryKey:`${input.reference}:client-credit-credit`,...common,accountCode:"client_credit" as const,direction:"credit" as const},
+ ];
+}

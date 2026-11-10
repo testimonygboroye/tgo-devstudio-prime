@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error instanceof Error ? error.message : "Referral qualification failed." }, { status: 409 });
     } finally { await session.endSession(); }
     const points = Number(rule?.referrerPoints ?? 300);
-    if (points > 0) await awardEngagementPoints({ clientId: String(referral.referrerId), eventKey: "referral-qualified:" + String(referral._id), eventType: "referral_qualified", metadata: { referralId: String(referral._id) } });
+    if (points > 0) await awardEngagementPoints({ clientId: String(referral.referrerId), eventKey: "referral-qualified:" + String(referral._id), eventType: "referral_qualified", pointsOverride: points, metadata: { referralId: String(referral._id) } });
     await audit("engagement.referral_qualified", "referral", String(referral._id), { currency, paidMinor, commissionMinor, points });
     return NextResponse.json({ referral });
   }

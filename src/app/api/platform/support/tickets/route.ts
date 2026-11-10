@@ -23,6 +23,7 @@ export async function GET(request:NextRequest){
     SupportTicket.countDocuments({status:{$in:["open","in_progress","waiting_on_team"]}}),
     SupportTicket.countDocuments({status:{$nin:["resolved","closed"]},$or:[{firstResponseDueAt:{$lt:now},firstRespondedAt:{$exists:false}},{resolutionDueAt:{$lt:now}}]}),
     SupportTicket.countDocuments({status:{$in:["open","in_progress"]},assignedTo:{$exists:false}}),
+    User.find({accountType:"staff",isBanned:{$ne:true}}).select("_id name email").sort({name:1}).limit(300).lean(),
   ]);
   return NextResponse.json({ok:true,tickets,summary:{open,overdue,unassigned},staff},{headers:{"Cache-Control":"private, no-store"}});
 }

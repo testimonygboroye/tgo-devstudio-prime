@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 declare global { interface Window { google?: any } }
-type Props={endpoint:string;payload?:Record<string,string>;onResult:(data:any)=>void;onError:(message:string)=>void;showRememberedAccount?:boolean};
+type Props={endpoint:string;payload?:Record<string,unknown>;onResult:(data:any)=>void;onError:(message:string)=>void;showRememberedAccount?:boolean};
 type TokenClient={requestAccessToken:(options?:{prompt?:string;login_hint?:string})=>void};
 const LAST_KEY="tgo:last-google-account";
 const NAME_KEY="tgo:last-google-name";

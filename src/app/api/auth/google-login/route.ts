@@ -33,7 +33,7 @@ export async function POST(request:NextRequest) {
     if(!credential&&!accessToken) return apiError("invalidCredentials","Google credential is required.",400);
     const google=await verifyGoogleCredential(credential,accessToken);
     await connectToDatabase();
-    const user=await User.findOne({email:google.email});
+    const user=await User.findOne({email:google.email,accountType:{$ne:"client"}});
     if(!user) return apiError("invalidCredentials","No existing TGO administrator account matches this verified Google email. Accept an invitation first.",403);
     if(user.isBanned) return apiError("accountSuspended","This account has been suspended. Contact the Founder.",403);
     if(user.googleSub && user.googleSub!==google.sub) return apiError("invalidCredentials","This Google account is not linked to this administrator.",403);

@@ -9,6 +9,7 @@ import { rememberClientAccount } from "@/lib/clients/account-selector";
 import ClientActivity from "@/models/ClientActivity";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import { apiError, apiSuccess } from "@/lib/i18n/apiResponse";
+import { getUserAudienceFilter } from "@/lib/clients/audience";
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCK_DURATION_MS = 15 * 60 * 1000;
@@ -23,7 +24,8 @@ export async function POST(request: NextRequest) {
 
   await connectToDatabase();
 
-  const user = await User.findOne({ email: email.toLowerCase() });
+  const normalizedEmail = email.trim().toLowerCase();
+  const user = await User.findOne(getUserAudienceFilter(normalizedEmail, audience === "client" ? "client" : "staff"));
 
   if (!user) {
     return apiError("invalidCredentials", "Invalid credentials.", 401);
@@ -66,13 +68,8 @@ export async function POST(request: NextRequest) {
   user.lockUntil = undefined;
   await user.save();
 
-  // Only disclose account type after the submitted password has been verified.
-  if (audience === "client" && user.accountType !== "client") {
-    return apiError("staffAccountUseStaffSignIn", "These valid credentials belong to a TGO staff account. Use the staff sign-in page instead. Staff and client identities are kept separate; no account has been changed.", 403);
-  }
-  if (audience !== "client" && user.accountType === "client") {
-    return apiError("invalidCredentials", "Invalid credentials.", 401);
-  }
+  // The audience-specific lookup above keeps staff and client identities separate,
+  // even when both intentionally share the same email address.
   if (user.accountType === "client" && !user.isEmailVerified) {
     return apiError("emailVerificationRequired", "Your client account has not been verified. Use the Resend verification email action below to receive a fresh activation link.", 403);
   }

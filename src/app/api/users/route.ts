@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
   }
 
   await connectToDatabase();
-  const users = await User.find().select("-passwordHash -twoFactorSecret -twoFactorTempSecret").populate("role", "name slug");
+  const users = await User.find({accountType:{$ne:"client"}}).select("-passwordHash -twoFactorSecret -twoFactorTempSecret").populate("role", "name slug");
 
   return NextResponse.json({ status: "ok", users });
 }
@@ -68,8 +68,12 @@ export async function POST(request: NextRequest) {
   if (targetRole.isFounderRole) {
     return forbiddenResponse("Cannot assign the Founder role through this endpoint.");
   }
+  if (targetRole.slug === "client") {
+    return NextResponse.json({ status: "error", message: "Client accounts must be created through the client portal or client management workflow." }, { status: 400 });
+  }
 
-  const existingUser = await User.findOne({ email: email.toLowerCase() });
+
+  const existingUser = await User.findOne({ email: email.toLowerCase(), accountType: { $ne: "client" } });
   if (existingUser) {
     return NextResponse.json(
       { status: "error", message: "A user with this email already exists." },
@@ -84,6 +88,7 @@ export async function POST(request: NextRequest) {
     email: email.toLowerCase(),
     passwordHash,
     role: targetRole._id,
+    accountType: "staff",
   });
 
   return NextResponse.json(

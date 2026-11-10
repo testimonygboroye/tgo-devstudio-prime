@@ -41,9 +41,9 @@ export async function POST(request:NextRequest) {
     if(invite.usedAt) return NextResponse.json({status:"error",message:"This invite has already been used."},{status:410});
     if(invite.expiresAt.getTime()<Date.now()) return NextResponse.json({status:"error",message:"This invite has expired."},{status:410});
     if(google.email!==invite.email.trim().toLowerCase()) return NextResponse.json({status:"error",message:"Choose the Google account matching the email address on this invitation."},{status:403});
-    if(await User.findOne({email:google.email})) return NextResponse.json({status:"error",message:"An account with this email already exists."},{status:409});
+    if(await User.findOne({email:google.email,accountType:{$ne:"client"}})) return NextResponse.json({status:"error",message:"An account with this email already exists."},{status:409});
     const passwordHash=await hashPassword(randomBytes(48).toString("base64url"));
-    const user=await User.create({name:(name||google.name||google.email.split("@")[0]).trim(),email:google.email,passwordHash,googleSub:google.sub,role:invite.role});
+    const user=await User.create({name:(name||google.name||google.email.split("@")[0]).trim(),email:google.email,passwordHash,googleSub:google.sub,accountType:"staff",role:invite.role});
     const consumed=await Invite.updateOne({_id:invite._id,usedAt:null,approvalStatus:"approved",expiresAt:{$gt:new Date()}},{$set:{usedAt:new Date()}});
     if(consumed.modifiedCount!==1){await User.deleteOne({_id:user._id});return NextResponse.json({status:"error",message:"This invitation has already been used or expired."},{status:409});}
     const access=signAccessToken({userId:user._id.toString(),roleId:user.role.toString(),tokenVersion:user.refreshTokenVersion});

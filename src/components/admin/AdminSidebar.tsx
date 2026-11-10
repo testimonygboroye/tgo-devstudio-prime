@@ -36,6 +36,7 @@ import {
   Image,
   ScrollText,
   ShoppingCart,
+  WalletCards,
   BarChart3,
   KeyRound,
   KeySquare,
@@ -63,6 +64,7 @@ const NAV_GROUPS = [
   ]},
   { title: "Commercial & Delivery", items: [
     { label: "Sales & Delivery", hrefSuffix: "/commercial", icon: ShoppingCart, badgeKey: null },
+    { label: "Finance & Payments", hrefSuffix: "/finance", icon: WalletCards, badgeKey: null },
   ]},
   { title: "Overview", items: [
     { label: "Dashboard", hrefSuffix: "/dashboard", icon: LayoutDashboard, badgeKey: null },

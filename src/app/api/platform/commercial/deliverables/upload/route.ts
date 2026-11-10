@@ -17,12 +17,13 @@ const allowed=new Map<string,"image"|"raw">([
  ["application/vnd.openxmlformats-officedocument.presentationml.presentation","raw"],
 ]);
 export async function POST(request:NextRequest){
- const session=await getServerSession();if(!session)return NextResponse.json({error:"Authentication required."},{status:401});if(!session.role?.isFounderRole)return NextResponse.json({error:"Founder permissions required."},{status:403});
+ const session=await getServerSession();if(!session)return NextResponse.json({error:"Authentication required."},{status:401});const isFounder=Boolean(session.role?.isFounderRole);if(session.user.accountType!=="staff")return NextResponse.json({error:"Staff authentication required."},{status:403});
  const form=await request.formData();const projectId=String(form.get("projectId")||"");const milestoneId=String(form.get("milestoneId")||"");const title=String(form.get("title")||"").trim();const description=String(form.get("description")||"").trim();const file=form.get("file");
  if(!Types.ObjectId.isValid(projectId)||title.length<2||title.length>180||!(file instanceof File))return NextResponse.json({error:"Project, deliverable title and file are required."},{status:400});
  const resourceType=allowed.get(file.type);if(!resourceType||file.size<1||file.size>20*1024*1024)return NextResponse.json({error:"Choose a supported file (PDF, office document, image or text) up to 20 MB."},{status:400});
  if(!process.env.CLOUDINARY_CLOUD_NAME||!process.env.CLOUDINARY_API_KEY||!process.env.CLOUDINARY_API_SECRET)return NextResponse.json({error:"Secure deliverable storage is not configured. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET."},{status:503});
  await connectToDatabase();const project=await DeliveryProject.findById(projectId);if(!project)return NextResponse.json({error:"Project not found."},{status:404});
+ if(!isFounder&&!await DeliveryProject.exists({_id:project._id,$or:[{projectManager:session.user._id},{teamMembers:session.user._id}]}))return NextResponse.json({error:"You are not assigned to this project."},{status:403});
  if(["completed","cancelled"].includes(project.status))return NextResponse.json({error:"Files cannot be added to a completed or cancelled project."},{status:409});
  if(milestoneId&&(!Types.ObjectId.isValid(milestoneId)||!await DeliveryMilestone.exists({_id:milestoneId,projectId:project._id})))return NextResponse.json({error:"Milestone does not belong to this project."},{status:400});
  const latest=await ProjectDeliverable.findOne({projectId:project._id,title}).sort({version:-1});

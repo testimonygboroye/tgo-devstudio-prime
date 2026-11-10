@@ -71,6 +71,7 @@ export async function POST(request: NextRequest) {
     email: email.toLowerCase(),
     passwordHash,
     role: founderRole._id,
+    accountType: "staff",
   });
 
   return NextResponse.json(

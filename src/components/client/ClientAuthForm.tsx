@@ -6,7 +6,7 @@ import Link from "next/link";
 import GoogleSignInButton from "@/components/shared/GoogleSignInButton";
 import { ArrowRight, CheckCircle2, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
 
-type Props = { mode: "login" | "register"; rememberedEmails?: string[]; googleTempToken?: string; oauthError?: string };
+type Props = { mode: "login" | "register"; googleTempToken?: string; oauthError?: string };
 const oauthMessages: Record<string,string> = {
   google_unavailable:"Google sign-in is not configured yet.",
   google_state_invalid:"Google sign-in could not be validated. Please try again.",
@@ -19,9 +19,9 @@ const oauthMessages: Record<string,string> = {
   two_factor_expired:"Your two-factor sign-in session expired. Start sign-in again.",
 };
 
-export default function ClientAuthForm({ mode, rememberedEmails = [], googleTempToken = "", oauthError = "" }: Props) {
+export default function ClientAuthForm({ mode, googleTempToken = "", oauthError = "" }: Props) {
   const router = useRouter();
-  const [email,setEmail] = useState(rememberedEmails[0] || "");
+  const [email,setEmail] = useState("");
   const [password,setPassword] = useState("");
   const [showPassword,setShowPassword] = useState(false);
   const [busy,setBusy] = useState(false);

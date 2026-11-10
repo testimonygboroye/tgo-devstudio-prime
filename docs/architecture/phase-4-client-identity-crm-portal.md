@@ -35,8 +35,8 @@ Deliver a real client-facing account environment connected to the founder's clie
 - Founder actions can update lifecycle, onboarding status, segment labels and organization association.
 - Client interaction history is visible in the client profile administration flow.
 - Client enquiries have categories, status, priority and staff assignment.
-- Founder operations can review enquiries, change status/priority and assign eligible staff accounts.
-- Enquiry changes create a client activity record, a client notification and a platform audit event.
+- Founder operations can review enquiries, change status/priority, write client-visible responses and assign eligible staff accounts.
+- Enquiry responses and status changes create client activity records, client notifications and platform audit events; new enquiries notify the founder notification centre.
 - New client enquiries notify the founder notification centre.
 
 ### Client portal
@@ -51,7 +51,7 @@ Deliver a real client-facing account environment connected to the founder's clie
 - `User`: shared identity, account type, verified-email state, provider list and Google subject.
 - `ClientProfile`: profile fields, organization link, lifecycle, segment labels and onboarding.
 - `ClientEmailVerification`: token hash, expiry and consumed timestamp.
-- `ClientEnquiry`: client, optional organization, category, status, priority and assignee.
+- `ClientEnquiry`: client, optional organization, category, status, priority, assignee and latest staff response.
 - `ClientActivity`: client, actor, action, summary and metadata.
 - Existing `BusinessOrganization`, `PlatformNotification` and `PlatformAuditEvent` are reused.
 

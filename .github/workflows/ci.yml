@@ -43,7 +43,7 @@ jobs:
       - name: Run unit tests
         run: npm test -- --runInBand
 
-      - name: Lint new platform foundation
+      - name: Lint platform, client and public portal
         run: >-
           npx eslint
           src/app/api/platform/health/route.ts
@@ -87,6 +87,7 @@ jobs:
           'src/app/admin/(shell)/client-enquiries/page.tsx'
           src/components/admin/platform/ClientManagement.tsx
           src/components/admin/platform/ClientEnquiryManager.tsx
+          src/components/public/SiteFooter.tsx
 
       - name: Type check and production build
         run: npm run build

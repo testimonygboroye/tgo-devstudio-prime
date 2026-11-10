@@ -36,7 +36,7 @@ Set secrets in the Render service Environment page. Do not commit secrets to Git
 - RESEND_API_KEY — Resend API key.
 - EMAIL_FROM — sender address on a domain verified with Resend.
 
-Client registration and resend-verification derive the base URL from the incoming request, so they do not require SITE_URL for this email flow. Registration checks provider configuration before creating the account; failed email delivery also rolls back the unverified identity and token to avoid orphaned accounts.
+Client registration and resend-verification derive the base URL from the incoming request, so they do not require SITE_URL for this email flow. Registration checks the existing Brevo configuration before creating the account; failed email delivery also rolls back the unverified identity and token to avoid orphaned accounts. Client verification uses the shared sendNotificationEmail() transport, so it does not introduce a second email provider.
 
 ### Paystack payments
 

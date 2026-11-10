@@ -161,8 +161,8 @@ jobs:
           src/components/client/ClientProfileSettings.tsx
           src/components/client/ClientAuthForm.tsx
           src/components/public/SiteHeader.tsx
-          src/app/(public)/services/catalogue/page.tsx
-          src/app/(public)/services/page.tsx
+          'src/app/(public)/services/catalogue/page.tsx'
+          'src/app/(public)/services/page.tsx'
           src/lib/clients/__tests__/validation.test.ts
 
       - name: Type check and production build

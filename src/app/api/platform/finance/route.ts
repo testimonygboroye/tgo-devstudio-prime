@@ -217,7 +217,6 @@ export async function POST(request:NextRequest){
    let verifiedCount=0,totalLocalMinor=0,totalProviderMinor=0;
    const provider=getPaymentProvider("paystack");
    for(const payment of payments){
-    totalLocalMinor+=payment.status==="paid"?payment.amountMinor:0;
     try{
      const result=await provider.verify(payment.reference);
      if(result.reference!==payment.reference||result.amountMinor!==payment.amountMinor||result.currency!==payment.currency||result.status!=="success"){
@@ -228,6 +227,8 @@ export async function POST(request:NextRequest){
      details.push({paymentId:payment._id,reference:payment.reference,status:"verified",localAmountMinor:payment.amountMinor,providerAmountMinor:result.amountMinor});
     }catch(error){details.push({paymentId:payment._id,reference:payment.reference,status:"unverified",localAmountMinor:payment.amountMinor,note:error instanceof Error?error.message:"Provider verification failed."});}
    }
+   const localTotals=await PaymentTransaction.aggregate([{$match:{provider:"paystack",currency,createdAt:{$gte:fromDate,$lte:toDate},status:"paid"}},{$group:{_id:null,total:{$sum:"$amountMinor"}}}]);
+   totalLocalMinor=Number(localTotals[0]?.total||0);
    const discrepancyCount=details.filter(x=>x.status!=="verified").length;
    const reconciliation=await FinanceReconciliation.create({reference:ref("REC"),provider:"paystack",currency,fromDate,toDate,scannedCount:payments.length,verifiedCount,discrepancyCount,totalLocalMinor,totalProviderMinor,status:discrepancyCount?"completed_with_discrepancies":"completed",details,createdBy:session.user._id});
    await audit(session,"finance.reconciliation_completed","finance_reconciliation",String(reconciliation._id),{reference:reconciliation.reference,scannedCount:payments.length,verifiedCount,discrepancyCount});

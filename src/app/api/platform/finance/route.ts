@@ -115,7 +115,7 @@ export async function POST(request:NextRequest){
    if(!validId(body.id))return fail("Valid invoice id required.");
    const invoice=await FinanceInvoice.findById(body.id);if(!invoice)return fail("Invoice not found.",404);
    if(invoice.status!=="draft")return fail("Only draft invoices can be issued.");
-   invoice.status=invoice.amountPaidMinor>=invoice.totalMinor?"paid":invoice.amountPaidMinor>0?"partially_paid":"issued";invoice.issuedAt=new Date();if(body.dueAt)invoice.dueAt=new Date(body.dueAt);await invoice.save();
+   invoice.status=invoice.amountPaidMinor>=invoice.totalMinor?"paid":invoice.amountPaidMinor>0?"partially_paid":"issued";invoice.issuedAt=new Date();if(body.dueAt)invoice.dueAt=new Date(String(body.dueAt));await invoice.save();
    const client=await User.findOne({_id:invoice.clientId,accountType:"client"}).select("name email");
    if(client&&process.env.BREVO_API_KEY&&process.env.BREVO_SENDER_EMAIL){
     try{const site=getPublicSiteUrl();await sendNotificationEmail({toEmail:client.email,toName:client.name,subject:`TGO DevStudio invoice ${invoice.reference}`,htmlContent:`<div style="font-family:Arial,sans-serif;color:#172033"><h2>Your TGO DevStudio invoice is ready</h2><p>Hello ${escapeHtml(client.name)},</p><p>Invoice <strong>${invoice.reference}</strong> for ${invoice.currency} ${fromMinorUnits(invoice.totalMinor,invoice.currency).toLocaleString()} is available in your client portal.</p><p><a href="${site}/client/services">Open your client portal</a></p></div>`});}catch(emailError){console.error("Invoice notification email failed",emailError);}

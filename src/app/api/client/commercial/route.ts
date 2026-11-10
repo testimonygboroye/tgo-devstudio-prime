@@ -18,6 +18,7 @@ import SalesLead from "@/models/SalesLead";
 import ConsultationBooking from "@/models/ConsultationBooking";
 import PaymentTransaction from "@/models/PaymentTransaction";
 import MaintenanceWarranty from "@/models/MaintenanceWarranty";
+import ProjectClientReview from "@/models/ProjectClientReview";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
 
 export const dynamic="force-dynamic";
@@ -34,7 +35,7 @@ async function logClient(session:ClientSession,action:string,targetType:string,t
 export async function GET() {
   const session=await clientSession();if(!session)return fail("Verified client sign-in required.",401);
   await connectToDatabase();
-  const [services,orders,projects,changeRequests,consultations,maintenance,payments]=await Promise.all([
+  const [services,orders,projects,changeRequests,consultations,maintenance,payments,projectReviews]=await Promise.all([
     CommercialService.find({status:"published"}).sort({category:1,name:1}).lean(),
     CommercialOrder.find({clientId:session.user._id}).sort({createdAt:-1}).lean(),
     DeliveryProject.find({clientId:session.user._id}).sort({updatedAt:-1}).lean(),
@@ -42,6 +43,7 @@ export async function GET() {
     ConsultationBooking.find({clientId:session.user._id}).sort({createdAt:-1}).lean(),
     MaintenanceWarranty.find({clientId:session.user._id}).sort({endsAt:-1}).lean(),
     PaymentTransaction.find({clientId:session.user._id}).select("-accessCode -authorizationUrl").sort({createdAt:-1}).limit(50).lean(),
+    ProjectClientReview.find({clientId:session.user._id}).sort({submittedAt:-1}).lean(),
   ]);
   const projectIds=projects.map(p=>p._id);
   const [milestones,tasks,deliverables]=await Promise.all([
@@ -54,7 +56,7 @@ export async function GET() {
     CommercialQuote.find({clientId:session.user._id,status:{$in:["issued","accepted"]}}).sort({createdAt:-1}).lean(),
     CommercialContract.find({clientId:session.user._id,status:{$in:["issued","accepted"]}}).sort({createdAt:-1}).lean(),
   ]);
-  return NextResponse.json({ok:true,services,orders,projects,milestones,tasks,deliverables,changeRequests,consultations,maintenance,payments,proposals,quotes,contracts,paymentConfigured:Boolean(process.env.PAYSTACK_SECRET_KEY)},{headers:{"Cache-Control":"private, no-store"}});
+  return NextResponse.json({ok:true,services,orders,projects,milestones,tasks,deliverables,changeRequests,consultations,maintenance,payments,projectReviews,proposals,quotes,contracts,paymentConfigured:Boolean(process.env.PAYSTACK_SECRET_KEY)},{headers:{"Cache-Control":"private, no-store"}});
 }
 
 export async function POST(request:NextRequest) {
@@ -113,9 +115,23 @@ export async function POST(request:NextRequest) {
       if(typeof body.projectId!=="string"||typeof body.title!=="string"||body.title.trim().length<4||typeof body.description!=="string"||body.description.trim().length<20)return fail("Project, change title and detailed description are required.");
       const project=await DeliveryProject.findOne({_id:String(body.projectId),clientId:user._id});
       if(!project)return fail("Project not found in your account.",404);
+      if(typeof body.title!=="string"||body.title.trim().length<4||typeof body.description!=="string"||body.description.trim().length<20)return fail("Enter a change title and explain the requested change (at least 20 characters).");
       const change=await ProjectChangeRequest.create({projectId:project._id,clientId:user._id,requestedBy:user._id,title:body.title.trim(),description:body.description.trim(),currency:"USD",status:"submitted"});
       await logClient(session,"client.change_request_submitted","project_change_request",String(change._id),"Client submitted a project change request.",{projectId:String(project._id)});
       return NextResponse.json({ok:true,message:"Your change request has been submitted for impact assessment.",item:change},{status:201});
+    }
+    if(action==="project.review"){
+      if(!validId(body.projectId))return fail("Choose a completed project to review.");
+      const project=await DeliveryProject.findOne({_id:String(body.projectId),clientId:user._id,status:"completed"});
+      if(!project)return fail("Only completed projects in your account can be reviewed.",404);
+      const rating=Number(body.rating);const title=typeof body.title==="string"?body.title.trim():"";const feedback=typeof body.feedback==="string"?body.feedback.trim():"";
+      if(!Number.isInteger(rating)||rating<1||rating>5)return fail("Choose a rating from 1 to 5.");
+      if(title.length<3||title.length>160||feedback.length<20||feedback.length>3000)return fail("Enter a short review title and at least 20 characters of feedback.");
+      const existing=await ProjectClientReview.findOne({projectId:project._id,clientId:user._id});
+      if(existing)return fail("You have already submitted a review for this project.",409);
+      const review=await ProjectClientReview.create({projectId:project._id,clientId:user._id,rating,title,feedback,status:"submitted",submittedAt:new Date()});
+      await logClient(session,"client.project_review_submitted","project_client_review",String(review._id),"Client submitted a completed-project review.",{projectId:String(project._id),rating});
+      return NextResponse.json({ok:true,message:"Thank you. Your project review has been submitted for moderation.",item:review},{status:201});
     }
     return fail("Unsupported client commercial action.");
   } catch(error) {return fail(error instanceof Error?error.message:"Request could not be completed.",400);}

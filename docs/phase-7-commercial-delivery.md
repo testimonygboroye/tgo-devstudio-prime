@@ -20,7 +20,7 @@ Phase 7 adds a commercial delivery domain separate from the public portfolio CMS
 - Founder operations UI: /admin/commercial
 - Public commercial catalogue: /services/catalogue
 - Client commercial workspace: /client/services
-- Founder API: /api/platform/commercial\n- Read-only financial ledger: /admin/commercial (Immutable ledger tab)
+- Founder API: /api/platform/commercial\n- Project reviews are linked to completed delivery projects, unique per client/project, and moderated in the Client project reviews tab.\n- Read-only financial ledger: /admin/commercial (Immutable ledger tab)
 - Founder workflow actions: /api/platform/commercial-actions
 - Client API: /api/client/commercial
 - Secure deliverable upload: /api/platform/commercial/deliverables/upload

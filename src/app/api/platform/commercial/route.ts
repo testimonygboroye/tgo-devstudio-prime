@@ -24,10 +24,11 @@ import ConsultationBooking from "@/models/ConsultationBooking";
 import ProjectTemplate from "@/models/ProjectTemplate";
 import PaymentTransaction from "@/models/PaymentTransaction";
 import FinancialLedgerEntry from "@/models/FinancialLedgerEntry";
+import ProjectClientReview from "@/models/ProjectClientReview";
 
 export const dynamic = "force-dynamic";
-type Resource = "services"|"leads"|"proposals"|"quotes"|"contracts"|"orders"|"projects"|"milestones"|"tasks"|"resources"|"deliverables"|"changeRequests"|"qa"|"maintenance"|"consultations"|"templates"|"payments"|"ledger";
-const models: Record<Resource, any> = { services:CommercialService,leads:SalesLead,proposals:CommercialProposal,quotes:CommercialQuote,contracts:CommercialContract,orders:CommercialOrder,projects:DeliveryProject,milestones:DeliveryMilestone,tasks:DeliveryTask,resources:ProjectResourceAllocation,deliverables:ProjectDeliverable,changeRequests:ProjectChangeRequest,qa:ProjectQualityReview,maintenance:MaintenanceWarranty,consultations:ConsultationBooking,templates:ProjectTemplate,payments:PaymentTransaction,ledger:FinancialLedgerEntry };
+type Resource = "services"|"leads"|"proposals"|"quotes"|"contracts"|"orders"|"projects"|"milestones"|"tasks"|"resources"|"deliverables"|"changeRequests"|"qa"|"maintenance"|"consultations"|"templates"|"payments"|"ledger"|"reviews";
+const models: Record<Resource, any> = { services:CommercialService,leads:SalesLead,proposals:CommercialProposal,quotes:CommercialQuote,contracts:CommercialContract,orders:CommercialOrder,projects:DeliveryProject,milestones:DeliveryMilestone,tasks:DeliveryTask,resources:ProjectResourceAllocation,deliverables:ProjectDeliverable,changeRequests:ProjectChangeRequest,qa:ProjectQualityReview,maintenance:MaintenanceWarranty,consultations:ConsultationBooking,templates:ProjectTemplate,payments:PaymentTransaction,ledger:FinancialLedgerEntry,reviews:ProjectClientReview };
 function fail(message:string,status=400){return NextResponse.json({ok:false,error:message},{status});}
 function validId(value:unknown){return typeof value==="string"&&Types.ObjectId.isValid(value);}
 function reference(prefix:string){return `${prefix}-${new Date().toISOString().slice(0,10).replace(/-/g,"")}-${randomUUID().slice(0,8).toUpperCase()}`;}
@@ -241,6 +242,13 @@ export async function POST(request:NextRequest) {
       change.status=body.status;change.decisionBy=session.user._id;change.decisionAt=new Date();if(body.impactOnCost!==undefined)change.impactOnCost=Math.max(0,Number(body.impactOnCost));if(body.impactOnDays!==undefined)change.impactOnDays=Math.max(0,Number(body.impactOnDays));await change.save();
       await audit(session,"delivery.change_request_decided","project_change_request",String(change._id),{status:change.status});
       return NextResponse.json({ok:true,item:change});
+    }
+    if(action==="review.update"){
+      if(!validId(body.id)||typeof body.status!=="string"||!["submitted","reviewed","featured","archived"].includes(body.status))return fail("Choose a valid project-review status.");
+      const review=await ProjectClientReview.findById(String(body.id));if(!review)return fail("Project review not found.",404);
+      review.status=body.status as typeof review.status;review.reviewedBy=session.user._id;review.reviewedAt=new Date();await review.save();
+      await audit(session,"client.project_review_status_changed","project_client_review",String(review._id),{status:review.status});
+      return NextResponse.json({ok:true,item:review});
     }
     if(action==="maintenance.create") {
       if(!validId(body.projectId)||!validId(body.orderId)||!body.startsAt||!body.endsAt||typeof body.coverage!=="string"||body.coverage.trim().length<10)return fail("Project, order, service period and coverage details are required.");

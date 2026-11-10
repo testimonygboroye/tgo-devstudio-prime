@@ -139,6 +139,7 @@ jobs:
           src/models/MaintenanceWarranty.ts
           src/models/ConsultationBooking.ts
           src/models/ProjectTemplate.ts
+          src/models/ProjectClientReview.ts
           src/models/PaymentTransaction.ts
           src/models/FinancialLedgerEntry.ts
           src/lib/commercial

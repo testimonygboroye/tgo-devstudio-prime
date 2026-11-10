@@ -93,7 +93,7 @@ export async function POST(request:NextRequest){
    const invoice=await FinanceInvoice.create({
     reference:ref(settings?.invoicePrefix||"TGO-INV"),clientId:order.clientId,orderId:order._id,currency,
     items:invoiceItems,
-    subtotalMinor,discountMinor,taxMinor,totalMinor,amountPaidMinor:0,balanceMinor:totalMinor,
+    subtotalMinor,discountMinor,taxMinor,taxName:settings?.taxName,taxRateBps:settings?.taxRateBps,taxRegistrationNumber:settings?.taxRegistrationNumber,totalMinor,amountPaidMinor:0,balanceMinor:totalMinor,
     status:"draft",dueAt:body.dueAt?new Date(body.dueAt):undefined,terms:String(body.terms||"Payment is due by the invoice due date."),
     createdBy:session.user._id,
    });

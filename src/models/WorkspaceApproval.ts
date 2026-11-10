@@ -1,0 +1,5 @@
+import {Schema,model,models,Document,Model,Types} from "mongoose";
+export interface IWorkspaceApproval extends Document {workspaceId:Types.ObjectId;documentId:Types.ObjectId;requestedBy:Types.ObjectId;reviewerIds:Types.ObjectId[];status:"pending"|"approved"|"rejected"|"withdrawn";decisionBy?:Types.ObjectId;decisionAt?:Date;comment?:string;createdAt:Date;updatedAt:Date}
+const S=new Schema<IWorkspaceApproval>({workspaceId:{type:Schema.Types.ObjectId,ref:"Workspace",required:true},documentId:{type:Schema.Types.ObjectId,ref:"WorkspaceDocument",required:true},requestedBy:{type:Schema.Types.ObjectId,ref:"User",required:true},reviewerIds:[{type:Schema.Types.ObjectId,ref:"User"}],status:{type:String,enum:["pending","approved","rejected","withdrawn"],default:"pending"},decisionBy:{type:Schema.Types.ObjectId,ref:"User"},decisionAt:Date,comment:{type:String,trim:true,maxlength:2000}},{timestamps:true});
+S.index({workspaceId:1,status:1,createdAt:-1});S.index({reviewerIds:1,status:1});
+const M:Model<IWorkspaceApproval>=models.WorkspaceApproval||model<IWorkspaceApproval>("WorkspaceApproval",S);export default M;

@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     const user = await createClientIdentity({
       name: validation.value.name, firstName: validation.value.firstName,
       middleName: validation.value.middleName, lastName: validation.value.lastName,
-      email: verification.email, password: validation.value.password, source: "self_registration",
+      email: verification.email, password: validation.value.password, googleSub: verification.googleSub, source: verification.googleSub ? "google" : "self_registration",
     });
     user.isEmailVerified = true;
     user.emailVerifiedAt = new Date();

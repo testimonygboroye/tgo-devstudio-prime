@@ -16,7 +16,7 @@ import {getPublicSiteUrl} from "@/lib/site-url";
 import {fromMinorUnits,toMinorUnits} from "@/lib/payments/money";
 import {getPaymentProvider} from "@/lib/payments/provider";
 export const dynamic="force-dynamic";
-const supported=new Set(["NGN","GHS","ZAR","USD","KES","XOF","EGP"]);
+const supported=new Set(["NGN","GHS","ZAR","USD","KES","XOF"]);
 function fail(error:string,status=400){return NextResponse.json({ok:false,error},{status});}
 
 export async function POST(request:NextRequest){

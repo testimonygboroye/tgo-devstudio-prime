@@ -10,7 +10,7 @@ const D=new Schema<IFinanceSettings>({
  baseCurrency:{type:String,default:"NGN",uppercase:true},
  enabledCurrencies:{type:[String],default:["NGN","USD"],uppercase:true},
  invoicePrefix:{type:String,default:"TGO-INV"},
- nextInvoiceNumber:{type:Number,default:1,min:1},
+ nextInvoiceNumber:{type:Number,default:0,min:0},
  allowPartialPayments:{type:Boolean,default:true},
  taxEnabled:{type:Boolean,default:false},
  taxName:{type:String,default:"VAT",maxlength:40},

@@ -64,7 +64,7 @@ const NAV_GROUPS = [
   ]},
   { title: "Commercial & Delivery", items: [
     { label: "Sales & Delivery", hrefSuffix: "/commercial", icon: ShoppingCart, badgeKey: null },
-    { label: "Finance & Payments", hrefSuffix: "/finance", icon: WalletCards, badgeKey: null },
+    { label: "Finance & Payments", hrefSuffix: "/finance", icon: WalletCards, badgeKey: null },\n    { label: "Customer Support", hrefSuffix: "/support", icon: LifeBuoy, badgeKey: null },
   ]},
   { title: "Overview", items: [
     { label: "Dashboard", hrefSuffix: "/dashboard", icon: LayoutDashboard, badgeKey: null },

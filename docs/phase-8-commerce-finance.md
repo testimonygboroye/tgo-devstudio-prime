@@ -34,6 +34,8 @@ Set these values in the production hosting environment. Never commit them or pas
 
 The client verification email continues to use the shared Brevo service. It does not require Resend.
 
+For a Nigerian Paystack business, NGN is the safe initial currency. USD is only available when the account is approved for international payments and the required USD settlement arrangement is active. GHS, ZAR, KES and XOF are tied to the relevant merchant countries. Do not enable a currency in Finance & Payments merely because the dropdown accepts its ISO code; enable only currencies shown as available for the activated Paystack business.
+
 ## Paystack setup
 
 1. Create or sign in to the TGO DevStudio Paystack business account.

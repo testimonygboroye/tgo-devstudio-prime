@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
   }
 
   await connectToDatabase();
-  const users = await User.find().select("-passwordHash -twoFactorSecret -twoFactorTempSecret").populate("role", "name slug");
+  const users = await User.find({accountType:{$ne:"client"}}).select("-passwordHash -twoFactorSecret -twoFactorTempSecret").populate("role", "name slug");
 
   return NextResponse.json({ status: "ok", users });
 }

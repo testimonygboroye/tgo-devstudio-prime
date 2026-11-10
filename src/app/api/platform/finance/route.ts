@@ -20,7 +20,7 @@ import DeliveryProject from "@/models/DeliveryProject";
 import DeliveryMilestone from "@/models/DeliveryMilestone";
 import User from "@/models/User";
 import FinancialLedgerEntry from "@/models/FinancialLedgerEntry";
-import {toMinorUnits} from "@/lib/payments/money";
+import {toMinorUnits,fromMinorUnits} from "@/lib/payments/money";
 import {buildCreditAdjustmentEntries,buildExpenseLedgerEntries,buildPaymentLedgerEntries} from "@/lib/finance/ledger";
 import {verifyAndRecordPaystackPayment} from "@/lib/payments/paystack";
 import {getPaymentProvider} from "@/lib/payments/provider";
@@ -30,6 +30,7 @@ import {getPublicSiteUrl} from "@/lib/site-url";
 export const dynamic="force-dynamic";
 function fail(message:string,status=400){return NextResponse.json({ok:false,error:message},{status});}
 function validId(value:unknown):value is string{return typeof value==="string"&&Types.ObjectId.isValid(value);}
+function escapeHtml(value:string){return value.replace(/[&<>"\']/g,(character)=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","\'":"&#39;"}[character]||character));}
 function ref(prefix:string){return `${prefix}-${new Date().toISOString().slice(0,10).replace(/-/g,"")}-${randomUUID().slice(0,8).toUpperCase()}`;}
 async function requireFounder(){const session=await getServerSession();if(!session)return {session:null,response:fail("Authentication required.",401)};if(!session.role?.isFounderRole)return {session:null,response:fail("Founder finance permissions are required.",403)};await connectToDatabase();return {session,response:null};}
 async function audit(session:any,action:string,type:string,id:string,metadata:Record<string,unknown>={}){await writePlatformAuditEvent({actorType:"human",actorId:String(session.user._id),actorLabel:session.user.name,action,module:"finance",targetType:type,targetId:id,outcome:"success",metadata});}
@@ -106,7 +107,7 @@ export async function POST(request:NextRequest){
    invoice.status=invoice.amountPaidMinor>=invoice.totalMinor?"paid":invoice.amountPaidMinor>0?"partially_paid":"issued";invoice.issuedAt=new Date();if(body.dueAt)invoice.dueAt=new Date(body.dueAt);await invoice.save();
    const client=await User.findOne({_id:invoice.clientId,accountType:"client"}).select("name email");
    if(client&&process.env.BREVO_API_KEY&&process.env.BREVO_SENDER_EMAIL){
-    try{const site=getPublicSiteUrl();await sendNotificationEmail({toEmail:client.email,toName:client.name,subject:`TGO DevStudio invoice ${invoice.reference}`,htmlContent:`<div style="font-family:Arial,sans-serif;color:#172033"><h2>Your TGO DevStudio invoice is ready</h2><p>Hello ${client.name.replace(/[&<>"]/g,"")},</p><p>Invoice <strong>${invoice.reference}</strong> for ${invoice.currency} ${(invoice.totalMinor/100).toLocaleString()} is available in your client portal.</p><p><a href="${site}/client/services">Open your client portal</a></p></div>`});}catch(emailError){console.error("Invoice notification email failed",emailError);}
+    try{const site=getPublicSiteUrl();await sendNotificationEmail({toEmail:client.email,toName:client.name,subject:`TGO DevStudio invoice ${invoice.reference}`,htmlContent:`<div style="font-family:Arial,sans-serif;color:#172033"><h2>Your TGO DevStudio invoice is ready</h2><p>Hello ${escapeHtml(client.name)},</p><p>Invoice <strong>${invoice.reference}</strong> for ${invoice.currency} ${fromMinorUnits(invoice.totalMinor,invoice.currency).toLocaleString()} is available in your client portal.</p><p><a href="${site}/client/services">Open your client portal</a></p></div>`});}catch(emailError){console.error("Invoice notification email failed",emailError);}
    }
    await audit(session,"finance.invoice_issued","finance_invoice",String(invoice._id),{reference:invoice.reference});
    return NextResponse.json({ok:true,item:invoice,message:"Invoice issued. The client portal now shows the invoice."});

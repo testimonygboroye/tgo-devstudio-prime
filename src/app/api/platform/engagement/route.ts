@@ -79,13 +79,15 @@ export async function POST(request: NextRequest) {
   }
   if (body.action === "fraud.resolve") {
     if (!mongoose.isValidObjectId(String(body.caseId || "")) || !["reviewed", "dismissed"].includes(String(body.status))) return NextResponse.json({ error: "Invalid fraud case decision." }, { status: 400 });
-    const item = await EngagementFraudCase.findOneAndUpdate({ _id: body.caseId, status: "open" }, { $set: { status: body.status, reviewedBy: auth.session.user._id } }, { new: true });
-    if (!item) return NextResponse.json({ error: "Open fraud case not found." }, { status: 404 });
+    const item = await EngagementFraudCase.findById(body.caseId);
+    if (!item || item.status !== "open") return NextResponse.json({ error: "Open fraud case not found." }, { status: 404 });
+    item.status = body.status as "reviewed" | "dismissed"; item.reviewedBy = auth.session.user._id; await item.save();
     await audit("engagement.fraud_case_resolved", "fraud_case", String(item._id), { status: item.status });
     return NextResponse.json({ item });
   }
   if (body.action === "reward.create") {
-    const name = String(body.name || "").trim(), kind = String(body.kind || "points"), pointsCost = Number(body.pointsCost);
+    const name = String(body.name || "").trim(), kindValue = String(body.kind || "points"), pointsCost = Number(body.pointsCost);
+    const kind = kindValue as "points" | "discount" | "account_credit";
     const stock = body.stock === undefined || body.stock === "" ? -1 : Number(body.stock);
     const discountPercent = Number(body.discountPercent || 0), creditMinor = Number(body.creditMinor || 0), currency = String(body.currency || "NGN").toUpperCase();
     if (name.length < 2 || !["points", "discount", "account_credit"].includes(kind) || !Number.isSafeInteger(pointsCost) || pointsCost < 1 || (!Number.isSafeInteger(stock) || stock < -1) || (kind === "discount" && (!Number.isFinite(discountPercent) || discountPercent <= 0 || discountPercent > 100)) || (kind === "account_credit" && (!Number.isSafeInteger(creditMinor) || creditMinor < 1)) || !/^[A-Z]{3}$/.test(currency)) return NextResponse.json({ error: "Enter valid reward details, stock, currency and reward value." }, { status: 400 });
@@ -145,8 +147,9 @@ export async function POST(request: NextRequest) {
   }
   if (body.action === "commission.approve") {
     if (!mongoose.isValidObjectId(String(body.commissionId || ""))) return NextResponse.json({ error: "Invalid commission." }, { status: 400 });
-    const item = await EngagementCommission.findOneAndUpdate({ _id: body.commissionId, status: "pending", amountMinor: { $gt: 0 } }, { $set: { status: "approved", approvedBy: auth.session.user._id } }, { new: true });
-    if (!item) return NextResponse.json({ error: "Pending commission not found." }, { status: 409 });
+    const item = await EngagementCommission.findById(body.commissionId);
+    if (!item || item.status !== "pending" || item.amountMinor <= 0) return NextResponse.json({ error: "Pending commission not found." }, { status: 409 });
+    item.status = "approved"; item.approvedBy = auth.session.user._id; await item.save();
     await audit("engagement.commission_approved", "commission", String(item._id));
     return NextResponse.json({ item });
   }

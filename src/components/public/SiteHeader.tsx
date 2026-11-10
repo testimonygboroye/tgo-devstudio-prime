@@ -74,7 +74,6 @@ export default function SiteHeader() {
 
           <div className="flex items-center gap-2">
             <button type="button" aria-label="Go back" onClick={() => { if (window.history.length > 1) router.back(); else router.push("/"); }} className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-neutral-300 hover:bg-base-800 sm:hidden"><ArrowLeft size={19} /></button>
-            <Link href="/client/login" className="hidden rounded-lg border border-brand-cyan-400/30 bg-brand-cyan-400/10 px-3 py-2 text-xs font-semibold text-brand-cyan-200 transition hover:bg-brand-cyan-400/20 sm:inline-flex">Client Portal</Link>
             <HelpSearchPopup />
             <button
               onClick={() => setIsMenuOpen(true)}

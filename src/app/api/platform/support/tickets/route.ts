@@ -29,6 +29,7 @@ export async function GET(request:NextRequest){
 export async function PATCH(request:NextRequest){
   const auth=await authorizePlatformPermission("support.tickets.manage");
   if(!auth.allowed)return fail("You do not have permission to manage support tickets.",auth.reason==="unauthenticated"?401:403);
+  const actor=auth.session!;
   let body:Record<string,unknown>;try{body=await request.json();}catch{return fail("Invalid request body.");}
   if(typeof body.ticketId!=="string"||!Types.ObjectId.isValid(body.ticketId))return fail("A valid ticket id is required.");
   await connectToDatabase();
@@ -38,7 +39,7 @@ export async function PATCH(request:NextRequest){
   if(action==="reply"){
     const message=typeof body.message==="string"?body.message.trim():"";
     if(message.length<1||message.length>10000)return fail("Enter a reply between 1 and 10,000 characters.");
-    ticket.messages.push({senderId:auth.session.user._id,senderType:"staff",body:message,attachments:[],createdAt:new Date()});
+    ticket.messages.push({senderId:actor.user._id,senderType:"staff",body:message,attachments:[],createdAt:new Date()});
     if(!ticket.firstRespondedAt)ticket.firstRespondedAt=new Date();
     if(ticket.status==="open"||ticket.status==="waiting_on_team")ticket.status="waiting_on_client";
   }else if(action==="assign"){
@@ -66,6 +67,6 @@ export async function PATCH(request:NextRequest){
     if(ticket.priority==="low"||ticket.priority==="normal")ticket.priority="high";
   }else return fail("Unsupported support action.");
   await ticket.save();
-  await writePlatformAuditEvent({actorType:"human",actorId:String(auth.session.user._id),actorLabel:auth.session.user.name,action:"support.ticket_"+String(action),module:"support",targetType:"support_ticket",targetId:String(ticket._id),outcome:"success",metadata:{reference:ticket.reference,status:ticket.status,priority:ticket.priority,escalationLevel:ticket.escalationLevel}});
+  await writePlatformAuditEvent({actorType:"human",actorId:String(actor.user._id),actorLabel:actor.user.name,action:"support.ticket_"+String(action),module:"support",targetType:"support_ticket",targetId:String(ticket._id),outcome:"success",metadata:{reference:ticket.reference,status:ticket.status,priority:ticket.priority,escalationLevel:ticket.escalationLevel}});
   return NextResponse.json({ok:true,ticket:{id:String(ticket._id),reference:ticket.reference,status:ticket.status,priority:ticket.priority,assignedTo:ticket.assignedTo,escalationLevel:ticket.escalationLevel}});
 }

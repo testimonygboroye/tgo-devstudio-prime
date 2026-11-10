@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
       if (title.length < 2 || content.length < 5 || !["shared", "agent"].includes(scope)) return NextResponse.json({ status: "error", message: "Provide a memory title, content and valid scope." }, { status: 400 });
       if (scope === "agent" && !body.agentId) return NextResponse.json({ status: "error", message: "Agent-specific memory requires an agent." }, { status: 400 });
       if (body.workspaceId && !await AIWorkspace.exists({ _id: body.workspaceId, active: true })) return NextResponse.json({ status: "error", message: "Workspace not found." }, { status: 404 });
-      const memory = await AIMemory.create({ title, content, scope, agentId: scope === "agent" ? body.agentId : undefined, workspaceId: body.workspaceId || undefined, tags: Array.isArray(body.tags) ? body.tags.map((x: unknown) => String(x).slice(0, 40)).slice(0, 12) : [], source: "founder_knowledge", createdBy: actorId });
+      const memory = await AIMemory.create({ title, content, scope: scope as "shared" | "agent", agentId: scope === "agent" ? body.agentId : undefined, workspaceId: body.workspaceId || undefined, tags: Array.isArray(body.tags) ? body.tags.map((x: unknown) => String(x).slice(0, 40)).slice(0, 12) : [], source: "founder_knowledge", createdBy: actorId });
       await writePlatformAuditEvent({ actorType: "human", actorId, action: "ai.memory.created", module: "ai-workforce", targetType: "AIMemory", targetId: String(memory._id), outcome: "success", metadata: { scope, workspaceId: body.workspaceId || null } });
       return NextResponse.json({ status: "ok", memoryId: memory._id, message: "Knowledge memory saved." }, { status: 201 });
     }

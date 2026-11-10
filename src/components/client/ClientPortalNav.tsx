@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { LayoutDashboard, UserRound, MessageSquareText, Bell, Activity, BriefcaseBusiness, Package } from "lucide-react";
+import { LayoutDashboard, UserRound, MessageSquareText, Bell, Activity, BriefcaseBusiness, Package, LifeBuoy } from "lucide-react";
 import ClientSignOutButton from "@/components/client/ClientSignOutButton";
 
 const links = [
@@ -10,6 +10,7 @@ const links = [
   { href: "/client/services", label: "Services & projects", icon: Package },
   { href: "/client/activity", label: "Activity", icon: Activity },
   { href: "/client/notifications", label: "Notifications", icon: Bell },
+  { href: "/client/support", label: "Support", icon: LifeBuoy },
   { href: "/workspaces", label: "Collaboration", icon: BriefcaseBusiness },
 ];
 

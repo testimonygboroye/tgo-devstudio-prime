@@ -140,6 +140,26 @@ jobs:
           src/models/ConsultationBooking.ts
           src/models/ProjectTemplate.ts
           src/models/ProjectClientReview.ts
+          src/app/api/platform/finance/route.ts
+          src/app/api/client/finance/route.ts
+          src/app/api/workforce/me/route.ts
+          'src/app/admin/(shell)/finance/page.tsx'
+          src/components/admin/platform/FinanceOperationsManager.tsx
+          src/components/client/ClientFinanceCenter.tsx
+          src/components/client/PrintReceiptButton.tsx
+          'src/app/client/invoices'
+          'src/app/client/receipts'
+          src/models/FinanceSettings.ts
+          src/models/FinanceInvoice.ts
+          src/models/FinanceReceipt.ts
+          src/models/FinanceExpense.ts
+          src/models/FinanceRefund.ts
+          src/models/FinanceInstallmentPlan.ts
+          src/models/FinanceApproval.ts
+          src/models/FinanceReconciliation.ts
+          src/models/ClientCreditAccount.ts
+          src/lib/__tests__/site-url.test.ts
+          src/lib/clients/__tests__/audience.test.ts
           src/models/PaymentTransaction.ts
           src/models/FinancialLedgerEntry.ts
           src/lib/commercial

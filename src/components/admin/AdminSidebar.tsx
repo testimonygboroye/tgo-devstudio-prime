@@ -36,6 +36,7 @@ import {
   Image,
   ScrollText,
   ShoppingCart,
+  WalletCards,
   BarChart3,
   KeyRound,
   KeySquare,
@@ -45,6 +46,7 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  LifeBuoy,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -63,6 +65,8 @@ const NAV_GROUPS = [
   ]},
   { title: "Commercial & Delivery", items: [
     { label: "Sales & Delivery", hrefSuffix: "/commercial", icon: ShoppingCart, badgeKey: null },
+    { label: "Finance & Payments", hrefSuffix: "/finance", icon: WalletCards, badgeKey: null },
+    { label: "Customer Support", hrefSuffix: "/support", icon: LifeBuoy, badgeKey: null },
   ]},
   { title: "Overview", items: [
     { label: "Dashboard", hrefSuffix: "/dashboard", icon: LayoutDashboard, badgeKey: null },

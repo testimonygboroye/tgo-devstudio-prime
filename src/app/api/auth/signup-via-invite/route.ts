@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ status: "error", message: "This invite has expired." }, { status: 410 });
   }
 
-  const existingUser = await User.findOne({ email: invite.email });
+  const existingUser = await User.findOne({ email: invite.email, accountType: { $ne: "client" } });
   if (existingUser) {
     return NextResponse.json(
       { status: "error", message: "An account with this email already exists." },
@@ -59,6 +59,7 @@ export async function POST(request: NextRequest) {
     email: invite.email,
     passwordHash,
     role: invite.role,
+    accountType: "staff",
   });
 
   invite.usedAt = new Date();

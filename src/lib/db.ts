@@ -18,6 +18,53 @@ if (!global.mongooseCache) {
   global.mongooseCache = cached;
 }
 
+let identityIndexMigration: Promise<void> | null = null;
+
+async function ensureIdentityIndexes(): Promise<void> {
+  if (!identityIndexMigration) {
+    identityIndexMigration = (async () => {
+      const database = mongoose.connection.db;
+      if (!database) throw new Error("MongoDB is connected without an accessible database handle.");
+      const users = database.collection("users");
+      // Backfill legacy staff documents before applying audience-scoped indexes.
+      await users.updateMany({ accountType: { $exists: false } }, { $set: { accountType: "staff" } });
+      // Create scoped indexes before removing legacy global unique indexes.
+      await users.createIndex({ email: 1, accountType: 1 }, { unique: true, name: "email_account_type_unique" });
+      await users.createIndex(
+        { googleSub: 1, accountType: 1 },
+        { unique: true, partialFilterExpression: { googleSub: { $type: "string" } }, name: "google_sub_account_type_unique" },
+      );
+      const indexes = await users.listIndexes().toArray();
+      for (const index of indexes) {
+        const keys = index.key as Record<string, number> | undefined;
+        if (!index.unique || !keys || Object.keys(keys).length !== 1) continue;
+        if (keys.email === 1 || keys.googleSub === 1) await users.dropIndex(String(index.name));
+      }
+      const payments = database.collection("paymenttransactions");
+      await payments.createIndex({ bankTransferReference: 1 }, { unique: true, partialFilterExpression: { provider: "bank_transfer", bankTransferReference: { $type: "string" } }, name: "bank_transfer_reference_unique" });
+      const refunds = database.collection("financerefunds");
+      await refunds.createIndex({ providerReference: 1 }, { unique: true, partialFilterExpression: { providerReference: { $type: "string" } }, name: "refund_provider_reference_unique" });
+      const receipts = database.collection("financereceipts");
+      await receipts.createIndex({ paymentTransactionId: 1 }, { unique: true, name: "paymentTransactionId_1" });
+      await receipts.createIndex({ clientId: 1, issuedAt: -1 }, { name: "receipt_client_date" });
+      const invoices = database.collection("financeinvoices");
+      await invoices.createIndex({ orderId: 1 }, { unique: true, name: "orderId_1" });
+      await invoices.createIndex({ reference: 1 }, { unique: true, name: "reference_1" });
+      const ledger = database.collection("financialledgerentries");
+      await ledger.createIndex({ sourceReference: 1, accountCode: 1 }, { unique: true, name: "source_account_unique" });
+      const ledgerIndexes = await ledger.listIndexes().toArray();
+      for (const index of ledgerIndexes) {
+        const keys = index.key as Record<string, number> | undefined;
+        if (index.unique && keys?.paymentTransactionId === 1 && keys?.accountCode === 1) await ledger.dropIndex(String(index.name));
+      }
+    })().catch((error: unknown) => {
+      identityIndexMigration = null;
+      throw error;
+    });
+  }
+  await identityIndexMigration;
+}
+
 export async function connectToDatabase(): Promise<typeof mongoose> {
   if (!MONGODB_URI) {
     throw new Error(
@@ -29,6 +76,7 @@ export async function connectToDatabase(): Promise<typeof mongoose> {
 
   if (readyState === 1) {
     cached.conn = mongoose;
+    await ensureIdentityIndexes();
     return mongoose;
   }
 
@@ -48,8 +96,9 @@ export async function connectToDatabase(): Promise<typeof mongoose> {
     maxPoolSize: 10,
     minPoolSize: 0,
     maxIdleTimeMS: 60000,
-  }).then(() => {
+  }).then(async () => {
     cached.conn = mongoose;
+    await ensureIdentityIndexes();
     return mongoose;
   }).catch((error: unknown) => {
     cached.conn = null;

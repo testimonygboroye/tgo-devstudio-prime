@@ -20,6 +20,10 @@ import ConsultationBooking from "@/models/ConsultationBooking";
 import PaymentTransaction from "@/models/PaymentTransaction";
 import MaintenanceWarranty from "@/models/MaintenanceWarranty";
 import ProjectClientReview from "@/models/ProjectClientReview";
+import FinanceSettings from "@/models/FinanceSettings";
+import FinanceInvoice from "@/models/FinanceInvoice";
+import ClientCreditAccount from "@/models/ClientCreditAccount";
+import FinanceInstallmentPlan from "@/models/FinanceInstallmentPlan";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
 
 export const dynamic="force-dynamic";
@@ -37,7 +41,7 @@ async function logClient(session:ClientSession,action:string,targetType:string,t
 export async function GET() {
   const session=await clientSession();if(!session)return fail("Verified client sign-in required.",401);
   await connectToDatabase();
-  const [services,orders,projects,changeRequests,consultations,maintenance,payments,projectReviews]=await Promise.all([
+  const [services,orders,projects,changeRequests,consultations,maintenance,payments,projectReviews,financeSettings,invoices,credits,installmentPlans]=await Promise.all([
     CommercialService.find({status:"published"}).sort({category:1,name:1}).lean(),
     CommercialOrder.find({clientId:session.user._id}).sort({createdAt:-1}).lean(),
     DeliveryProject.find({clientId:session.user._id}).sort({updatedAt:-1}).lean(),
@@ -46,6 +50,10 @@ export async function GET() {
     MaintenanceWarranty.find({clientId:session.user._id}).sort({endsAt:-1}).lean(),
     PaymentTransaction.find({clientId:session.user._id}).select("-accessCode -authorizationUrl").sort({createdAt:-1}).limit(50).lean(),
     ProjectClientReview.find({clientId:session.user._id}).sort({submittedAt:-1}).lean(),
+    FinanceSettings.findOne({key:"global"}).lean(),
+    FinanceInvoice.find({clientId:session.user._id,status:{$nin:["draft","void"]}}).sort({createdAt:-1}).lean(),
+    ClientCreditAccount.find({clientId:session.user._id}).lean(),
+    FinanceInstallmentPlan.find({clientId:session.user._id,status:"active"}).sort({createdAt:-1}).lean(),
   ]);
   const projectIds=projects.map(p=>p._id);
   const [milestones,tasks,deliverables]=await Promise.all([
@@ -58,7 +66,8 @@ export async function GET() {
     CommercialQuote.find({clientId:session.user._id,status:{$in:["issued","accepted"]}}).sort({createdAt:-1}).lean(),
     CommercialContract.find({clientId:session.user._id,status:{$in:["issued","accepted"]}}).sort({createdAt:-1}).lean(),
   ]);
-  return NextResponse.json({ok:true,services,orders,projects,milestones,tasks,deliverables,changeRequests,consultations,maintenance,payments,projectReviews,proposals,quotes,contracts,paymentConfigured:Boolean(process.env.PAYSTACK_SECRET_KEY)},{headers:{"Cache-Control":"private, no-store"}});
+  const bankTransfer=financeSettings?.bankTransferEnabled?{enabled:true,bankName:financeSettings.bankName,accountName:financeSettings.bankAccountName,accountNumber:financeSettings.bankAccountNumber,bankCode:financeSettings.bankCode,instructions:financeSettings.bankTransferInstructions}:{enabled:false};
+  return NextResponse.json({ok:true,services,orders,projects,milestones,tasks,deliverables,changeRequests,consultations,maintenance,payments,projectReviews,proposals,quotes,contracts,invoices,credits,installmentPlans,bankTransfer,paymentConfigured:Boolean(process.env.PAYSTACK_SECRET_KEY&&financeSettings?.paystackEnabled)},{headers:{"Cache-Control":"private, no-store"}});
 }
 
 export async function POST(request:NextRequest) {

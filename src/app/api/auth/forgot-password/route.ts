@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
 
   await connectToDatabase();
 
-  const user = await User.findOne({ email: email.toLowerCase().trim() });
+  const user = await User.findOne({ email: email.toLowerCase().trim(), accountType: { $ne: "client" } });
 
   if (user) {
     const rawToken = generateRawToken();

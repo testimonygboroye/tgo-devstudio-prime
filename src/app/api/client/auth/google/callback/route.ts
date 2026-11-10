@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
-import { createClientIdentity, ensureClientRole } from "@/lib/clients/identity";
+import { ensureClientRole } from "@/lib/clients/identity";
 import { signAccessToken, signRefreshToken, signTemp2FAToken } from "@/lib/auth/jwt";
 import { setAuthCookies } from "@/lib/auth/cookies";
 import User from "@/models/User";
@@ -8,11 +8,13 @@ import ClientProfile from "@/models/ClientProfile";
 import ClientActivity from "@/models/ClientActivity";
 import { rememberClientAccount } from "@/lib/clients/account-selector";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
+import { getPublicSiteUrl } from "@/lib/site-url";
 
 type GoogleProfile = { sub?: string; email?: string; email_verified?: boolean; name?: string };
 
 export async function GET(request: NextRequest) {
-  const siteUrl = process.env.SITE_URL || request.nextUrl.origin;
+  let siteUrl = request.nextUrl.origin;
+  try { siteUrl = getPublicSiteUrl(request); } catch { return NextResponse.redirect(new URL("/client/login?error=google_unavailable", request.url)); }
   const fail = (reason: string) => NextResponse.redirect(new URL(`/client/login?error=${encodeURIComponent(reason)}`, siteUrl));
   const code = request.nextUrl.searchParams.get("code");
   const state = request.nextUrl.searchParams.get("state");
@@ -41,9 +43,9 @@ export async function GET(request: NextRequest) {
     if (!profile.sub || !email || profile.email_verified !== true) return fail("google_email_unverified");
 
     await connectToDatabase();
-    let user = await User.findOne({ googleSub: profile.sub });
+    let user = await User.findOne({ googleSub: profile.sub, accountType: "client" });
     if (!user) {
-      user = await User.findOne({ email });
+      user = await User.findOne({ email, accountType: "client" });
       if (user) {
         if (user.accountType !== "client" || !user.isEmailVerified) return fail("google_account_conflict");
         if (user.googleSub && user.googleSub !== profile.sub) return fail("google_account_conflict");
@@ -51,11 +53,7 @@ export async function GET(request: NextRequest) {
         if (!user.authProviders?.includes("google")) user.authProviders = [...(user.authProviders || []), "google"];
         await user.save();
       } else {
-        const nameParts=(profile.name?.trim()||email.split("@")[0]).split(/\s+/).filter(Boolean);
-        user = await createClientIdentity({
-          name: nameParts.join(" "), firstName:nameParts[0]||"Client", middleName:nameParts.length>2?nameParts.slice(1,-1).join(" "):undefined, lastName:nameParts.length>1?nameParts[nameParts.length-1]:"Account", email,
-          googleSub: profile.sub, source: "google",
-        });
+        return fail("google_account_unavailable");
       }
     }
     if (user.accountType !== "client" || user.isBanned || !user.isEmailVerified) return fail("google_account_unavailable");

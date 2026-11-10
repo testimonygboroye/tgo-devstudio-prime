@@ -12,6 +12,9 @@ import DeliveryMilestone from "@/models/DeliveryMilestone";
 import ProjectDeliverable from "@/models/ProjectDeliverable";
 import {writePlatformAuditEvent} from "@/lib/platform/audit";
 export const dynamic="force-dynamic";
+type ProjectStat={_id:unknown;total:number;completed:number;released:number};
+type PopulatedProject={_id:{toString():string};name?:string;reference?:string};
+type PopulatedMilestone={title?:string};
 
 export async function GET(){
  const ctx=await getActiveEmployeeContext();if(!ctx)return NextResponse.json({error:"An active employee account is required."},{status:403});
@@ -31,7 +34,7 @@ export async function GET(){
   DeliveryMilestone.aggregate([{$match:{projectId:{$in:projectIds}}},{$group:{_id:"$projectId",total:{$sum:1},completed:{$sum:{$cond:[{$eq:["$status","completed"]},1,0]}}}}]),
   ProjectDeliverable.aggregate([{$match:{projectId:{$in:projectIds}}},{$group:{_id:"$projectId",total:{$sum:1},released:{$sum:{$cond:[{$eq:["$status","released"]},1,0]}}}}]),
  ]);
- const stats=(rows:any[],id:unknown)=>rows.find(row=>String(row._id)===String(id))||{total:0,completed:0,released:0};
+ const stats=(rows:ProjectStat[],id:unknown)=>rows.find(row=>String(row._id)===String(id))||{total:0,completed:0,released:0};
  return NextResponse.json({
   employee:{id:String(ctx.employee._id),employeeCode:ctx.employee.employeeCode,employmentStatus:ctx.employee.employmentStatus,employmentType:ctx.employee.employmentType,timezone:ctx.employee.timezone,workLocation:ctx.employee.workLocation,onboardingChecklist:ctx.employee.onboardingChecklist},
   schedule:schedule?{timezone:schedule.timezone,days:schedule.days}:null,
@@ -39,7 +42,7 @@ export async function GET(){
   requests:requests.map(x=>({id:String(x._id),requestType:x.requestType,category:x.category,subject:x.subject,status:x.status,priority:x.priority,createdAt:x.createdAt.toISOString(),startDate:x.startDate?.toISOString()||null,endDate:x.endDate?.toISOString()||null,decisionNote:x.decisionNote||""})),
   reviews:reviews.map(x=>({id:String(x._id),periodStart:x.periodStart.toISOString(),periodEnd:x.periodEnd.toISOString(),status:x.status,ratings:x.ratings,strengths:x.strengths,improvementAreas:x.improvementAreas,goals:x.goals,employeeComment:x.employeeComment||""})),
   projects:projects.map(project=>{const tasksForProject=stats(taskStats,project._id),milestonesForProject=stats(milestoneStats,project._id),deliverablesForProject=stats(deliverableStats,project._id);return {id:String(project._id),reference:project.reference,name:project.name,status:project.status,priority:project.priority,targetDate:project.targetDate?.toISOString()||null,taskCount:tasksForProject.total,completedTaskCount:tasksForProject.completed,milestoneCount:milestonesForProject.total,completedMilestoneCount:milestonesForProject.completed,deliverableCount:deliverablesForProject.total,releasedDeliverableCount:deliverablesForProject.released};}),
-  tasks:tasks.map(task=>{const project=task.projectId as any;const milestone=task.milestoneId as any;return {id:String(task._id),title:task.title,description:task.description,status:task.status,priority:task.priority,dueDate:task.dueDate?.toISOString()||null,projectId:String(project?._id||task.projectId),projectName:project?.name||"Project",projectReference:project?.reference||"",milestoneTitle:milestone?.title||null};}),
+  tasks:tasks.map(task=>{const project=task.projectId as unknown as PopulatedProject|null;const milestone=task.milestoneId as unknown as PopulatedMilestone|null;return {id:String(task._id),title:task.title,description:task.description,status:task.status,priority:task.priority,dueDate:task.dueDate?.toISOString()||null,projectId:String(project?._id||task.projectId),projectName:project?.name||"Project",projectReference:project?.reference||"",milestoneTitle:milestone?.title||null};}),
  },{headers:{"Cache-Control":"private, no-store"}});
 }
 

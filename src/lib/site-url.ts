@@ -7,13 +7,14 @@ import type { NextRequest } from "next/server";
  */
 export function getPublicSiteUrl(_request?: NextRequest): string {
   const candidates = [
+    process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : undefined,
     process.env.SITE_URL,
     process.env.NEXT_PUBLIC_SITE_URL,
     process.env.RENDER_EXTERNAL_URL,
     process.env.URL,
     process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined,
-    // The established public production host is the safe final fallback.
-    "https://tgo-devstudio-prime.onrender.com",
+    // Stable Vercel production origin is the canonical client OAuth host.
+    "https://tgo-devstudio-prime.vercel.app",
   ];
 
   for (const candidate of candidates) {

@@ -1,0 +1,5 @@
+import { Schema, model, models, Document, Model, Types } from "mongoose";
+export interface IAttendanceRecord extends Document { userId:Types.ObjectId; workDate:string; clockInAt:Date; clockOutAt?:Date; clockInNote?:string; clockOutNote?:string; source:"employee"|"admin"; createdAt:Date; updatedAt:Date; }
+const AttendanceRecordSchema=new Schema<IAttendanceRecord>({userId:{type:Schema.Types.ObjectId,ref:"User",required:true},workDate:{type:String,required:true},clockInAt:{type:Date,required:true},clockOutAt:Date,clockInNote:{type:String,trim:true,maxlength:300},clockOutNote:{type:String,trim:true,maxlength:300},source:{type:String,enum:["employee","admin"],default:"employee"}},{timestamps:true});
+AttendanceRecordSchema.index({userId:1,workDate:1},{unique:true}); AttendanceRecordSchema.index({workDate:1,clockInAt:1});
+const AttendanceRecord:Model<IAttendanceRecord>=models.AttendanceRecord||model<IAttendanceRecord>("AttendanceRecord",AttendanceRecordSchema); export default AttendanceRecord;

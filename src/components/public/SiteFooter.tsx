@@ -32,6 +32,7 @@ export default function SiteFooter() {
   ];
 
   const LEGAL_LINKS = [
+    { label: "Client Portal", href: "/client/login" },
     { label: t("nav.contact"), href: "/contact" },
     { label: t("nav.bookACall"), href: "/book-a-call" },
     { label: t("nav.help"), href: "/help" },

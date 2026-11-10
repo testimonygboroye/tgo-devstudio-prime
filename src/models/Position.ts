@@ -1,0 +1,5 @@
+import { Schema, model, models, Document, Model, Types } from "mongoose";
+export interface IPosition extends Document { title:string; slug:string; departmentId:Types.ObjectId; description?:string; employmentTypes:string[]; level:number; status:"active"|"archived"; createdBy:Types.ObjectId; createdAt:Date; updatedAt:Date; }
+const PositionSchema=new Schema<IPosition>({title:{type:String,required:true,trim:true,maxlength:120},slug:{type:String,required:true,lowercase:true,trim:true},departmentId:{type:Schema.Types.ObjectId,ref:"Department",required:true},description:{type:String,trim:true,maxlength:1500},employmentTypes:{type:[String],enum:["full_time","part_time","contract","intern"],default:["full_time"]},level:{type:Number,default:100,min:1,max:1000},status:{type:String,enum:["active","archived"],default:"active"},createdBy:{type:Schema.Types.ObjectId,ref:"User",required:true}},{timestamps:true});
+PositionSchema.index({slug:1},{unique:true}); PositionSchema.index({departmentId:1,status:1});
+const Position:Model<IPosition>=models.Position||model<IPosition>("Position",PositionSchema); export default Position;

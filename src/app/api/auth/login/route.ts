@@ -5,6 +5,10 @@ import Role from "@/models/Role";
 import { verifyPassword } from "@/lib/auth/passwords";
 import { signAccessToken, signRefreshToken, signTemp2FAToken } from "@/lib/auth/jwt";
 import { setAuthCookies } from "@/lib/auth/cookies";
+import { rememberClientAccount } from "@/lib/clients/account-selector";
+import { canUseAuthenticationAudience } from "@/lib/clients/auth-audience";
+import ClientActivity from "@/models/ClientActivity";
+import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import { apiError, apiSuccess } from "@/lib/i18n/apiResponse";
 
 const MAX_FAILED_ATTEMPTS = 5;
@@ -12,7 +16,7 @@ const LOCK_DURATION_MS = 15 * 60 * 1000;
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { email, password } = body as { email?: string; password?: string };
+  const { email, password, audience } = body as { email?: string; password?: string; audience?: string };
 
   if (!email || !password) {
     return apiError("emailPasswordRequired", "Email and password are required.", 400);
@@ -24,6 +28,14 @@ export async function POST(request: NextRequest) {
 
   if (!user) {
     return apiError("invalidCredentials", "Invalid credentials.", 401);
+  }
+
+  if (!canUseAuthenticationAudience(user.accountType, audience)) {
+    return apiError("invalidCredentials", "Invalid credentials.", 401);
+  }
+
+  if (user.accountType === "client" && !user.isEmailVerified) {
+    return apiError("emailVerificationRequired", "Verify your email address before signing in. You can request a new verification email from the client sign-in page.", 403);
   }
 
   if (user.isBanned) {
@@ -94,6 +106,13 @@ export async function POST(request: NextRequest) {
   setAuthCookies(response, accessToken, refreshToken);
   // Keep the most recently authenticated account available to the sign-in screen,
   // regardless of whether the user signed in with Google or email/password.
+  if (user.accountType === "client") {
+    rememberClientAccount(response, request, user.email);
+    await Promise.all([
+      ClientActivity.create({ clientId: user._id, actorId: user._id, actorType: "client", action: "client.password_signed_in", summary: "Client signed in with email and password." }),
+      writePlatformAuditEvent({ actorType: "human", actorId: String(user._id), actorLabel: user.name, action: "client.password_signed_in", module: "clients", targetType: "client", targetId: String(user._id), outcome: "success" }),
+    ]);
+  }
   response.cookies.set("tgo_last_google_account", user.email.toLowerCase(), {
     path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax",
     secure: process.env.NODE_ENV === "production", httpOnly: false,

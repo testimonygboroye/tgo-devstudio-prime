@@ -25,14 +25,18 @@ import {
   BookOpen,
   MessageCircleQuestion,
   UserCog,
+  Contact,
+  MessageSquareText,
   MessageSquare,
   ShieldCheck,
   Crown,
   Building2,
+  Network,
   Image,
   ScrollText,
   BarChart3,
   KeyRound,
+  KeySquare,
   Zap,
   Video,
   Settings,
@@ -52,6 +56,7 @@ interface AdminSidebarProps {
 const NAV_GROUPS = [
   { title: "Founder", items: [
     { label: "Founder Control Centre", hrefSuffix: "/platform", icon: Crown, badgeKey: null },
+    { label: "Business Roles", hrefSuffix: "/business-roles", icon: KeySquare, badgeKey: null },
     { label: "Business Ecosystem", hrefSuffix: "/businesses", icon: Building2, badgeKey: null },
   ]},
   { title: "Overview", items: [
@@ -61,6 +66,8 @@ const NAV_GROUPS = [
   { title: "People & Access", items: [
     { label: "Invites", hrefSuffix: "/invites", icon: UserPlus, badgeKey: null },
     { label: "Users & Roles", hrefSuffix: "/users", icon: UserCog, badgeKey: null },
+    { label: "Client Management", hrefSuffix: "/clients", icon: Contact, badgeKey: null },
+    { label: "Workforce Management", hrefSuffix: "/workforce", icon: Network, badgeKey: null },
     { label: "Manage Roles", hrefSuffix: "/roles", icon: ShieldCheck, badgeKey: null },
     { label: "Security (2FA)", hrefSuffix: "/security", icon: KeyRound, badgeKey: null },
     { label: "Audit Log", hrefSuffix: "/audit-log", icon: ScrollText, badgeKey: null },
@@ -81,6 +88,7 @@ const NAV_GROUPS = [
   ]},
   { title: "Messages & Leads", items: [
     { label: "Messages", hrefSuffix: "/messages", icon: MessageSquare, badgeKey: "messages" },
+    { label: "Client Enquiries", hrefSuffix: "/client-enquiries", icon: MessageSquareText, badgeKey: null },
     { label: "Contact", hrefSuffix: "/contact", icon: Mail, badgeKey: "contactSubmissions" },
     { label: "Applications", hrefSuffix: "/applications", icon: Inbox, badgeKey: "jobApplications" },
     { label: "Newsletter", hrefSuffix: "/newsletter", icon: Send, badgeKey: null },
@@ -113,7 +121,6 @@ export default function AdminSidebar({
   const [counts, setCounts] = useState<Record<string, number>>({});
   const pathname = usePathname();
   const router = useRouter();
-  useEffect(() => { setIsMobileOpen(false); }, [pathname]);
   const collapsed = isCollapsed && !isMobileOpen;
 
   const basePathSegment = basePath;
@@ -139,10 +146,12 @@ export default function AdminSidebar({
   }, []);
 
   useEffect(() => {
-    loadCounts();
-    const interval = setInterval(loadCounts, 30000);
-
-    return () => clearInterval(interval);
+    const initialLoad = setTimeout(() => { void loadCounts(); }, 0);
+    const interval = setInterval(() => { void loadCounts(); }, 30000);
+    return () => {
+      clearTimeout(initialLoad);
+      clearInterval(interval);
+    };
   }, [loadCounts]);
 
   async function handleLogout() {
@@ -150,7 +159,7 @@ export default function AdminSidebar({
     if (!confirmed) return;
 
     await fetch("/api/auth/logout", { method: "POST" });
-    window.location.href = `${basePathSegment}/login`;
+    router.replace(`${basePathSegment}/login`);
   }
 
   return (
@@ -193,12 +202,12 @@ export default function AdminSidebar({
               </summary>
               <div className="mt-1 space-y-1">
                 {group.items.map((item) => {
-                  const href = `${basePathSegment}${item.hrefSuffix}`;
+                  const href = item.hrefSuffix === "/workforce" && !isFounder ? "/workforce" : `${basePathSegment}${item.hrefSuffix}`;
                   const isActive = item.hrefSuffix === "/dashboard" || item.hrefSuffix === "/help" ? pathname === href : pathname.startsWith(href);
                   const Icon = item.icon;
                   const count = item.badgeKey ? counts[item.badgeKey] || 0 : 0;
                   return (
-                    <Link key={item.hrefSuffix} href={href} prefetch={false} onPointerEnter={() => router.prefetch(href)} onFocus={() => router.prefetch(href)} onTouchStart={() => router.prefetch(href)} title={item.label}
+                    <Link key={item.hrefSuffix} href={href} prefetch={false} onClick={() => setIsMobileOpen(false)} onPointerEnter={() => router.prefetch(href)} onFocus={() => router.prefetch(href)} onTouchStart={() => router.prefetch(href)} title={item.label}
                       className={`group relative flex items-center gap-3.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-75 ${isActive ? "brand-gradient-bg text-white shadow-md shadow-brand-violet-600/20" : "text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"}`}>
                       <span className="relative flex-shrink-0 flex items-center justify-center"><Icon size={18} className={isActive ? "text-white" : "text-brand-cyan-400 group-hover:scale-110 transition-transform"}/>
                         {count > 0 && <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white shadow-sm">{count > 9 ? "9+" : count}</span>}

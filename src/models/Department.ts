@@ -1,0 +1,5 @@
+import { Schema, model, models, Document, Model, Types } from "mongoose";
+export interface IDepartment extends Document { name:string; slug:string; description?:string; headId?:Types.ObjectId; parentDepartmentId?:Types.ObjectId; status:"active"|"archived"; createdBy:Types.ObjectId; createdAt:Date; updatedAt:Date; }
+const DepartmentSchema=new Schema<IDepartment>({name:{type:String,required:true,trim:true,maxlength:120},slug:{type:String,required:true,lowercase:true,trim:true},description:{type:String,trim:true,maxlength:1000},headId:{type:Schema.Types.ObjectId,ref:"User"},parentDepartmentId:{type:Schema.Types.ObjectId,ref:"Department"},status:{type:String,enum:["active","archived"],default:"active"},createdBy:{type:Schema.Types.ObjectId,ref:"User",required:true}},{timestamps:true});
+DepartmentSchema.index({slug:1},{unique:true}); DepartmentSchema.index({status:1,name:1});
+const Department:Model<IDepartment>=models.Department||model<IDepartment>("Department",DepartmentSchema); export default Department;

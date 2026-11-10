@@ -9,6 +9,9 @@ import { getAdminBasePath } from "@/lib/adminPath";
 import { connectToDatabase } from "@/lib/db";
 import { getPlatformRuntimeConfig } from "@/lib/platform/config";
 import { PLATFORM_MODULE_REGISTRY } from "@/platform/registry/modules";
+import FounderApplicationLauncher from "@/components/admin/platform/FounderApplicationLauncher";
+import FounderUniversalSearch from "@/components/admin/platform/FounderUniversalSearch";
+import FounderNotificationCentre from "@/components/admin/platform/FounderNotificationCentre";
 import BusinessMembership from "@/models/BusinessMembership";
 import BusinessRole from "@/models/BusinessRole";
 import PlatformAuditEvent from "@/models/PlatformAuditEvent";
@@ -54,7 +57,7 @@ export default async function FounderControlCentrePage() {
   if (!session.role.isFounderRole) redirect(`${basePath}/dashboard`);
 
   await connectToDatabase();
-  const [activeMemberships, suspendedMemberships, roleCount, auditToday, unreadNotifications, pendingEvents, failedEvents, recentActivity] = await Promise.all([
+  const [activeMemberships, suspendedMemberships, roleCount, auditToday, unreadNotifications, pendingEvents, failedEvents, recentActivity, recentNotifications] = await Promise.all([
     BusinessMembership.countDocuments({ status: "active" }),
     BusinessMembership.countDocuments({ status: "suspended" }),
     BusinessRole.countDocuments({}),
@@ -63,6 +66,7 @@ export default async function FounderControlCentrePage() {
     PlatformEvent.countDocuments({ status: { $in: ["pending", "processing"] } }),
     PlatformEvent.countDocuments({ status: "failed" }),
     PlatformAuditEvent.find({}).sort({ createdAt: -1 }).limit(7).select("actorType actorLabel actorId action module outcome targetType targetId createdAt").lean(),
+    PlatformNotification.find({ recipientId: session.user._id }).sort({ createdAt: -1 }).limit(12).select("category title body href readAt createdAt").lean(),
   ]);
 
   const config = getPlatformRuntimeConfig();
@@ -116,6 +120,21 @@ export default async function FounderControlCentrePage() {
         </div>
       )}
 
+      <FounderApplicationLauncher adminBasePath={basePath} />
+
+      <FounderUniversalSearch adminBasePath={basePath} />
+
+      <section className="grid gap-4 sm:grid-cols-2">
+        <Link href={`${basePath}/security`} className="surface-card flex items-center justify-between rounded-2xl border border-[var(--border-subtle)] p-5 transition hover:border-cyan-400/40">
+          <div><p className="text-xs font-semibold uppercase tracking-[.16em] text-brand-cyan-400">Account protection</p><h3 className="mt-1 font-bold text-[var(--text-primary)]">Security settings</h3><p className="mt-1 text-sm text-[var(--text-muted)]">Review two-factor authentication and account security controls.</p></div><ShieldCheck className="shrink-0 text-cyan-300" size={23}/>
+        </Link>
+        <Link href={`${basePath}/settings`} className="surface-card flex items-center justify-between rounded-2xl border border-[var(--border-subtle)] p-5 transition hover:border-cyan-400/40">
+          <div><p className="text-xs font-semibold uppercase tracking-[.16em] text-brand-cyan-400">Preferences</p><h3 className="mt-1 font-bold text-[var(--text-primary)]">Administration settings</h3><p className="mt-1 text-sm text-[var(--text-muted)]">Open the existing administration preferences.</p></div><Gauge className="shrink-0 text-cyan-300" size={23}/>
+        </Link>
+      </section>
+
+      <FounderNotificationCentre initialUnread={unreadNotifications} initialNotifications={recentNotifications.map((item) => ({ id: String(item._id), category: item.category, title: item.title, body: item.body, href: item.href || null, readAt: item.readAt?.toISOString() || null, createdAt: item.createdAt.toISOString() }))} />
+
       <section>
         <div className="mb-4 flex items-end justify-between gap-3">
           <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-cyan-400">Operational snapshot</p><h3 className="mt-1 text-xl font-bold text-[var(--text-primary)]">Platform at a glance</h3></div>
@@ -144,7 +163,7 @@ export default async function FounderControlCentrePage() {
                   <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="text-sm font-semibold text-[var(--text-primary)]">{module.name}</p><span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${isLive ? "bg-emerald-400/10 text-emerald-300" : "bg-violet-400/10 text-violet-300"}`}>{isLive ? "Available" : "Roadmap"}</span></div><p className="mt-1.5 text-xs leading-5 text-[var(--text-secondary)]">{module.description}</p></div>
                 </div>
               );
-              return <div key={module.id}>{content}</div>;
+              return module.href && isLive ? <Link key={module.id} href={`${basePath}${module.href}`} className="block h-full">{content}</Link> : <div key={module.id}>{content}</div>;
             })}
           </div>
         </div>

@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, phase-1/core-platform-foundation, phase-2/founder-control-centre, phase-3/business-ecosystem-administration]
+    branches: [main, phase-1/core-platform-foundation, phase-2/founder-control-centre, phase-3/business-ecosystem-administration, platform/phase-4-client-crm-portal, platform/phase-5-workforce-management]
   workflow_dispatch:
   pull_request:
     branches: [main]
@@ -43,11 +43,15 @@ jobs:
       - name: Run unit tests
         run: npm test -- --runInBand
 
-      - name: Lint new platform foundation
+      - name: Lint platform, client and public portal
         run: >-
           npx eslint
           src/app/api/platform/health/route.ts
+          src/app/api/platform/notifications/route.ts
+          src/app/api/platform/search/route.ts
+          src/app/api/platform/roles/route.ts
           'src/app/admin/(shell)/platform/page.tsx'
+          'src/app/admin/(shell)/business-roles/page.tsx'
           src/lib/platform
           src/models/BusinessRole.ts
           src/models/BusinessMembership.ts
@@ -58,8 +62,53 @@ jobs:
           src/app/api/platform/organizations/route.ts
           'src/app/admin/(shell)/businesses/page.tsx'
           src/components/admin/platform/OrganizationManager.tsx
+          src/components/admin/platform/FounderApplicationLauncher.tsx
+          src/components/admin/platform/FounderUniversalSearch.tsx
+          src/components/admin/platform/FounderNotificationCentre.tsx
+          src/components/admin/platform/BusinessRoleManager.tsx
+          src/components/admin/AdminSidebar.tsx
           src/app/global-error.tsx
           src/platform
+          src/models/User.ts
+          src/app/api/auth/login/route.ts
+          src/app/api/auth/verify-2fa/route.ts
+          src/app/api/auth/logout/route.ts
+          src/models/ClientProfile.ts
+          src/models/ClientEnquiry.ts
+          src/models/ClientActivity.ts
+          src/models/ClientEmailVerification.ts
+          src/lib/clients
+          src/app/api/client
+          'src/app/client'
+          src/components/client
+          src/app/api/platform/clients
+          src/app/api/platform/client-enquiries/route.ts
+          'src/app/admin/(shell)/clients/page.tsx'
+          'src/app/admin/(shell)/client-enquiries/page.tsx'
+          src/components/admin/platform/ClientManagement.tsx
+          src/components/admin/platform/ClientEnquiryManager.tsx
+          src/components/public/SiteFooter.tsx
+          src/models/Department.ts
+          src/models/Team.ts
+          src/models/Position.ts
+          src/models/EmployeeProfile.ts
+          src/models/AttendanceRecord.ts
+          src/models/WorkforceRequest.ts
+          src/models/EmployeeSchedule.ts
+          src/models/PerformanceReview.ts
+          src/lib/workforce
+          src/app/api/platform/workforce
+          src/app/api/workforce
+          'src/app/admin/(shell)/workforce/page.tsx'
+          'src/app/workforce'
+          src/components/workforce
+          src/components/admin/platform/WorkforceManager.tsx
+          src/components/admin/platform/WorkforceOperations.tsx
+          src/components/admin/platform/WorkforceStructureDirectory.tsx
+          src/components/admin/platform/WorkforceHierarchyAssignments.tsx
+          src/components/admin/platform/WorkforceEmployeeAssignments.tsx
+          src/components/admin/platform/WorkforceAttendanceReport.tsx
+          src/app/admin/login/page.tsx
 
       - name: Type check and production build
         run: npm run build

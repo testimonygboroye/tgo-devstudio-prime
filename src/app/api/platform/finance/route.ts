@@ -37,7 +37,7 @@ async function requireFounder(){const session=await getServerSession();if(!sessi
 type FinanceAdminSession=NonNullable<Awaited<ReturnType<typeof getServerSession>>>;
 async function audit(session:FinanceAdminSession,action:string,type:string,id:string,metadata:Record<string,unknown>={}){await writePlatformAuditEvent({actorType:"human",actorId:String(session.user._id),actorLabel:session.user.name,action,module:"finance",targetType:type,targetId:id,outcome:"success",metadata});}
 
-export async function GET(request:NextRequest){
+export async function GET(){
  const auth=await requireFounder();if(auth.response)return auth.response;
  await FinanceInvoice.updateMany({status:{$in:["issued","partially_paid"]},dueAt:{$lt:new Date()},balanceMinor:{$gt:0}},{$set:{status:"overdue"}});
  await FinanceInstallmentPlan.updateMany({status:"active",installments:{$elemMatch:{status:{$in:["pending","partially_paid"]},dueAt:{$lt:new Date()}}}},{$set:{"installments.$[due].status":"overdue"}},{arrayFilters:[{"due.status":{$in:["pending","partially_paid"]},"due.dueAt":{$lt:new Date()}}]});

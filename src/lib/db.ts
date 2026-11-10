@@ -26,6 +26,8 @@ async function ensureIdentityIndexes(): Promise<void> {
       const database = mongoose.connection.db;
       if (!database) throw new Error("MongoDB is connected without an accessible database handle.");
       const users = database.collection("users");
+      // Backfill legacy staff documents before applying audience-scoped indexes.
+      await users.updateMany({ accountType: { $exists: false } }, { $set: { accountType: "staff" } });
       // Create scoped indexes before removing legacy global unique indexes.
       await users.createIndex({ email: 1, accountType: 1 }, { unique: true, name: "email_account_type_unique" });
       await users.createIndex(

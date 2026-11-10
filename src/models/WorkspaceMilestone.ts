@@ -1,0 +1,5 @@
+import {Schema,model,models,Document,Model,Types} from "mongoose";
+export interface IWorkspaceMilestone extends Document {workspaceId:Types.ObjectId;name:string;description?:string;status:"planned"|"active"|"completed"|"at_risk";startAt?:Date;dueAt?:Date;createdBy:Types.ObjectId;createdAt:Date;updatedAt:Date}
+const S=new Schema<IWorkspaceMilestone>({workspaceId:{type:Schema.Types.ObjectId,ref:"Workspace",required:true},name:{type:String,required:true,trim:true,maxlength:160},description:{type:String,trim:true,maxlength:2000},status:{type:String,enum:["planned","active","completed","at_risk"],default:"planned"},startAt:Date,dueAt:Date,createdBy:{type:Schema.Types.ObjectId,ref:"User",required:true}},{timestamps:true});
+S.index({workspaceId:1,status:1,dueAt:1});
+const M:Model<IWorkspaceMilestone>=models.WorkspaceMilestone||model<IWorkspaceMilestone>("WorkspaceMilestone",S);export default M;

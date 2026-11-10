@@ -71,7 +71,7 @@ Select Production for each secret, save, then redeploy. Never paste any API secr
 
 ## Exact Google OAuth redirect URI fix
 
-The client sign-in callback now uses the stable Vercel production origin. The reported `redirect_uri_mismatch` is fixed in Google's OAuth console, not by changing the email or password.
+The client sign-in page now uses the same Google Identity Services popup/token flow as the admin sign-in page. This removes the redirect-based sign-in request that produced `redirect_uri_mismatch`. Register the production JavaScript origin below so Google accepts the popup/token flow.
 
 1. Open https://console.cloud.google.com/auth/clients.
 2. Select the Google Cloud project currently used by TGO.
@@ -85,11 +85,10 @@ The client sign-in callback now uses the stable Vercel production origin. The re
 8. In Vercel → Settings → Environment Variables, add the following to **Production**:
    - `GOOGLE_CLIENT_ID` = the Web application Client ID
    - `NEXT_PUBLIC_GOOGLE_CLIENT_ID` = the same Client ID
-   - `GOOGLE_CLIENT_SECRET` = the Web application Client secret
-   - `SITE_URL` = `https://tgo-devstudio-prime.vercel.app`
+      - `SITE_URL` = `https://tgo-devstudio-prime.vercel.app`
 9. Save and redeploy Production. Then test `/client/login` and `/client/register`.
 
-The two Client ID variables must belong to the same Web application OAuth client. The Client Secret must never be exposed through a `NEXT_PUBLIC_` variable. If Google's consent screen is in Testing mode, add the testing Google account under **Google Auth Platform → Audience → Test users**.
+The two Client ID variables must belong to the same Web application OAuth client. The current popup/token flow does not need a Client Secret. If Google's consent screen is in Testing mode, add the testing Google account under **Google Auth Platform → Audience → Test users**.
 
 Direct pages:
 - Google OAuth clients: https://console.cloud.google.com/auth/clients
@@ -250,7 +249,6 @@ Do not rotate these casually. Changing JWT secrets can invalidate active session
 The current Vercel project already has entries for `GOOGLE_CLIENT_ID`, `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, `SITE_URL`, `BREVO_API_KEY`, `BREVO_SENDER_EMAIL`, `FOUNDER_NOTIFICATION_EMAIL`, the Cloudinary keys, the Turnstile keys and the VAPID keys. Confirm the values are populated and valid in Vercel; a variable name existing does not prove its value is valid.
 
 The following new values still need to be supplied from their provider accounts before those services can pass live tests:
-- `GOOGLE_CLIENT_SECRET`
 - `PAYSTACK_SECRET_KEY` and `PAYSTACK_WEBHOOK_SECRET`
 - `GEMINI_API_KEY`
 - `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` and either `TWILIO_MESSAGING_SERVICE_SID` or `TWILIO_SMS_FROM`

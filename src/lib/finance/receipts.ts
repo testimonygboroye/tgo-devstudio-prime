@@ -5,8 +5,9 @@ import FinanceReceipt from "@/models/FinanceReceipt";
 export async function ensureFinanceReceipt(payment:{
  _id:unknown;clientId:unknown;orderId:unknown;invoiceId?:unknown;amountMinor:number;currency:string;paymentMethod?:string;provider:string;reference:string;bankTransferReference?:string;
 },session?:ClientSession){
- if(!Types.ObjectId.isValid(payment._id)||!Types.ObjectId.isValid(payment.clientId)||!Types.ObjectId.isValid(payment.orderId)||(payment.invoiceId!==undefined&&!Types.ObjectId.isValid(payment.invoiceId)))throw new Error("Payment receipt contains an invalid record identifier.");
- const paymentTransactionId=new Types.ObjectId(String(payment._id)),clientId=new Types.ObjectId(String(payment.clientId)),orderId=new Types.ObjectId(String(payment.orderId)),invoiceId=payment.invoiceId===undefined?undefined:new Types.ObjectId(String(payment.invoiceId));
+ const paymentIdText=String(payment._id),clientIdText=String(payment.clientId),orderIdText=String(payment.orderId),invoiceIdText=payment.invoiceId==null?undefined:String(payment.invoiceId);
+ if(!Types.ObjectId.isValid(paymentIdText)||!Types.ObjectId.isValid(clientIdText)||!Types.ObjectId.isValid(orderIdText)||(invoiceIdText!==undefined&&!Types.ObjectId.isValid(invoiceIdText)))throw new Error("Payment receipt contains an invalid record identifier.");
+ const paymentTransactionId=new Types.ObjectId(paymentIdText),clientId=new Types.ObjectId(clientIdText),orderId=new Types.ObjectId(orderIdText),invoiceId=invoiceIdText?new Types.ObjectId(invoiceIdText):undefined;
  const query=FinanceReceipt.findOne({paymentTransactionId});
  if(session)query.session(session);
  const existing=await query;

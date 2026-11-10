@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomBytes } from "node:crypto";
+import { getSiteUrl } from "@/lib/siteUrl";
 
 export async function GET(request: NextRequest) {
   const clientId = process.env.GOOGLE_CLIENT_ID;
-  const siteUrl = process.env.SITE_URL;
+  const siteUrl = getSiteUrl();
   if (!clientId || !siteUrl) return NextResponse.redirect(new URL("/client/login?error=google_unavailable", request.url));
   const state = randomBytes(32).toString("base64url");
   const callback = new URL("/api/client/auth/google/callback", siteUrl);

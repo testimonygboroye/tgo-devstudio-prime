@@ -86,6 +86,7 @@ export async function POST(request:NextRequest){
   if(!settings?.bankTransferEnabled)return fail("Bank transfer is not currently enabled. Contact TGO DevStudio for payment options.",503);
   const transferReference=String(body.transferReference||"").trim();
   if(transferReference.length<4||transferReference.length>160)return fail("Enter the bank transfer reference or narration from your bank receipt.");
+  if(await PaymentTransaction.exists({provider:"bank_transfer",bankTransferReference:transferReference}))return fail("This bank transfer reference has already been submitted.",409);
   const payment=await PaymentTransaction.create({reference:transactionReference,provider:"bank_transfer",paymentMethod:"bank_transfer",clientId:user._id,orderId:order._id,milestoneId:milestone?._id,installmentId:installment?._id,amount,amountMinor,currency,status:"pending_review",bankTransferReference:transferReference,proofUrl:typeof body.proofUrl==="string"?body.proofUrl:undefined});
   if(order.paymentStatus!=="partially_paid"){order.paymentStatus="pending";await order.save();}
   await log(session,"finance.bank_transfer_submitted","payment_transaction",String(payment._id),{reference:payment.reference,amountMinor,currency,transferReference});

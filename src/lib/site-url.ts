@@ -33,5 +33,5 @@ export function getPublicSiteUrl(_request?: NextRequest): string {
   }
 
   // This is intentionally a stable HTTPS production URL, not request-derived.
-  return "https://tgo-devstudio-prime.onrender.com";
+  return "https://tgo-devstudio-prime.vercel.app";
 }

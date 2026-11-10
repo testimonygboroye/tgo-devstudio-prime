@@ -9,7 +9,7 @@ import PaymentTransaction from "@/models/PaymentTransaction";
 import FinancialLedgerEntry from "@/models/FinancialLedgerEntry";
 import CommercialOrder from "@/models/CommercialOrder";
 import FinanceInvoice from "@/models/FinanceInvoice";
-import {toMinorUnits} from "@/lib/payments/money";
+
 import {connectToDatabase} from "@/lib/db";
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
@@ -49,7 +49,7 @@ export async function POST(request:NextRequest){
     payment.refundAmountMinor=Number(payment.refundAmountMinor||0)+current.amountMinor;
     payment.status=payment.refundAmountMinor>=payment.amountMinor?"refunded":"partially_refunded";await payment.save({session:dbSession});
     const entries=buildRefundLedgerEntries({reference:current.reference,refundId:String(current._id),paymentTransactionId:String(payment._id),orderId:String(payment.orderId),clientId:String(payment.clientId),amountMinor:current.amountMinor,currency:current.currency});
-    await FinancialLedgerEntry.insertMany(entries as any,{session:dbSession});
+    await FinancialLedgerEntry.insertMany(entries as Parameters<typeof FinancialLedgerEntry.insertMany>[0],{session:dbSession});
     const order=await CommercialOrder.findById(payment.orderId).session(dbSession);
     if(order){
      const totals=await PaymentTransaction.aggregate([{$match:{orderId:order._id,status:{$in:["paid","partially_refunded","refunded"]}}},{$group:{_id:null,captured:{$sum:"$amountMinor"},refunded:{$sum:"$refundAmountMinor"}}}]).session(dbSession);

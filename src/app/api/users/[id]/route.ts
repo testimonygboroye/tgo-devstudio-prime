@@ -24,7 +24,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
   const { id } = await params;
   await connectToDatabase();
-  const user = await User.findById(id)
+  const user = await User.findOne({_id:id,accountType:{$ne:"client"}})
     .select("-passwordHash -twoFactorSecret -twoFactorTempSecret")
     .populate("role", "name slug hierarchyLevel");
 
@@ -44,7 +44,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
   const { id } = await params;
   await connectToDatabase();
-  const user = await User.findById(id).populate<{ role: IRole }>("role");
+  const user = await User.findOne({_id:id,accountType:{$ne:"client"}}).populate<{ role: IRole }>("role");
 
   if (!user) {
     return NextResponse.json({ status: "error", message: "User not found." }, { status: 404 });
@@ -223,7 +223,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
   const { id } = await params;
   await connectToDatabase();
-  const user = await User.findById(id).populate<{ role: IRole }>("role");
+  const user = await User.findOne({_id:id,accountType:{$ne:"client"}}).populate<{ role: IRole }>("role");
 
   if (!user) {
     return NextResponse.json({ status: "error", message: "User not found." }, { status: 404 });

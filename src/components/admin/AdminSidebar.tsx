@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   Briefcase,
   Bot,
+  Gift,
   Users,
   Newspaper,
   DoorOpen,
@@ -66,6 +67,9 @@ const NAV_GROUPS = [
   ]},
   { title: "AI Workforce", items: [
     { label: "AI Command Centre", hrefSuffix: "/ai-workforce", icon: Bot, badgeKey: null },
+  ]},
+  { title: "Growth & Engagement", items: [
+    { label: "Rewards & Referrals", hrefSuffix: "/engagement", icon: Gift, badgeKey: null },
   ]},
   { title: "Commercial & Delivery", items: [
     { label: "Sales & Delivery", hrefSuffix: "/commercial", icon: ShoppingCart, badgeKey: null },
@@ -207,7 +211,7 @@ export default function AdminSidebar({
       </div>
 
       <nav className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4 space-y-1">
-        {NAV_GROUPS.filter((group) => (group.title !== "Founder" && group.title !== "Commercial & Delivery" && group.title !== "AI Workforce") || isFounder).map((group) => {
+        {NAV_GROUPS.filter((group) => (group.title !== "Founder" && group.title !== "Commercial & Delivery" && group.title !== "AI Workforce" && group.title !== "Growth & Engagement") || isFounder).map((group) => {
           const groupActive = group.items.some((item) => pathname.startsWith(`${basePathSegment}${item.hrefSuffix}`));
           return (
             <details key={group.title} open={groupActive || undefined} className="group/nav mb-2">

@@ -2,7 +2,8 @@
 import { useCallback,useEffect,useState } from "react";
 import { LifeBuoy,RefreshCw,Send,AlertTriangle,Users,Clock3,ChevronDown } from "lucide-react";
 type Ticket={_id:string;reference:string;subject:string;description:string;category:string;status:string;priority:string;escalationLevel:number;firstResponseDueAt:string;resolutionDueAt:string;firstRespondedAt?:string;messages:Array<{senderType:string;body:string;createdAt:string}>;clientId?:{name?:string;email?:string};assignedTo?:{_id?:string;name?:string;email?:string}};
-type Summary={open:number;overdue:number;unassigned:number};\ntype Staff={_id:string;name:string;email:string};
+type Summary={open:number;overdue:number;unassigned:number};
+type Staff={_id:string;name:string;email:string};
 export default function SupportOperationsManager(){
  const [tickets,setTickets]=useState<Ticket[]>([]),[staff,setStaff]=useState<Staff[]>([]),[summary,setSummary]=useState<Summary>({open:0,overdue:0,unassigned:0}),[loading,setLoading]=useState(true),[error,setError]=useState(""),[selected,setSelected]=useState(""),[reply,setReply]=useState(""),[busy,setBusy]=useState(false);
  const load=useCallback(async()=>{setLoading(true);try{const r=await fetch("/api/platform/support/tickets",{cache:"no-store"});const d=await r.json();if(!r.ok)throw new Error(d.error||"Could not load support queue.");setTickets(d.tickets||[]);setStaff(d.staff||[]);setSummary(d.summary||{open:0,overdue:0,unassigned:0});setError("");}catch(e){setError(e instanceof Error?e.message:"Could not load support queue.");}finally{setLoading(false);}},[]);

@@ -6,11 +6,12 @@ describe("currency minor-unit conversion",()=>{
     expect(fromMinorUnits(125055,"NGN")).toBe(1250.55);
   });
   it("handles zero-decimal XOF values",()=>{
-    expect(toMinorUnits(1250,"XOF")).toBe(1250);
-    expect(fromMinorUnits(1250,"XOF")).toBe(1250);
+    expect(toMinorUnits(1250,"XOF")).toBe(125000);
+    expect(fromMinorUnits(125000,"XOF")).toBe(1250);
   });
   it("rejects invalid or unsafe amounts",()=>{
     expect(()=>toMinorUnits(Number.NaN,"NGN")).toThrow();
     expect(()=>toMinorUnits(-1,"NGN")).toThrow();
+    expect(()=>toMinorUnits(1.5,"XOF")).toThrow();
   });
 });

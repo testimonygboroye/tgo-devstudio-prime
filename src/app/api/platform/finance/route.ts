@@ -200,19 +200,19 @@ export async function POST(request:NextRequest){
     const secret=process.env.PAYSTACK_SECRET_KEY;if(!secret)return fail("PAYSTACK_SECRET_KEY is not configured.",503);
     const response=await fetch("https://api.paystack.co/refund",{method:"POST",headers:{Authorization:`Bearer ${secret}`,"Content-Type":"application/json"},body:JSON.stringify({transaction:payment.providerTransactionId,amount:refund.amountMinor,currency:refund.currency}),cache:"no-store"});
     const data=await response.json() as {status?:boolean;message?:string;data?:{id?:number;status?:string}};
-    if(!response.ok||!data.status||!data.data)throw new Error(data.message||"Paystack did not accept the refund request.");
+    if(!response.ok||!data.status||!data.data||!data.data.id)throw new Error(data.message||"Paystack did not accept the refund request.");
     refund.status="processing";refund.providerReference=String(data.data.id||"");await refund.save();
     await audit(session,"finance.refund_submitted_to_provider","finance_refund",String(refund._id),{providerReference:refund.providerReference});
     return NextResponse.json({ok:true,item:refund,message:"Refund submitted. The payment remains unchanged until Paystack confirms the signed refund webhook."});
    }
    let bankReference="";
-   if(payment.provider==="bank_transfer"){bankReference=String(body.bankReference||"").trim();if(bankReference.length<4||bankReference.length>160)return fail("Enter the bank statement reference for the outgoing refund transfer.");}
+   if(payment.provider==="bank_transfer"){bankReference=String(body.bankReference||"").trim();if(bankReference.length<4||bankReference.length>160)return fail("Enter the bank statement reference for the outgoing refund transfer.");if(await FinanceRefund.exists({providerReference:bankReference}))return fail("This outgoing bank reference has already been recorded.",409);}
    const dbSession=await mongoose.startSession();
    try{
     await dbSession.withTransaction(async()=>{
      const currentRefund=await FinanceRefund.findOne({_id:refund._id,status:"approved"}).session(dbSession);if(!currentRefund)throw new Error("Refund request has already been processed.");
      const currentPayment=await PaymentTransaction.findById(payment._id).session(dbSession);if(!currentPayment)throw new Error("Original payment record was not found.");
-     currentRefund.status="processed";currentRefund.processedAt=new Date();currentRefund.providerReference=payment.provider==="account_credit"?"account-credit-restored":bankReference;await currentRefund.save({session:dbSession});
+     currentRefund.status="processed";currentRefund.processedAt=new Date();currentRefund.providerReference=payment.provider==="account_credit"?"account-credit-restored-"+currentRefund.reference:bankReference;await currentRefund.save({session:dbSession});
      currentPayment.refundAmountMinor=Number(currentPayment.refundAmountMinor||0)+currentRefund.amountMinor;
      currentPayment.status=currentPayment.refundAmountMinor>=currentPayment.amountMinor?"refunded":"partially_refunded";await currentPayment.save({session:dbSession});
      if(payment.provider==="account_credit"){

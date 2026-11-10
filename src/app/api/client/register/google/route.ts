@@ -60,17 +60,21 @@ export async function POST(request: NextRequest) {
       source: "google",
     });
 
-    await writePlatformAuditEvent({
-      actorType: "human",
-      actorId: String(user._id),
-      actorLabel: user.name,
-      action: "client.account_registered",
-      module: "clients",
-      targetType: "client",
-      targetId: String(user._id),
-      outcome: "success",
-      metadata: { source: "google_password_registration", emailVerifiedBy: "google" },
-    });
+    try {
+      await writePlatformAuditEvent({
+        actorType: "human",
+        actorId: String(user._id),
+        actorLabel: user.name,
+        action: "client.account_registered",
+        module: "clients",
+        targetType: "client",
+        targetId: String(user._id),
+        outcome: "success",
+        metadata: { source: "google_password_registration", emailVerifiedBy: "google" },
+      });
+    } catch (auditError) {
+      console.error("Google client registration audit write failed", auditError);
+    }
 
     return NextResponse.json({
       ok: true,

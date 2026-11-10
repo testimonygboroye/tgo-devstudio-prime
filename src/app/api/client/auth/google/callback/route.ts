@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
-import { createClientIdentity, ensureClientRole } from "@/lib/clients/identity";
+import { ensureClientRole } from "@/lib/clients/identity";
 import { signAccessToken, signRefreshToken, signTemp2FAToken } from "@/lib/auth/jwt";
 import { setAuthCookies } from "@/lib/auth/cookies";
 import User from "@/models/User";
@@ -53,11 +53,7 @@ export async function GET(request: NextRequest) {
         if (!user.authProviders?.includes("google")) user.authProviders = [...(user.authProviders || []), "google"];
         await user.save();
       } else {
-        const nameParts=(profile.name?.trim()||email.split("@")[0]).split(/\s+/).filter(Boolean);
-        user = await createClientIdentity({
-          name: nameParts.join(" "), firstName:nameParts[0]||"Client", middleName:nameParts.length>2?nameParts.slice(1,-1).join(" "):undefined, lastName:nameParts.length>1?nameParts[nameParts.length-1]:"Account", email,
-          googleSub: profile.sub, source: "google",
-        });
+        return fail("google_account_unavailable");
       }
     }
     if (user.accountType !== "client" || user.isBanned || !user.isEmailVerified) return fail("google_account_unavailable");

@@ -26,7 +26,9 @@ export async function sendClientVerificationEmail(email: string, name: string, t
   if (!process.env.BREVO_API_KEY || !process.env.BREVO_SENDER_EMAIL) {
     throw new Error("Client verification email is not configured. Set BREVO_API_KEY and BREVO_SENDER_EMAIL.");
   }
-  const publicOrigin = getPublicSiteUrl();
+  const publicOrigin = siteUrl ? new URL(siteUrl).origin : getPublicSiteUrl();
+  const publicHost = new URL(publicOrigin).hostname;
+  if (process.env.NODE_ENV === "production" && (publicHost === "localhost" || publicHost === "127.0.0.1")) throw new Error("Refusing to send a localhost verification URL. Configure SITE_URL with the public HTTPS domain.");
   const verifyUrl = new URL("/client/verify-email", publicOrigin);
   verifyUrl.searchParams.set("token", token);
   const result = await sendNotificationEmail({

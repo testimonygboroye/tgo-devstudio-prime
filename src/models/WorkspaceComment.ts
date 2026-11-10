@@ -1,0 +1,5 @@
+import {Schema,model,models,Document,Model,Types} from "mongoose";
+export interface IWorkspaceComment extends Document {workspaceId:Types.ObjectId;targetType:"document"|"task"|"milestone"|"message";targetId:Types.ObjectId;authorId:Types.ObjectId;body:string;createdAt:Date;updatedAt:Date}
+const S=new Schema<IWorkspaceComment>({workspaceId:{type:Schema.Types.ObjectId,ref:"Workspace",required:true},targetType:{type:String,enum:["document","task","milestone","message"],required:true},targetId:{type:Schema.Types.ObjectId,required:true},authorId:{type:Schema.Types.ObjectId,ref:"User",required:true},body:{type:String,required:true,trim:true,maxlength:8000}},{timestamps:true});
+S.index({workspaceId:1,targetType:1,targetId:1,createdAt:1});
+const M:Model<IWorkspaceComment>=models.WorkspaceComment||model<IWorkspaceComment>("WorkspaceComment",S);export default M;

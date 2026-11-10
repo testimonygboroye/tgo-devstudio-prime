@@ -7,7 +7,8 @@ const categories=["General enquiry","Project delivery","Billing and payments","A
 const statusLabel:Record<string,string>={open:"Open",in_progress:"In progress",waiting_on_client:"Waiting for you",waiting_on_team:"With our team",resolved:"Resolved",closed:"Closed"};
 export default function SupportTicketPortal(){
  const [tickets,setTickets]=useState<Ticket[]>([]),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[showForm,setShowForm]=useState(false),[error,setError]=useState(""),[notice,setNotice]=useState("");
- const [subject,setSubject]=useState(""),[description,setDescription]=useState(""),[category,setCategory]=useState(categories[0]);\n const [expanded,setExpanded]=useState(""),[reply,setReply]=useState(""),[rating,setRating]=useState(5),[feedback,setFeedback]=useState("");
+ const [subject,setSubject]=useState(""),[description,setDescription]=useState(""),[category,setCategory]=useState(categories[0]);
+ const [expanded,setExpanded]=useState(""),[reply,setReply]=useState(""),[rating,setRating]=useState(5),[feedback,setFeedback]=useState("");
  const load=useCallback(async()=>{try{const r=await fetch("/api/client/support/tickets",{cache:"no-store"});const d=await r.json();if(!r.ok)throw new Error(d.error||"Could not load support requests.");setTickets(d.tickets||[]);setError("");}catch(e){setError(e instanceof Error?e.message:"Could not load support requests.");}finally{setLoading(false);}},[]);
  useEffect(()=>{void load();},[load]);
  async function sendReply(ticketId:string){if(!reply.trim())return;setBusy(true);setError("");try{const r=await fetch("/api/client/support/tickets",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"reply",ticketId,message:reply.trim()})});const d=await r.json();if(!r.ok)throw new Error(d.error||"Could not send reply.");setReply("");await load();}catch(e){setError(e instanceof Error?e.message:"Could not send reply.");}finally{setBusy(false);}}

@@ -40,6 +40,13 @@ async function ensureIdentityIndexes(): Promise<void> {
         if (!index.unique || !keys || Object.keys(keys).length !== 1) continue;
         if (keys.email === 1 || keys.googleSub === 1) await users.dropIndex(String(index.name));
       }
+      const ledger = database.collection("financialledgerentries");
+      await ledger.createIndex({ sourceReference: 1, accountCode: 1 }, { unique: true, name: "source_account_unique" });
+      const ledgerIndexes = await ledger.listIndexes().toArray();
+      for (const index of ledgerIndexes) {
+        const keys = index.key as Record<string, number> | undefined;
+        if (index.unique && keys?.paymentTransactionId === 1 && keys?.accountCode === 1) await ledger.dropIndex(String(index.name));
+      }
     })().catch((error: unknown) => {
       identityIndexMigration = null;
       throw error;

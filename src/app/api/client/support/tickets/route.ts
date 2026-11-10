@@ -17,8 +17,8 @@ export async function GET(){
   const session=await getServerSession();
   if(!session||session.user.accountType!=="client"||!session.user.isEmailVerified)return fail("Verified client sign-in required.",401);
   await connectToDatabase();
-  const tickets=await SupportTicket.find({clientId:session.user._id}).sort({updatedAt:-1}).limit(100).lean();
-  return NextResponse.json({ok:true,tickets},{headers:{"Cache-Control":"private, no-store"}});
+  const [tickets,settings]=await Promise.all([SupportTicket.find({clientId:session.user._id}).sort({updatedAt:-1}).limit(100).lean(),SupportSettings.findOne({key:"global"}).lean()]);
+  return NextResponse.json({ok:true,tickets,categories:settings?.categories||CATEGORIES},{headers:{"Cache-Control":"private, no-store"}});
 }
 export async function POST(request:NextRequest){
   const session=await getServerSession();
@@ -29,12 +29,15 @@ export async function POST(request:NextRequest){
   const category=typeof body.category==="string"?body.category.trim():"";
   if(subject.length<4||subject.length>180)return fail("Enter a subject between 4 and 180 characters.");
   if(description.length<10||description.length>10000)return fail("Describe the issue in 10 to 10,000 characters.");
-  if(!CATEGORIES.includes(category))return fail("Choose a valid support category.");
   await connectToDatabase();
+  const settings=await SupportSettings.findOne({key:"global"}).lean();
+  const categories=settings?.categories||CATEGORIES;
+  if(!categories.includes(category))return fail("Choose a valid support category.");
   const now=new Date();
   const priority=body.priority==="urgent"?"urgent":"normal";
-  const firstResponseHours=priority==="urgent"?2:24;
-  const resolutionHours=priority==="urgent"?8:72;
+  const policy=(settings?.slaHours as Record<string,{firstResponse:number;resolution:number}>|undefined)?.[priority]||{firstResponse:priority==="urgent"?2:24,resolution:priority==="urgent"?8:72};
+  const firstResponseHours=policy.firstResponse;
+  const resolutionHours=policy.resolution;
   const ticket=await SupportTicket.create({
     reference:"TGO-SUP-"+now.toISOString().slice(0,10).replace(/-/g,"")+"-"+randomUUID().slice(0,8).toUpperCase(),
     clientId:session.user._id,subject,description,category,status:"open",priority,escalationLevel:0,

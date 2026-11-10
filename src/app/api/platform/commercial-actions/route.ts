@@ -55,7 +55,7 @@ export async function POST(request:NextRequest){
    const item=await ConsultationBooking.findById(body.id);if(!item)return fail("Consultation not found.",404);item.status=body.status;if(validId(body.assignedTo)){const staff=await (await import("@/models/User")).default.findOne({_id:body.assignedTo,accountType:"staff",isBanned:false}).select("_id");if(!staff)return fail("Assigned consultant must be an active staff account.");item.assignedTo=staff._id;}await item.save();await audit("sales.consultation_status_changed","consultation_booking",String(item._id),{status:item.status});return NextResponse.json({ok:true,item});
   }
   if(body.action==="change.decide"){
-   if(!validId(body.id)||!["under_review","approved","rejected","implemented"].includes(body.status))return fail("Valid change request and status are required.");
+   if(!validId(body.id)||!["submitted","under_review","approved","rejected","implemented"].includes(body.status))return fail("Valid change request and status are required.");
    const item=await ProjectChangeRequest.findById(body.id);if(!item)return fail("Change request not found.",404);item.status=body.status;item.decisionBy=session.user._id;item.decisionAt=new Date();if(body.impactOnCost!==undefined)item.impactOnCost=Math.max(0,Number(body.impactOnCost));if(body.impactOnDays!==undefined)item.impactOnDays=Math.max(0,Number(body.impactOnDays));await item.save();await audit("delivery.change_request_decided","project_change_request",String(item._id),{status:item.status});return NextResponse.json({ok:true,item});
   }
   if(body.action==="task.update"){

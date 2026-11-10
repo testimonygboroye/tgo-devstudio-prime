@@ -7,6 +7,7 @@ import FinanceSettings from "@/models/FinanceSettings";
 import FinanceInvoice from "@/models/FinanceInvoice";
 import FinanceInstallmentPlan from "@/models/FinanceInstallmentPlan";
 import ClientCreditAccount from "@/models/ClientCreditAccount";
+import FinanceReceipt from "@/models/FinanceReceipt";
 import PaymentTransaction from "@/models/PaymentTransaction";
 import CommercialOrder from "@/models/CommercialOrder";
 import DeliveryProject from "@/models/DeliveryProject";
@@ -27,15 +28,16 @@ function ref(prefix:string){return `TGO_${prefix}_${randomUUID().replace(/-/g,""
 export async function GET(){
  const session=await clientSession();if(!session)return fail("Verified client sign-in required.",401);
  await connectToDatabase();
- const [settings,invoices,credits,payments,installmentPlans,orders]=await Promise.all([
+ const [settings,invoices,credits,payments,installmentPlans,orders,receipts]=await Promise.all([
   FinanceSettings.findOne({key:"global"}).lean(),
   FinanceInvoice.find({clientId:session.user._id,status:{$nin:["draft","void"]}}).sort({createdAt:-1}).lean(),
   ClientCreditAccount.find({clientId:session.user._id}).lean(),
   PaymentTransaction.find({clientId:session.user._id}).select("-accessCode -authorizationUrl").sort({createdAt:-1}).limit(100).lean(),
   FinanceInstallmentPlan.find({clientId:session.user._id,status:"active"}).sort({createdAt:-1}).lean(),
   CommercialOrder.find({clientId:session.user._id}).sort({createdAt:-1}).lean(),
+  FinanceReceipt.find({clientId:session.user._id}).sort({issuedAt:-1}).limit(100).lean(),
  ]);
- return NextResponse.json({ok:true,bankTransfer:settings?.bankTransferEnabled?{enabled:true,bankName:settings.bankName,accountName:settings.bankAccountName,accountNumber:settings.bankAccountNumber,bankCode:settings.bankCode,instructions:settings.bankTransferInstructions}: {enabled:false},invoices,credits,payments,installmentPlans,orders,paymentConfigured:Boolean(settings?.paystackEnabled&&process.env.PAYSTACK_SECRET_KEY)},{headers:{"Cache-Control":"private, no-store"}});
+ return NextResponse.json({ok:true,bankTransfer:settings?.bankTransferEnabled?{enabled:true,bankName:settings.bankName,accountName:settings.bankAccountName,accountNumber:settings.bankAccountNumber,bankCode:settings.bankCode,instructions:settings.bankTransferInstructions}: {enabled:false},invoices,credits,payments,installmentPlans,orders,receipts,paymentConfigured:Boolean(settings?.paystackEnabled&&process.env.PAYSTACK_SECRET_KEY)},{headers:{"Cache-Control":"private, no-store"}});
 }
 
 export async function POST(request:NextRequest){

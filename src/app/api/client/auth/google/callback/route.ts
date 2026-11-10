@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     if (!profile.sub || !email || profile.email_verified !== true) return fail("google_email_unverified");
 
     await connectToDatabase();
-    let user = await User.findOne({ googleSub: profile.sub });
+    let user = await User.findOne({ googleSub: profile.sub, accountType: "client" });
     if (!user) {
       user = await User.findOne({ email, accountType: "client" });
       if (user) {

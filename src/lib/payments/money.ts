@@ -1,4 +1,4 @@
-export function currencyMinorUnitExponent(_currency: string): number { return 2; }
+export function currencyMinorUnitExponent(currency: string): number { void currency; return 2; }
 
 export function toMinorUnits(amount: number, currency: string): number {
   if (!Number.isFinite(amount) || amount < 0) throw new Error("Money amount must be a non-negative finite number.");
@@ -8,7 +8,8 @@ export function toMinorUnits(amount: number, currency: string): number {
   return minor;
 }
 
-export function fromMinorUnits(amountMinor: number, _currency: string): number {
+export function fromMinorUnits(amountMinor: number, currency: string): number {
+  void currency;
   if (!Number.isSafeInteger(amountMinor)) throw new Error("Minor-unit amount must be a safe integer.");
   return amountMinor / 100;
 }

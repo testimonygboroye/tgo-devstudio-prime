@@ -23,7 +23,8 @@ import { writePlatformAuditEvent } from "@/lib/platform/audit";
 export const dynamic="force-dynamic";
 function fail(message:string,status=400){return NextResponse.json({ok:false,error:message},{status});}
 async function clientSession(){const session=await getServerSession();if(!session||session.user.accountType!=="client"||!session.user.isEmailVerified)return null;return session;}
-async function logClient(session:any,action:string,targetType:string,targetId:string,summary:string,metadata:Record<string,unknown>={}) {
+type ClientSession=NonNullable<Awaited<ReturnType<typeof getServerSession>>>;
+async function logClient(session:ClientSession,action:string,targetType:string,targetId:string,summary:string,metadata:Record<string,unknown>={}) {
   await Promise.all([
     ClientActivity.create({clientId:session.user._id,actorId:session.user._id,actorType:"client",action,summary,metadata}),
     writePlatformAuditEvent({actorType:"human",actorId:String(session.user._id),actorLabel:session.user.name,action,module:"commercial_delivery",targetType,targetId,outcome:"success",metadata}),
@@ -58,31 +59,32 @@ export async function GET() {
 
 export async function POST(request:NextRequest) {
   const session=await clientSession();if(!session)return fail("Verified client sign-in required.",401);
-  let body:Record<string,any>;try{body=await request.json();}catch{return fail("Invalid request body.");}
+  let body:Record<string,unknown>;try{body=await request.json();}catch{return fail("Invalid request body.");}
   await connectToDatabase();
   const user=await User.findOne({_id:session.user._id,accountType:"client",isEmailVerified:true});
   if(!user)return fail("Client account not found.",404);
   const firstName=user.firstName||user.name.trim().split(/\s+/)[0]||"Client";
   const lastName=user.lastName||user.name.trim().split(/\s+/).slice(1).join(" ")||"Account";
+  const action=typeof body.action==="string"?body.action:"";
   try {
-    if(body.action==="request.create") {
+    if(action==="request.create") {
       if(typeof body.title!=="string"||body.title.trim().length<4||typeof body.description!=="string"||body.description.trim().length<20)return fail("Enter a request title and describe what you need (at least 20 characters).");
-      const service=body.serviceId?await CommercialService.findOne({_id:body.serviceId,status:"published"}):null;
+      const service=body.serviceId?await CommercialService.findOne({_id:String(body.serviceId),status:"published"}):null;
       if(body.serviceId&&!service)return fail("The selected service is no longer available.",404);
       if(service&&!service.customRequestEnabled)return fail("Custom requests are not enabled for this service.");
-      const lead=await SalesLead.create({clientId:user._id,firstName:user.firstName||firstName,middleName:user.middleName,lastName:user.lastName||lastName,email:user.email,phone:body.phone,organization:body.organization,serviceId:service?._id,source:"client_portal",stage:"new",currency:service?.currency||"USD",notes:`REQUEST: ${body.title.trim()}\n\n${body.description.trim()}`});
+      const lead=await SalesLead.create({clientId:user._id,firstName:user.firstName||firstName,middleName:user.middleName,lastName:user.lastName||lastName,email:user.email,phone:typeof body.phone==="string"?body.phone:"",organization:typeof body.organization==="string"?body.organization:"",serviceId:service?._id,source:"client_portal",stage:"new",currency:service?.currency||"USD",notes:`REQUEST: ${body.title.trim()}\n\n${body.description.trim()}`});
       await logClient(session,"client.commercial_request_submitted","sales_lead",String(lead._id),"Client submitted a new service or project request.",{serviceId:service?String(service._id):null});
       return NextResponse.json({ok:true,message:"Your request has been submitted. Our team will review it and follow up.",reference:String(lead._id)},{status:201});
     }
-    if(body.action==="consultation.request") {
+    if(action==="consultation.request") {
       if(typeof body.topic!=="string"||body.topic.trim().length<4)return fail("Enter the consultation topic.");
-      if(body.preferredAt&&(!Number.isFinite(new Date(body.preferredAt).getTime())||new Date(body.preferredAt)<new Date()))return fail("Choose a future preferred date and time.");
-      const booking=await ConsultationBooking.create({clientId:user._id,firstName:user.firstName||firstName,middleName:user.middleName,lastName:user.lastName||lastName,email:user.email,phone:typeof body.phone==="string"?body.phone:"",topic:body.topic.trim(),details:String(body.details||""),preferredAt:body.preferredAt?new Date(body.preferredAt):undefined,timezone:String(body.timezone||"Africa/Lagos"),meetingMode:["online","phone","in_person"].includes(body.meetingMode)?body.meetingMode:"online",status:"requested",provider:"manual"});
+      if(typeof body.preferredAt==="string"&&body.preferredAt&&(!Number.isFinite(new Date(body.preferredAt).getTime())||new Date(body.preferredAt)<new Date()))return fail("Choose a future preferred date and time.");
+      const booking=await ConsultationBooking.create({clientId:user._id,firstName:user.firstName||firstName,middleName:user.middleName,lastName:user.lastName||lastName,email:user.email,phone:typeof body.phone==="string"?body.phone:"",topic:body.topic.trim(),details:typeof body.details==="string"?body.details:"",preferredAt:typeof body.preferredAt==="string"&&body.preferredAt?new Date(body.preferredAt):undefined,timezone:typeof body.timezone==="string"?body.timezone:"Africa/Lagos",meetingMode:typeof body.meetingMode==="string"&&["online","phone","in_person"].includes(body.meetingMode)?body.meetingMode as "online"|"phone"|"in_person":"online",status:"requested",provider:"manual"});
       await logClient(session,"client.consultation_requested","consultation_booking",String(booking._id),"Client requested a consultation.",{topic:booking.topic,preferredAt:booking.preferredAt?.toISOString()||null});
       return NextResponse.json({ok:true,message:"Your consultation request has been received. The team will confirm a time.",item:booking},{status:201});
     }
-    if(body.action==="contract.accept") {
-      const contract=await CommercialContract.findOne({_id:body.contractId,clientId:user._id,status:"issued"});
+    if(action==="contract.accept") {
+      const contract=await CommercialContract.findOne({_id:String(body.contractId),clientId:user._id,status:"issued"});
       if(!contract)return fail("This contract is not available for acceptance.",404);
       const quote=await CommercialQuote.findOne({_id:contract.quoteId,clientId:user._id});
       const proposal=await CommercialProposal.findOne({_id:contract.proposalId,clientId:user._id});
@@ -95,8 +97,8 @@ export async function POST(request:NextRequest) {
       await logClient(session,"client.contract_accepted","commercial_contract",String(contract._id),"Client accepted a service contract.",{reference:contract.reference});
       return NextResponse.json({ok:true,message:"Contract accepted. Your order can now be prepared by the TGO team."});
     }
-    if(body.action==="deliverable.approve") {
-      const deliverable=await ProjectDeliverable.findOne({_id:body.deliverableId,status:"client_review"});
+    if(action==="deliverable.approve") {
+      const deliverable=await ProjectDeliverable.findOne({_id:String(body.deliverableId),status:"client_review"});
       if(!deliverable)return fail("This deliverable is not awaiting your review.",404);
       const qa=deliverable.qaReviewId?await ProjectQualityReview.findOne({_id:deliverable.qaReviewId,deliverableId:deliverable._id,status:"passed"}):null;
       if(!qa)return fail("This deliverable cannot be approved until its quality review has passed.",409);
@@ -107,9 +109,9 @@ export async function POST(request:NextRequest) {
       await logClient(session,"client.deliverable_approved","project_deliverable",String(deliverable._id),"Client approved a project deliverable.",{projectId:String(project._id)});
       return NextResponse.json({ok:true,message:"Deliverable approved. The team can release it when all payment and quality gates are satisfied."});
     }
-    if(body.action==="change.request") {
+    if(action==="change.request") {
       if(typeof body.projectId!=="string"||typeof body.title!=="string"||body.title.trim().length<4||typeof body.description!=="string"||body.description.trim().length<20)return fail("Project, change title and detailed description are required.");
-      const project=await DeliveryProject.findOne({_id:body.projectId,clientId:user._id});
+      const project=await DeliveryProject.findOne({_id:String(body.projectId),clientId:user._id});
       if(!project)return fail("Project not found in your account.",404);
       const change=await ProjectChangeRequest.create({projectId:project._id,clientId:user._id,requestedBy:user._id,title:body.title.trim(),description:body.description.trim(),currency:"USD",status:"submitted"});
       await logClient(session,"client.change_request_submitted","project_change_request",String(change._id),"Client submitted a project change request.",{projectId:String(project._id)});

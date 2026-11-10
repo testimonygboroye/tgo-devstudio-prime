@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- this resource-discriminated Mongoose registry uses dynamic model generics; request values are validated before writes. */
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import { Types } from "mongoose";

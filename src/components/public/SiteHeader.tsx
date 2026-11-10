@@ -5,7 +5,7 @@ import { useSwipeSidebar } from "@/hooks/useSwipeSidebar";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Menu, X, Home, Layers, Briefcase, Newspaper, DoorOpen, Mail, Info, Workflow, Users, Star, PhoneCall, Boxes, HelpCircle, ChevronDown, MessageCircleQuestion, Settings, ArrowLeft, ShieldCheck, FileText } from "lucide-react";
+import { Menu, X, Layers, Briefcase, Newspaper, DoorOpen, Mail, Info, Workflow, Users, Star, PhoneCall, Boxes, HelpCircle, ChevronDown, MessageCircleQuestion, Settings, ArrowLeft, ShieldCheck, FileText } from "lucide-react";
 import HelpSearchPopup from "@/components/shared/HelpSearchPopup";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 

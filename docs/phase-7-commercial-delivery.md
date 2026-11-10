@@ -33,10 +33,11 @@ Set secrets in the Render service Environment page. Do not commit secrets to Git
 
 ### Client verification email
 
-- RESEND_API_KEY — Resend API key.
-- EMAIL_FROM — sender address on a domain verified with Resend.
+- BREVO_API_KEY — existing Brevo API key.
+- BREVO_SENDER_EMAIL — verified sender address configured in Brevo.
+- SITE_URL — stable public production URL; never localhost or a preview deployment URL.
 
-Client registration and resend-verification derive the base URL from the incoming request, so they do not require SITE_URL for this email flow. Registration checks the existing Brevo configuration before creating the account; failed email delivery also rolls back the unverified identity and token to avoid orphaned accounts. Client verification uses the shared sendNotificationEmail() transport, so it does not introduce a second email provider.
+Client registration and resend-verification use the shared Brevo sendNotificationEmail() transport and getSiteUrl() canonical public URL. They never trust the inbound Host header for verification links. Failed email delivery rolls back the unverified client identity and token to avoid orphaned accounts. Google OAuth callbacks use the same canonical public URL.
 
 ### Paystack payments
 

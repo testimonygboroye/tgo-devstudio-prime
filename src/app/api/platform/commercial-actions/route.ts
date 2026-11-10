@@ -13,11 +13,12 @@ import ProjectQualityReview from "@/models/ProjectQualityReview";
 import ConsultationBooking from "@/models/ConsultationBooking";
 import ProjectChangeRequest from "@/models/ProjectChangeRequest";
 function fail(message:string,status=400){return NextResponse.json({ok:false,error:message},{status});}
-function validId(value:unknown){return typeof value==="string"&&Types.ObjectId.isValid(value);}
+function validId(value:unknown):value is string{return typeof value==="string"&&Types.ObjectId.isValid(value);}
 export async function POST(request:NextRequest){
  const session=await getServerSession();if(!session)return fail("Authentication required.",401);if(!session.role?.isFounderRole)return fail("Founder permissions required.",403);
  let body:Record<string,unknown>;try{body=await request.json();}catch{return fail("Invalid request body.");}
  await connectToDatabase();
+ const action=typeof body.action==="string"?body.action:"";
  const audit=async(action:string,type:string,id:string,metadata:Record<string,unknown>={})=>writePlatformAuditEvent({actorType:"human",actorId:String(session.user._id),actorLabel:session.user.name,action,module:"commercial_delivery",targetType:type,targetId:id,outcome:"success",metadata});
  try{
   if(action==="deliverable.release"){
@@ -51,7 +52,7 @@ export async function POST(request:NextRequest){
   }
   if(action==="consultation.update"){
    if(!validId(body.id)||typeof body.status!=="string"||!["requested","confirmed","completed","cancelled","no_show"].includes(body.status))return fail("Valid consultation and status are required.");
-   const item=await ConsultationBooking.findById(String(body.id));if(!item)return fail("Consultation not found.",404);item.status=body.status as typeof item.status;if(validId(body.assignedTo)){const staff=await (await import("@/models/User")).default.findOne({_id:body.assignedTo,accountType:"staff",isBanned:false}).select("_id");if(!staff)return fail("Assigned consultant must be an active staff account.");item.assignedTo=staff._id;}await item.save();await audit("sales.consultation_status_changed","consultation_booking",String(item._id),{status:item.status});return NextResponse.json({ok:true,item});
+   const item=await ConsultationBooking.findById(String(body.id));if(!item)return fail("Consultation not found.",404);item.status=body.status as typeof item.status;if(validId(body.assignedTo)){const staff=await (await import("@/models/User")).default.findOne({_id:String(body.assignedTo),accountType:"staff",isBanned:false}).select("_id");if(!staff)return fail("Assigned consultant must be an active staff account.");item.assignedTo=staff._id;}await item.save();await audit("sales.consultation_status_changed","consultation_booking",String(item._id),{status:item.status});return NextResponse.json({ok:true,item});
   }
   if(action==="change.decide"){
    if(!validId(body.id)||typeof body.status!=="string"||!["submitted","under_review","approved","rejected","implemented"].includes(body.status))return fail("Valid change request and status are required.");

@@ -3,7 +3,7 @@ import { connectToDatabase } from "@/lib/db";
 import CommercialService from "@/models/CommercialService";
 import { ArrowRight,Layers,PackageCheck,Sparkles } from "lucide-react";
 export const revalidate=300;
-type ServicePackage={key:string;name:string;summary?:string;price:number;currency:string;deliveryDays:number;revisions:number;features?:string[];enabled:boolean};
+type ServicePackage={key:string;name:string;summary?:string;price:number;currency:string;deliveryDays:number;revisions:number;features:string[];enabled:boolean};
 type ServiceRecord={_id:string;name:string;category:string;summary:string;description:string;packages:ServicePackage[]};
 export const metadata={title:"Service Packages & Solutions | TGO DevStudio",description:"Explore TGO DevStudio service packages, delivery options and custom project solutions."};
 export default async function CommercialServiceCataloguePage(){

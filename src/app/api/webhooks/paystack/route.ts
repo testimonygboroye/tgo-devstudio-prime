@@ -16,7 +16,7 @@ export async function POST(request:NextRequest){
  const reference=String(data.reference||"");
  if(!/^TGO_[A-Z0-9]{24}$/.test(reference))return NextResponse.json({error:"Unknown payment reference."},{status:400});
  try{
-  const payment=await verifyAndRecordPaystackPayment(reference);
+  const payment=await verifyAndRecordPaystackPayment(reference);if(!payment)throw new Error("Verified payment record was not found.");
   try{await writePlatformAuditEvent({actorType:"system",actorId:"paystack-webhook",actorLabel:"Paystack payment webhook",action:"commerce.payment_webhook_verified",module:"finance",targetType:"payment_transaction",targetId:String(payment._id),outcome:"success",metadata:{reference,providerTransactionId:payment.providerTransactionId}});}catch(auditError){console.error("Paystack webhook audit write failed",auditError);}
   return NextResponse.json({received:true,processed:true});
  }catch(error){return NextResponse.json({error:error instanceof Error?error.message:"Payment verification failed."},{status:409});}

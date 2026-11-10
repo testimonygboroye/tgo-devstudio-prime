@@ -176,3 +176,84 @@ Direct pages:
 ## Vercel environment-variable entry procedure
 
 Open https://vercel.com/testimonygboroye/tgo-devstudio-prime/settings/environment-variables. For every variable above, click **Add New**, type the exact variable name into **Key**, paste the provider value into **Value**, select **Production**, then click **Save**. Do not add `NEXT_PUBLIC_` to secrets. After all variables are saved, open **Deployments**, choose the latest Production deployment and click **Redeploy**. Never paste secret values into this repository or into ChatGPT.
+
+
+## Other existing production integrations
+
+The Vercel project also contains configuration slots for Cloudinary media storage, Cloudflare Turnstile bot protection and Web Push notifications. These are separate from Paystack and Twilio.
+
+### Cloudinary — image and media uploads
+
+1. Open https://cloudinary.com/users/register_free and create/sign in to the TGO Cloudinary account.
+2. Open the Cloudinary Console: https://console.cloudinary.com/
+3. On the dashboard's **Product Environment** / **Account Details** panel, copy:
+   - **Cloud name**
+   - **API Key**
+   - Reveal and copy **API Secret**
+4. In Vercel Production, enter:
+   - `CLOUDINARY_CLOUD_NAME` = Cloudinary Cloud name
+   - `CLOUDINARY_API_KEY` = Cloudinary API Key
+   - `CLOUDINARY_API_SECRET` = Cloudinary API Secret (sensitive)
+5. Save and redeploy. Test an image upload from a permitted admin/client upload area and confirm the returned media URL loads.
+
+Do not put the API Secret in a `NEXT_PUBLIC_` variable.
+
+### Cloudflare Turnstile — anti-bot protection
+
+1. Open https://dash.cloudflare.com/ and sign in to the Cloudflare account.
+2. In the account dashboard, open **Turnstile**: https://dash.cloudflare.com/?to=/:account/turnstile
+3. Click **Add widget**.
+4. For the widget name, enter `TGO DevStudio Production`.
+5. For hostnames, add the production hostname only: `tgo-devstudio-prime.vercel.app`. Add any custom TGO production domain separately if the site uses one.
+6. Choose **Managed** widget mode and create the widget.
+7. Copy the **Site Key** and **Secret Key** from the widget details.
+8. In Vercel Production, enter:
+   - `NEXT_PUBLIC_TURNSTILE_SITE_KEY` = the Site Key
+   - `TURNSTILE_SECRET_KEY` = the Secret Key
+   - `NEXT_PUBLIC_TURNSTILE_ENABLED` = `true`
+   - `TURNSTILE_ENABLED` = `true`
+9. Save and redeploy. Test a public form and confirm the Turnstile challenge/token is accepted.
+
+The Site Key is intended for the browser; the Secret Key must remain server-side. If you do not want Turnstile active yet, leave both enable flags set to `false` rather than enabling it without valid keys.
+
+### Web Push notifications — VAPID keys
+
+VAPID keys are generated locally; no paid push provider account is needed.
+
+1. On a trusted computer with the repository dependencies installed, run:
+
+   `npx web-push generate-vapid-keys`
+
+2. The command prints a **Public Key** and a **Private Key**. Keep the private key secret.
+3. In Vercel Production, enter:
+   - `NEXT_PUBLIC_VAPID_PUBLIC_KEY` = the generated Public Key
+   - `VAPID_PRIVATE_KEY` = the generated Private Key
+   - `VAPID_SUBJECT` = a contact URI you control, for example `mailto:admin@your-owned-domain.com`
+4. Save and redeploy. Test subscribing to notifications from a supported browser/device.
+
+Do not generate a new VAPID key pair after users have subscribed unless you intend to invalidate existing browser subscriptions and ask users to subscribe again.
+
+### Existing server secrets — do not replace without a planned rotation
+
+These variables are already present in the Vercel project and support core authentication, sessions, database access and scheduled tasks:
+- `MONGODB_URI`
+- `JWT_ACCESS_SECRET`
+- `JWT_REFRESH_SECRET`
+- `JWT_TEMP_2FA_SECRET`
+- `SETUP_SECRET_KEY`
+- `CRON_SECRET`
+
+Do not rotate these casually. Changing JWT secrets can invalidate active sessions; changing the database URI can disconnect the production database. Keep them server-side and never expose them in browser code.
+
+### Additional values needed for the new features
+
+The current Vercel project already has entries for `GOOGLE_CLIENT_ID`, `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, `SITE_URL`, `BREVO_API_KEY`, `BREVO_SENDER_EMAIL`, `FOUNDER_NOTIFICATION_EMAIL`, the Cloudinary keys, the Turnstile keys and the VAPID keys. Confirm the values are populated and valid in Vercel; a variable name existing does not prove its value is valid.
+
+The following new values still need to be supplied from their provider accounts before those services can pass live tests:
+- `GOOGLE_CLIENT_SECRET`
+- `PAYSTACK_SECRET_KEY` and `PAYSTACK_WEBHOOK_SECRET`
+- `GEMINI_API_KEY`
+- `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` and either `TWILIO_MESSAGING_SERVICE_SID` or `TWILIO_SMS_FROM`
+- Optional production WhatsApp: `TWILIO_WHATSAPP_FROM` and `SUPPORT_WHATSAPP_TO`
+
+For all of them, use Vercel → Project Settings → Environment Variables, select Production, save, then redeploy. Do not send the secret values in chat.

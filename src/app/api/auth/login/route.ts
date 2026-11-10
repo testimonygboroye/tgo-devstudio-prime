@@ -23,7 +23,11 @@ export async function POST(request: NextRequest) {
 
   await connectToDatabase();
 
-  const user = await User.findOne({ email: email.toLowerCase() });
+  const normalizedEmail = email.trim().toLowerCase();
+  const user = await User.findOne({
+    email: normalizedEmail,
+    accountType: audience === "client" ? "client" : { $ne: "client" },
+  });
 
   if (!user) {
     return apiError("invalidCredentials", "Invalid credentials.", 401);
@@ -66,13 +70,8 @@ export async function POST(request: NextRequest) {
   user.lockUntil = undefined;
   await user.save();
 
-  // Only disclose account type after the submitted password has been verified.
-  if (audience === "client" && user.accountType !== "client") {
-    return apiError("staffAccountUseStaffSignIn", "These valid credentials belong to a TGO staff account. Use the staff sign-in page instead. Staff and client identities are kept separate; no account has been changed.", 403);
-  }
-  if (audience !== "client" && user.accountType === "client") {
-    return apiError("invalidCredentials", "Invalid credentials.", 401);
-  }
+  // The audience-specific lookup above keeps staff and client identities separate,
+  // even when both intentionally share the same email address.
   if (user.accountType === "client" && !user.isEmailVerified) {
     return apiError("emailVerificationRequired", "Your client account has not been verified. Use the Resend verification email action below to receive a fresh activation link.", 403);
   }

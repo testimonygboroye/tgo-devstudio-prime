@@ -6,6 +6,8 @@ import { connectToDatabase } from "@/lib/db";
 import SupportTicket from "@/models/SupportTicket";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import ClientActivity from "@/models/ClientActivity";
+import SupportSettings from "@/models/SupportSettings";
+import {sendSupportNotification} from "@/lib/support/notifications";
 
 export const dynamic = "force-dynamic";
 const CATEGORIES = ["General enquiry", "Project delivery", "Billing and payments", "Account access", "Technical issue", "Other"];
@@ -14,8 +16,8 @@ export async function GET(){
   const session=await getServerSession();
   if(!session||session.user.accountType!=="client"||!session.user.isEmailVerified)return fail("Verified client sign-in required.",401);
   await connectToDatabase();
-  const tickets=await SupportTicket.find({clientId:session.user._id}).sort({updatedAt:-1}).limit(100).lean();
-  return NextResponse.json({ok:true,tickets},{headers:{"Cache-Control":"private, no-store"}});
+  const [tickets,settings]=await Promise.all([SupportTicket.find({clientId:session.user._id}).sort({updatedAt:-1}).limit(100).lean(),SupportSettings.findOne({key:"global"}).lean()]);
+  return NextResponse.json({ok:true,tickets,categories:settings?.categories||CATEGORIES},{headers:{"Cache-Control":"private, no-store"}});
 }
 export async function POST(request:NextRequest){
   const session=await getServerSession();
@@ -26,12 +28,15 @@ export async function POST(request:NextRequest){
   const category=typeof body.category==="string"?body.category.trim():"";
   if(subject.length<4||subject.length>180)return fail("Enter a subject between 4 and 180 characters.");
   if(description.length<10||description.length>10000)return fail("Describe the issue in 10 to 10,000 characters.");
-  if(!CATEGORIES.includes(category))return fail("Choose a valid support category.");
   await connectToDatabase();
+  const settings=await SupportSettings.findOne({key:"global"}).lean();
+  const categories=settings?.categories||CATEGORIES;
+  if(!categories.includes(category))return fail("Choose a valid support category.");
   const now=new Date();
   const priority=body.priority==="urgent"?"urgent":"normal";
-  const firstResponseHours=priority==="urgent"?2:24;
-  const resolutionHours=priority==="urgent"?8:72;
+  const policy=(settings?.slaHours as Record<string,{firstResponse:number;resolution:number}>|undefined)?.[priority]||{firstResponse:priority==="urgent"?2:24,resolution:priority==="urgent"?8:72};
+  const firstResponseHours=policy.firstResponse;
+  const resolutionHours=policy.resolution;
   const ticket=await SupportTicket.create({
     reference:"TGO-SUP-"+now.toISOString().slice(0,10).replace(/-/g,"")+"-"+randomUUID().slice(0,8).toUpperCase(),
     clientId:session.user._id,subject,description,category,status:"open",priority,escalationLevel:0,
@@ -43,6 +48,11 @@ export async function POST(request:NextRequest){
     writePlatformAuditEvent({actorType:"human",actorId:String(session.user._id),actorLabel:session.user.name,action:"support.ticket_created",module:"support",targetType:"support_ticket",targetId:String(ticket._id),outcome:"success",metadata:{reference:ticket.reference,category,priority}}),
     ClientActivity.create({clientId:session.user._id,actorId:session.user._id,actorType:"client",action:"client.support_ticket_created",summary:"Created support ticket "+ticket.reference,metadata:{ticketId:String(ticket._id)}}),
   ]);
+  if(settings?.notifications?.emailEnabled!==false){
+    const founderEmail=process.env.FOUNDER_NOTIFICATION_EMAIL;
+    if(founderEmail)void sendSupportNotification({toEmail:founderEmail,toName:"TGO Support Team",subject:"New support request "+ticket.reference,message:ticket.subject+" — "+ticket.description}).catch(e=>console.error("Support notification failed",e));
+  }
+  if(settings?.notifications?.whatsappEnabled&&process.env.SUPPORT_WHATSAPP_TO)void sendSupportNotification({subject:"New support request "+ticket.reference,message:ticket.subject,whatsappTo:process.env.SUPPORT_WHATSAPP_TO}).catch(e=>console.error("Support WhatsApp notification failed",e));
   return NextResponse.json({ok:true,ticket:{id:String(ticket._id),reference:ticket.reference,status:ticket.status,subject:ticket.subject},message:"Your support request has been submitted."},{status:201});
 }
 
@@ -67,6 +77,10 @@ export async function PATCH(request:NextRequest){
       writePlatformAuditEvent({actorType:"human",actorId:String(session.user._id),actorLabel:session.user.name,action:"support.client_replied",module:"support",targetType:"support_ticket",targetId:String(ticket._id),outcome:"success",metadata:{reference:ticket.reference}}),
       ClientActivity.create({clientId:session.user._id,actorId:session.user._id,actorType:"client",action:"client.support_ticket_replied",summary:"Replied to support ticket "+ticket.reference,metadata:{ticketId:String(ticket._id)}}),
     ]);
+    const settings=await SupportSettings.findOne({key:"global"}).lean();
+    const notifyText="Client "+session.user.name+" replied to support request "+ticket.reference+": "+message;
+    if(settings?.notifications?.emailEnabled!==false&&process.env.FOUNDER_NOTIFICATION_EMAIL)void sendSupportNotification({toEmail:process.env.FOUNDER_NOTIFICATION_EMAIL,toName:"TGO Support Team",subject:"Client reply: "+ticket.reference,message:notifyText}).catch(e=>console.error("Support team email failed",e));
+    if(settings?.notifications?.whatsappEnabled&&process.env.SUPPORT_WHATSAPP_TO)void sendSupportNotification({subject:"Client reply: "+ticket.reference,message:ticket.subject,whatsappTo:process.env.SUPPORT_WHATSAPP_TO}).catch(e=>console.error("Support team WhatsApp failed",e));
     return NextResponse.json({ok:true,ticket});
   }
   if(body.action==="satisfaction"){

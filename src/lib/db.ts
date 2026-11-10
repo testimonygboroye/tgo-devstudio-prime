@@ -42,6 +42,12 @@ async function ensureIdentityIndexes(): Promise<void> {
       }
       const payments = database.collection("paymenttransactions");
       await payments.createIndex({ bankTransferReference: 1 }, { unique: true, partialFilterExpression: { provider: "bank_transfer", bankTransferReference: { $type: "string" } }, name: "bank_transfer_reference_unique" });
+      const receipts = database.collection("financereceipts");
+      await receipts.createIndex({ paymentTransactionId: 1 }, { unique: true, name: "receipt_payment_unique" });
+      await receipts.createIndex({ clientId: 1, issuedAt: -1 }, { name: "receipt_client_date" });
+      const invoices = database.collection("financeinvoices");
+      await invoices.createIndex({ orderId: 1 }, { unique: true, name: "invoice_order_unique" });
+      await invoices.createIndex({ reference: 1 }, { unique: true, name: "invoice_reference_unique" });
       const ledger = database.collection("financialledgerentries");
       await ledger.createIndex({ sourceReference: 1, accountCode: 1 }, { unique: true, name: "source_account_unique" });
       const ledgerIndexes = await ledger.listIndexes().toArray();

@@ -21,7 +21,7 @@ import DeliveryMilestone from "@/models/DeliveryMilestone";
 import User from "@/models/User";
 import FinancialLedgerEntry from "@/models/FinancialLedgerEntry";
 import {toMinorUnits,fromMinorUnits} from "@/lib/payments/money";
-import {buildCreditAdjustmentEntries,buildExpenseLedgerEntries,buildPaymentLedgerEntries} from "@/lib/finance/ledger";
+import {buildCreditAdjustmentEntries,buildExpenseLedgerEntries,buildPaymentLedgerEntries,buildRefundLedgerEntries,buildCreditRestorationEntries} from "@/lib/finance/ledger";
 import {verifyAndRecordPaystackPayment} from "@/lib/payments/paystack";
 import {getPaymentProvider} from "@/lib/payments/provider";
 import {sendNotificationEmail} from "@/lib/email/sendEmail";
@@ -172,7 +172,7 @@ export async function POST(request:NextRequest){
   }
   if(action==="refund.request"){
    if(!validId(body.paymentTransactionId))return fail("Valid payment transaction id required.");
-   const payment=await PaymentTransaction.findById(body.paymentTransactionId);if(!payment||payment.status!=="paid"||payment.provider!=="paystack")return fail("Only verified Paystack payments can be refunded through the automated refund flow.",409);
+   const payment=await PaymentTransaction.findById(body.paymentTransactionId);if(!payment||!["paid","partially_refunded"].includes(payment.status))return fail("Only verified payments with a refundable balance can be refunded.",409);
    const prior=await FinanceRefund.aggregate([{$match:{paymentTransactionId:payment._id,status:{$nin:["failed"]}}},{$group:{_id:null,total:{$sum:"$amountMinor"}}}]);
    const remainingMinor=payment.amountMinor-Number(prior[0]?.total||0);if(remainingMinor<1)return fail("This payment has no refundable balance.",409);
    const amountMinor=body.amount===undefined?remainingMinor:toMinorUnits(Number(body.amount),payment.currency);if(amountMinor<1||amountMinor>remainingMinor)return fail("Refund amount exceeds the remaining refundable balance.",409);
@@ -193,15 +193,48 @@ export async function POST(request:NextRequest){
   }
   if(action==="refund.process"){
    if(!validId(body.id))return fail("Valid refund id required.");
-   const refund=await FinanceRefund.findById(body.id);if(!refund||refund.status!=="approved")return fail("Only approved refunds can be submitted to Paystack.",409);
-   const payment=await PaymentTransaction.findById(refund.paymentTransactionId);if(!payment?.providerTransactionId)return fail("The original Paystack transaction id is unavailable.",409);
-   const secret=process.env.PAYSTACK_SECRET_KEY;if(!secret)return fail("PAYSTACK_SECRET_KEY is not configured.",503);
-   const response=await fetch("https://api.paystack.co/refund",{method:"POST",headers:{Authorization:`Bearer ${secret}`,"Content-Type":"application/json"},body:JSON.stringify({transaction:payment.providerTransactionId,amount:refund.amountMinor,currency:refund.currency}),cache:"no-store"});
-   const data=await response.json() as {status?:boolean;message?:string;data?:{id?:number;status?:string}};
-   if(!response.ok||!data.status||!data.data)throw new Error(data.message||"Paystack did not accept the refund request.");
-   refund.status="processing";refund.providerReference=String(data.data.id||"");await refund.save();
-   await audit(session,"finance.refund_submitted_to_provider","finance_refund",String(refund._id),{providerReference:refund.providerReference});
-   return NextResponse.json({ok:true,item:refund,message:"Refund submitted. The payment remains unchanged until Paystack confirms the refund webhook."});
+   const refund=await FinanceRefund.findById(body.id);if(!refund||refund.status!=="approved")return fail("Only approved refunds can be processed.",409);
+   const payment=await PaymentTransaction.findById(refund.paymentTransactionId);if(!payment)return fail("Original payment record was not found.",404);
+   if(payment.provider==="paystack"){
+    if(!payment.providerTransactionId)return fail("The original Paystack transaction id is unavailable.",409);
+    const secret=process.env.PAYSTACK_SECRET_KEY;if(!secret)return fail("PAYSTACK_SECRET_KEY is not configured.",503);
+    const response=await fetch("https://api.paystack.co/refund",{method:"POST",headers:{Authorization:`Bearer ${secret}`,"Content-Type":"application/json"},body:JSON.stringify({transaction:payment.providerTransactionId,amount:refund.amountMinor,currency:refund.currency}),cache:"no-store"});
+    const data=await response.json() as {status?:boolean;message?:string;data?:{id?:number;status?:string}};
+    if(!response.ok||!data.status||!data.data)throw new Error(data.message||"Paystack did not accept the refund request.");
+    refund.status="processing";refund.providerReference=String(data.data.id||"");await refund.save();
+    await audit(session,"finance.refund_submitted_to_provider","finance_refund",String(refund._id),{providerReference:refund.providerReference});
+    return NextResponse.json({ok:true,item:refund,message:"Refund submitted. The payment remains unchanged until Paystack confirms the signed refund webhook."});
+   }
+   let bankReference="";
+   if(payment.provider==="bank_transfer"){bankReference=String(body.bankReference||"").trim();if(bankReference.length<4||bankReference.length>160)return fail("Enter the bank statement reference for the outgoing refund transfer.");}
+   const dbSession=await mongoose.startSession();
+   try{
+    await dbSession.withTransaction(async()=>{
+     const currentRefund=await FinanceRefund.findOne({_id:refund._id,status:"approved"}).session(dbSession);if(!currentRefund)throw new Error("Refund request has already been processed.");
+     const currentPayment=await PaymentTransaction.findById(payment._id).session(dbSession);if(!currentPayment)throw new Error("Original payment record was not found.");
+     currentRefund.status="processed";currentRefund.processedAt=new Date();currentRefund.providerReference=payment.provider==="account_credit"?"account-credit-restored":bankReference;await currentRefund.save({session:dbSession});
+     currentPayment.refundAmountMinor=Number(currentPayment.refundAmountMinor||0)+currentRefund.amountMinor;
+     currentPayment.status=currentPayment.refundAmountMinor>=currentPayment.amountMinor?"refunded":"partially_refunded";await currentPayment.save({session:dbSession});
+     if(payment.provider==="account_credit"){
+      await ClientCreditAccount.findOneAndUpdate({clientId:currentPayment.clientId,currency:currentPayment.currency},{$inc:{balanceMinor:currentRefund.amountMinor}},{upsert:true,new:true,setDefaultsOnInsert:true,session:dbSession});
+      const entries=buildCreditRestorationEntries({reference:currentRefund.reference,paymentTransactionId:String(currentPayment._id),orderId:String(currentPayment.orderId),clientId:String(currentPayment.clientId),amountMinor:currentRefund.amountMinor,currency:currentRefund.currency});
+      await FinancialLedgerEntry.insertMany(entries as any,{session:dbSession});
+     }else{
+      const entries=buildRefundLedgerEntries({reference:currentRefund.reference,refundId:String(currentRefund._id),paymentTransactionId:String(currentPayment._id),orderId:String(currentPayment.orderId),clientId:String(currentPayment.clientId),amountMinor:currentRefund.amountMinor,currency:currentRefund.currency});
+      await FinancialLedgerEntry.insertMany(entries as any,{session:dbSession});
+     }
+     const order=await CommercialOrder.findById(currentPayment.orderId).session(dbSession);
+     if(order){
+      const totals=await PaymentTransaction.aggregate([{$match:{orderId:order._id,status:{$in:["paid","partially_refunded","refunded"]}}},{$group:{_id:null,captured:{$sum:"$amountMinor"},refunded:{$sum:"$refundAmountMinor"}}}]).session(dbSession);
+      const captured=Number(totals[0]?.captured||0),refunded=Number(totals[0]?.refunded||0);
+      order.paymentStatus=refunded>=captured&&captured>0?"refunded":refunded>0?"partially_paid":order.paymentStatus;await order.save({session:dbSession});
+      const invoice=await FinanceInvoice.findOne({orderId:order._id,clientId:currentPayment.clientId,status:{$nin:["draft","void"]}}).session(dbSession);
+      if(invoice){invoice.amountPaidMinor=Math.max(0,Math.min(invoice.totalMinor,captured-refunded));invoice.balanceMinor=Math.max(0,invoice.totalMinor-invoice.amountPaidMinor);invoice.status=invoice.amountPaidMinor===0?"issued":invoice.balanceMinor===0?"paid":"partially_paid";await invoice.save({session:dbSession});}
+     }
+    });
+   }finally{await dbSession.endSession();}
+   await audit(session,"finance.refund_processed","finance_refund",String(refund._id),{reference:refund.reference,provider:payment.provider,bankReference:bankReference||null});
+   return NextResponse.json({ok:true,message:payment.provider==="account_credit"?"Refund restored as client account credit.":"Bank refund recorded and posted to the immutable ledger."});
   }
   if(action==="installments.create"){
    if(!validId(body.orderId)||!Array.isArray(body.installments)||body.installments.length<2||body.installments.length>24)return fail("Choose an order and provide between 2 and 24 installments.");

@@ -29,6 +29,18 @@ export async function POST(request:NextRequest){
  const payload=event as Record<string,unknown>;
  if(payload.event==="ping")return NextResponse.json({received:true,ping:true});
  const data=payload.data&&typeof payload.data==="object"&&!Array.isArray(payload.data)?payload.data as Record<string,unknown>:{};
+ if(payload.event==="charge.failed"){
+  await connectToDatabase();
+  const failedReference=String(data.reference||"");
+  if(!failedReference)return NextResponse.json({error:"Failed charge event is missing its reference."},{status:400});
+  const payment=await PaymentTransaction.findOne({reference:failedReference,status:"pending"});
+  if(payment){
+   payment.status="failed";payment.failureReason=String(data.gateway_response||"Paystack reported a failed charge.").slice(0,1000);await payment.save();
+   if(payment.couponCode)await EngagementRedemption.updateOne({couponCode:payment.couponCode,couponStatus:"reserved",couponPaymentReference:failedReference},{$set:{couponStatus:"issued"},$unset:{couponPaymentReference:1}});
+   await writePlatformAuditEvent({actorType:"system",actorId:"paystack-webhook",actorLabel:"Paystack failed charge webhook",action:"commerce.payment_failed",module:"finance",targetType:"payment_transaction",targetId:String(payment._id),outcome:"failure",metadata:{reference:failedReference}});
+  }
+  return NextResponse.json({received:true,processed:Boolean(payment)});
+ }
  if(["refund.processed","refund.failed","refund.pending","refund.processing"].includes(String(payload.event))){
   await connectToDatabase();
   const providerRefundId=String(data.id||"");if(!providerRefundId)return NextResponse.json({error:"Refund event is missing its provider refund id."},{status:400});

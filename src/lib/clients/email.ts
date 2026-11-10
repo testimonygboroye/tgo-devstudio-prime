@@ -14,12 +14,11 @@ export async function createEmailVerification(userId: string) {
   return token;
 }
 
-export async function sendClientVerificationEmail(email: string, name: string, token: string) {
+export async function sendClientVerificationEmail(email: string, name: string, token: string, siteUrl = process.env.SITE_URL) {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.EMAIL_FROM;
-  const siteUrl = process.env.SITE_URL;
   if (!apiKey || !from || !siteUrl) {
-    throw new Error("Client verification email is not configured. Set RESEND_API_KEY, EMAIL_FROM and SITE_URL.");
+    throw new Error("Client verification email is not configured. Set RESEND_API_KEY and EMAIL_FROM.");
   }
   const verifyUrl = new URL("/client/verify-email", siteUrl);
   verifyUrl.searchParams.set("token", token);

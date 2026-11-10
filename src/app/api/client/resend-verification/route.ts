@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
   }
   try {
     const token = await createEmailVerification(String(user._id));
-    await sendClientVerificationEmail(email, user.name, token);
+    await sendClientVerificationEmail(email, user.name, token, request.nextUrl.origin);
   } catch {
     return NextResponse.json({ error: "Verification email could not be sent. Please try again later." }, { status: 503 });
   }

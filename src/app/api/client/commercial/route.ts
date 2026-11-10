@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import {Types} from "mongoose";
 import { getServerSession } from "@/lib/auth/serverSession";
 import { connectToDatabase } from "@/lib/db";
 import User from "@/models/User";
@@ -23,6 +24,7 @@ import { writePlatformAuditEvent } from "@/lib/platform/audit";
 
 export const dynamic="force-dynamic";
 function fail(message:string,status=400){return NextResponse.json({ok:false,error:message},{status});}
+function validId(value:unknown):value is string{return typeof value==="string"&&Types.ObjectId.isValid(value);}
 async function clientSession(){const session=await getServerSession();if(!session||session.user.accountType!=="client"||!session.user.isEmailVerified)return null;return session;}
 type ClientSession=NonNullable<Awaited<ReturnType<typeof getServerSession>>>;
 async function logClient(session:ClientSession,action:string,targetType:string,targetId:string,summary:string,metadata:Record<string,unknown>={}) {

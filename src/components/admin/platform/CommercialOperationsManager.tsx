@@ -1,6 +1,6 @@
 "use client";
 import { useEffect,useMemo,useState } from "react";
-import { Activity,CheckCircle2,Clipboard,Clock3,CreditCard,Scale,Layers,LoaderCircle,Plus,RefreshCw,Search,ShoppingBag,Users,Workflow } from "lucide-react";
+import { Activity,CheckCircle2,Clipboard,Clock3,CreditCard,Scale,Layers,LoaderCircle,MessageSquareText,Plus,RefreshCw,Search,ShoppingBag,Users,Workflow } from "lucide-react";
 type Field={key:string;label:string;type?:"textarea"|"number"|"date"|"select"|"json"|"email"|"file";required?:boolean;options?:string[];hint?:string};
 type Tab={key:string;label:string;icon:React.ElementType;action?:string;fields?:Field[]};
 type CommercialRecord={_id:string;name?:string;title?:string;topic?:string;reference?:string;firstName?:string;lastName?:string;status?:string;stage?:string;lifecycle?:string;[key:string]:unknown};

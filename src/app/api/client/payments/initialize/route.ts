@@ -11,6 +11,7 @@ import PaymentTransaction from "@/models/PaymentTransaction";
 import {writePlatformAuditEvent} from "@/lib/platform/audit";
 import {getPublicSiteUrl} from "@/lib/site-url";
 import {fromMinorUnits,toMinorUnits} from "@/lib/payments/money";
+import {getPaymentProvider} from "@/lib/payments/provider";
 export const dynamic="force-dynamic";
 const supported=new Set(["NGN","GHS","ZAR","USD","KES","XOF","EGP"]);
 function fail(error:string,status=400){return NextResponse.json({ok:false,error},{status});}
@@ -76,16 +77,18 @@ export async function POST(request:NextRequest){
  try{
   const callbackUrl=new URL("/client/payments/callback",siteUrl);
   callbackUrl.searchParams.set("reference",reference);
-  const response=await fetch("https://api.paystack.co/transaction/initialize",{
-   method:"POST",
-   headers:{Authorization:`Bearer ${secret}`,"Content-Type":"application/json"},
-   body:JSON.stringify({email:user.email,amount:amountMinor,currency,reference,callback_url:callbackUrl.toString(),metadata:{clientId:String(user._id),orderId:String(order._id),milestoneId:milestoneId||null}}),
-   cache:"no-store",
+  const provider=getPaymentProvider("paystack");
+  const checkout=await provider.initialize({
+   email:user.email,
+   amountMinor,
+   currency,
+   reference,
+   callbackUrl:callbackUrl.toString(),
+   metadata:{clientId:String(user._id),orderId:String(order._id),milestoneId:milestoneId||null},
   });
-  const data=await response.json() as {status?:boolean;message?:string;data?:{authorization_url?:string;access_code?:string;reference?:string}};
-  if(!response.ok||!data.status||!data.data?.authorization_url)throw new Error(data.message||"Payment provider did not return a checkout session.");
-  payment.authorizationUrl=data.data.authorization_url;
-  payment.accessCode=data.data.access_code;
+  if(checkout.reference!==reference)throw new Error("Payment provider returned a different transaction reference.");
+  payment.authorizationUrl=checkout.authorizationUrl;
+  payment.accessCode=checkout.accessCode;
   await payment.save();
   if(order.paymentStatus!=="partially_paid"){order.paymentStatus="pending";await order.save();}
   await writePlatformAuditEvent({actorType:"human",actorId:String(user._id),actorLabel:user.name,action:"commerce.payment_checkout_initialized",module:"finance",targetType:"payment_transaction",targetId:String(payment._id),outcome:"success",metadata:{orderId:String(order._id),milestoneId:milestoneId||null,amount,currency,provider:"paystack"}});

@@ -36,7 +36,7 @@ export async function POST(request:NextRequest){
  if(["cancelled","refunded","completed"].includes(order.status))return fail("This order is not eligible for payment.");
  if(!settings?.paystackEnabled)return fail("Paystack checkout is currently disabled by TGO DevStudio.",503);
  const currency=String(order.currency||"NGN").toUpperCase();
- const eligibleCurrencies=PAYSTACK_CURRENCIES_BY_COUNTRY[settings.paystackMerchantCountry]||[];if(!eligibleCurrencies.includes(currency)||!settings.enabledCurrencies.includes(currency))return fail(`Paystack checkout is not enabled for the ${currency} currency on this merchant account.`);
+ const eligibleCurrencies=PAYSTACK_CURRENCIES_BY_COUNTRY[settings.paystackMerchantCountry||"NG"]||[];if(!eligibleCurrencies.includes(currency)||!settings.enabledCurrencies.includes(currency))return fail(`Paystack checkout is not enabled for the ${currency} currency on this merchant account.`);
 
  let amountMinor=0;let milestoneId:string|undefined;let invoiceId:string|undefined;let installmentId:string|undefined;
  let existingQuery:Record<string,unknown>;

@@ -56,6 +56,18 @@ export async function POST(request: NextRequest) {
       await writePlatformAuditEvent({ actorType: "human", actorId, action: "ai.memory.archived", module: "ai-workforce", targetType: "AIMemory", targetId: String(memory._id), outcome: "success" });
       return NextResponse.json({ status: "ok", message: "Knowledge memory archived." });
     }
+    if (body.action === "provider.import_gemini_env") {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) return NextResponse.json({ status: "error", message: "GEMINI_API_KEY is not configured in this Vercel environment." }, { status: 503 });
+      let provider = await AIProvider.findOne({ name: "Gemini environment provider" });
+      if (provider) {
+        provider.provider = "google"; provider.encryptedApiKey = encryptProviderSecret(apiKey); provider.enabled = true; provider.lastTestStatus = undefined; provider.lastTestedAt = undefined; await provider.save();
+      } else {
+        provider = await AIProvider.create({ name: "Gemini environment provider", provider: "google", encryptedApiKey: encryptProviderSecret(apiKey), enabled: true, createdBy: actorId });
+      }
+      await writePlatformAuditEvent({ actorType: "human", actorId, action: "ai.provider.imported_from_environment", module: "ai-workforce", targetType: "AIProvider", targetId: String(provider._id), outcome: "success", metadata: { provider: "google", source: "GEMINI_API_KEY" } });
+      return NextResponse.json({ status: "ok", provider: { id: provider._id, name: provider.name, provider: provider.provider }, message: "Existing Gemini environment credential encrypted and imported. Test the connection before enabling agents." }, { status: 201 });
+    }
     if (body.action === "provider.create") {
       const name = String(body.name || "").trim();
       const apiKey = String(body.apiKey || "").trim();

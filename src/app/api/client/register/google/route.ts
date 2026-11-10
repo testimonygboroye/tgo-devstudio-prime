@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     const verified = google.email_verified === true || google.email_verified === "true";
     const audienceMatches = google.aud === clientId || google.azp === clientId;
     const email = String(google.email || "").trim().toLowerCase();
-    if (!google.sub || !email || !verified || (idToken && !audienceMatches)) {
+    if (!google.sub || !email || !verified || !audienceMatches) {
       return NextResponse.json({ error: "The Google account could not be verified for this application." }, { status: 401 });
     }
 

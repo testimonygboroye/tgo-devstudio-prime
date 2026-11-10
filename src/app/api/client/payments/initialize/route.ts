@@ -44,7 +44,7 @@ export async function POST(request:NextRequest){
   if(!Types.ObjectId.isValid(body.installmentId))return fail("Invalid installment id.");
   if(body.amount!==undefined||body.invoiceId||body.milestoneId)return fail("Pay an installment separately using its configured amount.");
   const plan=await FinanceInstallmentPlan.findOne({orderId:order._id,clientId:user._id,status:"active"});
-  const installment=plan?.installments.find((item:any)=>String(item._id)===body.installmentId);
+  const installment=plan?.installments.find(item=>String(item._id)===body.installmentId);
   if(!plan||!installment)return fail("Installment not found in your payment schedule.",404);
   if(installment.status==="paid")return fail("This installment has already been paid.");
   amountMinor=installment.amountMinor-installment.paidMinor;

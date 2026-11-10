@@ -61,6 +61,13 @@ export interface AITask extends Document {
   approvedBy?: string;
   startedAt?: Date;
   completedAt?: Date;
+  executionAttempts: number;
+  inputTokens: number;
+  outputTokens: number;
+  providerRequestId?: string;
+  handedOverAt?: Date;
+  handedOverBy?: string;
+  handoverNote?: string;
 }
 const AITaskSchema = new Schema<AITask>({
   agentId: { type: Schema.Types.ObjectId, ref: "AIAgent", required: true },
@@ -73,6 +80,13 @@ const AITaskSchema = new Schema<AITask>({
   approvedBy: String,
   startedAt: Date,
   completedAt: Date,
+  executionAttempts: { type: Number, default: 0, min: 0, max: 20 },
+  inputTokens: { type: Number, default: 0, min: 0 },
+  outputTokens: { type: Number, default: 0, min: 0 },
+  providerRequestId: { type: String, maxlength: 200 },
+  handedOverAt: Date,
+  handedOverBy: String,
+  handoverNote: { type: String, maxlength: 2000 },
 }, { timestamps: true });
 AITaskSchema.index({ status: 1, createdAt: 1 });
 AITaskSchema.index({ agentId: 1, createdAt: -1 });

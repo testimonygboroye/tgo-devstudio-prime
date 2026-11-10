@@ -35,9 +35,10 @@ export async function POST(request: NextRequest) {
       const name = String(body.name || "").trim();
       const apiKey = String(body.apiKey || "").trim();
       const provider = String(body.provider || "");
-      if (!name || !apiKey || !["google", "openai", "anthropic", "openai-compatible"].includes(provider)) return NextResponse.json({ status: "error", message: "Provider name, supported provider type and API key are required." }, { status: 400 });
+      const supportedProviders = ["google", "openai", "anthropic", "openai-compatible"] as const;
+      if (!name || !apiKey || !supportedProviders.includes(provider as (typeof supportedProviders)[number])) return NextResponse.json({ status: "error", message: "Provider name, supported provider type and API key are required." }, { status: 400 });
       if (provider === "openai-compatible" && !/^https:\/\//i.test(String(body.baseUrl || ""))) return NextResponse.json({ status: "error", message: "A valid HTTPS base URL is required for compatible providers." }, { status: 400 });
-      const created = await AIProvider.create({ name, provider, baseUrl: body.baseUrl, encryptedApiKey: encryptProviderSecret(apiKey), createdBy: actorId });
+      const created = await AIProvider.create({ name, provider: provider as (typeof supportedProviders)[number], baseUrl: body.baseUrl, encryptedApiKey: encryptProviderSecret(apiKey), createdBy: actorId });
       await writePlatformAuditEvent({ actorType: "human", actorId, actorLabel: session.user.name, action: "ai.provider.created", module: "ai-workforce", targetType: "AIProvider", targetId: String(created._id), outcome: "success", metadata: { provider, name } });
       return NextResponse.json({ status: "ok", provider: { id: created._id, name: created.name, provider: created.provider } }, { status: 201 });
     }
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
       if (!provider) return NextResponse.json({ status: "error", message: "Select an enabled provider." }, { status: 400 });
       const name = String(body.name || "").trim(), modelName = String(body.model || "").trim(), instructions = String(body.systemInstructions || "").trim();
       if (!name || !modelName || !instructions) return NextResponse.json({ status: "error", message: "Agent name, model and system instructions are required." }, { status: 400 });
-      const agent = await AIAgent.create({ name, role: String(body.role || "General assistant"), department: String(body.department || "Operations"), description: String(body.description || ""), providerId: provider._id, model: modelName, systemInstructions: instructions, permissions: [], requiresApproval: true, maxDailyTokens: Math.max(1000, Math.min(1000000, Number(body.maxDailyTokens) || 100000)), enabled: false, createdBy: actorId });
+      const agent = await AIAgent.create({ name, role: String(body.role || "General assistant"), department: String(body.department || "Operations"), description: String(body.description || ""), providerId: provider._id, modelName, systemInstructions: instructions, permissions: [], requiresApproval: true, maxDailyTokens: Math.max(1000, Math.min(1000000, Number(body.maxDailyTokens) || 100000)), enabled: false, createdBy: actorId });
       await writePlatformAuditEvent({ actorType: "human", actorId, action: "ai.agent.created", module: "ai-workforce", targetType: "AIAgent", targetId: String(agent._id), outcome: "success", metadata: { name, provider: provider.name } });
       return NextResponse.json({ status: "ok", agentId: agent._id, message: "Agent created disabled and with no operational permissions. Enablement requires a separate reviewed workflow." }, { status: 201 });
     }
@@ -106,7 +107,7 @@ export async function POST(request: NextRequest) {
         const dailyUsage = await AITask.aggregate([{ $match: { agentId: agent._id, status: "completed", completedAt: { $gte: dayStart } } }, { $group: { _id: null, tokens: { $sum: { $add: ["$inputTokens", "$outputTokens"] } } } }]);
         const usedTokens = Number(dailyUsage[0]?.tokens || 0);
         if (usedTokens >= agent.maxDailyTokens) throw new Error("Agent daily token budget exhausted (" + usedTokens + "/" + agent.maxDailyTokens + ").");
-        const completion = await runProviderCompletion(String(agent.providerId), agent.model, agent.systemInstructions, task.input);
+        const completion = await runProviderCompletion(String(agent.providerId), agent.modelName, agent.systemInstructions, task.input);
         if (!completion.text.trim()) throw new Error("The provider returned an empty response.");
         task.status = "completed";
         task.result = completion.text.slice(0, 50000);
@@ -115,7 +116,7 @@ export async function POST(request: NextRequest) {
         task.providerRequestId = completion.providerRequestId;
         task.completedAt = new Date();
         await task.save();
-        await writePlatformAuditEvent({ actorType: "ai", actorId: String(agent._id), actorLabel: agent.name, action: "ai.task.completed", module: "ai-workforce", targetType: "AITask", targetId: String(task._id), outcome: "success", metadata: { model: agent.model, inputTokens: completion.inputTokens, outputTokens: completion.outputTokens, providerRequestId: completion.providerRequestId } });
+        await writePlatformAuditEvent({ actorType: "ai", actorId: String(agent._id), actorLabel: agent.name, action: "ai.task.completed", module: "ai-workforce", targetType: "AITask", targetId: String(task._id), outcome: "success", metadata: { model: agent.modelName, inputTokens: completion.inputTokens, outputTokens: completion.outputTokens, providerRequestId: completion.providerRequestId } });
         return NextResponse.json({ status: "ok", message: "AI task completed.", taskId: task._id, result: task.result, usage: { inputTokens: completion.inputTokens, outputTokens: completion.outputTokens } });
       } catch (error) {
         task.status = "failed";

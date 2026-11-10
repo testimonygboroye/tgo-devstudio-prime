@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
       if (!provider) return NextResponse.json({ status: "error", message: "Select an enabled provider." }, { status: 400 });
       const name = String(body.name || "").trim(), modelName = String(body.model || "").trim(), instructions = String(body.systemInstructions || "").trim();
       if (!name || !modelName || !instructions) return NextResponse.json({ status: "error", message: "Agent name, model and system instructions are required." }, { status: 400 });
-      const agent = await AIAgent.create({ name, role: String(body.role || "General assistant"), department: String(body.department || "Operations"), description: String(body.description || ""), providerId: provider._id, model: modelName, systemInstructions: instructions, permissions: [], requiresApproval: true, enabled: false, createdBy: actorId });
+      const agent = await AIAgent.create({ name, role: String(body.role || "General assistant"), department: String(body.department || "Operations"), description: String(body.description || ""), providerId: provider._id, model: modelName, systemInstructions: instructions, permissions: [], requiresApproval: true, maxDailyTokens: Math.max(1000, Math.min(1000000, Number(body.maxDailyTokens) || 100000)), enabled: false, createdBy: actorId });
       await writePlatformAuditEvent({ actorType: "human", actorId, action: "ai.agent.created", module: "ai-workforce", targetType: "AIAgent", targetId: String(agent._id), outcome: "success", metadata: { name, provider: provider.name } });
       return NextResponse.json({ status: "ok", agentId: agent._id, message: "Agent created disabled and with no operational permissions. Enablement requires a separate reviewed workflow." }, { status: 201 });
     }
@@ -102,6 +102,10 @@ export async function POST(request: NextRequest) {
         const agent = await AIAgent.findOne({ _id: task.agentId, enabled: true });
         if (!agent || agent.requiresApproval !== true) throw new Error("Agent is disabled or its approval policy is invalid.");
         if (agent.permissions.length > 0) throw new Error("This execution adapter only supports text-only agents; operational tools are not enabled.");
+        const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0);
+        const dailyUsage = await AITask.aggregate([{ $match: { agentId: agent._id, status: "completed", completedAt: { $gte: dayStart } } }, { $group: { _id: null, tokens: { $sum: { $add: ["$inputTokens", "$outputTokens"] } } } }]);
+        const usedTokens = Number(dailyUsage[0]?.tokens || 0);
+        if (usedTokens >= agent.maxDailyTokens) throw new Error("Agent daily token budget exhausted (" + usedTokens + "/" + agent.maxDailyTokens + ").");
         const completion = await runProviderCompletion(String(agent.providerId), agent.model, agent.systemInstructions, task.input);
         if (!completion.text.trim()) throw new Error("The provider returned an empty response.");
         task.status = "completed";

@@ -54,6 +54,7 @@ export async function POST(request:NextRequest){
  }else if(typeof body.invoiceId==="string"){
   if(!Types.ObjectId.isValid(body.invoiceId))return fail("Invalid invoice id.");
   if(body.milestoneId)return fail("Invoice payments and milestone payments must be initiated separately.");
+  if(await FinanceInstallmentPlan.findOne({orderId:order._id,clientId:user._id,status:"active"}))return fail("This order has an installment plan. Pay the scheduled installments instead of using the invoice balance.");
   const invoice=await FinanceInvoice.findOne({_id:body.invoiceId,orderId:order._id,clientId:user._id,status:{$nin:["draft","void"]}});
   if(!invoice)return fail("Issued invoice not found in your account.",404);
   invoiceId=String(invoice._id);
@@ -72,6 +73,7 @@ export async function POST(request:NextRequest){
   if(amountMinor===0){milestone.paymentStatus="not_required";await milestone.save();return NextResponse.json({ok:true,notRequired:true,message:"No payment is required for this milestone."});}
   existingQuery={orderId:order._id,milestoneId:milestone._id,status:"pending",amountMinor,authorizationUrl:{$exists:true}};
  }else{
+  if(await FinanceInstallmentPlan.findOne({orderId:order._id,clientId:user._id,status:"active"}))return fail("This order has an installment plan. Pay the scheduled installments instead of paying the full order balance.");
   if(order.paymentStatus==="paid")return fail("This order has already been paid.");
   const deliveryProject=await DeliveryProject.findOne({orderId:order._id,clientId:user._id});
   if(deliveryProject&&await DeliveryMilestone.countDocuments({projectId:deliveryProject._id,amount:{$gt:0}})>0)return fail("This order uses milestone billing. Pay each outstanding milestone separately.");

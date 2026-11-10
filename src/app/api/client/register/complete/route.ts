@@ -3,7 +3,6 @@ import { connectToDatabase } from "@/lib/db";
 import { hashVerificationToken } from "@/lib/clients/token";
 import { validateClientRegistration } from "@/lib/clients/validation";
 import { createClientIdentity } from "@/lib/clients/identity";
-import { rememberClientAccount } from "@/lib/clients/account-selector";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import ClientRegistrationVerification from "@/models/ClientRegistrationVerification";
 
@@ -38,7 +37,6 @@ export async function POST(request: NextRequest) {
     await verification.save();
     const response = NextResponse.json({ ok: true, message: "Your client account has been created. You can now sign in." }, { status: 201 });
     response.cookies.delete("tgo_client_registration_token");
-    rememberClientAccount(response, request, verification.email);
     try {
       await writePlatformAuditEvent({ actorType: "human", actorId: String(user._id), actorLabel: user.name, action: "client.email_first_registration_completed", module: "clients", targetType: "client", targetId: String(user._id), outcome: "success" });
     } catch (error) { console.error("Client registration completion audit failed", error); }

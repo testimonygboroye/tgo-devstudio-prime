@@ -2,7 +2,7 @@ import {Schema,model,models,Document,Model} from "mongoose";
 export interface IFinanceSettings extends Document {
  key:string; baseCurrency:string; enabledCurrencies:string[]; invoicePrefix:string; nextInvoiceNumber:number;
  allowPartialPayments:boolean; taxEnabled:boolean; taxName:string; taxRateBps:number; taxRegistrationNumber?:string;
- paystackEnabled:boolean; bankTransferEnabled:boolean; bankName?:string; bankAccountName?:string; bankAccountNumber?:string; bankCode?:string; bankTransferInstructions?:string;
+ paystackMerchantCountry:string; paystackEnabled:boolean; bankTransferEnabled:boolean; bankName?:string; bankAccountName?:string; bankAccountNumber?:string; bankCode?:string; bankTransferInstructions?:string;
  updatedAt:Date;
 }
 const D=new Schema<IFinanceSettings>({
@@ -16,6 +16,7 @@ const D=new Schema<IFinanceSettings>({
  taxName:{type:String,default:"VAT",maxlength:40},
  taxRateBps:{type:Number,default:0,min:0,max:10000},
  taxRegistrationNumber:{type:String,trim:true,maxlength:100},
+ paystackMerchantCountry:{type:String,default:"NG",enum:["NG","GH","KE","ZA","CI"]},
  paystackEnabled:{type:Boolean,default:false},
  bankTransferEnabled:{type:Boolean,default:false},
  bankName:{type:String,trim:true,maxlength:120},

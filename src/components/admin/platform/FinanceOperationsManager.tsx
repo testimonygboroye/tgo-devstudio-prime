@@ -6,7 +6,7 @@ type Row={_id:string;reference?:string;status?:string;amountMinor?:number;amount
 type FinanceData={settings:Record<string,any>|null;orders:Row[];invoices:Row[];expenses:Row[];refunds:Row[];installments:Row[];approvals:Row[];reconciliations:Row[];credits:Row[];payments:Row[];ledger:Row[];summary:any[]};
 const empty:FinanceData={settings:null,orders:[],invoices:[],expenses:[],refunds:[],installments:[],approvals:[],reconciliations:[],credits:[],payments:[],ledger:[],summary:[]};
 const input="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-page)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-brand-cyan-400";
-const money=(amount:number,currency:string)=>`${currency} ${(amount/(currency==="XOF"?1:100)).toLocaleString(undefined,{minimumFractionDigits:currency==="XOF"?0:2,maximumFractionDigits:currency==="XOF"?0:2})}`;
+const money=(amount:number,currency:string)=>`${currency} ${(amount/100).toLocaleString(undefined,{minimumFractionDigits:currency==="XOF"?0:2,maximumFractionDigits:currency==="XOF"?0:2})}`;
 export default function FinanceOperationsManager(){
  const [data,setData]=useState<FinanceData>(empty);const [loading,setLoading]=useState(true);const [busy,setBusy]=useState(false);const [error,setError]=useState("");const [notice,setNotice]=useState("");
  const [settings,setSettings]=useState({baseCurrency:"NGN",enabledCurrencies:"NGN,USD",invoicePrefix:"TGO-INV",allowPartialPayments:true,taxEnabled:false,taxName:"VAT",taxRate:"0",taxRegistrationNumber:"",paystackEnabled:false,bankTransferEnabled:false,bankName:"",bankAccountName:"",bankAccountNumber:"",bankCode:"",bankTransferInstructions:""});

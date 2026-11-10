@@ -67,7 +67,7 @@ export async function POST(request:NextRequest){
   if(action==="settings.update"){
    const baseCurrency=String(body.baseCurrency||"NGN").toUpperCase();
    const enabledCurrencies=Array.isArray(body.enabledCurrencies)?[...new Set(body.enabledCurrencies.map((x:unknown)=>String(x).toUpperCase()))]:[baseCurrency];
-   if(!/^[A-Z]{3}$/.test(baseCurrency)||enabledCurrencies.some((x:string)=>!/^[A-Z]{3}$/.test(x)))return fail("Use valid three-letter ISO currency codes.");
+   if(!/^[A-Z]{3}$/.test(baseCurrency)||enabledCurrencies.some((x:string)=>!/^[A-Z]{3}$/.test(x)))return fail("Use valid three-letter ISO currency codes.");if(!enabledCurrencies.includes(baseCurrency))return fail("The base currency must also be included in enabled currencies.");
    const taxRateBps=Number(body.taxRateBps||0);if(!Number.isInteger(taxRateBps)||taxRateBps<0||taxRateBps>10000)return fail("Tax rate must be between 0 and 10000 basis points.");
    const bankTransferEnabled=body.bankTransferEnabled===true;
    if(bankTransferEnabled&&(!String(body.bankName||"").trim()||!String(body.bankAccountName||"").trim()||!String(body.bankAccountNumber||"").trim()))return fail("Bank name, account name and account number are required before enabling bank transfer.");

@@ -14,7 +14,7 @@ export async function GET(){
  return NextResponse.json({ok:true,settings},{headers:{"Cache-Control":"private, no-store"}});
 }
 export async function PATCH(request:NextRequest){
- const auth=await authorizePlatformPermission("support.settings.manage");
+ const auth=await authorizePlatformPermission("support.tickets.manage");
  if(!auth.allowed)return fail("You do not have permission to manage support settings.",auth.reason==="unauthenticated"?401:403);
  let body:Record<string,unknown>;try{body=await request.json();}catch{return fail("Invalid request body.");}
  const categories=Array.isArray(body.categories)?[...new Set(body.categories.filter((x):x is string=>typeof x==="string").map(x=>x.trim()).filter(x=>x.length>=2&&x.length<=80))]:null;

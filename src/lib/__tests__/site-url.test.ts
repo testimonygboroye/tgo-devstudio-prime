@@ -14,8 +14,8 @@ describe("canonical public site URL",()=>{
     process.env.NODE_ENV="production";process.env.SITE_URL="http://localhost:3000";process.env.RENDER_EXTERNAL_URL="https://tgo-devstudio-prime.onrender.com";
     expect(getPublicSiteUrl()).toBe("https://tgo-devstudio-prime.onrender.com");
   });
-  it("never falls back to localhost in production",()=>{
+  it("uses the stable public production host rather than localhost when no host setting exists",()=>{
     process.env.NODE_ENV="production";delete process.env.SITE_URL;delete process.env.RENDER_EXTERNAL_URL;delete process.env.NEXT_PUBLIC_SITE_URL;delete process.env.URL;delete process.env.VERCEL_URL;
-    expect(()=>getPublicSiteUrl()).toThrow(/public site URL is not configured/i);
+    expect(getPublicSiteUrl()).toBe("https://tgo-devstudio-prime.onrender.com");
   });
 });

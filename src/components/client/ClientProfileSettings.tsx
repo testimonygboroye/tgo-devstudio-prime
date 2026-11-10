@@ -7,7 +7,7 @@ import PhoneNumberInput from "@/components/shared/PhoneNumberInput";
 
 type Profile={firstName:string;middleName:string;lastName:string;phone:string;jobTitle:string;website:string;country:string;timezone:string};
 const fallbackTimezones=["Africa/Lagos","Africa/Accra","Africa/Abidjan","Africa/Cairo","Africa/Johannesburg","Africa/Nairobi","Europe/London","Europe/Paris","Europe/Berlin","Europe/Istanbul","America/New_York","America/Chicago","America/Denver","America/Los_Angeles","America/Toronto","America/Sao_Paulo","Asia/Dubai","Asia/Kolkata","Asia/Singapore","Asia/Tokyo","Asia/Seoul","Australia/Sydney","Pacific/Auckland","UTC"];
-const timezoneOptions=((Intl as unknown as {supportedValuesOf?:(key:"timeZone")=>string[]}).supportedValuesOf?.("timeZone")||fallbackTimezones).sort((a,b)=>a.localeCompare(b));
+const timezoneOptions=fallbackTimezones;
 export default function ClientProfileSettings({initialProfile,name,email,verified,organizationName,phoneVerified:initialPhoneVerified}:{initialProfile:Profile;name:string;email:string;verified:boolean;organizationName:string;phoneVerified:boolean}) {
  const router=useRouter();const [form,setForm]=useState(initialProfile);const [busy,setBusy]=useState(false);const [notice,setNotice]=useState("");const [error,setError]=useState("");
  const [phoneVerified,setPhoneVerified]=useState(initialPhoneVerified);const [sendingCode,setSendingCode]=useState(false);const [verifyingCode,setVerifyingCode]=useState(false);const [codeSent,setCodeSent]=useState(false);const [smsCode,setSmsCode]=useState("");const [phoneNotice,setPhoneNotice]=useState("");const [phoneError,setPhoneError]=useState("");

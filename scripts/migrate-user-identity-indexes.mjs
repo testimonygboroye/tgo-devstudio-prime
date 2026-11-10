@@ -9,7 +9,8 @@ if (!uri) {
 try {
   await mongoose.connect(uri, { serverSelectionTimeoutMS: 15000 });
   const users = mongoose.connection.db.collection("users");
-  await users.updateMany({ accountType: { $exists: false } }, { $set: { accountType: "staff" } });\n  const duplicates = await users.aggregate([
+  await users.updateMany({ accountType: { $exists: false } }, { $set: { accountType: "staff" } });
+  const duplicates = await users.aggregate([
     { $group: { _id: { email: "$email", accountType: { $ifNull: ["$accountType", "staff"] } }, count: { $sum: 1 } } },
     { $match: { count: { $gt: 1 } } },
     { $limit: 10 }

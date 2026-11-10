@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
       const response = NextResponse.json({ ok: true, verified: true, email, message: "Google verified your email. Continue creating your account." });
       response.cookies.set("tgo_client_registration_token", token, {
         httpOnly: true, secure: process.env.NODE_ENV === "production",
-        sameSite: "lax", path: "/api/client/register", maxAge: 30 * 60,
+        sameSite: "lax", path: "/", maxAge: 30 * 60,
       });
       return response;
     }

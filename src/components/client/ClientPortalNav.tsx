@@ -7,7 +7,8 @@ const links = [
   { href: "/client/settings", label: "Account settings", icon: UserRound },
   { href: "/client/enquiries", label: "Enquiries", icon: MessageSquareText },
   { href: "/client/activity", label: "Activity", icon: Activity },
-  { href: "/client/notifications", label: "Notifications", icon: Bell },\n  { href: "/workspaces", label: "Collaboration", icon: BriefcaseBusiness },
+  { href: "/client/notifications", label: "Notifications", icon: Bell },
+  { href: "/workspaces", label: "Collaboration", icon: BriefcaseBusiness },
 ];
 
 export default function ClientPortalNav({ name, email }: { name: string; email: string }) {

@@ -7,6 +7,7 @@ import { UnifiedConversation, UnifiedMessage } from "@/models/UnifiedConversatio
 import User from "@/models/User";
 import { AIAgent, AITask } from "@/models/AIWorkforce";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
+import { getVerifiedIntegrationCredentials } from "@/lib/integrations/credentials";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -77,8 +78,9 @@ export async function POST(request: NextRequest) {
 
     if (conversation.kind === "whatsapp") {
       if (!conversation.externalOptInAt || !conversation.externalContactId) return fail("WhatsApp sending is blocked because recorded recipient opt-in is missing.", 409);
-      const token = process.env.WHATSAPP_ACCESS_TOKEN;
-      const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+      const credentials = await getVerifiedIntegrationCredentials("whatsapp_cloud");
+      const token = credentials?.accessToken;
+      const phoneNumberId = credentials?.phoneNumberId;
       if (!token || !phoneNumberId) return fail("WhatsApp Cloud API credentials are not configured.", 503);
       try {
         const response = await fetch(`https://graph.facebook.com/v22.0/${phoneNumberId}/messages`, {

@@ -197,6 +197,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ status: "ok", taskId: String(task._id), taskStatus: task.status, message: "Task recorded in the AI workforce queue." }, { status: 201 });
   }
   if (body.action === "translate") {
+    if (!session.role.isFounderRole) return forbiddenResponse("Founder access is required to use AI translation.");
     const agentId = String(body.agentId || "");
     const input = String(body.input || "").trim();
     const targetLanguage = String(body.targetLanguage || "").trim().slice(0, 80);

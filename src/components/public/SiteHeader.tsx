@@ -5,7 +5,7 @@ import { useSwipeSidebar } from "@/hooks/useSwipeSidebar";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Menu, X, Layers, Briefcase, Newspaper, DoorOpen, Mail, Info, Workflow, Users, Star, PhoneCall, Boxes, HelpCircle, ChevronDown, MessageCircleQuestion, Settings, ArrowLeft, ShieldCheck, FileText, Package } from "lucide-react";
+import { Menu, X, Layers, Briefcase, Newspaper, DoorOpen, Mail, Info, Workflow, Users, Star, PhoneCall, Boxes, HelpCircle, ChevronDown, MessageCircleQuestion, Settings, ArrowLeft, ShieldCheck, FileText, Package, Building2, Handshake } from "lucide-react";
 import HelpSearchPopup from "@/components/shared/HelpSearchPopup";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 
@@ -25,6 +25,8 @@ export default function SiteHeader() {
     ]},
     { title: "Capabilities & Work", links: [
       { label: t("nav.services"), href: "/services", icon: Layers },
+      { label: "Industries", href: "/industries", icon: Building2 },
+      { label: "Ways to work together", href: "/engagement-models", icon: Handshake },
       { label: "Service Packages", href: "/services/catalogue", icon: Package },
       { label: t("nav.process"), href: "/process", icon: Workflow },
       { label: t("nav.portfolio"), href: "/portfolio", icon: Briefcase },

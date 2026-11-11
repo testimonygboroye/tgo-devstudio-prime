@@ -31,6 +31,7 @@ export default async function BlogListPage(){
         {posts.length===0?<PublicEmptyState eyebrow="Studio insights" title="New perspectives are being prepared." description="Our articles explore software engineering, product decisions, practical technology and the craft of building dependable digital experiences. In the meantime, explore our capabilities or talk with the team." primaryHref="/services" primaryLabel="Explore services" secondaryHref="/contact" secondaryLabel="Talk to TGO"/>:
           <div className="blog-index-grid">{posts.map((post,index)=><Link key={post._id.toString()} href={"/blog/"+post.slug} className={"blog-index-card "+(index===0?"blog-index-featured":"")}><div className="blog-index-image"><SmartImage src={post.coverImage?.url} alt={post.coverImage?.altText||post.title} label={post.title}/><span>JOURNAL / {String(index+1).padStart(2,"0")}</span></div><div className="blog-index-card-copy"><small>{post.tags?.[0]||"Studio journal"}</small><h3>{post.title}</h3><p>{post.excerpt}</p><b>{t("blog.readArticle")} <ArrowUpRight size={16}/></b></div></Link>)}</div>}
       </div></section>
+      <section className="blog-index-cta"><div className="home-container"><span className="eyebrow-label">{page.ctaEyebrow}</span><h2>{page.ctaHeading}</h2><p>{page.ctaDescription}</p><Link href={page.ctaPrimaryHref} className="btn-premium-primary inline-flex items-center gap-2 rounded-full px-7 py-4 font-semibold text-white">{page.ctaPrimaryLabel} <ArrowUpRight size={17}/></Link></div></section>
     </main>
   );
 }

@@ -560,37 +560,24 @@ body {
 }
 
 
-/* Fast interaction mode: remove scroll-triggered delays and expensive effects. */
-html { scroll-behavior: auto !important; }
-*, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.08s !important; scroll-behavior: auto !important; }
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
-.surface-card, .surface-card-inner, .ambient-glow, .btn-premium-secondary { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
-.surface-card:hover, .btn-premium-primary:hover, .btn-premium-secondary:hover, .btn-premium-outline:hover, .values-grid li:hover { transform: none !important; }
-
-
-/* Global performance refinements: keep the premium look without expensive
-   fixed-background repaints, full-screen blur filters, or hover transforms. */
-html { scroll-behavior: auto !important; }
-body { background-attachment: scroll !important; }
-.ambient-glow::before { filter: none !important; }
-.surface-card,
-.surface-card-inner,
-.btn-premium-secondary,
-.grain-overlay::after {
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
+/* Balanced rendering defaults: keep scrolling predictable without
+   globally flattening card depth, button feedback or purposeful motion. */
+html { scroll-behavior: auto; }
+body { background-attachment: scroll; }
+@media (max-width: 767px) {
+  .surface-card, .surface-card-inner, .btn-premium-secondary {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
-.surface-card:hover,
-.btn-premium-primary:hover,
-.btn-premium-secondary:hover,
-.btn-premium-outline:hover,
-.values-grid li:hover { transform: none !important; }
-.surface-card,
-.surface-card::before,
-.btn-premium-primary,
-.btn-premium-secondary,
-.btn-premium-outline { transition-duration: 80ms !important; }
-.grain-overlay::after { display: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto !important; }
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
 
 /* TGO connection feedback — bottom anchored, safe-area aware and non-blocking. */
 .tgo-network-toast {

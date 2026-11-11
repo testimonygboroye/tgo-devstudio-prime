@@ -56,6 +56,7 @@ export async function POST(request: NextRequest) {
     const ids = Array.isArray(body.memberIds) ? body.memberIds.filter((id): id is string => typeof id === "string" && Types.ObjectId.isValid(id)).slice(0, 100) : [];
     if (kind === "direct" && ids.length !== 1) return fail("A direct conversation requires exactly one other team member.");
     if (kind === "ai" && (!body.aiAgentId || !Types.ObjectId.isValid(String(body.aiAgentId)))) return fail("Select a valid AI employee.");
+    if (ids.length) { const validStaff = await User.countDocuments({ _id: { $in: ids }, accountType: "staff", isBanned: { $ne: true } }); if (validStaff !== ids.length) return fail("One or more selected members are not active staff accounts."); }
     const members = Array.from(new Set([String(actorId), ...ids])).map((id) => new Types.ObjectId(id));
     const aiAgentId = String(body.aiAgentId || "");
     if (kind === "ai") {
@@ -78,7 +79,13 @@ export async function POST(request: NextRequest) {
     const conversation = await UnifiedConversation.findById(conversationId);
     if (!conversation) return fail("Conversation not found.", 404);
     if (!conversation.memberIds.some((id) => String(id) === String(actorId)) && !session.role.isFounderRole) return forbiddenResponse("You are not a member of this conversation.");
-    const message = await UnifiedMessage.create({ conversationId, senderType: "human", senderId: actorId, senderLabel: actorName, body: content, status: "sent", readBy: [actorId], threadRootId: typeof body.threadRootId === "string" && Types.ObjectId.isValid(body.threadRootId) ? body.threadRootId : undefined });
+    let threadRootId: Types.ObjectId | undefined;
+    if (typeof body.threadRootId === "string" && Types.ObjectId.isValid(body.threadRootId)) {
+      const root = await UnifiedMessage.findOne({ _id: body.threadRootId, conversationId });
+      if (!root) return fail("Thread root message does not belong to this conversation.");
+      threadRootId = root.threadRootId || root._id;
+    }
+    const message = await UnifiedMessage.create({ conversationId, senderType: "human", senderId: actorId, senderLabel: actorName, body: content, status: "sent", readBy: [actorId], threadRootId });
     conversation.lastMessageAt = new Date();
     await conversation.save();
 

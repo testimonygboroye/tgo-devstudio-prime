@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { PUBLIC_SITE_SETTINGS_DEFAULTS } from "@/lib/constants/publicSiteDefaults";
 
 export default function GlobalError({
   error,
@@ -9,8 +10,17 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const [copy,setCopy] = useState(PUBLIC_SITE_SETTINGS_DEFAULTS);
   useEffect(() => {
     console.error("[TGO GlobalError]", { message: error.message, digest: error.digest });
+    try { const cached=localStorage.getItem("tgo-public-site-settings"); if(cached)setCopy(current=>({...current,...JSON.parse(cached)})); } catch {}
+    const controller=new AbortController();
+    fetch("/api/public-site-settings",{cache:"no-store",signal:controller.signal}).then(async response=>{
+      if(!response.ok)return;
+      const data=await response.json();
+      if(data.settings&&!controller.signal.aborted){setCopy(current=>({...current,...data.settings}));try{localStorage.setItem("tgo-public-site-settings",JSON.stringify(data.settings));}catch{}}
+    }).catch(()=>{});
+    return()=>controller.abort();
   }, [error]);
 
   const buttonStyle = {
@@ -34,14 +44,14 @@ export default function GlobalError({
             <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#2EC5F0" }} /> TGO DevStudio · Recovery
           </div>
           <div style={{ maxWidth: 680 }}>
-            <p style={{ margin: "0 0 14px", color: "#8B93A7", fontSize: 13, letterSpacing: ".18em", textTransform: "uppercase" }}>Unexpected application error</p>
-            <h1 style={{ margin: 0, fontSize: "clamp(38px, 7vw, 68px)", lineHeight: 1.05, letterSpacing: "-.045em", fontWeight: 800, background: "linear-gradient(135deg,#9B82FF 0%,#2EC5F0 85%)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>We’re restoring this page.</h1>
+            <p style={{ margin: "0 0 14px", color: "#8B93A7", fontSize: 13, letterSpacing: ".18em", textTransform: "uppercase" }}>{copy.errorEyebrow}</p>
+            <h1 style={{ margin: 0, fontSize: "clamp(38px, 7vw, 68px)", lineHeight: 1.05, letterSpacing: "-.045em", fontWeight: 800, background: "linear-gradient(135deg,#9B82FF 0%,#2EC5F0 85%)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>{copy.errorHeadline} {copy.errorAccent}</h1>
             <p style={{ margin: "20px auto 0", maxWidth: 480, color: "#A8B0C3", fontSize: 16, lineHeight: 1.75 }}>The page encountered an unexpected error. Your account and saved information have not been changed by this screen. Try loading the page again.</p>
           </div>
           {error.digest && <p style={{ margin: 0, color: "#697386", fontFamily: "monospace", fontSize: 11 }}>Reference: {error.digest}</p>}
           <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 12, marginTop: 8 }}>
-            <button onClick={() => reset()} style={{ ...buttonStyle, border: 0, color: "#07111D", background: "linear-gradient(135deg,#8A6BFF,#2EC5F0)" }}>Try again</button>
-            <button onClick={() => window.location.assign(new URL("/", window.location.origin).href)} style={{ ...buttonStyle, border: "1px solid #343B50", color: "#E7EAF2", background: "rgba(255,255,255,.04)" }}>Return home</button>
+            <button onClick={() => reset()} style={{ ...buttonStyle, border: 0, color: "#07111D", background: "linear-gradient(135deg,#8A6BFF,#2EC5F0)" }}>{copy.errorRetryLabel}</button>
+            <button onClick={() => window.location.assign(new URL("/", window.location.origin).href)} style={{ ...buttonStyle, border: "1px solid #343B50", color: "#E7EAF2", background: "rgba(255,255,255,.04)" }}>{copy.errorHomeLabel}</button>
           </div>
         </main>
       </body>

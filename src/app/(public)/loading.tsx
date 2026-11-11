@@ -8,7 +8,6 @@ import { Sparkles } from "lucide-react";
 export default function PublicLoading(){
   const [settings,setSettings]=useState(PUBLIC_SITE_SETTINGS_DEFAULTS);
   useEffect(()=>{
-    try{const cached=localStorage.getItem("tgo-public-site-settings");if(cached)setSettings(current=>({...current,...JSON.parse(cached)}));}catch{}
     const controller=new AbortController();
     fetch("/api/public-site-settings",{cache:"no-store",signal:controller.signal}).then(async response=>{if(!response.ok)return;const data=await response.json();if(data.settings&&!controller.signal.aborted){setSettings(current=>({...current,...data.settings}));try{localStorage.setItem("tgo-public-site-settings",JSON.stringify(data.settings));}catch{}}}).catch(()=>{});
     return()=>controller.abort();

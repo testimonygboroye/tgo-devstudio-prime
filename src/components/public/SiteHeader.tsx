@@ -9,6 +9,9 @@ import { Menu, X, Layers, Briefcase, Newspaper, DoorOpen, Mail, Info, Workflow, 
 import HelpSearchPopup from "@/components/shared/HelpSearchPopup";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 
+const NAV_ICON_MAP = { Layers, Briefcase, Newspaper, DoorOpen, Mail, Info, Workflow, Users, Star, PhoneCall, Boxes, HelpCircle, MessageCircleQuestion, Settings, ShieldCheck, FileText, Package, Building2, Handshake } as const;
+function getNavigationIcon(name?: string) { return NAV_ICON_MAP[name as keyof typeof NAV_ICON_MAP] || Layers; }
+
 export default function SiteHeader() {
   const { t } = useTranslation();
   const router = useRouter();
@@ -50,9 +53,13 @@ export default function SiteHeader() {
       { label: "Accessibility", href: "/accessibility", icon: FileText },
     ]},
   ];
+  const NAV_GROUPS = settings?.navigationGroups?.length
+    ? settings.navigationGroups.map((group) => ({ title: group.title, links: group.links.map((link) => ({ label: link.label, href: link.href, icon: getNavigationIcon(link.icon) })) }))
+    : DRAWER_NAV_GROUPS;
 
   return (
     <header className="tgo-public-header sticky top-0 z-50">
+      {settings?.announcementEnabled && settings.announcementText && <div className="border-b border-brand-cyan-400/20 bg-brand-cyan-400/10 px-4 py-2 text-center text-xs font-medium text-brand-cyan-100">{settings.announcementText}</div>}
       <div className="tgo-public-header-bar border-b border-base-800 bg-base-950/95">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 sm:px-12">
           <Link href="/" className="flex items-center gap-2" onClick={() => setIsMenuOpen(false)}>
@@ -78,6 +85,7 @@ export default function SiteHeader() {
           <div className="flex items-center gap-2">
             <button type="button" aria-label="Go back" onClick={() => { if (window.history.length > 1) router.back(); else router.push("/"); }} className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-neutral-300 hover:bg-base-800 sm:hidden"><ArrowLeft size={19} /></button>
             <HelpSearchPopup />
+            <Link href={settings?.headerCtaHref || "/contact"} className="hidden sm:inline-flex items-center rounded-full bg-gradient-to-r from-violet-600 to-cyan-500 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-violet-950/20 transition hover:-translate-y-0.5">{settings?.headerCtaLabel || "Start a project"}</Link>
             <button
               onClick={() => setIsMenuOpen(true)}
               aria-label="Open menu"

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Activity, AlertTriangle, ArrowDownRight, ArrowUpRight, BrainCircuit, CalendarClock, CheckCircle2, CircleDollarSign, Download, Gauge, Loader2, MessageSquareText, RefreshCw, ShieldCheck, Sparkles, Target, Users, Workflow } from "lucide-react";
+import { Activity, AlertTriangle, BrainCircuit, CalendarClock, CheckCircle2, CircleDollarSign, Download, Gauge, Loader2, MessageSquareText, RefreshCw, ShieldCheck, Sparkles, Target, Users, Workflow } from "lucide-react";
 
 type AnyRecord = Record<string, any>;
 const number = (value: unknown) => new Intl.NumberFormat("en").format(Number(value || 0));

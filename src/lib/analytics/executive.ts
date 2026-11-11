@@ -15,7 +15,6 @@ import IntegrationConnection from "@/models/IntegrationConnection";
 import PlatformAuditEvent from "@/models/PlatformAuditEvent";
 import { AIAgent, AITask, AIProvider } from "@/models/AIWorkforce";
 
-const monthKey = (date: Date) => date.toISOString().slice(0, 7);
 const currencyTotals = (rows: Array<{ _id: string; total: number; count: number }>) =>
   rows.map((row) => ({ currency: row._id || "UNKNOWN", amountMinor: Number(row.total || 0), transactions: Number(row.count || 0) }));
 

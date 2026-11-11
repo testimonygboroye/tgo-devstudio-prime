@@ -1,6 +1,7 @@
 import {NextRequest,NextResponse} from "next/server";
 import {createHmac} from "node:crypto";
 import {connectToDatabase} from "@/lib/db";
+import {getServerSession} from "@/lib/auth/serverSession";
 import WebhookDelivery from "@/models/WebhookDelivery";
 import WebhookSubscription from "@/models/WebhookSubscription";
 import {decryptCredentials} from "@/lib/integrations/crypto";
@@ -14,3 +15,5 @@ export async function GET(request:NextRequest){const secret=process.env.CRON_SEC
  }
  const pending=await WebhookDelivery.countDocuments({status:"pending"});return NextResponse.json({ok:true,scanned:jobs.length,delivered,failed,skipped,pending});
 }
+
+export async function POST(request:NextRequest){const session=await getServerSession();if(!session)return NextResponse.json({error:"Authentication required."},{status:401});if(!session.role.isFounderRole)return NextResponse.json({error:"Founder access required."},{status:403});const secret=process.env.CRON_SECRET;if(!secret)return NextResponse.json({error:"Webhook delivery worker is not configured."},{status:503});const internal=new NextRequest(request.url,{headers:{authorization:"Bearer "+secret}});return GET(internal);}

@@ -7,6 +7,7 @@ import HelpDiscoveryPrompt from "@/components/shared/HelpDiscoveryPrompt";
 import AnalyticsTracker from "@/components/public/AnalyticsTracker";
 import ShareCurrentPage from "@/components/public/ShareCurrentPage";
 import { getPublicSiteSettings } from "@/lib/publicSite/getPublicSiteSettings";
+import PublicSiteSettingsCache from "@/components/public/PublicSiteSettingsCache";
 
 export default async function PublicLayout({
   children,
@@ -17,6 +18,7 @@ export default async function PublicLayout({
 
   return (
     <>
+      <PublicSiteSettingsCache settings={siteSettings} />
       <SiteHeader settings={siteSettings} />
 
       {children}

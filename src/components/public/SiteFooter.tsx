@@ -58,8 +58,8 @@ export default function SiteFooter({ settings }: { settings?: PublicSiteChromeSe
         { label: "Instagram", href: "https://www.instagram.com/testimonygboroye?igsh=MXU0dmxraXRwN2lnbw==", platform: "instagram" },
       ];
   const brandName = settings?.brandName || "TGO DevStudio";
-  const contactEmail = settings?.contactEmail || "testimonygboroye.dev@gmail.com";
-  const copyright = (settings?.copyrightText || "© {year} TGO DevStudio. All rights reserved.")
+  const contactEmail = settings ? settings.contactEmail : "testimonygboroye.dev@gmail.com";
+  const copyright = (settings ? settings.copyrightText : "© {year} TGO DevStudio. All rights reserved.")
     .replaceAll("{year}", String(new Date().getFullYear()))
     .replaceAll("{brand}", brandName);
 
@@ -72,9 +72,9 @@ export default function SiteFooter({ settings }: { settings?: PublicSiteChromeSe
               <Image src={settings?.logoUrl || "/logo.png"} alt={settings?.logoAlt || brandName + " logo"} width={32} height={32} unoptimized />
               <span className="font-display text-lg font-bold leading-8" style={{ color: "var(--text-primary)" }}>{brandName}</span>
             </div>
-            <p className="mt-3 max-w-xs text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-              {settings?.footerTagline || "A full-stack software engineering studio building premium, production-grade products from the ground up."}
-            </p>
+            {(settings ? settings.footerTagline : "A full-stack software engineering studio building premium, production-grade products from the ground up.") && <p className="mt-3 max-w-xs text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+              {settings ? settings.footerTagline : "A full-stack software engineering studio building premium, production-grade products from the ground up."}
+            </p>}
             {settings?.footerAddress && <p className="mt-3 text-xs" style={{ color: "var(--text-muted)" }}>{settings.footerAddress}</p>}
 
             {settings?.newsletterEnabled !== false && <div className="mt-6">

@@ -317,7 +317,7 @@ export default async function BlogDetailPage({
   };
 
   return (
-    <main className="min-h-screen px-6 py-20 sm:px-12">
+    <main className="blog-article-page">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -332,7 +332,7 @@ export default async function BlogDetailPage({
         }}
       />
 
-      <article className="mx-auto max-w-2xl">
+      <article className="blog-article-layout">
         <span className="eyebrow-label">
           {t("nav.blog")}
         </span>

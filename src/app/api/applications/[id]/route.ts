@@ -42,6 +42,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   }
 
   const { id } = await params;
+  if (!Types.ObjectId.isValid(id)) return NextResponse.json({ status: "error", message: "Invalid application id." }, { status: 400 });
   const body = await request.json();
   const { status } = body as { status?: string };
 
@@ -51,12 +52,18 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   }
 
   await connectToDatabase();
-  const application = await JobApplication.findByIdAndUpdate(id, { status }, { new: true });
+  const application = await JobApplication.findById(id);
 
   if (!application) {
     return NextResponse.json({ status: "error", message: "Application not found." }, { status: 404 });
   }
 
+  const transitions: Record<string, string[]> = { reviewed: ["new"], shortlisted: ["new", "reviewed"], hired: ["shortlisted"], rejected: ["new", "reviewed", "shortlisted"], new: ["reviewed", "rejected"] };
+  if (!transitions[status]?.includes(application.status)) return NextResponse.json({ status: "error", message: "This recruitment stage transition is not allowed." }, { status: 409 });
+  const previousStatus = application.status;
+  application.status = status as typeof application.status;
+  await application.save();
+  await writePlatformAuditEvent({ actorType: "human", actorId: String(session.user._id), actorLabel: session.user.name, action: "recruitment.application_stage_changed", module: "recruitment", targetType: "job-application", targetId: id, outcome: "success", metadata: { previousStatus, nextStatus: status, jobOpeningId: String(application.jobOpening) } });
   return NextResponse.json({ status: "ok", application });
 }
 
@@ -71,6 +78,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   }
 
   const { id } = await params;
+  if (!Types.ObjectId.isValid(id)) return NextResponse.json({ status: "error", message: "Invalid application id." }, { status: 400 });
   await connectToDatabase();
   const application = await JobApplication.findByIdAndDelete(id);
 
@@ -78,5 +86,6 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ status: "error", message: "Application not found." }, { status: 404 });
   }
 
+  await writePlatformAuditEvent({ actorType: "human", actorId: String(session.user._id), actorLabel: session.user.name, action: "recruitment.application_deleted", module: "recruitment", targetType: "job-application", targetId: id, outcome: "success", metadata: { jobOpeningId: String(application.jobOpening) } });
   return NextResponse.json({ status: "ok", message: "Application deleted." });
 }

@@ -1,5 +1,6 @@
 import {redirect} from "next/navigation";
-import {ClipboardList,ShieldCheck,Workflow,FileCheck2} from "lucide-react";
+import {ClipboardList,ShieldCheck,Workflow,FileCheck2,GraduationCap,Users,BriefcaseBusiness,WalletCards,FileText} from "lucide-react";
+import Link from "next/link";
 import {getServerSession} from "@/lib/auth/serverSession";
 import {getAdminBasePath} from "@/lib/adminPath";
 import {connectToDatabase} from "@/lib/db";
@@ -23,6 +24,9 @@ export default async function BusinessOperationsPage(){
    <div className="relative max-w-3xl"><span className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[.18em] text-cyan-200">Phase 12 · Business operations</span><h1 className="mt-4 text-3xl font-bold text-white sm:text-4xl">Business Operations & Administration</h1><p className="mt-3 text-sm leading-6 text-slate-300">A governed operations workspace for hiring, contracts, training, procurement, suppliers, company assets, policies, compliance, records, calendars, approvals and internal workflows. Records connect to shared workforce identities and the platform audit trail.</p></div>
   </section>
   <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{metrics.map(x=><article key={x.label} className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4"><div className="flex items-center justify-between"><span className="text-xs text-[var(--text-secondary)]">{x.label}</span><x.icon size={18} className="text-cyan-400"/></div><p className="mt-2 text-2xl font-bold text-[var(--text-primary)]">{x.value.toLocaleString("en")}</p></article>)}</section>
+  <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+   {[{label:"Training & development",href:basePath+"/operations/training",icon:GraduationCap,desc:"Assign courses and track completion."},{label:"Recruitment pipeline",href:basePath+"/applications",icon:Users,desc:"Review applicants and advance hiring stages."},{label:"Workforce management",href:basePath+"/workforce",icon:BriefcaseBusiness,desc:"Manage employee records, roles and reviews."},{label:"Finance & payroll",href:basePath+"/finance",icon:WalletCards,desc:"Manage finance; payroll provider remains separately gated."},{label:"Contracts & legal",href:basePath+"/commercial",icon:FileText,desc:"Use the existing commercial contract lifecycle."}].map(x=><Link key={x.label} href={x.href} className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 transition hover:border-cyan-400/50"><x.icon size={19} className="text-cyan-400"/><p className="mt-2 text-sm font-semibold text-[var(--text-primary)]">{x.label}</p><p className="mt-1 text-xs leading-5 text-[var(--text-muted)]">{x.desc}</p></Link>)}
+  </section>
   <BusinessOperationsManager/>
  </main>;
 }

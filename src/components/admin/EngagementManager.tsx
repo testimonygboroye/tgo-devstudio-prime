@@ -2,7 +2,15 @@
 import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Award, Gift, RefreshCw, Users, ShieldAlert, Coins } from "lucide-react";
-type Snapshot = { rewards:any[]; referrals:any[]; profiles:any[]; eventCount:number; earnRules:any[]; campaigns:any[]; commissions:any[]; fraudCases:any[]; badges:any[]; referralRule?:any };
+type RewardItem = { _id:string; name:string; description:string; kind:string; pointsCost:number; stock:number; redeemed:number; active:boolean; discountPercent:number; creditMinor:number; currency:string };
+type ReferralItem = { _id:string; code:string; status:string; referrerId?:{name?:string}; referredClientId?:{email?:string} };
+type ProfileItem = { _id:string; clientId?:{name?:string;email?:string}; points:number; lifetimePoints:number; tier:string };
+type EarnRuleItem = { _id:string; eventType:string; points:number; dailyCap:number; active:boolean };
+type CampaignItem = { _id:string; name:string; multiplier:number; active:boolean };
+type CommissionItem = { _id:string; referrerId?:{name?:string}; amountMinor:number; currency:string; status:string };
+type FraudItem = { _id:string; reason:string; severity:string };
+type BadgeItem = { _id:string; name:string; lifetimePointsRequired:number };
+type Snapshot = { rewards:RewardItem[]; referrals:ReferralItem[]; profiles:ProfileItem[]; eventCount:number; earnRules:EarnRuleItem[]; campaigns:CampaignItem[]; commissions:CommissionItem[]; fraudCases:FraudItem[]; badges:BadgeItem[]; referralRule?:{commissionPercent:number;minimumPurchaseMinor:number;referrerPoints:number} };
 const input="w-full rounded-xl border border-[var(--border-subtle)] bg-transparent px-3 py-2.5 text-sm";
 const panel="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5";
 export default function EngagementManager(){
@@ -10,7 +18,7 @@ export default function EngagementManager(){
  const load=useCallback(async()=>{try{const r=await fetch("/api/platform/engagement",{cache:"no-store"});const d=await r.json();if(!r.ok)throw new Error(d.error||"Could not load engagement data.");setData(d);}catch(e){setError(e instanceof Error?e.message:"Could not load engagement data.");}},[]);
  useEffect(()=>{void load();},[load]);
  async function send(body:Record<string,unknown>){setBusy(true);setError("");setNotice("");try{const r=await fetch("/api/platform/engagement",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw new Error(d.error||"Action failed.");setNotice(d.message||"Changes saved.");await load();}catch(e){setError(e instanceof Error?e.message:"Action failed.");}finally{setBusy(false);}}
- const form=(action:string,fields:Record<string,unknown>,reset?:boolean)=>async(e:FormEvent<HTMLFormElement>)=>{e.preventDefault();const el=e.currentTarget;const fd=new FormData(el);const body={action,...fields};for(const [k,v] of fd.entries())(body as any)[k]=v;await send(body);if(reset)el.reset();};
+ const form=(action:string,fields:Record<string,unknown>,reset?:boolean)=>async(e:FormEvent<HTMLFormElement>)=>{e.preventDefault();const el=e.currentTarget;const fd=new FormData(el);const body:Record<string,unknown>={action,...fields};for(const [k,v] of fd.entries())body[k]=v;await send(body);if(reset)el.reset();};
  return <main className="mx-auto max-w-7xl space-y-6"><header className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-[.2em] text-cyan-500">Growth & retention</p><h1 className="mt-1 text-3xl font-bold">Rewards & referrals</h1><p className="mt-2 text-sm text-[var(--text-secondary)]">Operate the loyalty programme, referral qualification, reward catalogue and fraud queue.</p></div><button onClick={()=>void load()} className="rounded-xl border border-[var(--border-subtle)] p-3"><RefreshCw size={16}/></button></header>
  {error&&<p role="alert" className="rounded-xl bg-rose-500/10 p-3 text-sm text-rose-600">{error}</p>}{notice&&<p role="status" className="rounded-xl bg-emerald-500/10 p-3 text-sm text-emerald-600">{notice}</p>}
  <section className="grid gap-4 sm:grid-cols-4">{[{label:"Rewards",value:data?.rewards.length??"—",icon:Gift},{label:"Referrals",value:data?.referrals.length??"—",icon:Users},{label:"Engagement events",value:data?.eventCount??"—",icon:Award},{label:"Open fraud cases",value:data?.fraudCases.length??"—",icon:ShieldAlert}].map(({label,value,icon:Icon})=><article key={label} className={panel}><Icon size={20}/><p className="mt-3 text-xs text-[var(--text-secondary)]">{label}</p><p className="mt-1 text-2xl font-bold">{value}</p></article>)}</section>

@@ -93,6 +93,6 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     { upsert: true, new: true, runValidators: true }
   ).lean();
 
-  revalidatePath(resolvedPageKey === "industries" ? "/industries" : "/engagement-models");
+  revalidatePath(resolvedPageKey === "services-catalogue" ? "/services/catalogue" : "/" + resolvedPageKey);
   return NextResponse.json({ status: "ok", settings: saved }, { headers: { "Cache-Control": "no-store, max-age=0" } });
 }

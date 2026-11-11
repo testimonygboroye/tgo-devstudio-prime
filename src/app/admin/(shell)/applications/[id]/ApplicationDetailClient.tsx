@@ -29,6 +29,7 @@ export default function ApplicationDetailClient({ id }: { id: string }) {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [hireOpen, setHireOpen] = useState(false);
   const [hireBusy, setHireBusy] = useState(false);
   const [hireOptions, setHireOptions] = useState<{roles:{id:string;name:string}[];departments:{id:string;name:string}[];positions:{id:string;title:string;departmentId:string}[]}>({roles:[],departments:[],positions:[]});
@@ -68,8 +69,8 @@ export default function ApplicationDetailClient({ id }: { id: string }) {
   }
 
   async function handleHire() {
-    setHireBusy(true); setError("");
-    try { const res = await fetch(`/api/applications/${id}/hire`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(hireForm) }); const data = await res.json(); if (!res.ok) throw new Error(data.message || "Could not start hiring handoff."); setApplication((current)=>current?{...current,status:"hired"}:current); setHireOpen(false); setError("Hiring handoff created. The staff invitation is awaiting approval in the Invites area."); } catch(e) { setError(e instanceof Error?e.message:"Could not start hiring handoff."); } finally { setHireBusy(false); }
+    setHireBusy(true); setError(""); setNotice("");
+    try { const res = await fetch(`/api/applications/${id}/hire`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(hireForm) }); const data = await res.json(); if (!res.ok) throw new Error(data.message || "Could not start hiring handoff."); setApplication((current)=>current?{...current,status:"hired"}:current); setHireOpen(false); setNotice("Hiring handoff created. The staff invitation is awaiting approval in the Invites area."); } catch(e) { setError(e instanceof Error?e.message:"Could not start hiring handoff."); } finally { setHireBusy(false); }
   }
 
   async function handleDelete() {
@@ -107,6 +108,7 @@ export default function ApplicationDetailClient({ id }: { id: string }) {
       </p>
 
       {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
+      {notice && <p role="status" className="mt-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-300">{notice}</p>}
 
       <div className="mt-8 grid gap-8 sm:grid-cols-[160px_1fr]">
         <img

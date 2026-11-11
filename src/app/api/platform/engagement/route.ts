@@ -12,6 +12,7 @@ import FinancialLedgerEntry from "@/models/FinancialLedgerEntry";
 import { tierForLifetimePoints } from "@/lib/engagement/tiers";
 import { awardEngagementPoints } from "@/lib/engagement/award";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
+import PlatformNotification from "@/models/PlatformNotification";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -142,6 +143,7 @@ export async function POST(request: NextRequest) {
     } finally { await session.endSession(); }
     const points = Number(rule?.referrerPoints ?? 300);
     if (points > 0) await awardEngagementPoints({ clientId: String(referral.referrerId), eventKey: "referral-qualified:" + String(referral._id), eventType: "referral_qualified", pointsOverride: points, metadata: { referralId: String(referral._id) } });
+    await PlatformNotification.create([{ recipientId: referral.referrerId, category: "engagement", title: "Your referral qualified", body: "Your referral met the verified purchase requirement. The commission is now pending approval.", href: "/client/rewards", dedupeKey: "referral-qualified:" + String(referral._id), metadata: { referralId: String(referral._id), commissionMinor, currency } }, { recipientId: referral.referredClientId, category: "engagement", title: "Referral reward confirmed", body: "Your referral has been qualified after verified payment.", href: "/client/rewards", dedupeKey: "referred-qualified:" + String(referral._id), metadata: { referralId: String(referral._id) } }]);
     await audit("engagement.referral_qualified", "referral", String(referral._id), { currency, paidMinor, commissionMinor, points });
     return NextResponse.json({ referral });
   }
@@ -179,6 +181,7 @@ export async function POST(request: NextRequest) {
     } catch (error) {
       return NextResponse.json({ error: error instanceof Error ? error.message : "Settlement record failed." }, { status: 409 });
     } finally { await session.endSession(); }
+    await PlatformNotification.create({ recipientId: item.referrerId, category: "engagement", title: "Referral commission paid", body: "Your referral commission has been paid and verified.", href: "/client/rewards", dedupeKey: "commission-paid:" + String(item._id), metadata: { commissionId: String(item._id), settlementReference: reference } });
     await audit("engagement.commission_paid_verified", "commission", String(item._id), { settlementReference: reference });
     return NextResponse.json({ item });
   }

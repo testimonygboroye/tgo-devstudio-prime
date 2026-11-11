@@ -28,13 +28,13 @@ The Worker calls only protected application routes. Changing hosting providers l
 
 1. Open https://developers.facebook.com/apps/ and create or select a Meta app.
 2. Add the **WhatsApp** product and connect the intended WhatsApp Business Account and business phone number.
-3. In the app's webhook configuration, use this callback URL:
+3. Obtain the Meta app secret, a WhatsApp access token with the required WhatsApp messaging permissions, the Phone Number ID, and the WhatsApp Business Account ID.
+4. Create a strong random **Verify token**. Keep it ready for the Meta webhook setup.
+5. In TGO Admin → Integrations, save these values under **WhatsApp Cloud API**, then run **Verify WhatsApp phone number**. The integration must show as connected before Meta's verification request can succeed.
+6. In the Meta app's webhook configuration, use this callback URL:
    `https://YOUR_PUBLIC_APP_HOST/api/platform/messaging/whatsapp/webhook`
-4. Create a strong random **Verify token**. Enter the same value in the Meta webhook configuration and later in the TGO Integration Centre.
-5. Subscribe the WhatsApp webhook to the `messages` field. Delivery status updates are received through the same webhook.
-6. Obtain the Meta app secret, a WhatsApp access token with the required WhatsApp messaging permissions, the Phone Number ID, and the WhatsApp Business Account ID.
-7. In TGO Admin → Integrations, save these values under **WhatsApp Cloud API**, then run **Verify WhatsApp phone number**.
-8. Return to Meta and complete webhook verification. Send a message from a test/allowed phone to the business number; the inbound message should appear in Admin → Messages.
+7. Enter the exact same Verify token from step 4 and complete webhook verification. Subscribe the WhatsApp webhook to the `messages` field; message delivery status updates arrive through the same webhook.
+8. Send a message from a test/allowed phone to the business number; the inbound message should appear in Admin → Messages.
 
 Keep all credentials in the encrypted Integration Centre. Never put them in source files or browser settings. Rotate tokens if they are exposed.
 

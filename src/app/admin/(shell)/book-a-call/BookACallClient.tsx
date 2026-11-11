@@ -53,23 +53,7 @@ export default function BookACallClient() {
 
   return (
     <div className="max-w-xl space-y-4">
-      <div>
-        <label className="block text-sm text-neutral-400">Heading</label>
-        <input
-          value={heading}
-          onChange={(e) => setHeading(e.target.value)}
-          className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm text-neutral-400">Description</label>
-        <textarea
-          rows={3}
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
-        />
+      <div className="rounded-xl border border-cyan-400/20 bg-cyan-400/5 p-4 text-sm leading-relaxed text-neutral-300">The public booking page headline, introduction and calls to action are now edited under <b>Landing Pages → Book a Call</b>. This screen controls the booking calendar connection.
       </div>
 
       <div>

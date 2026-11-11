@@ -12,6 +12,7 @@ import ProjectDeliverable from "@/models/ProjectDeliverable";
 import ProjectQualityReview from "@/models/ProjectQualityReview";
 import ConsultationBooking from "@/models/ConsultationBooking";
 import ProjectChangeRequest from "@/models/ProjectChangeRequest";
+import { awardEngagementPoints } from "@/lib/engagement/award";
 function fail(message:string,status=400){return NextResponse.json({ok:false,error:message},{status});}
 function validId(value:unknown):value is string{return typeof value==="string"&&Types.ObjectId.isValid(value);}
 export async function POST(request:NextRequest){
@@ -50,7 +51,7 @@ export async function POST(request:NextRequest){
     if(tasks||milestones||deliverables)return fail("Completion blocked until all tasks, milestones and deliverables are complete.");
     project.completedAt=new Date();
    }else project.completedAt=undefined;
-   project.status=body.status as typeof project.status;await project.save();if(body.status==="completed")await CommercialOrder.updateOne({_id:project.orderId},{$set:{status:"completed"}});
+   project.status=body.status as typeof project.status;await project.save();if(body.status==="completed"){await CommercialOrder.updateOne({_id:project.orderId},{$set:{status:"completed"}});if(project.clientId)await awardEngagementPoints({clientId:String(project.clientId),eventKey:"project-completed:"+String(project._id),eventType:"project_completed",metadata:{projectId:String(project._id),orderId:String(project.orderId)}});}
    await audit("delivery.project_status_changed","delivery_project",String(project._id),{status:project.status});return NextResponse.json({ok:true,item:project});
   }
   if(action==="consultation.update"){

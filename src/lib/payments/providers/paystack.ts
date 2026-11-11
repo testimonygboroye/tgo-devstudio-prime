@@ -1,10 +1,11 @@
+import { getVerifiedIntegrationCredentials } from "@/lib/integrations/credentials";
 import type { PaymentProviderAdapter } from "@/lib/payments/provider";
 
 export const paystackAdapter: PaymentProviderAdapter = {
   id: "paystack",
   async initialize(input) {
-    const secret = process.env.PAYSTACK_SECRET_KEY;
-    if (!secret) throw new Error("Paystack is not configured. Set PAYSTACK_SECRET_KEY in the hosting environment.");
+    const secret = process.env.PAYSTACK_SECRET_KEY || (await getVerifiedIntegrationCredentials("paystack"))?.secretKey;
+    if (!secret) throw new Error("Paystack is not configured. Connect and verify Paystack in the Integration Centre or set PAYSTACK_SECRET_KEY.");
     const response = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
       headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/json" },
@@ -29,8 +30,8 @@ export const paystackAdapter: PaymentProviderAdapter = {
     };
   },
   async verify(reference) {
-    const secret = process.env.PAYSTACK_SECRET_KEY;
-    if (!secret) throw new Error("Paystack is not configured. Set PAYSTACK_SECRET_KEY in the hosting environment.");
+    const secret = process.env.PAYSTACK_SECRET_KEY || (await getVerifiedIntegrationCredentials("paystack"))?.secretKey;
+    if (!secret) throw new Error("Paystack is not configured. Connect and verify Paystack in the Integration Centre or set PAYSTACK_SECRET_KEY.");
     const response = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
       headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/json" },
       cache: "no-store",

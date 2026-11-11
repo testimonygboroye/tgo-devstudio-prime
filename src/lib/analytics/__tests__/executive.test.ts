@@ -1,4 +1,4 @@
-import { forecastMonthlyRevenue } from "../executive";
+import { forecastMonthlyRevenue } from "../forecast";
 
 describe("executive revenue forecasting", () => {
   it("does not invent a forecast when fewer than two months are available", () => {

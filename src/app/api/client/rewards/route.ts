@@ -57,6 +57,8 @@ export async function POST(request: NextRequest) {
   }
   if (body.action === "referral.apply") {
     const code = String(body.code || "").trim().toUpperCase();
+    const existingAttribution = await EngagementReferral.findOne({ referredClientId: clientId }).select("_id");
+    if (existingAttribution) return NextResponse.json({ error: "A referral code has already been linked to this account." }, { status: 409 });
     if (!/^TGO[A-F0-9]{10}$/.test(code)) return NextResponse.json({ error: "Enter a valid referral code." }, { status: 400 });
     const referral = await EngagementReferral.findOne({ code, status: "pending", referredClientId: { $exists: false }, referrerId: { $ne: clientId } });
     if (!referral) {

@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { connectToDatabase } from "@/lib/db";
 import { getAuthenticatedSession } from "@/lib/auth/session";
 import { unauthorizedResponse, forbiddenResponse, requireContentPermission } from "@/lib/auth/authorize";
-import PublicPageContent, { type PublicPageKey } from "@/models/PublicPageContent";
+import PublicPageContent, { type PublicPageKey, type IPublicPageContent } from "@/models/PublicPageContent";
 import { PUBLIC_PAGE_DEFAULTS } from "@/lib/constants/publicSiteDefaults";
 
 export const dynamic = "force-dynamic";
@@ -36,8 +36,9 @@ export async function GET(_request: NextRequest, context: RouteContext) {
   if (!PAGE_KEYS.includes(pageKey as PublicPageKey)) {
     return NextResponse.json({ status: "error", message: "Unknown public page." }, { status: 404 });
   }
+  const resolvedPageKey = pageKey as PublicPageKey;
   await connectToDatabase();
-  const saved = await PublicPageContent.findOne({ pageKey }).lean();
+  const saved = await PublicPageContent.findOne({ pageKey: resolvedPageKey }).lean();
   return NextResponse.json({
     status: "ok",
     settings: { ...PUBLIC_PAGE_DEFAULTS[pageKey as PublicPageKey], ...(saved || {}), pageKey },
@@ -56,6 +57,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
   if (!PAGE_KEYS.includes(pageKey as PublicPageKey)) {
     return NextResponse.json({ status: "error", message: "Unknown public page." }, { status: 404 });
   }
+  const resolvedPageKey = pageKey as PublicPageKey;
 
   let body: Record<string, unknown>;
   try {
@@ -65,7 +67,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
   }
 
   const fields = ["metaTitle", "metaDescription", "heroEyebrow", "heroHeadline", "heroAccent", "heroDescription", "heroNote", "introEyebrow", "introHeading", "introDescription", "ctaEyebrow", "ctaHeading", "ctaDescription", "ctaPrimaryLabel", "ctaPrimaryHref", "ctaSecondaryLabel", "ctaSecondaryHref"] as const;
-  const update: Record<string, unknown> = { pageKey };
+  const update: Record<string, unknown> = { pageKey: resolvedPageKey };
   for (const field of fields) {
     if (typeof body[field] !== "string") {
       return NextResponse.json({ status: "error", message: `The ${field} field must be text.` }, { status: 400 });
@@ -84,12 +86,13 @@ export async function PUT(request: NextRequest, context: RouteContext) {
   update.cards = body.cards;
 
   await connectToDatabase();
+  const mongoUpdate = { ...update, lastUpdatedBy: session.user._id } as Partial<IPublicPageContent>;
   const saved = await PublicPageContent.findOneAndUpdate(
-    { pageKey },
-    { $set: { ...update, lastUpdatedBy: session.user._id } },
+    { pageKey: resolvedPageKey },
+    { $set: mongoUpdate },
     { upsert: true, new: true, runValidators: true }
   ).lean();
 
-  revalidatePath(pageKey === "industries" ? "/industries" : "/engagement-models");
+  revalidatePath(resolvedPageKey === "industries" ? "/industries" : "/engagement-models");
   return NextResponse.json({ status: "ok", settings: saved }, { headers: { "Cache-Control": "no-store, max-age=0" } });
 }

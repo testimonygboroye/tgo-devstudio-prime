@@ -29,8 +29,12 @@ export async function GET(request: NextRequest) {
     const isMember = conversation.memberIds.some((member: unknown) => String((member as {_id?: unknown})._id || member) === String(session.user._id));
     if (!isMember && !session.role.isFounderRole) return forbiddenResponse("You are not a member of this conversation.");
     await UnifiedMessage.updateMany({ conversationId, senderId: { $ne: session.user._id }, readBy: { $ne: session.user._id } }, { $addToSet: { readBy: session.user._id }, $set: { status: "read" } });
-    const messages = await UnifiedMessage.find({ conversationId }).sort({ createdAt: 1 }).limit(300).lean();
-    return NextResponse.json({ status: "ok", conversation, messages }, { headers: { "Cache-Control": "private, no-store" } });
+    const query = searchParams.get("q")?.trim().slice(0, 100) || "";
+    const messageFilter: Record<string, unknown> = { conversationId };
+    if (query) messageFilter.body = { $regex: query.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\    const messages = await UnifiedMessage.find({ conversationId }).sort({ createdAt: 1 }).limit(300).lean();
+    return NextResponse.json({ status: "ok", conversation, messages }"), $options: "i" };
+    const messages = await UnifiedMessage.find(messageFilter).sort({ createdAt: 1 }).limit(300).lean();
+    return NextResponse.json({ status: "ok", conversation, messages, isFounder: session.role.isFounderRole }, { headers: { "Cache-Control": "private, no-store" } });
   }
   const filter = session.role.isFounderRole ? { archivedAt: { $exists: false } } : { memberIds: session.user._id, archivedAt: { $exists: false } };
   const conversations = await UnifiedConversation.find(filter).populate("memberIds", "name email").populate("aiAgentId", "name role department").sort({ lastMessageAt: -1, updatedAt: -1 }).limit(150).lean();

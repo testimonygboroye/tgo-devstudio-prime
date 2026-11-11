@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
       if (title.length < 3 || decision.length < 5) return fail("Enter a decision title and a meaningful decision record.");
       const dueAt = body.dueAt ? new Date(String(body.dueAt)) : undefined;
       if (dueAt && !Number.isFinite(dueAt.getTime())) return fail("Invalid decision due date.");
-      const row = await ExecutiveDecision.create({ title: title.slice(0, 180), decision: decision.slice(0, 5000), rationale: String(body.rationale || "").slice(0, 3000), ownerId: body.ownerId && Types.ObjectId.isValid(String(body.ownerId)) ? body.ownerId : undefined, dueAt, createdBy: actorId, updatedBy: actorId });
+      const row = await ExecutiveDecision.create({ title: title.slice(0, 180), decision: decision.slice(0, 5000), rationale: String(body.rationale || "").slice(0, 3000), ownerId: body.ownerId && Types.ObjectId.isValid(String(body.ownerId)) ? new Types.ObjectId(String(body.ownerId)) : undefined, dueAt, createdBy: actorId, updatedBy: actorId });
       await writePlatformAuditEvent({ actorType: "human", actorId, actorLabel: auth.session.user.name, action: "executive.decision.created", module: "executive-intelligence", targetType: "ExecutiveDecision", targetId: String(row._id), outcome: "success" });
       return NextResponse.json({ ok: true, decision: row }, { status: 201 });
     }

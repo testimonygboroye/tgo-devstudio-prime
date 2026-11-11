@@ -1,16 +1,37 @@
 import Link from "next/link";
-import { ArrowUpRight, Building2, GraduationCap, HeartPulse, Landmark, ShoppingBag, Truck, Video, Workflow } from "lucide-react";
 import type { Metadata } from "next";
+import { ArrowUpRight, Building2, GraduationCap, HeartPulse, Landmark, ShoppingBag, Truck, Video, Workflow, Layers3 } from "lucide-react";
+import { getPublicPageContent } from "@/lib/publicSite/getPublicPageContent";
 
-export const metadata:Metadata={title:"Industry Solutions | TGO DevStudio Prime",description:"Explore the business and operational challenges TGO DevStudio can help address through custom software, digital products, AI and cloud engineering.",alternates:{canonical:"/industries"}};
-const sectors=[
- {icon:ShoppingBag,title:"Commerce & retail",text:"Digital storefronts, customer experiences, inventory workflows, order management and connected commerce operations.",needs:["E-commerce platforms","Customer portals","Inventory and order workflows"]},
- {icon:Landmark,title:"Finance & professional services",text:"Secure client-facing systems and internal tools that make complex services easier to access, manage and understand.",needs:["Client onboarding","Workflow automation","Reporting and account portals"]},
- {icon:GraduationCap,title:"Education & learning",text:"Learning platforms and administration systems that connect learners, educators, content and progress.",needs:["Learning management systems","Student and staff portals","Assessment and progress tools"]},
- {icon:HeartPulse,title:"Health & wellbeing",text:"Thoughtful digital experiences for service discovery, appointment coordination and operational workflows, with privacy and security considered from the start.",needs:["Appointment experiences","Secure information workflows","Service and provider directories"]},
- {icon:Truck,title:"Logistics & operations",text:"Connected systems that improve visibility across tasks, teams, assets and the movement of work.",needs:["Operations dashboards","Dispatch and tracking tools","Field-team applications"]},
- {icon:Video,title:"Media & creator platforms",text:"Digital products for publishing, communities, streaming workflows and audience engagement.",needs:["Content platforms","Membership experiences","Media workflow tools"]},
- {icon:Building2,title:"Business & enterprise",text:"Custom systems that replace disconnected processes with clear, measurable and scalable operations.",needs:["Internal business applications","CRM and ERP integrations","Executive reporting"]},
- {icon:Workflow,title:"Technology & SaaS",text:"Product engineering for teams bringing new software products, APIs and intelligent services to market.",needs:["SaaS platforms","API ecosystems","AI-enabled products"]},
-];
-export default function IndustriesPage(){return <main className="industries-page"><section className="industries-hero"><div className="home-container"><span className="eyebrow-label">Industry solutions · Applied engineering</span><h1>Technology shaped<br/>around <em>real work.</em></h1><p>Different industries have different pressures, users and workflows. We start by understanding those realities, then build digital products and systems around the way your organisation needs to operate.</p><div className="industries-hero-note">Industry context first. Technology choices second. Useful outcomes always.</div></div></section><section className="industries-content"><div className="home-container"><div className="industries-intro"><div><span className="eyebrow-label">Where we can help</span><h2>One engineering mindset.<br/>Many kinds of challenges.</h2></div><p>These are not off-the-shelf promises. They are examples of the types of problems we can scope and solve with a tailored approach.</p></div><div className="industries-grid">{sectors.map(({icon:Icon,title,text,needs},index)=><article key={title} className="industry-card"><div className="industry-card-top"><span><Icon size={22}/></span><small>SECTOR / {String(index+1).padStart(2,"0")}</small></div><h3>{title}</h3><p>{text}</p><ul>{needs.map(item=><li key={item}>{item}</li>)}</ul></article>)}</div></div></section><section className="industries-cta"><div className="home-container"><span className="eyebrow-label">Your context is unique</span><h2>Let’s solve the problem<br/>behind the brief.</h2><p>Tell us about your industry, users and the work you need technology to make easier.</p><Link href="/contact" className="btn-premium-primary inline-flex items-center gap-2 rounded-full px-7 py-4 font-semibold text-white">Discuss your challenge <ArrowUpRight size={18}/></Link></div></section></main>}
+export const dynamic = "force-dynamic";
+const ICONS = { Building2, GraduationCap, HeartPulse, Landmark, ShoppingBag, Truck, Video, Workflow, Layers3 } as const;
+function getIcon(name: string) { return ICONS[name as keyof typeof ICONS] || Layers3; }
+
+export async function generateMetadata(): Promise<Metadata> {
+  const page = await getPublicPageContent("industries");
+  return { title: page.metaTitle, description: page.metaDescription, alternates: { canonical: "/industries" } };
+}
+
+export default async function IndustriesPage() {
+  const page = await getPublicPageContent("industries");
+  const cards = [...page.cards].sort((a, b) => a.displayOrder - b.displayOrder);
+  return (
+    <main className="industries-page">
+      <section className="industries-hero"><div className="home-container">
+        <span className="eyebrow-label">{page.heroEyebrow}</span>
+        <h1>{page.heroHeadline}<br/><em>{page.heroAccent}</em></h1>
+        <p>{page.heroDescription}</p>
+        {page.heroNote && <div className="industries-hero-note">{page.heroNote}</div>}
+      </div></section>
+      <section className="industries-content"><div className="home-container">
+        <div className="industries-intro"><div><span className="eyebrow-label">{page.introEyebrow}</span><h2>{page.introHeading}</h2></div><p>{page.introDescription}</p></div>
+        <div className="industries-grid">{cards.map((card,index)=>{const Icon=getIcon(card.icon);return <article key={card.title} className="industry-card">
+          <div className="industry-card-top"><span><Icon size={22}/></span><small>{card.eyebrow || `SECTOR / ${String(index+1).padStart(2,"0")}`}</small></div>
+          <h3>{card.title}</h3>{card.subtitle&&<b className="industry-card-subtitle">{card.subtitle}</b>}<p>{card.description}</p>
+          {card.bulletPoints.length>0&&<ul>{card.bulletPoints.map(item=><li key={item}>{item}</li>)}</ul>}
+        </article>})}</div>
+      </div></section>
+      <section className="industries-cta"><div className="home-container"><span className="eyebrow-label">{page.ctaEyebrow}</span><h2>{page.ctaHeading}</h2><p>{page.ctaDescription}</p><div className="flex flex-wrap justify-center gap-3"><Link href={page.ctaPrimaryHref} className="btn-premium-primary inline-flex items-center gap-2 rounded-full px-7 py-4 font-semibold text-white">{page.ctaPrimaryLabel}<ArrowUpRight size={18}/></Link>{page.ctaSecondaryLabel&&<Link href={page.ctaSecondaryHref} className="btn-premium-secondary inline-flex items-center gap-2 rounded-full px-7 py-4 font-semibold" style={{color:"var(--text-primary)"}}>{page.ctaSecondaryLabel}<ArrowUpRight size={17}/></Link>}</div></div></section>
+    </main>
+  );
+}

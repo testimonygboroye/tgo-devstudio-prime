@@ -24,12 +24,12 @@ const RewardSchema = new Schema<IReward>({
 }, { timestamps: true });
 
 export interface IReferral extends Document {
-  code: string; referrerId: Types.ObjectId; referredClientId?: Types.ObjectId; status: "pending" | "qualified" | "rejected";
+  code: string; referrerId: Types.ObjectId; referredClientId?: Types.ObjectId; attributedAt?: Date; status: "pending" | "qualified" | "rejected";
   commissionMinor: number; currency: string; qualifiedAt?: Date; createdAt: Date;
 }
 const ReferralSchema = new Schema<IReferral>({
   code: { type: String, required: true, unique: true, uppercase: true }, referrerId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
-  referredClientId: { type: Schema.Types.ObjectId, ref: "User", unique: true, sparse: true },
+  referredClientId: { type: Schema.Types.ObjectId, ref: "User", unique: true, sparse: true }, attributedAt: Date,
   status: { type: String, enum: ["pending", "qualified", "rejected"], default: "pending" },
   commissionMinor: { type: Number, default: 0, min: 0 }, currency: { type: String, default: "NGN" }, qualifiedAt: Date,
 }, { timestamps: { createdAt: true, updatedAt: false } });

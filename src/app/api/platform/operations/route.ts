@@ -11,7 +11,7 @@ export const dynamic="force-dynamic";
 const fail=(message:string,status=400)=>NextResponse.json({error:message},{status});
 const str=(v:unknown,max:number)=>typeof v==="string"?v.trim().slice(0,max):"";
 const asDate=(v:unknown):Date|undefined=>{if(!v)return undefined;const d=new Date(String(v));return Number.isFinite(d.getTime())?d:undefined;};
-const initialStatus=(type:string)=>type==="contract"?"draft":type==="procurement"||type==="approval"?"pending_approval":type==="payroll_integration"?"disconnected":["policy","vendor","asset"].includes(type)?"active":"open";
+const initialStatus=(type:typeof BUSINESS_OPERATION_TYPES[number]):typeof BUSINESS_OPERATION_STATUSES[number]=>type==="contract"?"draft":type==="procurement"||type==="approval"?"pending_approval":type==="payroll_integration"?"disconnected":["policy","vendor","asset"].includes(type)?"active":"open";
 async function auth(){const session=await getServerSession();if(!session)return{response:fail("Authentication required.",401)} as const;if(!session.role.isFounderRole)return{response:fail("Founder access required.",403)} as const;return{session} as const;}
 const serialize=(r:Record<string,unknown>)=>{const o=(v:unknown)=>v&&typeof v==="object"?v as Record<string,unknown>:null;const owner=o(r.ownerId),dept=o(r.departmentId),emp=o(r.employeeId),empUser=o(emp?.userId);return{id:String(r._id),type:r.type,title:r.title,description:r.description||"",details:r.details||"",reference:r.reference||"",status:r.status,ownerId:owner?String(owner._id):r.ownerId?String(r.ownerId):"",ownerName:owner?.name||"",departmentId:dept?String(dept._id):r.departmentId?String(r.departmentId):"",departmentName:dept?.name||"",employeeId:emp?String(emp._id):r.employeeId?String(r.employeeId):"",employeeName:empUser?.name||"",vendorName:r.vendorName||"",amount:r.amount??null,currency:r.currency||"NGN",startDate:r.startDate?new Date(String(r.startDate)).toISOString():"",dueDate:r.dueDate?new Date(String(r.dueDate)).toISOString():"",documentUrl:r.documentUrl||"",createdAt:r.createdAt,updatedAt:r.updatedAt};};
 export async function GET(request:NextRequest){
@@ -29,7 +29,7 @@ export async function GET(request:NextRequest){
 }
 export async function POST(request:NextRequest){
  const a=await auth();if("response"in a)return a.response;let b:Record<string,unknown>;try{b=await request.json();}catch{return fail("Invalid request body.");}
- const type=str(b.type,40),title=str(b.title,180);if(!BUSINESS_OPERATION_TYPES.includes(type as typeof BUSINESS_OPERATION_TYPES[number]))return fail("Choose a valid operations category.");if(!title)return fail("A title is required.");
+ const typeValue=str(b.type,40),title=str(b.title,180);if(!BUSINESS_OPERATION_TYPES.includes(typeValue as typeof BUSINESS_OPERATION_TYPES[number]))return fail("Choose a valid operations category.");const type=typeValue as typeof BUSINESS_OPERATION_TYPES[number];if(!title)return fail("A title is required.");
  const currency=(str(b.currency||"NGN",3)||"NGN").toUpperCase();if(!/^[A-Z]{3}$/.test(currency))return fail("Currency must be a three-letter code.");
  const amount=b.amount===""||b.amount===null||b.amount===undefined?undefined:Number(b.amount);if(amount!==undefined&&(!Number.isFinite(amount)||amount<0||amount>1e12))return fail("Enter a valid non-negative amount.");
  const startDate=asDate(b.startDate),dueDate=asDate(b.dueDate);if(b.startDate&&!startDate||b.dueDate&&!dueDate)return fail("Enter a valid date.");

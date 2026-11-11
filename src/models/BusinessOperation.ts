@@ -8,7 +8,7 @@ export interface IBusinessOperation extends Document {
  startDate?: Date; dueDate?: Date; documentUrl: string; createdBy: Types.ObjectId; updatedBy: Types.ObjectId; createdAt: Date; updatedAt: Date;
 }
 const schema = new Schema<IBusinessOperation>({
- type:{type:String,enum:BUSINESS_OPERATION_TYPES,required:true,index:true}, title:{type:String,required:true,trim:true,maxlength:180},
+ type:{type:String,enum:BUSINESS_OPERATION_TYPES,required:true}, title:{type:String,required:true,trim:true,maxlength:180},
  description:{type:String,default:"",trim:true,maxlength:3000}, details:{type:String,default:"",trim:true,maxlength:5000},
  reference:{type:String,default:"",trim:true,maxlength:160}, status:{type:String,enum:BUSINESS_OPERATION_STATUSES,required:true,default:"open"},
  ownerId:{type:Schema.Types.ObjectId,ref:"User"}, departmentId:{type:Schema.Types.ObjectId,ref:"Department"},

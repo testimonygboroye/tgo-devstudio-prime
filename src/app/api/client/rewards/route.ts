@@ -7,6 +7,7 @@ import { EngagementProfile, EngagementReward, EngagementReferral, EngagementRede
 import { tierForLifetimePoints } from "@/lib/engagement/tiers";
 import ClientCreditAccount from "@/models/ClientCreditAccount";
 import FinancialLedgerEntry from "@/models/FinancialLedgerEntry";
+import PlatformNotification from "@/models/PlatformNotification";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
 
 export const dynamic = "force-dynamic";
@@ -43,6 +44,7 @@ export async function POST(request: NextRequest) {
     const code = `TGO${randomBytes(5).toString("hex").toUpperCase()}`;
     try {
       const referral = await EngagementReferral.create({ code, referrerId: clientId });
+      await PlatformNotification.create({ recipientId: clientId, category: "engagement", title: "Your referral link is ready", body: "Share your referral code with a new TGO client. Rewards are issued after verified qualifying payment.", href: "/client/rewards", dedupeKey: "referral-link:" + String(referral._id), metadata: { referralId: String(referral._id) } });
       await writePlatformAuditEvent({ actorType: "human", actorId, actorLabel: session.user.name, action: "engagement.referral_link_created", module: "engagement", targetType: "referral", targetId: String(referral._id), outcome: "success" });
       return NextResponse.json({ code: referral.code }, { status: 201 });
     } catch (error) {
@@ -64,6 +66,7 @@ export async function POST(request: NextRequest) {
     }
     referral.referredClientId = clientId;
     await referral.save();
+    await PlatformNotification.create([{ recipientId: clientId, category: "engagement", title: "Referral code applied", body: "Your referral code has been linked to your account. Qualification follows verified payment.", href: "/client/rewards", dedupeKey: "referral-applied:" + String(referral._id) + ":" + actorId, metadata: { referralId: String(referral._id) } }, { recipientId: referral.referrerId, category: "engagement", title: "Your referral was used", body: "A new client has linked your referral code. Your reward is pending verified qualifying payment.", href: "/client/rewards", dedupeKey: "referral-used:" + String(referral._id), metadata: { referralId: String(referral._id) } }]);
     await writePlatformAuditEvent({ actorType: "human", actorId, actorLabel: session.user.name, action: "engagement.referral_code_applied", module: "engagement", targetType: "referral", targetId: String(referral._id), outcome: "success", metadata: { code } });
     return NextResponse.json({ ok: true, message: "Referral code linked to your account. Qualification follows verified payment." });
   }
@@ -102,11 +105,12 @@ export async function POST(request: NextRequest) {
           { entryKey: `${reference}:credit`, accountCode: "client_credit", direction: "credit", amountMinor: reward.creditMinor, currency: reward.currency, source: "manual_adjustment", sourceReference: reference, clientId, postedAt: new Date(), metadata: { reason: "engagement_reward" } },
         ], { session: dbSession });
       }
-      result = { reference, ...(couponCode ? { couponCode } : {}) };
+      result = { reference, rewardName: reward.name, kind: reward.kind, ...(couponCode ? { couponCode } : {}) };
     });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Reward redemption failed." }, { status: 409 });
   } finally { await dbSession.endSession(); }
+  await PlatformNotification.create({ recipientId: clientId, category: "engagement", title: "Reward redeemed", body: result?.kind === "account_credit" ? "Your account credit reward has been posted to your client balance." : result?.kind === "discount" ? "Your discount coupon " + result?.couponCode + " is ready to use at checkout." : "You redeemed " + result?.rewardName + ".", href: "/client/rewards", dedupeKey: "reward-redemption:" + result?.reference, metadata: { reference: result?.reference, rewardId: body.rewardId } });
   await writePlatformAuditEvent({ actorType: "human", actorId, actorLabel: session.user.name, action: "engagement.reward_redeemed", module: "engagement", targetType: "redemption", targetId: result?.reference, outcome: "success", metadata: { reference: result?.reference, rewardId: body.rewardId } });
   return NextResponse.json({ ok: true, redemption: result });
 }

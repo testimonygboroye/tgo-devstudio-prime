@@ -47,6 +47,8 @@ export interface IUnifiedMessage extends Document {
   editedAt?: Date;
   deletedAt?: Date;
   readBy: Types.ObjectId[];
+  reactions: { emoji: string; userId: Types.ObjectId }[];
+  pinned: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -65,6 +67,8 @@ const MessageSchema = new Schema<IUnifiedMessage>({
   editedAt: Date,
   deletedAt: Date,
   readBy: [{ type: Schema.Types.ObjectId, ref: "User" }],
+  reactions: [{ emoji: { type: String, maxlength: 12 }, userId: { type: Schema.Types.ObjectId, ref: "User" } }],
+  pinned: { type: Boolean, default: false, index: true },
 }, { timestamps: true });
 MessageSchema.index({ conversationId: 1, createdAt: -1 });
 MessageSchema.index({ externalMessageId: 1 }, { unique: true, sparse: true });

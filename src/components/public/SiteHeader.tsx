@@ -28,6 +28,7 @@ export default function SiteHeader({ settings }: { settings?: PublicSiteChromeSe
   useSwipeSidebar(isMenuOpen, setMenuOpen, "right", drawerRef, backdropRef);
   const DRAWER_NAV_GROUPS = [
     { title: "Company", links: [
+      { label: t("nav.home"), href: "/", icon: Layers },
       { label: t("nav.about"), href: "/about", icon: Info },
     ]},
     { title: "Capabilities & Work", links: [

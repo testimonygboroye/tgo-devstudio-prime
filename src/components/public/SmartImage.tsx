@@ -12,7 +12,7 @@ export default function SmartImage({ src, alt, label, className = "" }: {
       <div className="tgo-image-fallback-grid" />
       <span className="tgo-image-fallback-mark"><Sparkles size={20}/></span>
       <strong>{label || "TGO DevStudio"}</strong>
-      <small>DESIGNED FOR WHAT'S NEXT</small>
+      <small>DESIGNED FOR WHAT&apos;S NEXT</small>
       <ImageOff className="tgo-image-fallback-icon" size={15}/>
     </div>
   );

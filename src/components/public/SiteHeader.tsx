@@ -8,11 +8,12 @@ import Image from "next/image";
 import { Menu, X, Layers, Briefcase, Newspaper, DoorOpen, Mail, Info, Workflow, Users, Star, PhoneCall, Boxes, HelpCircle, ChevronDown, MessageCircleQuestion, Settings, ArrowLeft, ShieldCheck, FileText, Package, Building2, Handshake } from "lucide-react";
 import HelpSearchPopup from "@/components/shared/HelpSearchPopup";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
+import type { PublicSiteChromeSettings } from "@/lib/publicSite/types";
 
 const NAV_ICON_MAP = { Layers, Briefcase, Newspaper, DoorOpen, Mail, Info, Workflow, Users, Star, PhoneCall, Boxes, HelpCircle, MessageCircleQuestion, Settings, ShieldCheck, FileText, Package, Building2, Handshake } as const;
 function getNavigationIcon(name?: string) { return NAV_ICON_MAP[name as keyof typeof NAV_ICON_MAP] || Layers; }
 
-export default function SiteHeader() {
+export default function SiteHeader({ settings }: { settings?: PublicSiteChromeSettings | null }) {
   const { t } = useTranslation();
   const router = useRouter();
   const prefetchOnIntent = (href: string) => router.prefetch(href);
@@ -63,8 +64,8 @@ export default function SiteHeader() {
       <div className="tgo-public-header-bar border-b border-base-800 bg-base-950/95">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 sm:px-12">
           <Link href="/" className="flex items-center gap-2" onClick={() => setIsMenuOpen(false)}>
-            <Image src="/logo.png" alt="TGO DevStudio logo" width={36} height={36} priority />
-            <span className="font-display text-lg font-bold leading-9 text-neutral-100">TGO DevStudio</span>
+            <Image src={settings?.logoUrl || "/logo.png"} alt={settings?.logoAlt || "TGO DevStudio logo"} width={36} height={36} priority unoptimized />
+            <span className="font-display text-lg font-bold leading-9 text-neutral-100">{settings?.brandName || "TGO DevStudio"}</span>
           </Link>
 
           <nav className="hidden items-center gap-5 sm:flex" aria-label="Main navigation" onMouseLeave={() => setOpenDesktopGroup(null)}>
@@ -103,7 +104,7 @@ export default function SiteHeader() {
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 py-3"><div className="flex flex-col divide-y divide-base-800 overflow-hidden rounded-lg border border-base-800">
             {DRAWER_NAV_GROUPS.map((group,index) => <details key={group.title} open={index===0} className="border-b border-base-800 last:border-0"><summary className="flex cursor-pointer list-none items-center justify-between bg-base-900 px-4 py-3.5 text-sm font-semibold text-neutral-200 hover:bg-base-800"><span>{group.title}</span><ChevronDown size={15} className="text-brand-cyan-400"/></summary><div className="bg-base-950/70">{group.links.map(link=>{const Icon=link.icon;return <Link key={link.href} href={link.href} prefetch={false} onPointerEnter={()=>prefetchOnIntent(link.href)} onFocus={()=>prefetchOnIntent(link.href)} onTouchStart={()=>prefetchOnIntent(link.href)} onClick={()=>setIsMenuOpen(false)} className="flex items-center gap-3 px-6 py-3 text-sm text-neutral-300 transition-colors hover:bg-base-800 hover:text-brand-cyan-300"><Icon size={17} className="text-brand-cyan-400"/>{link.label}</Link>;})}</div></details>)}
           </div></div>
-          <div className="flex-shrink-0 border-t border-base-800 bg-base-950 px-4 pb-4 pt-3"><Link href="/client/login" onClick={() => setIsMenuOpen(false)} className="mb-3 flex w-full items-center gap-3 rounded-xl border border-brand-cyan-400/30 bg-brand-cyan-400/10 px-4 py-3 text-sm font-semibold text-brand-cyan-200 transition hover:bg-brand-cyan-400/20"><ShieldCheck size={17}/>Client Portal <span className="ml-auto text-xs">Sign in / Register →</span></Link><p className="text-center text-xs text-neutral-500">© {new Date().getFullYear()} TGO DevStudio</p></div>
+          <div className="flex-shrink-0 border-t border-base-800 bg-base-950 px-4 pb-4 pt-3"><Link href={settings?.clientPortalHref || "/client/login"} onClick={() => setIsMenuOpen(false)} className="mb-3 flex w-full items-center gap-3 rounded-xl border border-brand-cyan-400/30 bg-brand-cyan-400/10 px-4 py-3 text-sm font-semibold text-brand-cyan-200 transition hover:bg-brand-cyan-400/20"><ShieldCheck size={17}/>{settings?.clientPortalLabel || "Client Portal"} <span className="ml-auto text-xs">Sign in / Register →</span></Link><p className="text-center text-xs text-neutral-500">© {new Date().getFullYear()} {settings?.brandName || "TGO DevStudio"}</p></div>
         </nav>
       </div>
     </header>

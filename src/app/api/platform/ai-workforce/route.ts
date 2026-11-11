@@ -250,7 +250,7 @@ export async function POST(request: NextRequest) {
         task.providerRequestId = completion.providerRequestId;
         task.completedAt = new Date();
         await task.save();
-        if (["communications", "ai_conversation"].includes(String(payload.source || "")) && Types.ObjectId.isValid(String(payload.conversationId || ""))) {
+        if (["communications", "ai_conversation"].includes(String(payload.source || "")) && mongoose.Types.ObjectId.isValid(String(payload.conversationId || ""))) {
           const conversation = await UnifiedConversation.findById(String(payload.conversationId));
           if (conversation) { await UnifiedMessage.create({ conversationId: conversation._id, senderType: "ai", senderLabel: agent.name, body: completion.text.slice(0, 12000), status: "sent" }); conversation.lastMessageAt = new Date(); await conversation.save(); }
         }
@@ -263,7 +263,7 @@ export async function POST(request: NextRequest) {
         task.completedAt = new Date();
         await task.save();
         const failedPayload = (task.operationPayload || {}) as Record<string, unknown>;
-        if (["communications", "ai_conversation"].includes(String(failedPayload.source || "")) && Types.ObjectId.isValid(String(failedPayload.conversationId || ""))) {
+        if (["communications", "ai_conversation"].includes(String(failedPayload.source || "")) && mongoose.Types.ObjectId.isValid(String(failedPayload.conversationId || ""))) {
           const conversation = await UnifiedConversation.findById(String(failedPayload.conversationId));
           if (conversation) await UnifiedMessage.create({ conversationId: conversation._id, senderType: "system", senderLabel: "TGO system", body: "The assigned AI task failed. Review its execution record in AI Workforce." });
         }

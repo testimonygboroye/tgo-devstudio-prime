@@ -31,7 +31,7 @@ export async function POST(request:NextRequest){
  }
  if(b.action==="retry_failed"){if(campaign.status!=="failed")return fail("Only a completed campaign with failed deliveries can be retried.",409);const retried=await MarketingCampaignDelivery.updateMany({campaignId:campaign._id,status:"failed"},{$set:{status:"pending",attempts:0,lastError:""}});if(!retried.modifiedCount)return fail("There are no retryable failed recipients.",409);campaign.status="queued";campaign.updatedBy=auth.session.user._id as Types.ObjectId;await campaign.save();return NextResponse.json({message:"Failed recipients have been queued for another delivery attempt.",retried:retried.modifiedCount});}
  if(b.action!=="process")return fail("Unsupported dispatch action.");
- if(!["queued","sending"].includes(campaign.status))return fail("Campaign must be queued before delivery.",409);
+ if(!["queued","sending"].includes(campaign.status))return fail("Campaign must be queued before delivery.",409);if(campaign.scheduledAt&&campaign.scheduledAt.getTime()>Date.now())return fail("This campaign is scheduled for a future time and cannot be sent early.",409);
  await MarketingCampaignDelivery.updateMany({campaignId:campaign._id,status:"sending",updatedAt:{$lt:new Date(Date.now()-15*60*1000)}},{$set:{status:"pending",lastError:"Recovered after an interrupted campaign batch."}});
  const batchSize=Math.min(25,Math.max(1,Number(b.batchSize)||20));
  const jobs=await MarketingCampaignDelivery.find({campaignId:campaign._id,status:"pending",attempts:{$lt:3}}).sort({createdAt:1}).limit(batchSize).lean();

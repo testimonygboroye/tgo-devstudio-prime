@@ -10,7 +10,7 @@ import { connectToDatabase } from "@/lib/db";
 import PublicSiteSettings from "@/models/PublicSiteSettings";
 import type { PublicSiteChromeSettings } from "@/lib/publicSite/types";
 
-export default function PublicLayout({
+export default async function PublicLayout({
   children,
 }: {
   children: React.ReactNode;

@@ -23,8 +23,8 @@ export default async function FaqPage() {
   }, {});
 
   return (
-    <main className="min-h-screen px-6 py-20 sm:px-12">
-      <div className="mx-auto max-w-2xl">
+    <main className="faq-page">
+      <div className="home-container faq-content">
         <span className="eyebrow-label">Support</span>
         <h1
           className="heading-premium mt-3 text-5xl font-bold brand-gradient-text sm:text-6xl"

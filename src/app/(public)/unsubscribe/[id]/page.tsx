@@ -3,46 +3,38 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { AlertTriangle, CheckCircle2, Mail, RefreshCw } from "lucide-react";
 
-export default function UnsubscribePage() {
-  const params = useParams();
-  const searchParams = useSearchParams();
-  const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
-  const [message, setMessage] = useState("");
+type Status="loading"|"success"|"error";
+export default function UnsubscribePage(){
+ const params=useParams<{id:string}>();
+ const searchParams=useSearchParams();
+ const token=searchParams.get("token")||"";
+ const [status,setStatus]=useState<Status>("loading");
+ const [message,setMessage]=useState("Please wait while we update your email preferences.");
 
-  useEffect(() => {
-    async function unsubscribe() {
-      const token = searchParams.get("token") || "";
-      try {
-        const res = await fetch(`/api/newsletter/unsubscribe/${params.id}?token=${token}`, {
-          method: "POST",
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          setStatus("error");
-          setMessage(data.message || "Failed to unsubscribe.");
-          return;
-        }
-        setStatus("success");
-        setMessage(data.message);
-      } catch {
-        setStatus("error");
-        setMessage("Something went wrong.");
-      }
-    }
-    unsubscribe();
-  }, [params.id, searchParams]);
+ useEffect(()=>{
+  const controller=new AbortController();
+  async function unsubscribe(){
+   setStatus("loading");
+   try{
+    const query=new URLSearchParams({token}).toString();
+    const res=await fetch("/api/newsletter/unsubscribe/"+encodeURIComponent(params.id)+"?"+query,{method:"POST",signal:controller.signal});
+    const data=await res.json();
+    if(controller.signal.aborted)return;
+    if(!res.ok){setStatus("error");setMessage(data.message||"We could not update your email preferences. The link may have expired.");return;}
+    setStatus("success");setMessage(data.message||"Your email preferences have been updated.");
+   }catch(error){
+    if(error instanceof Error&&error.name==="AbortError")return;
+    setStatus("error");setMessage("We could not reach the service. Check your connection and try again.");
+   }
+  }
+  unsubscribe();
+  return()=>controller.abort();
+ },[params.id,token]);
 
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
-      <p className="font-mono text-xs uppercase tracking-widest text-neutral-400">Newsletter</p>
-      <h1 className="mt-2 text-3xl font-bold brand-gradient-text">
-        {status === "loading" ? "Processing..." : status === "success" ? "Unsubscribed" : "Something Went Wrong"}
-      </h1>
-      <p className="mt-3 max-w-sm text-neutral-100/70">{message}</p>
-      <Link href="/" className="mt-6 text-sm text-brand-cyan-300 hover:underline">
-        ← Back to home
-      </Link>
-    </main>
-  );
+ const Icon=status==="success"?CheckCircle2:status==="error"?AlertTriangle:Mail;
+ return(
+  <main className="unsubscribe-page"><div className="unsubscribe-card"><span className={"unsubscribe-icon "+status}><Icon size={28}/></span><span className="eyebrow-label">TGO DevStudio · Newsletter preferences</span><h1>{status==="loading"?"Updating your preferences…":status==="success"?"You’re all set.":"We couldn’t complete that request."}</h1><p>{message}</p>{status==="loading"&&<div className="unsubscribe-progress"><span/></div>}{status==="error"&&<button type="button" onClick={()=>window.location.reload()} className="unsubscribe-retry"><RefreshCw size={15}/> Try again</button>}<Link href="/" className="unsubscribe-home">Return to TGO DevStudio <span>→</span></Link></div></main>
+ );
 }

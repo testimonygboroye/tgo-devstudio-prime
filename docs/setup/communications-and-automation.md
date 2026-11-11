@@ -48,7 +48,7 @@ Keep all credentials in the encrypted Integration Centre. Never put them in sour
 
 ## 4. Voice notes and transcription
 
-The communications composer can record and upload audio using the device microphone. Where the browser supports the Web Speech API, live speech recognition adds finalized speech to the message draft while recording. Browser speech recognition availability and language support vary by device/browser; the uploaded audio remains available even if transcription is unavailable. This is client-side convenience, not guaranteed server-side transcription.
+The communications composer can record and upload audio using the device microphone. Where the browser supports the Web Speech API, live speech recognition adds finalized speech to the message draft while recording. Browser speech recognition availability and language support vary by device/browser; the uploaded audio remains available even if transcription is unavailable. This is client-side convenience, not guaranteed server-side transcription. For text translation, select an enabled AI employee that does not require approval, enter the target language, and use **Translate draft**. Translation creates an auditable AI task and consumes the configured provider token budget; provider charges may apply.
 
 ## 5. AI employees in conversations
 

@@ -86,6 +86,13 @@ export async function POST(request: NextRequest) {
       if (!root) return fail("Thread root message does not belong to this conversation.");
       threadRootId = root.threadRootId || root._id;
     }
+    if (conversation.kind === "whatsapp" && attachments.length) return fail("WhatsApp media sending is not enabled yet; send text within the customer service window.", 409);
+    let whatsappCredentials: Record<string, string> | null = null;
+    if (conversation.kind === "whatsapp") {
+      if (!conversation.externalOptInAt || !conversation.externalContactId || !conversation.externalLastInboundAt || Date.now() - conversation.externalLastInboundAt.getTime() > 24 * 60 * 60 * 1000) return fail("WhatsApp free-form replies are available only within 24 hours of the contact’s latest inbound message. Outside that window, an approved WhatsApp template is required.", 409);
+      whatsappCredentials = await getVerifiedIntegrationCredentials("whatsapp_cloud");
+      if (!whatsappCredentials?.accessToken || !whatsappCredentials.phoneNumberId) return fail("WhatsApp Cloud API credentials are not configured and verified.", 503);
+    }
     const message = await UnifiedMessage.create({ conversationId, senderType: "human", senderId: actorId, senderLabel: actorName, body: content, status: "sent", readBy: [actorId], threadRootId, attachments, messageType: attachments.some((item) => item.mimeType.startsWith("audio/")) ? "audio" : attachments.length ? "file" : "text" });
     conversation.lastMessageAt = new Date();
     await conversation.save();
@@ -123,13 +130,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (conversation.kind === "whatsapp" && attachments.length) return fail("WhatsApp media sending is not enabled yet; send text within the customer service window.", 409);
-    if (conversation.kind === "whatsapp") {
-      if (!conversation.externalOptInAt || !conversation.externalContactId || !conversation.externalLastInboundAt || Date.now() - conversation.externalLastInboundAt.getTime() > 24 * 60 * 60 * 1000) return fail("WhatsApp free-form replies are available only within 24 hours of the contact\u2019s latest inbound message. Outside that window, an approved WhatsApp template is required.", 409);
-      const credentials = await getVerifiedIntegrationCredentials("whatsapp_cloud");
-      const token = credentials?.accessToken;
-      const phoneNumberId = credentials?.phoneNumberId;
-      if (!token || !phoneNumberId) return fail("WhatsApp Cloud API credentials are not configured.", 503);
+    if (conversation.kind === "whatsapp" && whatsappCredentials) {
+      const token = whatsappCredentials.accessToken;
+      const phoneNumberId = whatsappCredentials.phoneNumberId;
       try {
         const response = await fetch(`https://graph.facebook.com/v22.0/${phoneNumberId}/messages`, {
           method: "POST", headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },

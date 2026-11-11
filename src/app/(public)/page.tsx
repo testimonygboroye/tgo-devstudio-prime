@@ -90,12 +90,13 @@ export default async function HomePage() {
   const reviews = featuredReviews.map((item) => localize(item, TRANSLATABLE_FIELDS.Review));
   const stack = rawStack.map((item) => localize(item, TRANSLATABLE_FIELDS.StackItem));
   const stackCategories = Array.from(new Set(stack.map((item) => item.category))).slice(0, 4);
+  const safeHeroBackground = typeof hero.heroBackgroundImage === "string" ? hero.heroBackgroundImage.replace(/["\'()\\\r\n]/g, "") : "";
 
   return (
     <main className="home-page">
       <HomepageMediaExperience settings={launchSettings || { enabled: false }} />
 
-      <section className="home-hero ambient-glow">
+      <section className="home-hero ambient-glow">{safeHeroBackground && <div className="home-hero-cms-background" style={{ backgroundImage: 'url("' + safeHeroBackground + '")' }} aria-hidden="true" />}
         <HeroMoment />
         <div className="home-hero-grid">
           <div className="home-hero-copy">
@@ -161,7 +162,7 @@ export default async function HomePage() {
 
       <section className="home-section home-capabilities">
         <div className="home-container">
-          <SectionHeading eyebrow="What we bring together" title="Technology that works beautifully — and works hard." description="We connect product thinking, refined experiences and dependable engineering to create digital systems that solve meaningful business problems." href="/services" action="Explore all capabilities" />
+          <SectionHeading eyebrow={hero.servicesLabel || "What we bring together"} title={hero.servicesHeading || "Technology that works beautifully — and works hard."} description="We connect product thinking, refined experiences and dependable engineering to create digital systems that solve meaningful business problems." href="/services" action="Explore all capabilities" />
           <div className="home-capability-grid">
             {capabilityPillars.map(({icon:Icon,title,text},index)=><article className="home-capability-card" key={title}><div className="home-card-index">0{index+1}</div><span className="home-icon-tile"><Icon size={23}/></span><h3>{title}</h3><p>{text}</p><Link href="/services" aria-label={"Explore "+title}><ArrowUpRight size={18}/></Link></article>)}
           </div>

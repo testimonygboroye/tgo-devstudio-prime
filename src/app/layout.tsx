@@ -10,8 +10,7 @@ import NetworkStatus from "@/components/shared/NetworkStatus";
 import { getServerLocale } from "@/lib/i18n/serverLocale";
 import { RTL_LOCALES } from "@/lib/i18n/config";
 import { getSiteUrl } from "@/lib/siteUrl";
-import { connectToDatabase } from "@/lib/db";
-import PublicSiteSettings from "@/models/PublicSiteSettings";
+import { getPublicSiteSettings } from "@/lib/publicSite/getPublicSiteSettings";
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
@@ -29,13 +28,7 @@ const EXISTING_GOOGLE_VERIFICATION =
 
 export async function generateMetadata(): Promise<Metadata> {
   const siteUrl = getSiteUrl();
-  let siteSettings: { brandName?: string; brandDescriptor?: string; siteTitle?: string; siteDescription?: string; faviconUrl?: string; openGraphImageUrl?: string } | null = null;
-  try {
-    await connectToDatabase();
-    siteSettings = await PublicSiteSettings.findOne();
-  } catch {
-    siteSettings = null;
-  }
+  const siteSettings = await getPublicSiteSettings();
   const brandName = siteSettings?.brandName || "TGO DevStudio";
   const siteTitle = siteSettings?.siteTitle || "TGO DevStudio Prime";
   const siteDescription = siteSettings?.siteDescription || "TGO DevStudio builds premium software, websites, apps, SaaS platforms, AI systems, cloud solutions, and custom digital products.";

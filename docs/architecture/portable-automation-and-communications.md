@@ -2,14 +2,20 @@
 
 ## Portable scheduler
 
-The Cloudflare Worker under `automation/cloudflare-worker` is deployment-provider independent. It calls the application's protected cron endpoints over HTTPS and does not depend on Render, Vercel Cron, or Netlify Scheduled Functions. Set `APP_BASE_URL` to whichever host is active and synchronize `PLATFORM_AUTOMATION_CRON_SECRET` between the Worker and app.
+The Cloudflare Worker under `automation/cloudflare-worker` is a provider-independent timer and HTTP caller. It invokes protected application routes for webhook delivery, sales follow-ups, executive reports, scheduled email campaigns, support SLA escalation, engagement expiry, and analytics snapshots. It does not connect to MongoDB or contain database credentials. Set `APP_BASE_URL` to the currently active host and synchronize `PLATFORM_AUTOMATION_CRON_SECRET` between the Worker and application environment. The manual trigger uses a separate secret.
 
-The app's own database, queues, permissions, and business logic remain on the app host. The Worker is only a timer and HTTP caller. Never expose cron secrets in client code.
+The same protected routes can be called by another scheduler or self-hosted cron runner. No Render Cron Job, Vercel Cron, or Netlify Scheduled Function is required. The application host remains replaceable.
 
-## Communications architecture
+## Unified communications
 
-The existing `Message` model remains the notification inbox and `WorkspaceMessage` remains workspace/channel chat. Do not conflate either with a universal conversation store. A future unified communications service should provide durable conversation membership, sender identity types (human, AI agent, external WhatsApp contact, system), message status events, attachments, threads, reactions, and provider delivery receipts. WhatsApp Cloud API credentials must be encrypted in the Integration Centre. Inbound webhooks require Meta signature verification and idempotency; outbound messages must be queued and retried without duplicate sends.
+The existing notification inbox and workspace chat models remain separate. The unified conversation/message store supports direct conversations, groups, channels, AI employee conversations, and WhatsApp external contacts. Messages support text, audio/file attachments, read state, threads, reactions, edits, deletion, pinning, and WhatsApp delivery status. The Admin Messages screen includes conversation search, message search, voice-note recording, and attachment upload.
 
-## Cost and consent
+AI employee conversations use the configured AI Workforce provider runtime and token budget. AI tasks assigned from communications are stored in the existing approval/ execution queue; completed tasks can publish their result back into the originating conversation. Existing AI provider permissions and approval gates remain authoritative.
 
-Carrier SMS is not a reliably free delivery channel. Prefer email verification, passkeys, authenticator apps, and WhatsApp where the recipient initiated the conversation. WhatsApp template messages and some categories/destinations can incur Meta charges. Do not send outbound messages without recorded consent and applicable template/24-hour-window checks. Browser speech recognition can be a no-cost convenience where supported, but is not a server-side transcription guarantee.
+WhatsApp Cloud API credentials are encrypted in the Integration Centre. Webhook GET verification uses the configured verify token; webhook POST payloads require a valid Meta HMAC signature. Inbound message IDs are deduplicated and delivery receipts update outbound message state. Free-form outbound replies are restricted to the 24-hour customer-service window after the latest inbound contact message. An inbound message is not stored as marketing opt-in. Approved template selection/delivery and inbound media retrieval are not yet part of this interface.
+
+## Cost, consent, and portability
+
+Carrier SMS is not a reliably free delivery channel. Prefer email verification, passkeys, and authenticator apps for account security. WhatsApp pricing and template fees are determined by Meta and may apply. AI provider calls may incur usage charges according to the configured provider account.
+
+Browser speech recognition can add live transcript text while recording a voice note on supported browsers; this is not a server-side transcription guarantee and browser/language support varies. Voice recording and attachment storage depend on device microphone permissions and the configured Cloudinary account.

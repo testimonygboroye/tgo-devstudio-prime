@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
     await conversation.save();
 
     if (conversation.kind === "whatsapp") {
-      if (!conversation.externalOptInAt || !conversation.externalContactId) return fail("WhatsApp sending is blocked because recorded recipient opt-in is missing.", 409);
+      if (!conversation.externalOptInAt || !conversation.externalContactId || !conversation.externalLastInboundAt || Date.now() - conversation.externalLastInboundAt.getTime() > 24 * 60 * 60 * 1000) return fail("WhatsApp free-form replies are available only within 24 hours of the contact\u2019s latest inbound message. Outside that window, an approved WhatsApp template is required.", 409);
       const credentials = await getVerifiedIntegrationCredentials("whatsapp_cloud");
       const token = credentials?.accessToken;
       const phoneNumberId = credentials?.phoneNumberId;
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
     if (!Types.ObjectId.isValid(agentId) || input.length < 5 || input.length > 20000) return fail("Select an AI employee and provide a task description.");
     const agent = await AIAgent.findOne({ _id: agentId, enabled: true });
     if (!agent) return fail("AI employee is unavailable.", 404);
-    const task = await AITask.create({ agentId, title: String(body.title || input.slice(0, 120)).slice(0, 180), input, status: agent.requiresApproval ? "awaiting_approval" : "queued", requestedBy: String(actorId) });
+    const task = await AITask.create({ agentId, title: String(body.title || input.slice(0, 120)).slice(0, 180), input, status: agent.requiresApproval ? "awaiting_approval" : "queued", requestedBy: String(actorId), operationPayload: { source: "communications", conversationId: typeof body.conversationId === "string" ? body.conversationId : undefined } });
     await writePlatformAuditEvent({ actorType: "human", actorId: String(actorId), actorLabel: actorName, action: "ai.task.assigned_from_communications", module: "communications", targetType: "AITask", targetId: String(task._id), outcome: "success", metadata: { agentId, status: task.status } });
     return NextResponse.json({ status: "ok", taskId: String(task._id), taskStatus: task.status, message: "Task recorded in the AI workforce queue." }, { status: 201 });
   }

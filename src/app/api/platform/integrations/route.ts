@@ -42,6 +42,7 @@ export async function POST(request: NextRequest) {
   await connectToDatabase();
   const id = String(auth.session.user._id);
   const row = await IntegrationConnection.findOneAndUpdate({ providerId }, { $set: { displayName: provider.name, category: provider.category, status: "configured", credentialsCiphertext: encrypted, credentialNames: provider.fields.map((field) => field.label), lastError: "", updatedBy: id }, $setOnInsert: { createdBy: id } }, { upsert: true, new: true, runValidators: true });
+  if (!row) return fail("Could not save integration credentials.", 500);
   await writePlatformAuditEvent({ actorType: "human", actorId: id, actorLabel: auth.session.user.name, action: "integration.credentials_saved", module: "integrations", targetType: "IntegrationConnection", targetId: String(row._id), outcome: "success", metadata: { providerId, credentialNames: provider.fields.map((field) => field.label) } });
   return NextResponse.json({ connection: serialize(row.toObject() as unknown as Record<string, unknown>), message: "Credentials encrypted and saved. Run a connection test before relying on this provider." }, { status: 201 });
 }

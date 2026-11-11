@@ -49,8 +49,8 @@ export default function SiteHeader() {
   ];
 
   return (
-    <header className="sticky top-0 z-50">
-      <div className="border-b border-base-800 bg-base-950/95">
+    <header className="tgo-public-header sticky top-0 z-50">
+      <div className="tgo-public-header-bar border-b border-base-800 bg-base-950/95">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 sm:px-12">
           <Link href="/" className="flex items-center gap-2" onClick={() => setIsMenuOpen(false)}>
             <Image src="/logo.png" alt="TGO DevStudio logo" width={36} height={36} priority />

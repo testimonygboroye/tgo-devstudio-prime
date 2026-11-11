@@ -27,6 +27,7 @@ export default async function PublicPageContentAdmin({ params }: { params: Promi
     help: "Help Centre page",
     "book-a-call": "Book a Call page",
     "services-catalogue": "Service Catalogue page",
+    faq: "FAQ page",
   };
   const pageKeyValue = pageKey as PublicPageKey;
   const title = pageTitles[pageKeyValue];

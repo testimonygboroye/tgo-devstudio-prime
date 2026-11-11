@@ -1,4 +1,4 @@
-const SW_VERSION = "tgo-offline-v7";
+const SW_VERSION = "tgo-offline-v8";
 const APP_CACHE = `${SW_VERSION}-app`;
 const ASSET_CACHE = `${SW_VERSION}-public-assets`;
 const OFFLINE_URL = "/offline.html";
@@ -33,11 +33,26 @@ async function trimCache(cacheName, maxEntries) {
 }
 
 async function handleNavigation(request) {
+  const url = new URL(request.url);
   try {
-    return await fetch(request);
+    const response = await fetch(request);
+    // Keep a last-known-good copy of the public homepage only.
+    if (response.ok && url.pathname === "/" && !url.search) {
+      const cache = await caches.open(APP_CACHE);
+      await cache.put("/", response.clone());
+    }
+    return response;
   } catch {
-    // Do not replay cached HTML: it can reference deployment-specific chunks
-    // that are no longer available, leaving users with an unstyled page.
+    // The public homepage is intentionally available offline once visited.
+    if (url.pathname === "/" && !url.search) {
+      const cachedHome = await caches.match("/", { cacheName: APP_CACHE });
+      if (cachedHome) {
+        const headers = new Headers(cachedHome.headers);
+        headers.set("X-TGO-Offline", "1");
+        headers.set("Cache-Control", "no-store");
+        return new Response(cachedHome.body, { status: 200, headers });
+      }
+    }
     const offline = await caches.match(OFFLINE_URL, { cacheName: APP_CACHE });
     if (offline) {
       const headers = new Headers(offline.headers);

@@ -6,7 +6,8 @@ import {buildPaymentLedgerEntries} from "@/lib/finance/ledger";
 import CommercialOrder from "@/models/CommercialOrder";
 import DeliveryProject from "@/models/DeliveryProject";
 import DeliveryMilestone from "@/models/DeliveryMilestone";
-import {toMinorUnits} from "@/lib/payments/money";
+import {toMinorUnits,fromMinorUnits} from "@/lib/payments/money";
+import {EngagementRedemption} from "@/models/Engagement";
 import {getPaymentProvider} from "@/lib/payments/provider";
 import FinanceInvoice from "@/models/FinanceInvoice";
 import FinanceInstallmentPlan from "@/models/FinanceInstallmentPlan";
@@ -25,6 +26,26 @@ export async function verifyAndRecordPaystackPayment(reference:string){
    if(payment.status==="paid")return;
    payment.status="paid";payment.providerTransactionId=data.transactionId||"";payment.verifiedAt=new Date();await payment.save({session});
     await ensureFinanceReceipt(payment,session);
+   if(payment.couponCode&&Number(payment.discountMinor||0)>0){
+    const coupon=await EngagementRedemption.findOneAndUpdate({clientId:payment.clientId,couponCode:payment.couponCode,couponStatus:"reserved",couponPaymentReference:payment.reference},{$set:{couponStatus:"used"}},{new:true}).session(session);
+    if(!coupon)throw new Error("The reserved discount coupon could not be verified for this payment.");
+    const discountedOrder=await CommercialOrder.findOne({_id:payment.orderId,clientId:payment.clientId}).session(session);
+    if(!discountedOrder)throw new Error("The order linked to the discount coupon could not be found.");
+    discountedOrder.amount=Math.max(0,Number(discountedOrder.amount)-fromMinorUnits(Number(payment.discountMinor),payment.currency));
+    await discountedOrder.save({session});
+    const discountedInvoice=payment.invoiceId?await FinanceInvoice.findOne({_id:payment.invoiceId,orderId:payment.orderId,clientId:payment.clientId}).session(session):await FinanceInvoice.findOne({orderId:payment.orderId,clientId:payment.clientId,status:{$nin:["draft","void"]}}).session(session);
+    if(discountedInvoice){
+     discountedInvoice.discountMinor=Number(discountedInvoice.discountMinor||0)+Number(payment.discountMinor);
+     discountedInvoice.totalMinor=Math.max(0,discountedInvoice.totalMinor-Number(payment.discountMinor));
+     discountedInvoice.balanceMinor=Math.max(0,discountedInvoice.balanceMinor-Number(payment.discountMinor));
+     await discountedInvoice.save({session});
+    }
+    const discountReference=payment.reference+":coupon";
+    await FinancialLedgerEntry.create([
+     {entryKey:discountReference+":expense",accountCode:"expense",direction:"debit",amountMinor:Number(payment.discountMinor),currency:payment.currency,source:"manual_adjustment",sourceReference:discountReference,clientId:payment.clientId,postedAt:new Date(),metadata:{reason:"loyalty_discount_coupon",couponCode:payment.couponCode,paymentReference:payment.reference}},
+     {entryKey:discountReference+":receivable",accountCode:"accounts_receivable",direction:"credit",amountMinor:Number(payment.discountMinor),currency:payment.currency,source:"manual_adjustment",sourceReference:discountReference,clientId:payment.clientId,postedAt:new Date(),metadata:{reason:"loyalty_discount_coupon",couponCode:payment.couponCode,paymentReference:payment.reference}},
+    ],{session});
+   }
    if(payment.milestoneId){
     const project=await DeliveryProject.findOne({orderId:payment.orderId,clientId:payment.clientId}).session(session);
     if(!project)throw new Error("The delivery project is no longer linked to this order.");

@@ -6,6 +6,7 @@ import { validateClientRegistration } from "@/lib/clients/validation";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import { hashVerificationToken } from "@/lib/clients/token";
 import ClientRegistrationVerification from "@/models/ClientRegistrationVerification";
+import { EngagementReferral } from "@/models/Engagement";
 
 export const dynamic = "force-dynamic";
 type GoogleTokenInfo = { sub?: string; email?: string; email_verified?: string | boolean; aud?: string; azp?: string; name?: string };
@@ -40,12 +41,15 @@ export async function POST(request: NextRequest) {
     await connectToDatabase();
 
     if (body.verifyOnly === true) {
+      const referralCode = String(body.referralCode || "").trim().toUpperCase();
+      if (referralCode && !/^TGO[A-F0-9]{10}$/.test(referralCode)) return NextResponse.json({ error: "Referral code format is invalid." }, { status: 400 });
+      if (referralCode && !await EngagementReferral.exists({ code: referralCode, status: "pending", referredClientId: { $exists: false } })) return NextResponse.json({ error: "This referral code is invalid or already used." }, { status: 409 });
       const existing = await (await import("@/models/User")).default.findOne({ email, accountType: "client" }).select("_id");
       if (existing) return NextResponse.json({ error: "A client account already exists with this email. Please sign in instead." }, { status: 409 });
       const token = randomBytes(32).toString("base64url");
       await ClientRegistrationVerification.deleteMany({ email, consumedAt: { $exists: false } });
       await ClientRegistrationVerification.create({
-        email, googleSub: google.sub, tokenHash: hashVerificationToken(token),
+        email, googleSub: google.sub, ...(referralCode ? { referralCode } : {}), tokenHash: hashVerificationToken(token),
         verifiedAt: new Date(), expiresAt: new Date(Date.now() + 30 * 60_000),
       });
       const response = NextResponse.json({ ok: true, verified: true, email, message: "Google verified your email. Continue creating your account." });

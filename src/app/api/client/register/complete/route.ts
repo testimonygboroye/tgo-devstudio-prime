@@ -5,6 +5,7 @@ import { validateClientRegistration } from "@/lib/clients/validation";
 import { createClientIdentity } from "@/lib/clients/identity";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import ClientRegistrationVerification from "@/models/ClientRegistrationVerification";
+import { EngagementReferral, EngagementFraudCase } from "@/models/Engagement";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +34,16 @@ export async function POST(request: NextRequest) {
     user.isEmailVerified = true;
     user.emailVerifiedAt = new Date();
     await user.save();
+    if (verification.referralCode) {
+      const referral = await EngagementReferral.findOneAndUpdate(
+        { code: verification.referralCode, status: "pending", referredClientId: { $exists: false }, referrerId: { $ne: user._id } },
+        { $set: { referredClientId: user._id, attributedAt: new Date() } }, { new: true }
+      );
+      if (!referral) {
+        const suspected = await EngagementReferral.findOne({ code: verification.referralCode });
+        await EngagementFraudCase.create({ clientId: user._id, referralId: suspected?._id, reason: "Referral code could not be attributed during account completion; it may have been used concurrently or be self-referred.", severity: "medium" });
+      }
+    }
     verification.consumedAt = new Date();
     await verification.save();
     const response = NextResponse.json({ ok: true, message: "Your client account has been created. You can now sign in." }, { status: 201 });

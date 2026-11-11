@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { LayoutDashboard, UserRound, MessageSquareText, Bell, Activity, BriefcaseBusiness, Package, LifeBuoy, Menu, X } from "lucide-react";
+import { LayoutDashboard, UserRound, MessageSquareText, Bell, Activity, BriefcaseBusiness, Package, LifeBuoy, Menu, X, Gift } from "lucide-react";
 import ClientSignOutButton from "@/components/client/ClientSignOutButton";
 
 const groups = [
@@ -20,6 +20,7 @@ const groups = [
   ]},
   { title: "Your account", links: [
     { href: "/client/activity", label: "Activity history", icon: Activity },
+    { href: "/client/rewards", label: "Rewards & referrals", icon: Gift },
     { href: "/client/settings", label: "Account settings", icon: UserRound },
   ]},
 ];

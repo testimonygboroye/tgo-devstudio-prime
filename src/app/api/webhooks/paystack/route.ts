@@ -11,6 +11,8 @@ import CommercialOrder from "@/models/CommercialOrder";
 import FinanceInvoice from "@/models/FinanceInvoice";
 
 import {connectToDatabase} from "@/lib/db";
+import {awardEngagementPoints} from "@/lib/engagement/award";
+import {EngagementRedemption} from "@/models/Engagement";
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
 
@@ -27,6 +29,18 @@ export async function POST(request:NextRequest){
  const payload=event as Record<string,unknown>;
  if(payload.event==="ping")return NextResponse.json({received:true,ping:true});
  const data=payload.data&&typeof payload.data==="object"&&!Array.isArray(payload.data)?payload.data as Record<string,unknown>:{};
+ if(payload.event==="charge.failed"){
+  await connectToDatabase();
+  const failedReference=String(data.reference||"");
+  if(!failedReference)return NextResponse.json({error:"Failed charge event is missing its reference."},{status:400});
+  const payment=await PaymentTransaction.findOne({reference:failedReference,status:"pending"});
+  if(payment){
+   payment.status="failed";payment.failureReason=String(data.gateway_response||"Paystack reported a failed charge.").slice(0,1000);await payment.save();
+   if(payment.couponCode)await EngagementRedemption.updateOne({couponCode:payment.couponCode,couponStatus:"reserved",couponPaymentReference:failedReference},{$set:{couponStatus:"issued"},$unset:{couponPaymentReference:1}});
+   await writePlatformAuditEvent({actorType:"system",actorId:"paystack-webhook",actorLabel:"Paystack failed charge webhook",action:"commerce.payment_failed",module:"finance",targetType:"payment_transaction",targetId:String(payment._id),outcome:"failure",metadata:{reference:failedReference}});
+  }
+  return NextResponse.json({received:true,processed:Boolean(payment)});
+ }
  if(["refund.processed","refund.failed","refund.pending","refund.processing"].includes(String(payload.event))){
   await connectToDatabase();
   const providerRefundId=String(data.id||"");if(!providerRefundId)return NextResponse.json({error:"Refund event is missing its provider refund id."},{status:400});
@@ -68,6 +82,8 @@ export async function POST(request:NextRequest){
  if(!/^TGO_[A-Z0-9]{24}$/.test(reference))return NextResponse.json({error:"Unknown payment reference."},{status:400});
  try{
   const payment=await verifyAndRecordPaystackPayment(reference);if(!payment)throw new Error("Verified payment record was not found.");
+  if(payment.clientId){await awardEngagementPoints({clientId:String(payment.clientId),eventKey:"payment-verified:"+String(payment._id),eventType:"payment_verified",metadata:{paymentTransactionId:String(payment._id),reference}});}
+  if((payment as unknown as {couponCode?:string}).couponCode){await EngagementRedemption.findOneAndUpdate({couponCode:(payment as unknown as {couponCode:string}).couponCode,couponStatus:"reserved",couponPaymentReference:reference},{$set:{couponStatus:"used"}});}
   try{await writePlatformAuditEvent({actorType:"system",actorId:"paystack-webhook",actorLabel:"Paystack payment webhook",action:"commerce.payment_webhook_verified",module:"finance",targetType:"payment_transaction",targetId:String(payment._id),outcome:"success",metadata:{reference,providerTransactionId:payment.providerTransactionId}});}catch(auditError){console.error("Paystack webhook audit write failed",auditError);}
   return NextResponse.json({received:true,processed:true});
  }catch(error){return NextResponse.json({error:error instanceof Error?error.message:"Payment verification failed."},{status:409});}

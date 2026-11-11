@@ -16,7 +16,7 @@ const schema = new Schema<IBusinessOperation>({
  amount:{type:Number,min:0}, currency:{type:String,default:"NGN",uppercase:true,trim:true,maxlength:3},
  startDate:Date,dueDate:Date,documentUrl:{type:String,default:"",trim:true,maxlength:1000},
  createdBy:{type:Schema.Types.ObjectId,ref:"User",required:true},updatedBy:{type:Schema.Types.ObjectId,ref:"User",required:true}
-},{timestamps:true,versionKey:true});
+},{timestamps:true});
 schema.index({type:1,status:1,updatedAt:-1}); schema.index({dueDate:1,status:1}); schema.index({departmentId:1,type:1}); schema.index({employeeId:1,type:1});
 const BusinessOperation:Model<IBusinessOperation>=models.BusinessOperation||model<IBusinessOperation>("BusinessOperation",schema);
 export default BusinessOperation;

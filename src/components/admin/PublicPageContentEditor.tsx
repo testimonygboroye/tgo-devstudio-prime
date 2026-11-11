@@ -50,7 +50,7 @@ export default function PublicPageContentEditor({pageKey}:{pageKey:PublicPageKey
  }
 
  if(loading)return <div className="flex items-center gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-sm text-[var(--text-secondary)]"><Loader2 size={18} className="animate-spin"/>Loading page content…</div>;
- const pageLabels:Record<PublicPageKey,string>={"industries":"Industries","engagement-models":"Engagement Models","about":"About","contact":"Contact","process":"Our Process","services":"Services","portfolio":"Portfolio","blog":"Blog","team":"Team","careers":"Careers","testimonials":"Testimonials","stack":"Technology Stack","help":"Help Centre","book-a-call":"Book a Call","services-catalogue":"Service Catalogue"};
+ const pageLabels:Record<PublicPageKey,string>={"industries":"Industries","engagement-models":"Engagement Models","about":"About","contact":"Contact","process":"Our Process","services":"Services","portfolio":"Portfolio","blog":"Blog","team":"Team","careers":"Careers","testimonials":"Testimonials","stack":"Technology Stack","help":"Help Centre","book-a-call":"Book a Call","services-catalogue":"Service Catalogue","faq":"FAQ"};
  const pageLabel=pageLabels[pageKey];
  return <div className="space-y-7">
   <div className="rounded-2xl border border-violet-400/20 bg-gradient-to-r from-violet-500/10 via-cyan-400/5 to-transparent p-5"><p className="text-sm font-semibold text-[var(--text-primary)]">{pageLabel} landing page content</p><p className="mt-1 text-xs leading-relaxed text-[var(--text-secondary)]">Every heading, paragraph, SEO field, feature card, icon, bullet point and CTA on this public page is stored in the CMS. Saving updates the live page without a code deployment.</p></div>

@@ -8,6 +8,7 @@ import NewsletterSubscriber from "@/models/NewsletterSubscriber";
 import {sendNotificationEmail} from "@/lib/email/sendEmail";
 import {generateUnsubscribeToken} from "@/lib/newsletter/unsubscribeToken";
 import {writePlatformAuditEvent} from "@/lib/platform/audit";
+import {enqueueWebhookDeliveries} from "@/lib/integrations/webhooks";
 export const runtime="nodejs";export const dynamic="force-dynamic";
 const fail=(message:string,status=400)=>NextResponse.json({error:message},{status});
 async function founder(){const session=await getServerSession();if(!session)return{response:fail("Authentication required.",401)}as const;if(!session.role.isFounderRole)return{response:fail("Founder access required.",403)}as const;return{session}as const;}
@@ -46,7 +47,7 @@ export async function POST(request:NextRequest){
   else{const attempts=claimed.attempts;await MarketingCampaignDelivery.updateOne({_id:job._id},{$set:{status:attempts>=3?"failed":"pending",lastError:(result.error||"Delivery failed.").slice(0,500)}});failed++;}
  }
  const [pending,sending,total,sentTotal,failedTotal]=await Promise.all([MarketingCampaignDelivery.countDocuments({campaignId:campaign._id,status:"pending"}),MarketingCampaignDelivery.countDocuments({campaignId:campaign._id,status:"sending"}),MarketingCampaignDelivery.countDocuments({campaignId:campaign._id}),MarketingCampaignDelivery.countDocuments({campaignId:campaign._id,status:"sent"}),MarketingCampaignDelivery.countDocuments({campaignId:campaign._id,status:"failed"})]);
- if(pending===0&&sending===0){campaign.status=failedTotal>0?"failed":"sent";await campaign.save();}
+ if(pending===0&&sending===0){campaign.status=failedTotal>0?"failed":"sent";await campaign.save();if(campaign.status==="sent")await enqueueWebhookDeliveries({eventId:"marketing-campaign:"+String(campaign._id)+":sent",eventName:"marketing.campaign.sent",payload:{id:String(campaign._id),name:campaign.name,status:campaign.status,sent:sentTotal,failed:failedTotal,completedAt:new Date().toISOString()}});}
  await writePlatformAuditEvent({actorType:"human",actorId:String(auth.session.user._id),actorLabel:auth.session.user.name,action:"marketing_campaign.batch_processed",module:"marketing",targetType:"MarketingCampaign",targetId:id,outcome:failed?"failure":"success",metadata:{sent,failed,pending,total,sentTotal,failedTotal}});
  return NextResponse.json({sent,failed,pending,total,sentTotal,failedTotal,complete:pending===0&&sending===0,status:campaign.status});
 }

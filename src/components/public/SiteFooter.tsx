@@ -45,7 +45,7 @@ export default function SiteFooter() {
   ];
 
   return (
-    <footer className="border-t" style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-page)" }}>
+    <footer className="tgo-public-footer border-t" style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-page)" }}>
       <div className="mx-auto max-w-6xl px-6 py-16 sm:px-12">
         <div className="grid gap-10 sm:grid-cols-4">
           <div className="sm:col-span-1">

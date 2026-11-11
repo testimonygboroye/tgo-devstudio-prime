@@ -141,7 +141,8 @@ export async function POST(request: NextRequest) {
         if (!provider) return NextResponse.json({ status: "error", message: "Test and enable the agent's provider before enabling this agent." }, { status: 409 });
         agent.enabled = true;
       } else agent.enabled = false;
-      agent.permissions = [];
+      // Preserve the founder-reviewed permission set when enabling/disabling an agent.
+      // New agents still start with no permissions; every business operation remains approval-gated.
       agent.requiresApproval = true;
       await agent.save();
       await writePlatformAuditEvent({ actorType: "human", actorId, action: body.action === "agent.enable" ? "ai.agent.enabled" : "ai.agent.disabled", module: "ai-workforce", targetType: "AIAgent", targetId: String(agent._id), outcome: "success", metadata: { enabled: agent.enabled, permissions: [] } });

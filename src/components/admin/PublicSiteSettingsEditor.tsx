@@ -29,6 +29,7 @@ export default function PublicSiteSettingsEditor() {
       if(!response.ok)throw new Error(data.message||"Could not load site settings.");
       if(!active||!data.settings)return;
       setSettings(data.settings);
+      try { localStorage.setItem("tgo-public-site-settings",JSON.stringify(data.settings)); } catch {}
       setJsonFields({
         navigationGroups:JSON.stringify(data.settings.navigationGroups||[],null,2),
         footerSections:JSON.stringify(data.settings.footerSections||[],null,2),

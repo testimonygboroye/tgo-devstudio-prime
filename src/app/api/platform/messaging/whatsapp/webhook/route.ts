@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
   const expected = "sha256=" + createHmac("sha256", appSecret).update(raw).digest("hex");
   const a = Buffer.from(signature), b = Buffer.from(expected);
   if (a.length !== b.length || !timingSafeEqual(a, b)) return NextResponse.json({ error: "Invalid webhook signature." }, { status: 401 });
-  let payload: { entry?: { changes?: { value?: { messages?: { id?: string; from?: string; type?: string; text?: { body?: string }; contacts?: { profile?: { name?: string } }[] }[]; statuses?: { id?: string; status?: string }[] } }[] }[] };
+  let payload: { entry?: { changes?: { value?: { messages?: { id?: string; from?: string; type?: string; text?: { body?: string } }[]; contacts?: { profile?: { name?: string } }[]; statuses?: { id?: string; status?: string }[] } }[] }[] };
   try { payload = JSON.parse(raw); } catch { return NextResponse.json({ error: "Invalid JSON." }, { status: 400 }); }
   await connectToDatabase();
   let accepted = 0;

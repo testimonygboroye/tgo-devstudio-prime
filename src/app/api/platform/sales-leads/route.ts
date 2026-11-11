@@ -37,7 +37,7 @@ export async function PATCH(request:NextRequest) {
  const changes:Record<string,unknown>={};
  if(body.stage!==undefined){if(!stages.includes(body.stage as SalesStage))return fail("Invalid sales stage.");changes.stage=body.stage;}
  if(body.notes!==undefined){if(typeof body.notes!=="string"||body.notes.length>12000)return fail("Notes must be text under 12,000 characters.");changes.notes=body.notes;}
- if(body.nextFollowUpAt!==undefined){if(body.nextFollowUpAt===null||body.nextFollowUpAt==="")changes.nextFollowUpAt=null;else{const d=new Date(String(body.nextFollowUpAt));if(!Number.isFinite(d.getTime()))return fail("Invalid follow-up date.");changes.nextFollowUpAt=d;}changes.followUpNotifiedAt=null;}
+ if(body.nextFollowUpAt!==undefined){if(body.nextFollowUpAt===null||body.nextFollowUpAt==="")changes.nextFollowUpAt=null;else{const d=new Date(String(body.nextFollowUpAt));if(!Number.isFinite(d.getTime()))return fail("Invalid follow-up date.");changes.nextFollowUpAt=d;}changes.followUpNotifiedAt=undefined;}
  if(body.lostReason!==undefined){if(typeof body.lostReason!=="string"||body.lostReason.length>1000)return fail("Lost reason is too long.");changes.lostReason=body.lostReason;}
  if(!Object.keys(changes).length)return fail("No supported changes supplied.");
  const before={stage:row.stage,nextFollowUpAt:row.nextFollowUpAt?.toISOString()||null};

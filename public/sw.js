@@ -1,4 +1,4 @@
-const SW_VERSION = "tgo-offline-v7";
+const SW_VERSION = "tgo-offline-v8";
 const APP_CACHE = `${SW_VERSION}-app`;
 const ASSET_CACHE = `${SW_VERSION}-public-assets`;
 const OFFLINE_URL = "/offline.html";

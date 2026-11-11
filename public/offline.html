@@ -19,16 +19,16 @@ main{width:min(100%,650px);padding:clamp(25px,6vw,48px);border:1px solid rgba(13
 </head>
 <body>
 <main>
- <div class="brand"><div class="mark"><img src="/logo.png" alt="TGO DevStudio" width="64" height="64" onerror="this.parentElement.style.display=\'none\'"></div><div><strong>TGO DevStudio Prime</strong><small>Engineering beyond limits</small></div></div>
+ <div class="brand"><div class="mark"><img id="offline-logo" src="/logo.png" alt="TGO DevStudio" width="64" height="64" onerror="this.parentElement.style.display=\'none\'"></div><div><strong id="offline-brand">TGO DevStudio Prime</strong><small>Engineering beyond limits</small></div></div>
  <div class="visual" aria-hidden="true"><div class="orbit"><div class="signal"></div></div></div>
- <div class="eyebrow">Network connection unavailable</div>
- <h1>You're offline right now.</h1>
- <p>TGO DevStudio is temporarily unreachable. Check your connection and retry. This offline screen is stored on your device; once your connection returns, you can continue where you left off.</p>
+ <div class="eyebrow" id="offline-eyebrow">Connection interrupted</div>
+ <h1 id="offline-headline">You’re offline.</h1>
+ <p id="offline-description">The internet connection is unavailable right now. Your saved work remains safe. Reconnect and try again when you’re ready.</p>
  <div class="requested" id="requested"></div>
- <div class="actions"><button class="button primary" id="retry" type="button">Try again <span aria-hidden="true">&nbsp;↗</span></button><a class="button secondary" id="home-link" href="/">Back to homepage</a></div>
+ <div class="actions"><button class="button primary" id="retry" type="button"><span id="offline-retry-label">Try again</span> <span aria-hidden="true">&nbsp;↗</span></button><a class="button secondary" id="home-link" href="/"><span id="offline-home-label">Go to homepage</span></a></div>
  <section class="saved" id="saved"><h2>Pages available on this device</h2><ul id="saved-list"></ul></section>
  <p class="hint">Your current browsing session is safe. Private account and administrator areas are never stored for offline use.</p>
- <div class="footer">TGO DEVSTUDIO PRIME · BUILT TO KEEP YOU MOVING</div>
+ <div class="footer" id="offline-footer">TGO DEVSTUDIO PRIME · BUILT TO KEEP YOU MOVING</div>
 </main>
 <script>
 (function(){

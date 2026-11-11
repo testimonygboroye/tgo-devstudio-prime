@@ -5,7 +5,7 @@ import { Bot, BrainCircuit, CheckCircle2, CircleAlert, Cpu, KeyRound, Loader2, P
 
 type ProviderItem = { _id:string; name:string; provider:string; lastTestStatus?:string; enabled:boolean };
 type AgentItem = { _id:string; name:string; role:string; department:string; providerId?:{name?:string}; modelName:string; enabled:boolean; permissions:string[] };
-type TaskItem = { _id:string; title:string; agentId?:{name?:string}; status:string };
+type TaskItem = { _id:string; title:string; agentId?:{name?:string}; status:string; inputTokens?:number; outputTokens?:number; result?:string; error?:string };
 type WorkspaceItem = { _id:string; name:string; department:string; description:string };
 type MemoryItem = { _id:string; title:string; scope:string; source:string };
 type Data = { providers:ProviderItem[]; agents:AgentItem[]; tasks:TaskItem[]; workspaces:WorkspaceItem[]; memories:MemoryItem[] };

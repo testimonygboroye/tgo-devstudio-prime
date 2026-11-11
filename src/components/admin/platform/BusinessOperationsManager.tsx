@@ -21,7 +21,7 @@ const kinds:{id:Exclude<Kind,"all">;label:string;description:string;icon:typeof 
 {id:"payroll_integration",label:"Payroll integrations",description:"Connector readiness register; no live payroll processing.",icon:Activity}
 ];
 const emptyForm=(type:Exclude<Kind,"all">)=>({type,title:"",description:"",details:"",reference:"",vendorName:"",ownerId:"",departmentId:"",employeeId:"",amount:"",currency:"NGN",startDate:"",dueDate:"",documentUrl:""});
-const label=(v:string)=>v.replaceAll("_"," ").replace(/\\b\\w/g,c=>c.toUpperCase());
+const label=(v:string)=>v.replaceAll("_"," ").replace(/\b\w/g,c=>c.toUpperCase());
 const dateLabel=(v:string)=>v?new Date(v).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"}):"Not set";
 export default function BusinessOperationsManager(){
  const [data,setData]=useState<Data>({records:[],counts:[],employees:[],departments:[]});

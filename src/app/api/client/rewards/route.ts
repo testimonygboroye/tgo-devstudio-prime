@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
       if (self) await EngagementFraudCase.create({ clientId, referralId: self._id, reason: "Self-referral attempt detected.", severity: "high" });
       return NextResponse.json({ error: "This referral code is invalid, already used, or belongs to this account." }, { status: 409 });
     }
-    referral.referredClientId = clientId;
+    referral.referredClientId = clientId; referral.attributedAt = new Date();
     await referral.save();
     await PlatformNotification.create([{ recipientId: clientId, category: "engagement", title: "Referral code applied", body: "Your referral code has been linked to your account. Qualification follows verified payment.", href: "/client/rewards", dedupeKey: "referral-applied:" + String(referral._id) + ":" + actorId, metadata: { referralId: String(referral._id) } }, { recipientId: referral.referrerId, category: "engagement", title: "Your referral was used", body: "A new client has linked your referral code. Your reward is pending verified qualifying payment.", href: "/client/rewards", dedupeKey: "referral-used:" + String(referral._id), metadata: { referralId: String(referral._id) } }]);
     await writePlatformAuditEvent({ actorType: "human", actorId, actorLabel: session.user.name, action: "engagement.referral_code_applied", module: "engagement", targetType: "referral", targetId: String(referral._id), outcome: "success", metadata: { code } });

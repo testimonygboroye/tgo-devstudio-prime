@@ -8,6 +8,10 @@ export interface IPublicSocialLink { label: string; href: string; platform: stri
 export interface IPublicSiteSettings extends Document {
   brandName: string;
   brandDescriptor: string;
+  siteTitle: string;
+  siteDescription: string;
+  faviconUrl: string;
+  openGraphImageUrl: string;
   logoUrl: string;
   logoAlt: string;
   announcementEnabled: boolean;
@@ -55,6 +59,10 @@ const SocialLinkSchema = new Schema<IPublicSocialLink>({
 const PublicSiteSettingsSchema = new Schema<IPublicSiteSettings>({
   brandName: { type: String, default: "TGO DevStudio", trim: true, maxlength: 100 },
   brandDescriptor: { type: String, default: "TGO DevStudio Prime", trim: true, maxlength: 120 },
+  siteTitle: { type: String, default: "TGO DevStudio Prime", trim: true, maxlength: 160 },
+  siteDescription: { type: String, default: "TGO DevStudio builds premium software, websites, apps, SaaS platforms, AI systems, cloud solutions, and custom digital products.", trim: true, maxlength: 320 },
+  faviconUrl: { type: String, default: "/favicon.png", trim: true, maxlength: 1000 },
+  openGraphImageUrl: { type: String, default: "/opengraph-image", trim: true, maxlength: 1000 },
   logoUrl: { type: String, default: "/logo.png", trim: true, maxlength: 1000 },
   logoAlt: { type: String, default: "TGO DevStudio logo", trim: true, maxlength: 150 },
   announcementEnabled: { type: Boolean, default: false },

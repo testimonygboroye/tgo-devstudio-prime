@@ -1,10 +1,9 @@
 import Link from "next/link";
-import Image from "next/image";
 import type { Metadata } from "next";
 import { connectToDatabase } from "@/lib/db";
 import BlogPost from "@/models/BlogPost";
 import { getPubliclyVisibleFilter } from "@/lib/utils/blogVisibility";
-import BrandPlaceholder from "@/components/public/BrandPlaceholder";
+import SmartImage from "@/components/public/SmartImage";
 import { getServerLocale } from "@/lib/i18n/serverLocale";
 import { createTranslator, getLocalizedContent } from "@/lib/i18n/translationHelper";
 import { TRANSLATABLE_FIELDS } from "@/lib/i18n/translatableFields";
@@ -64,17 +63,7 @@ export default async function BlogListPage() {
             >
               <div className="surface-card-inner">
                 <div className="relative aspect-[16/9] w-full overflow-hidden rounded-t-2xl">
-                  {post.coverImage?.url ? (
-                    <Image
-                      src={post.coverImage.url}
-                      alt={post.coverImage.altText}
-                      fill
-                      sizes="(max-width: 640px) 100vw, 50vw"
-                      className="object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                  ) : (
-                    <BrandPlaceholder label={post.title} />
-                  )}
+                  <SmartImage src={post.coverImage?.url} alt={post.coverImage?.altText || post.title} label={post.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
                 </div>
 
                 <div className="p-7">

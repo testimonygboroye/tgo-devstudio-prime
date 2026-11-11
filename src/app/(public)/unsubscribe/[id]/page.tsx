@@ -16,7 +16,6 @@ export default function UnsubscribePage(){
  useEffect(()=>{
   const controller=new AbortController();
   async function unsubscribe(){
-   setStatus("loading");
    try{
     const query=new URLSearchParams({token}).toString();
     const res=await fetch("/api/newsletter/unsubscribe/"+encodeURIComponent(params.id)+"?"+query,{method:"POST",signal:controller.signal});

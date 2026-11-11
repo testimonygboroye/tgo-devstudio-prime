@@ -88,7 +88,7 @@ export async function POST(request:NextRequest){
   if(invoice)invoiceId=String(invoice._id);
   existingQuery={orderId:order._id,milestoneId:{$exists:false},status:"pending",amountMinor,authorizationUrl:{$exists:true}};
  }
- let coupon: any = null; let discountMinor = 0;
+ let couponId: string | null = null; let couponCode: string | null = null; let discountMinor = 0;
  if(body.couponCode !== undefined){
   if(typeof body.couponCode!=="string"||body.installmentId||body.milestoneId||body.invoiceId||body.amount!==undefined)return fail("Discount coupons can only be applied to a full order-balance payment.");
   coupon=await EngagementRedemption.findOne({clientId:user._id,couponCode:String(body.couponCode).trim().toUpperCase(),couponStatus:"issued",couponExpiresAt:{$gt:new Date()}}).populate("rewardId");
@@ -98,11 +98,11 @@ export async function POST(request:NextRequest){
   if(discountMinor<1||discountMinor>=amountMinor)return fail("The coupon discount cannot be applied to this payment amount.");
   amountMinor-=discountMinor;
  }
- const existing=coupon?null:await PaymentTransaction.findOne(existingQuery).sort({createdAt:-1});
+ const existing=couponId?null:await PaymentTransaction.findOne(existingQuery).sort({createdAt:-1});
  if(existing?.authorizationUrl)return NextResponse.json({ok:true,authorizationUrl:existing.authorizationUrl,reference:existing.reference});
  const amount=fromMinorUnits(amountMinor,currency);if(!Number.isSafeInteger(amountMinor)||amountMinor<1)return fail("The payment amount is invalid.");
  const reference=`TGO_${randomUUID().replace(/-/g,"").slice(0,24).toUpperCase()}`;
- const payment=await PaymentTransaction.create({reference,provider:"paystack",paymentMethod:"card",clientId:user._id,orderId:order._id,milestoneId,invoiceId,installmentId,amount,amountMinor,currency,status:"pending",...(coupon?{couponCode:coupon.couponCode,discountMinor}:{})});
+ const payment=await PaymentTransaction.create({reference,provider:"paystack",paymentMethod:"card",clientId:user._id,orderId:order._id,milestoneId,invoiceId,installmentId,amount,amountMinor,currency,status:"pending",...(couponCode?{couponCode,discountMinor}:{})});
  if(coupon){
   const reserved=await EngagementRedemption.findOneAndUpdate({_id:coupon._id,couponStatus:"issued"},{$set:{couponStatus:"reserved",couponPaymentReference:reference}},{new:true});
   if(!reserved){await PaymentTransaction.deleteOne({_id:payment._id});return fail("This coupon was just redeemed in another checkout. Refresh and try again.",409);}
@@ -115,5 +115,5 @@ export async function POST(request:NextRequest){
   if(order.paymentStatus!=="partially_paid"){order.paymentStatus="pending";await order.save();}
   await writePlatformAuditEvent({actorType:"human",actorId:String(user._id),actorLabel:user.name,action:"commerce.payment_checkout_initialized",module:"finance",targetType:"payment_transaction",targetId:String(payment._id),outcome:"success",metadata:{orderId:String(order._id),milestoneId:milestoneId||null,invoiceId:invoiceId||null,installmentId:installmentId||null,amount,currency,provider:"paystack"}});
   return NextResponse.json({ok:true,authorizationUrl:payment.authorizationUrl,reference,amount,currency});
- }catch(error){payment.status="failed";payment.failureReason=error instanceof Error?error.message:"Checkout initialization failed.";await payment.save();if(coupon)await EngagementRedemption.updateOne({_id:coupon._id,couponStatus:"reserved",couponPaymentReference:reference},{$set:{couponStatus:"issued"},$unset:{couponPaymentReference:1}});return fail("The payment provider could not start checkout. Please retry or contact TGO DevStudio.",502);}
+ }catch(error){payment.status="failed";payment.failureReason=error instanceof Error?error.message:"Checkout initialization failed.";await payment.save();if(couponId)await EngagementRedemption.updateOne({_id:couponId,couponStatus:"reserved",couponPaymentReference:reference},{$set:{couponStatus:"issued"},$unset:{couponPaymentReference:1}});return fail("The payment provider could not start checkout. Please retry or contact TGO DevStudio.",502);}
 }

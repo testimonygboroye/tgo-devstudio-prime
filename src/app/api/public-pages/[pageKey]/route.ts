@@ -7,7 +7,7 @@ import PublicPageContent, { type PublicPageKey, type IPublicPageContent } from "
 import { PUBLIC_PAGE_DEFAULTS } from "@/lib/constants/publicSiteDefaults";
 
 export const dynamic = "force-dynamic";
-const PAGE_KEYS: PublicPageKey[] = ["industries", "engagement-models", "about", "contact", "process", "services", "portfolio", "blog", "team", "careers", "testimonials", "stack", "help", "book-a-call", "services-catalogue"];
+const PAGE_KEYS: PublicPageKey[] = ["industries", "engagement-models", "about", "contact", "process", "services", "portfolio", "blog", "team", "careers", "testimonials", "stack", "help", "book-a-call", "services-catalogue", "faq"];
 
 function safeHref(value: unknown): value is string {
   if (typeof value !== "string" || value.length > 500) return false;

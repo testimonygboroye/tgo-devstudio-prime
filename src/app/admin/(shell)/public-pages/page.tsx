@@ -24,6 +24,7 @@ export default async function PublicLandingPagesHub() {
     { key: "help", title: "Help Centre", description: "Edit help centre headings and support messaging.", icon: HelpCircle },
     { key: "book-a-call", title: "Book a Call", description: "Edit discovery call messaging and scheduler introduction.", icon: CalendarDays },
     { key: "services-catalogue", title: "Service Catalogue", description: "Edit service package catalogue messaging and CTAs.", icon: Package },
+    { key: "faq", title: "FAQ", description: "Edit FAQ page headings, introductory copy and fallback answers.", icon: HelpCircle },
   ];
   return (
     <div>

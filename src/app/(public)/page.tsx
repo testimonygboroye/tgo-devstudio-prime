@@ -9,6 +9,7 @@ import { connectToDatabase } from "@/lib/db";
 import HomeSettings from "@/models/HomeSettings";
 import Project from "@/models/Project";
 import Service from "@/models/Service";
+import StackItem from "@/models/StackItem";
 import ProcessStep from "@/models/ProcessStep";
 import TeamMember from "@/models/TeamMember";
 import BlogPost from "@/models/BlogPost";
@@ -66,7 +67,7 @@ export default async function HomePage() {
   await connectToDatabase();
   const locale = await getServerLocale();
 
-  const [rawSettings, featuredProjects, services, processSteps, teamMembers, latestPosts, openRolesCount, featuredReviews, launchSettings] = await Promise.all([
+  const [rawSettings, featuredProjects, services, processSteps, teamMembers, latestPosts, openRolesCount, featuredReviews, launchSettings, rawStack] = await Promise.all([
     HomeSettings.findOne().lean(),
     Project.find({ featured: true, publishStatus: "published" }).sort({ createdAt: -1 }).limit(4).lean(),
     Service.find({ publishStatus: "published" }).sort({ featured: -1, displayOrder: 1 }).limit(6).lean(),
@@ -76,6 +77,7 @@ export default async function HomePage() {
     JobOpening.countDocuments({ publishStatus: "published" }),
     Review.find({ status: "approved", featuredOnHomepage: true }).sort({ createdAt: -1 }).limit(3).lean(),
     LaunchSettings.findOne().lean(),
+    StackItem.find({ publishStatus: "published" }).sort({ displayOrder: 1 }).limit(16).lean(),
   ]);
 
   const localize = <T extends Record<string, unknown>>(doc: T, fields: readonly string[]) => getLocalizedContent(doc, locale, fields as readonly (keyof T)[]);
@@ -86,6 +88,8 @@ export default async function HomePage() {
   const team = teamMembers.map((item) => localize(item, TRANSLATABLE_FIELDS.TeamMember));
   const posts = latestPosts.map((item) => localize(item, TRANSLATABLE_FIELDS.BlogPost));
   const reviews = featuredReviews.map((item) => localize(item, TRANSLATABLE_FIELDS.Review));
+  const stack = rawStack.map((item) => localize(item, TRANSLATABLE_FIELDS.StackItem));
+  const stackCategories = Array.from(new Set(stack.map((item) => item.category))).slice(0, 4);
 
   return (
     <main className="home-page">
@@ -164,6 +168,19 @@ export default async function HomePage() {
           {serviceList.length>0&&<div className="home-service-ribbon"><span>OUR SERVICE LINES</span><div>{serviceList.map((service)=>{const Icon=SERVICE_ICON_MAP[service.icon];return <Link href="/services" key={service._id.toString()}>{Icon?<Icon size={15}/>:<Code2 size={15}/>} {service.title}</Link>})}</div></div>}
         </div>
       </section>
+
+
+      {stack.length > 0 && <section className="home-section home-tech-section">
+        <div className="home-container">
+          <SectionHeading eyebrow="Technology we work with" title="The right tools, chosen for the job." description="We select technologies for their fit, reliability and long-term maintainability — not simply because they are fashionable." href="/stack" action="Explore our technology stack" />
+          <div className="home-tech-grid">
+            {stackCategories.map((category, index) => <article className="home-tech-category" key={category}>
+              <div className="home-tech-category-heading"><span>0{index + 1}</span><h3>{category}</h3></div>
+              <div className="home-tech-items">{stack.filter((item) => item.category === category).slice(0, 6).map((item) => <span key={item._id.toString()}>{item.title}</span>)}</div>
+            </article>)}
+          </div>
+        </div>
+      </section>}
 
       <section className="home-section home-work-section">
         <div className="home-container">

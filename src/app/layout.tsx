@@ -29,7 +29,7 @@ const EXISTING_GOOGLE_VERIFICATION =
 
 export async function generateMetadata(): Promise<Metadata> {
   const siteUrl = getSiteUrl();
-  let siteSettings = null;
+  let siteSettings: { brandName?: string; brandDescriptor?: string; siteTitle?: string; siteDescription?: string; faviconUrl?: string; openGraphImageUrl?: string } | null = null;
   try {
     await connectToDatabase();
     siteSettings = await PublicSiteSettings.findOne();

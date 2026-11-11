@@ -6,7 +6,7 @@ import Link from "next/link";
 import GoogleSignInButton from "@/components/shared/GoogleSignInButton";
 import { ArrowRight, CheckCircle2, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
 
-type Props = { mode: "login" | "register"; googleTempToken?: string; oauthError?: string };
+type Props = { mode: "login" | "register"; googleTempToken?: string; oauthError?: string; referralCode?: string };
 const oauthMessages: Record<string,string> = {
   google_unavailable:"Google sign-in is not configured yet.",
   google_state_invalid:"Google sign-in could not be validated. Please try again.",
@@ -19,7 +19,7 @@ const oauthMessages: Record<string,string> = {
   two_factor_expired:"Your two-factor sign-in session expired. Start sign-in again.",
 };
 
-export default function ClientAuthForm({ mode, googleTempToken = "", oauthError = "" }: Props) {
+export default function ClientAuthForm({ mode, googleTempToken = "", oauthError = "", referralCode = "" }: Props) {
   const router = useRouter();
   const [email,setEmail] = useState("");
   const [password,setPassword] = useState("");
@@ -36,7 +36,7 @@ export default function ClientAuthForm({ mode, googleTempToken = "", oauthError 
     event.preventDefault(); setBusy(true); setError(""); setMessage(""); setCanResend(false);
     try {
       if (mode === "register") {
-        const response = await fetch("/api/client/register/request-verification",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email})});
+        const response = await fetch("/api/client/register/request-verification",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email, ...(referralCode ? { referralCode } : {})})});
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "Could not send the verification link.");
         setMessage(data.message || "Check your inbox for the verification link.");
@@ -90,7 +90,7 @@ export default function ClientAuthForm({ mode, googleTempToken = "", oauthError 
     </form>}
     {mode==="login"&&!tempToken&&canResend&&<div className="mt-4 rounded-xl border border-amber-300/20 bg-amber-300/[.06] p-4"><p className="text-sm font-semibold text-amber-100">Email verification required</p><p className="mt-1 text-xs leading-5 text-slate-300">You have an account that has not been verified yet. Resending sends a fresh, time-limited activation link to the email address above.</p><button type="button" disabled={busy||!email} onClick={resendVerification} className="mt-3 inline-flex items-center gap-2 rounded-lg bg-amber-300/15 px-3 py-2 text-xs font-semibold text-amber-100 hover:bg-amber-300/20 disabled:opacity-50">{busy?"Sending…":"Resend verification email"}</button></div>}
     {!tempToken&&<div className="my-5 flex items-center gap-3 text-[10px] uppercase tracking-[.2em] text-slate-500"><span className="h-px flex-1 bg-white/10"/>{mode==="register"?"or verify instantly with":"or continue with"}<span className="h-px flex-1 bg-white/10"/></div>}
-    {!tempToken&&mode==="register"&&<div className="space-y-2"><GoogleSignInButton endpoint="/api/client/register/google" payload={{verifyOnly:true}} showRememberedAccount={false} onError={setError} onResult={()=>{setError("");router.replace("/client/register/complete");router.refresh();}}/><p className="text-center text-xs leading-5 text-slate-400">Google verifies your email securely. Your name and password are collected on the next screen. No separate email link is required.</p></div>}
+    {!tempToken&&mode==="register"&&<div className="space-y-2"><GoogleSignInButton endpoint="/api/client/register/google" payload={{verifyOnly:true, ...(referralCode ? { referralCode } : {})}} showRememberedAccount={false} onError={setError} onResult={()=>{setError("");router.replace("/client/register/complete");router.refresh();}}/><p className="text-center text-xs leading-5 text-slate-400">Google verifies your email securely. Your name and password are collected on the next screen. No separate email link is required.</p></div>}
     {!tempToken&&mode==="login"&&<GoogleSignInButton endpoint="/api/client/auth/google-login" onError={setError} onResult={data=>{setError("");if(data.status==="2fa_required"){setTempToken(data.tempToken);setMessage("Enter your two-factor authentication code to finish signing in.");return;}router.replace("/client/dashboard");router.refresh();}}/>}
     {!tempToken&&<p className="mt-6 text-center text-sm text-slate-400">{mode==="login"?"New to TGO DevStudio?":"Already have an account?"} <Link className="font-semibold text-cyan-300 hover:underline" href={mode==="login"?"/client/register":"/client/login"}>{mode==="login"?"Create an account":"Sign in"}</Link></p>}
     <p className="mt-6 text-center text-[11px] leading-5 text-slate-500">Your account is protected by TGO DevStudio identity and security controls.</p>

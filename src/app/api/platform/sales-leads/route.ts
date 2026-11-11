@@ -4,6 +4,7 @@ import { getServerSession } from "@/lib/auth/serverSession";
 import { connectToDatabase } from "@/lib/db";
 import SalesLead, { type SalesStage } from "@/models/SalesLead";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
+import { enqueueWebhookDeliveries } from "@/lib/integrations/webhooks";
 export const dynamic = "force-dynamic";
 const stages: SalesStage[] = ["new","qualified","discovery","proposal","negotiation","won","lost"];
 const fail = (message: string, status = 400) => NextResponse.json({ error: message }, { status });
@@ -25,6 +26,7 @@ export async function POST(request:NextRequest) {
  const amount=body.estimatedValue===undefined||body.estimatedValue===""?undefined:Number(body.estimatedValue);if(amount!==undefined&&(!Number.isFinite(amount)||amount<0))return fail("Estimated value must be a non-negative number.");
  await connectToDatabase();
  const row=await SalesLead.create({firstName,lastName,email,phone:typeof body.phone==="string"?body.phone.trim().slice(0,40):"",organization:typeof body.organization==="string"?body.organization.trim().slice(0,160):"",source,stage:"new",estimatedValue:amount,currency:typeof body.currency==="string"&&/^[A-Za-z]{3}$/.test(body.currency)?body.currency.toUpperCase():"NGN",notes:typeof body.notes==="string"?body.notes.slice(0,12000):"",assignedTo:Types.ObjectId.isValid(String(body.assignedTo||""))?new Types.ObjectId(String(body.assignedTo)):undefined});
+ await enqueueWebhookDeliveries({eventId:"sales-lead:"+String(row._id)+":created",eventName:"sales.lead.created",payload:{id:String(row._id),firstName:row.firstName,lastName:row.lastName,email:row.email,organization:row.organization||"",source:row.source,stage:row.stage,createdAt:row.createdAt.toISOString()}});
  await writePlatformAuditEvent({actorType:"human",actorId:String(auth.session.user._id),actorLabel:auth.session.user.name,action:"sales_lead.created",module:"sales",targetType:"SalesLead",targetId:String(row._id),outcome:"success",metadata:{source:row.source,stage:row.stage}});
  return NextResponse.json({id:String(row._id),message:"Lead created and added to the sales pipeline."},{status:201});
 }
@@ -40,6 +42,7 @@ export async function PATCH(request:NextRequest) {
  if(!Object.keys(changes).length)return fail("No supported changes supplied.");
  const before={stage:row.stage,nextFollowUpAt:row.nextFollowUpAt?.toISOString()||null};
  Object.assign(row,changes);await row.save();
+ await enqueueWebhookDeliveries({eventId:"sales-lead:"+String(row._id)+":"+row.updatedAt.toISOString(),eventName:"sales.lead.updated",payload:{id:String(row._id),stage:row.stage,changedFields:Object.keys(changes),updatedAt:row.updatedAt.toISOString()}});
  await writePlatformAuditEvent({actorType:"human",actorId:String(auth.session.user._id),actorLabel:auth.session.user.name,action:"sales_lead.updated",module:"sales",targetType:"SalesLead",targetId:String(row._id),outcome:"success",metadata:{before,after:{stage:row.stage,nextFollowUpAt:row.nextFollowUpAt?.toISOString()||null},changedFields:Object.keys(changes)}});
  return NextResponse.json({message:"Lead updated.",lead:{id:String(row._id),stage:row.stage,notes:row.notes,nextFollowUpAt:row.nextFollowUpAt||null}});
 }

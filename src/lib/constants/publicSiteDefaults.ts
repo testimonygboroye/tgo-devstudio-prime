@@ -247,6 +247,11 @@ export const PUBLIC_PAGE_DEFAULTS: Record<PublicPageKey, PublicPageDefault> = {
     introEyebrow: "Our capabilities",
     introHeading: "Connected capabilities. One considered outcome.",
     introDescription: "Choose a starting point. We’ll help connect it to the rest of the system so the finished product works as one.",
+    cards: [
+      { icon: "Compass", eyebrow: "01 / UNDERSTAND", title: "Understand", subtitle: "", description: "We start with your users, business goals and constraints.", bulletPoints: [], displayOrder: 1 },
+      { icon: "Code2", eyebrow: "02 / ENGINEER", title: "Engineer", subtitle: "", description: "We bring design, software and infrastructure together.", bulletPoints: [], displayOrder: 2 },
+      { icon: "TrendingUp", eyebrow: "03 / EVOLVE", title: "Evolve", subtitle: "", description: "We help the product improve as your needs change.", bulletPoints: [], displayOrder: 3 },
+    ],
     ctaEyebrow: "Have a challenge in mind?",
     ctaHeading: "Let’s shape the right solution.",
     ctaDescription: "Tell us what you are building and what success needs to look like.",

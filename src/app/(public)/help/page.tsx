@@ -61,8 +61,8 @@ export default function HelpIndexPage() {
   }, {});
 
   return (
-    <main className="min-h-screen px-6 py-20 sm:px-12">
-      <div className="mx-auto max-w-3xl">
+    <main className="help-page">
+      <div className="home-container help-content">
         <span className="eyebrow-label">Help &amp; Guide</span>
         <h1
           className="heading-premium mt-3 text-5xl font-bold brand-gradient-text sm:text-6xl"

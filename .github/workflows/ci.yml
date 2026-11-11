@@ -207,6 +207,10 @@ jobs:
           src/app/not-found.tsx
           src/components/public/SmartImage.tsx
           src/components/shared/ImageLightbox.tsx
+          'src/app/(public)/industries/page.tsx'
+          'src/app/(public)/engagement-models/page.tsx'
+          'src/app/(public)/loading.tsx'
+          src/app/sitemap.ts
 
       - name: Type check and production build
         run: npm run build

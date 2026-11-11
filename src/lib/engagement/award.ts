@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { EngagementEvent, EngagementProfile, EngagementEarnRule, EngagementCampaign, EngagementBadge, EngagementBadgeAward } from "@/models/Engagement";
 import { tierForLifetimePoints } from "@/lib/engagement/tiers";
+import PlatformNotification from "@/models/PlatformNotification";
 
 export async function awardEngagementPoints(input: { clientId: string; eventKey: string; eventType: string; metadata?: Record<string, unknown>; pointsOverride?: number }) {
   if (!mongoose.isValidObjectId(input.clientId) || !input.eventKey || input.eventKey.length > 180) return { awarded: false, reason: "invalid" };
@@ -39,6 +40,7 @@ export async function awardEngagementPoints(input: { clientId: string; eventKey:
       if (badges.length) await EngagementBadgeAward.bulkWrite(badges.map(b => ({ updateOne: { filter: { clientId: profile.clientId, badgeId: b._id }, update: { $setOnInsert: { clientId: profile.clientId, badgeId: b._id, awardedAt: now } }, upsert: true } })), { session, ordered: false });
       awarded = true;
     });
+    if (awarded) await PlatformNotification.updateOne({ recipientId: input.clientId, dedupeKey: "engagement:" + input.eventKey }, { $setOnInsert: { recipientId: input.clientId, category: "engagement", title: "You earned loyalty points", body: points + " points were added to your TGO rewards balance for " + input.eventType.replace(/_/g, " ") + ".", href: "/client/rewards", dedupeKey: "engagement:" + input.eventKey, metadata: { eventType: input.eventType, points } } }, { upsert: true });
     return { awarded };
   } catch (error) {
     if ((error as { code?: number })?.code === 11000) return { awarded: false, reason: "duplicate" };

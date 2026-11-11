@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, phase-1/core-platform-foundation, phase-2/founder-control-centre, phase-3/business-ecosystem-administration, platform/phase-4-client-crm-portal, platform/phase-5-workforce-management, platform/phase-6-universal-workspace, platform/client-portal-phase-7, feature/phase-14-executive-intelligence]
+    branches: [main, phase-1/core-platform-foundation, phase-2/founder-control-centre, phase-3/business-ecosystem-administration, platform/phase-4-client-crm-portal, platform/phase-5-workforce-management, platform/phase-6-universal-workspace, platform/client-portal-phase-7, feature/phase-14-executive-intelligence, phase-15-public-experience-redesign]
   workflow_dispatch:
   pull_request:
     branches: [main]
@@ -187,6 +187,26 @@ jobs:
           'src/app/(public)/services/catalogue/page.tsx'
           'src/app/(public)/services/page.tsx'
           src/lib/clients/__tests__/validation.test.ts
+          'src/app/(public)/about/page.tsx'
+          'src/app/(public)/blog/page.tsx'
+          'src/app/(public)/blog/[slug]/page.tsx'
+          'src/app/(public)/book-a-call/page.tsx'
+          'src/app/(public)/careers/page.tsx'
+          'src/app/(public)/contact/page.tsx'
+          'src/app/(public)/faq/page.tsx'
+          'src/app/(public)/help/page.tsx'
+          'src/app/(public)/page.tsx'
+          'src/app/(public)/portfolio/[slug]/page.tsx'
+          'src/app/(public)/portfolio/page.tsx'
+          'src/app/(public)/process/page.tsx'
+          'src/app/(public)/services/[slug]/page.tsx'
+          'src/app/(public)/services/page.tsx'
+          'src/app/(public)/stack/page.tsx'
+          'src/app/(public)/team/page.tsx'
+          'src/app/(public)/testimonials/page.tsx'
+          src/app/not-found.tsx
+          src/components/public/SmartImage.tsx
+          src/components/shared/ImageLightbox.tsx
 
       - name: Type check and production build
         run: npm run build

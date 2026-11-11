@@ -64,7 +64,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ status: "error", message: "The settings payload is not valid JSON." }, { status: 400 });
   }
 
-  const stringFields = ["brandName", "brandDescriptor", "siteTitle", "siteDescription", "faviconUrl", "openGraphImageUrl", "logoUrl", "logoAlt", "announcementText", "headerCtaLabel", "headerCtaHref", "clientPortalLabel", "clientPortalHref", "footerTagline", "footerAddress", "contactEmail", "contactPhone", "copyrightText"] as const;
+  const stringFields = ["brandName", "brandDescriptor", "siteTitle", "siteDescription", "faviconUrl", "openGraphImageUrl", "logoUrl", "logoAlt", "announcementText", "headerCtaLabel", "headerCtaHref", "clientPortalLabel", "clientPortalHref", "footerTagline", "footerAddress", "contactEmail", "contactPhone", "copyrightText", "notFoundEyebrow", "notFoundHeadline", "notFoundAccent", "notFoundDescription", "notFoundPrimaryLabel", "notFoundPrimaryHref", "notFoundSecondaryLabel", "notFoundSecondaryHref", "errorEyebrow", "errorHeadline", "errorAccent", "errorDescription", "errorRetryLabel", "errorHomeLabel", "errorHomeHref", "errorContactLabel", "errorContactHref", "offlineEyebrow", "offlineHeadline", "offlineDescription", "offlineRetryLabel", "offlineHomeLabel", "offlineHomeHref", "loadingBrandLabel", "loadingMessage"] as const;
   const update: Record<string, unknown> = {};
   for (const field of stringFields) {
     if (typeof body[field] !== "string") {
@@ -76,7 +76,7 @@ export async function PUT(request: NextRequest) {
   if (!update.brandName || !update.logoAlt || !update.headerCtaLabel || !update.clientPortalLabel) {
     return NextResponse.json({ status: "error", message: "Brand name, logo description, and header action labels are required." }, { status: 400 });
   }
-  if (!safeHref(update.logoUrl) || !safeHref(update.faviconUrl) || !safeHref(update.openGraphImageUrl) || !safeHref(update.headerCtaHref) || !safeHref(update.clientPortalHref)) {
+  if (!safeHref(update.logoUrl) || !safeHref(update.faviconUrl) || !safeHref(update.openGraphImageUrl) || !safeHref(update.headerCtaHref) || !safeHref(update.clientPortalHref) || !safeHref(update.notFoundPrimaryHref) || !safeHref(update.notFoundSecondaryHref) || !safeHref(update.errorHomeHref) || !safeHref(update.errorContactHref) || !safeHref(update.offlineHomeHref)) {
     return NextResponse.json({ status: "error", message: "Logo and navigation destinations must use a safe internal path or HTTPS URL." }, { status: 400 });
   }
   if (update.contactEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(update.contactEmail))) {

@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
   }
   if (body.action !== "reward.redeem" || typeof body.rewardId !== "string" || !mongoose.isValidObjectId(body.rewardId)) return NextResponse.json({ error: "Unsupported rewards action." }, { status: 400 });
   const dbSession = await mongoose.startSession();
-  let result: any = null;
+  let result: { reference: string; rewardName: string; kind: string; couponCode?: string } = { reference: "", rewardName: "", kind: "" };
   try {
     await dbSession.withTransaction(async () => {
       const reward = await EngagementReward.findById(body.rewardId).session(dbSession);

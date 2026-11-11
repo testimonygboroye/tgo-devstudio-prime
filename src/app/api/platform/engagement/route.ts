@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
   if (body.action === "campaign.create") {
     const startsAt = new Date(String(body.startsAt || "")), endsAt = new Date(String(body.endsAt || "")), multiplier = Number(body.multiplier || 1), name = String(body.name || "").trim();
     if (name.length < 2 || !Number.isFinite(startsAt.getTime()) || !Number.isFinite(endsAt.getTime()) || endsAt <= startsAt || !Number.isFinite(multiplier) || multiplier < 1 || multiplier > 5) return NextResponse.json({ error: "Enter a valid campaign name, date range and multiplier." }, { status: 400 });
-    const campaign = await EngagementCampaign.create({ name: name.slice(0, 100), startsAt, endsAt, multiplier, active: body.active === true });
+    const campaign = await EngagementCampaign.create({ name: name.slice(0, 100), startsAt, endsAt, multiplier, active: body.active === true || body.active === "on" });
     await audit("engagement.campaign_created", "campaign", String(campaign._id));
     return NextResponse.json({ campaign }, { status: 201 });
   }

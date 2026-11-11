@@ -176,7 +176,7 @@ export default async function HomePage() {
           <div className="home-tech-grid">
             {stackCategories.map((category, index) => <article className="home-tech-category" key={category}>
               <div className="home-tech-category-heading"><span>0{index + 1}</span><h3>{category}</h3></div>
-              <div className="home-tech-items">{stack.filter((item) => item.category === category).slice(0, 6).map((item) => <span key={item._id.toString()}>{item.title}</span>)}</div>
+              <div className="home-tech-items">{stack.filter((item) => item.category === category).slice(0, 6).map((item) => <span key={item._id.toString()}>{item.name}</span>)}</div>
             </article>)}
           </div>
         </div>

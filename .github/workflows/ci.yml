@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, phase-1/core-platform-foundation, phase-2/founder-control-centre, phase-3/business-ecosystem-administration, platform/phase-4-client-crm-portal, platform/phase-5-workforce-management, platform/phase-6-universal-workspace, platform/client-portal-phase-7, feature/phase-14-executive-intelligence]
+    branches: [main, phase-1/core-platform-foundation, phase-2/founder-control-centre, phase-3/business-ecosystem-administration, platform/phase-4-client-crm-portal, platform/phase-5-workforce-management, platform/phase-6-universal-workspace, platform/client-portal-phase-7, feature/phase-14-executive-intelligence, phase-15-public-experience-redesign]
   workflow_dispatch:
   pull_request:
     branches: [main]
@@ -211,6 +211,14 @@ jobs:
           'src/app/(public)/engagement-models/page.tsx'
           'src/app/(public)/loading.tsx'
           src/app/sitemap.ts
+          'src/app/(public)/error.tsx'
+          'src/app/(public)/careers/[slug]/page.tsx'
+          'src/app/(public)/help/[id]/page.tsx'
+          'src/app/(public)/team/[slug]/page.tsx'
+          'src/app/(public)/testimonials/[id]/page.tsx'
+          src/components/public/HeroMoment.tsx
+          src/components/public/HomepageMediaExperience.tsx
+          src/lib/i18n/translatableFields.ts
 
       - name: Type check and production build
         run: npm run build

@@ -1,12 +1,34 @@
 import Link from "next/link";
-import { ArrowUpRight, Compass, Layers3, LifeBuoy, Users, CheckCircle2 } from "lucide-react";
 import type { Metadata } from "next";
+import { ArrowUpRight, Compass, Layers3, LifeBuoy, Users, CheckCircle2, Handshake, Building2 } from "lucide-react";
+import { getPublicPageContent } from "@/lib/publicSite/getPublicPageContent";
 
-export const metadata:Metadata={title:"Engagement Models | TGO DevStudio Prime",description:"Explore flexible ways to work with TGO DevStudio, from scoped product delivery to dedicated engineering and ongoing improvement.",alternates:{canonical:"/engagement-models"}};
-const models=[
- {icon:Layers3,number:"01",title:"Project-based delivery",best:"A defined product, feature or transformation",text:"A clear scope, agreed deliverables, milestones and acceptance criteria. Ideal when the outcome can be described and planned before implementation.",includes:["Discovery and requirements","Design and engineering milestones","Testing, handover and launch planning"]},
- {icon:Users,number:"02",title:"Dedicated product team",best:"An evolving roadmap with ongoing priorities",text:"A focused engineering relationship for organisations that need consistent product development capacity and a team that builds context over time.",includes:["Agreed team composition and responsibilities","Prioritised delivery backlog","Regular reviews and progress reporting"]},
- {icon:LifeBuoy,number:"03",title:"Continuous improvement",best:"An existing product that needs care and momentum",text:"A structured way to maintain, improve and extend a live system without treating every enhancement as a disconnected project.",includes:["Maintenance and reliability planning","Performance and UX improvements","Feature enhancements and technical upkeep"]},
- {icon:Compass,number:"04",title:"Discovery & technical advisory",best:"An early idea or a complex technical decision",text:"A focused engagement to clarify the problem, assess options, map risks and create a practical technical or product roadmap before a larger build.",includes:["Product and technical discovery","Architecture and integration assessment","Prioritised recommendations and roadmap"]},
-];
-export default function EngagementModelsPage(){return <main className="engagement-page"><section className="engagement-hero"><div className="home-container"><span className="eyebrow-label">Working together · Flexible delivery</span><h1>The right working model<br/>for <em>the work ahead.</em></h1><p>Not every challenge needs the same kind of engagement. We shape the working relationship around your goals, timeline, internal team and the level of support the product needs.</p><div className="engagement-hero-points"><span><CheckCircle2 size={15}/> Clear scope and expectations</span><span><CheckCircle2 size={15}/> Visible progress</span><span><CheckCircle2 size={15}/> Agreed responsibilities</span></div></div></section><section className="engagement-content"><div className="home-container"><div className="engagement-intro"><span className="eyebrow-label">Ways to work with TGO</span><h2>Start with the outcome.<br/>Choose the structure that fits.</h2><p>We will recommend a model after understanding the work. Scope, fees, delivery schedule and responsibilities are documented and agreed before an engagement begins.</p></div><div className="engagement-grid">{models.map(({icon:Icon,number,title,best,text,includes})=><article key={number} className="engagement-card"><div className="engagement-card-top"><span><Icon size={22}/></span><small>MODEL / {number}</small></div><h3>{title}</h3><b className="engagement-best">{best}</b><p>{text}</p><ul>{includes.map(item=><li key={item}><CheckCircle2 size={14}/>{item}</li>)}</ul></article>)}</div></div></section><section className="engagement-cta"><div className="home-container"><span className="eyebrow-label">Not sure which model fits?</span><h2>We’ll help you work it out.</h2><p>Share the challenge and we’ll recommend a sensible structure for the work.</p><div className="flex flex-wrap justify-center gap-3"><Link href="/contact" className="btn-premium-primary inline-flex items-center gap-2 rounded-full px-7 py-4 font-semibold text-white">Discuss your project <ArrowUpRight size={17}/></Link><Link href="/book-a-call" className="btn-premium-secondary inline-flex items-center gap-2 rounded-full px-7 py-4 font-semibold" style={{color:"var(--text-primary)"}}>Book a call <ArrowUpRight size={17}/></Link></div></div></section></main>}
+export const dynamic = "force-dynamic";
+const ICONS = { Compass, Layers3, LifeBuoy, Users, Handshake, Building2 } as const;
+function getIcon(name: string) { return ICONS[name as keyof typeof ICONS] || Layers3; }
+
+export async function generateMetadata(): Promise<Metadata> {
+  const page = await getPublicPageContent("engagement-models");
+  return { title: page.metaTitle, description: page.metaDescription, alternates: { canonical: "/engagement-models" } };
+}
+
+export default async function EngagementModelsPage() {
+  const page = await getPublicPageContent("engagement-models");
+  const cards = [...page.cards].sort((a,b)=>a.displayOrder-b.displayOrder);
+  return (
+    <main className="engagement-page">
+      <section className="engagement-hero"><div className="home-container"><span className="eyebrow-label">{page.heroEyebrow}</span><h1>{page.heroHeadline}<br/><em>{page.heroAccent}</em></h1><p>{page.heroDescription}</p>
+        {page.heroNote&&<div className="engagement-hero-points">{page.heroNote.split("·").map(item=><span key={item}><CheckCircle2 size={15}/>{item.trim()}</span>)}</div>}
+      </div></section>
+      <section className="engagement-content"><div className="home-container">
+        <div className="engagement-intro"><span className="eyebrow-label">{page.introEyebrow}</span><h2>{page.introHeading}</h2><p>{page.introDescription}</p></div>
+        <div className="engagement-grid">{cards.map((card,index)=>{const Icon=getIcon(card.icon);return <article key={card.title} className="engagement-card">
+          <div className="engagement-card-top"><span><Icon size={22}/></span><small>{card.eyebrow || `MODEL / ${String(index+1).padStart(2,"0")}`}</small></div>
+          <h3>{card.title}</h3>{card.subtitle&&<b className="engagement-best">{card.subtitle}</b>}<p>{card.description}</p>
+          {card.bulletPoints.length>0&&<ul>{card.bulletPoints.map(item=><li key={item}><CheckCircle2 size={14}/>{item}</li>)}</ul>}
+        </article>})}</div>
+      </div></section>
+      <section className="engagement-cta"><div className="home-container"><span className="eyebrow-label">{page.ctaEyebrow}</span><h2>{page.ctaHeading}</h2><p>{page.ctaDescription}</p><div className="flex flex-wrap justify-center gap-3"><Link href={page.ctaPrimaryHref} className="btn-premium-primary inline-flex items-center gap-2 rounded-full px-7 py-4 font-semibold text-white">{page.ctaPrimaryLabel}<ArrowUpRight size={17}/></Link>{page.ctaSecondaryLabel&&<Link href={page.ctaSecondaryHref} className="btn-premium-secondary inline-flex items-center gap-2 rounded-full px-7 py-4 font-semibold" style={{color:"var(--text-primary)"}}>{page.ctaSecondaryLabel}<ArrowUpRight size={17}/></Link>}</div></div></section>
+    </main>
+  );
+}

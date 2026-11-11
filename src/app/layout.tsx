@@ -10,6 +10,7 @@ import NetworkStatus from "@/components/shared/NetworkStatus";
 import { getServerLocale } from "@/lib/i18n/serverLocale";
 import { RTL_LOCALES } from "@/lib/i18n/config";
 import { getSiteUrl } from "@/lib/siteUrl";
+import { getPublicSiteSettings } from "@/lib/publicSite/getPublicSiteSettings";
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
@@ -27,19 +28,24 @@ const EXISTING_GOOGLE_VERIFICATION =
 
 export async function generateMetadata(): Promise<Metadata> {
   const siteUrl = getSiteUrl();
+  const siteSettings = await getPublicSiteSettings();
+  const brandName = siteSettings?.brandName || "TGO DevStudio";
+  const siteTitle = siteSettings?.siteTitle || "TGO DevStudio Prime";
+  const siteDescription = siteSettings?.siteDescription || "TGO DevStudio builds premium software, websites, apps, SaaS platforms, AI systems, cloud solutions, and custom digital products.";
+  const faviconUrl = siteSettings?.faviconUrl || "/favicon.png";
+  const socialImageUrl = siteSettings?.openGraphImageUrl || "/opengraph-image";
 
   return {
     metadataBase: new URL(siteUrl),
 
     title: {
-      default: "TGO DevStudio Prime",
-      template: "%s | TGO DevStudio",
+      default: siteTitle,
+      template: "%s | " + brandName,
     },
 
-    description:
-      "TGO DevStudio builds premium software, websites, apps, SaaS platforms, AI systems, cloud solutions, and custom digital products.",
+    description: siteDescription,
 
-    applicationName: "TGO DevStudio Prime",
+    applicationName: siteSettings?.brandDescriptor || siteTitle,
 
     keywords: [
       "TGO DevStudio",
@@ -73,19 +79,19 @@ export async function generateMetadata(): Promise<Metadata> {
 
     authors: [
       {
-        name: "TGO DevStudio",
+        name: brandName,
         url: siteUrl,
       },
     ],
 
-    creator: "TGO DevStudio",
-    publisher: "TGO DevStudio",
+    creator: brandName,
+    publisher: brandName,
 
     manifest: "/manifest.json",
 
     icons: {
       icon: [
-        { url: "/favicon.png", type: "image/png" },
+        { url: faviconUrl },
         {
           url: "/icon.png",
           type: "image/png",
@@ -102,7 +108,7 @@ export async function generateMetadata(): Promise<Metadata> {
           sizes: "512x512",
         },
       ],
-      shortcut: "/favicon.png",
+      shortcut: faviconUrl,
       apple: [
         {
           url: "/apple-icon.png",
@@ -118,25 +124,23 @@ export async function generateMetadata(): Promise<Metadata> {
     },
 
     openGraph: {
-      siteName: "TGO DevStudio",
-      title: "TGO DevStudio Prime",
-      description:
-        "Premium full-stack software engineering, digital products, platforms, applications, AI, cloud systems, and intelligent software.",
+      siteName: brandName,
+      title: siteTitle,
+      description: siteDescription,
       type: "website",
       images: [
         {
-          url: "/opengraph-image",
-          alt: "TGO DevStudio Prime — Premium Software Engineering",
+          url: socialImageUrl,
+          alt: siteTitle,
         },
       ],
     },
 
     twitter: {
       card: "summary_large_image",
-      title: "TGO DevStudio Prime",
-      description:
-        "Premium full-stack software engineering and digital product development.",
-      images: ["/opengraph-image"],
+      title: siteTitle,
+      description: siteDescription,
+      images: [socialImageUrl],
     },
 
     robots: {

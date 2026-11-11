@@ -116,6 +116,8 @@ const NAV_GROUPS = [
     { label: "FAQ", hrefSuffix: "/faq-items", icon: MessageCircleQuestion, badgeKey: null },
     { label: "Reviews", hrefSuffix: "/reviews", icon: Star, badgeKey: "reviews" },
     { label: "Site Pages", hrefSuffix: "/pages", icon: FileText, badgeKey: null },
+    { label: "Landing Pages", hrefSuffix: "/public-pages", icon: FileText, badgeKey: null },
+    { label: "Site Identity & Navigation", hrefSuffix: "/site-settings", icon: Settings, badgeKey: null },
     { label: "Stack Items", hrefSuffix: "/stack-items", icon: Boxes, badgeKey: null },
   ]},
   { title: "Messages & Leads", items: [

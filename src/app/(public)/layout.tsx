@@ -6,21 +6,24 @@ import CookieConsentBanner from "@/components/public/CookieConsentBanner";
 import HelpDiscoveryPrompt from "@/components/shared/HelpDiscoveryPrompt";
 import AnalyticsTracker from "@/components/public/AnalyticsTracker";
 import ShareCurrentPage from "@/components/public/ShareCurrentPage";
+import { getPublicSiteSettings } from "@/lib/publicSite/getPublicSiteSettings";
 
-export default function PublicLayout({
+export default async function PublicLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const siteSettings = await getPublicSiteSettings();
+
   return (
     <>
-      <SiteHeader />
+      <SiteHeader settings={siteSettings} />
 
       {children}
 
       <ShareCurrentPage />
 
-      <SiteFooter />
+      <SiteFooter settings={siteSettings} />
 
       <SocialFloatingButton />
 

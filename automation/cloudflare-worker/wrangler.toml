@@ -1,0 +1,6 @@
+name = "tgo-platform-automation"
+main = "src/index.js"
+compatibility_date = "2026-11-11"
+
+[triggers]
+crons = ["*/15 * * * *"]

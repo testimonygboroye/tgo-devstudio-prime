@@ -63,7 +63,7 @@ export default async function AboutPage() {
         </div>
       </section>
 
-      {partOfTgo && <section className="about-story-section"><div className="about-story-layout"><div className="about-story-aside"><span className="eyebrow-label">Our story</span><h2>Built around the belief that technology can do more.</h2><span className="about-story-index">01 / THE STUDIO</span></div><div className="about-story-copy prose" dangerouslySetInnerHTML={{__html:sanitizeBlogHtml(partOfTgo)}}/></div></section>
+      {partOfTgo && <section className="about-story-section"><div className="about-story-layout"><div className="about-story-aside"><span className="eyebrow-label">Our story</span><h2>Built around the belief that technology can do more.</h2><span className="about-story-index">01 / THE STUDIO</span></div><div className="about-story-copy prose" dangerouslySetInnerHTML={{__html:sanitizeBlogHtml(partOfTgo)}}/></div></section>}
 
       {whyExists && <section className="about-why-section"><div className="about-why-panel"><span className="eyebrow-label">Why we exist</span><div className="prose about-why-copy" dangerouslySetInnerHTML={{__html:sanitizeBlogHtml(whyExists)}}/></div></section>}
 

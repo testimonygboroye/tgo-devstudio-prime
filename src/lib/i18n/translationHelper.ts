@@ -76,7 +76,7 @@ export function getLocalizedContent<T extends object>(
     return doc;
   }
 
-  const localized = { ...doc } as T & Record<string, unknown>;
+  const localized: Record<string, unknown> = { ...doc };
   for (const field of fields) {
     const value = translations[String(field)];
     if (value !== undefined && value !== null && value !== "") {

@@ -99,7 +99,7 @@ export async function PUT(request: NextRequest) {
   await connectToDatabase();
   const settings = await PublicSiteSettings.findOneAndUpdate(
     {},
-    { $set: update, $setOnInsert: {}, lastUpdatedBy: session.user._id },
+    { $set: { ...update, lastUpdatedBy: session.user._id } },
     { upsert: true, new: true, runValidators: true }
   ).lean();
 

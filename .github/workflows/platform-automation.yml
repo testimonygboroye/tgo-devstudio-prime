@@ -23,8 +23,10 @@ jobs:
           PLATFORM_AUTOMATION_CRON_SECRET: ${{ secrets.PLATFORM_AUTOMATION_CRON_SECRET }}
         run: |
           set -euo pipefail
-          : "${APP_BASE_URL:?Add APP_BASE_URL in repository Actions secrets}"
-          : "${PLATFORM_AUTOMATION_CRON_SECRET:?Add PLATFORM_AUTOMATION_CRON_SECRET in repository Actions secrets}"
+          if [[ -z "$APP_BASE_URL" || -z "$PLATFORM_AUTOMATION_CRON_SECRET" ]]; then
+            echo "::warning::Add APP_BASE_URL and PLATFORM_AUTOMATION_CRON_SECRET in repository Actions secrets to enable automation."
+            exit 0
+          fi
           base="${APP_BASE_URL%/}"
           failed=0
           endpoints=(

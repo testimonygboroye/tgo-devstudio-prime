@@ -91,9 +91,10 @@ export async function POST(request:NextRequest){
  let couponId: string | null = null; let couponCode: string | null = null; let discountMinor = 0;
  if(body.couponCode !== undefined){
   if(typeof body.couponCode!=="string"||body.installmentId||body.milestoneId||body.invoiceId||body.amount!==undefined)return fail("Discount coupons can only be applied to a full order-balance payment.");
-  coupon=await EngagementRedemption.findOne({clientId:user._id,couponCode:String(body.couponCode).trim().toUpperCase(),couponStatus:"issued",couponExpiresAt:{$gt:new Date()}}).populate("rewardId");
-  const reward=coupon?.rewardId as unknown as {kind?:string;discountPercent?:number}|undefined;
-  if(!coupon||reward?.kind!=="discount"||!Number.isFinite(reward.discountPercent)||Number(reward.discountPercent)<=0)return fail("This discount coupon is invalid, expired, already used, or not available for this account.",409);
+  const couponRecord=await EngagementRedemption.findOne({clientId:user._id,couponCode:String(body.couponCode).trim().toUpperCase(),couponStatus:"issued",couponExpiresAt:{$gt:new Date()}}).populate<{rewardId:{kind?:string;discountPercent?:number}}>("rewardId");
+  const reward=couponRecord?.rewardId;
+  if(!couponRecord?.couponCode||reward?.kind!=="discount"||!Number.isFinite(reward.discountPercent)||Number(reward.discountPercent)<=0)return fail("This discount coupon is invalid, expired, already used, or not available for this account.",409);
+  couponId=String(couponRecord._id);couponCode=couponRecord.couponCode;
   discountMinor=Math.floor(amountMinor*Number(reward.discountPercent)/100);
   if(discountMinor<1||discountMinor>=amountMinor)return fail("The coupon discount cannot be applied to this payment amount.");
   amountMinor-=discountMinor;

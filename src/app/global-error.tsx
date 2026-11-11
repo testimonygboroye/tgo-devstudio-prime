@@ -13,7 +13,6 @@ export default function GlobalError({
   const [copy,setCopy] = useState(PUBLIC_SITE_SETTINGS_DEFAULTS);
   useEffect(() => {
     console.error("[TGO GlobalError]", { message: error.message, digest: error.digest });
-    try { const cached=localStorage.getItem("tgo-public-site-settings"); if(cached)setCopy(current=>({...current,...JSON.parse(cached)})); } catch {}
     const controller=new AbortController();
     fetch("/api/public-site-settings",{cache:"no-store",signal:controller.signal}).then(async response=>{
       if(!response.ok)return;

@@ -17,6 +17,7 @@ const validKinds = ["direct", "group", "channel", "ai"] as const;
 export async function GET(request: NextRequest) {
   const session = await getAuthenticatedSession(request);
   if (!session) return unauthorizedResponse();
+  if (session.user.accountType !== "staff") return forbiddenResponse("Staff access is required.");
   await connectToDatabase();
   const { searchParams } = new URL(request.url);
   const conversationId = searchParams.get("conversationId");
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest) {
   }
   const filter = session.role.isFounderRole ? { archivedAt: { $exists: false } } : { memberIds: session.user._id, archivedAt: { $exists: false } };
   const conversations = await UnifiedConversation.find(filter).populate("memberIds", "name email").populate("aiAgentId", "name role department").sort({ lastMessageAt: -1, updatedAt: -1 }).limit(150).lean();
-  const people = session.role.isFounderRole ? await User.find({ isActive: { $ne: false } }).select("name email role").sort({ name: 1 }).limit(300).lean() : [];
+  const people = await User.find({ accountType: "staff", isBanned: { $ne: true } }).select("name email role").sort({ name: 1 }).limit(300).lean();
   const agents = session.role.isFounderRole ? await AIAgent.find({ enabled: true }).select("name role department").sort({ name: 1 }).lean() : [];
   return NextResponse.json({ status: "ok", conversations, people, agents }, { headers: { "Cache-Control": "private, no-store" } });
 }
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
   if (body.action === "create") {
     const kind = String(body.kind || "direct");
     if (!validKinds.includes(kind as typeof validKinds[number])) return fail("Unsupported conversation type.");
-    if ((kind === "group" || kind === "channel" || kind === "ai") && !session.role.isFounderRole) return forbiddenResponse("Founder access is required to create groups, channels and AI conversations.");
+    if (kind === "ai" && !session.role.isFounderRole) return forbiddenResponse("Founder access is required to create AI conversations.");
     const ids = Array.isArray(body.memberIds) ? body.memberIds.filter((id): id is string => typeof id === "string" && Types.ObjectId.isValid(id)).slice(0, 100) : [];
     if (kind === "direct" && ids.length !== 1) return fail("A direct conversation requires exactly one other team member.");
     if (kind === "ai" && (!body.aiAgentId || !Types.ObjectId.isValid(String(body.aiAgentId)))) return fail("Select a valid AI employee.");

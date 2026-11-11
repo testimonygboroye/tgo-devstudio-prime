@@ -23,8 +23,8 @@ export default async function StackPage() {
   }, {});
 
   return (
-    <main className="min-h-screen px-6 py-20 sm:px-12">
-      <div className="mx-auto max-w-3xl">
+    <main className="stack-page">
+      <div className="mx-auto max-w-5xl">
         <span className="eyebrow-label">Engineering</span>
         <h1
           className="heading-premium mt-3 text-5xl font-bold brand-gradient-text sm:text-6xl"

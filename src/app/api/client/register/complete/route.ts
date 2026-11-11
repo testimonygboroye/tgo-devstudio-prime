@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     if (verification.referralCode) {
       const referral = await EngagementReferral.findOneAndUpdate(
         { code: verification.referralCode, status: "pending", referredClientId: { $exists: false }, referrerId: { $ne: user._id } },
-        { $set: { referredClientId: user._id } }, { new: true }
+        { $set: { referredClientId: user._id, attributedAt: new Date() } }, { new: true }
       );
       if (!referral) {
         const suspected = await EngagementReferral.findOne({ code: verification.referralCode });

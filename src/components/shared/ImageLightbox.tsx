@@ -17,7 +17,7 @@ export default function ImageLightbox({ src, alt, children }: ImageLightboxProps
     <>
       <button
         type="button"
-        onClick={() => setIsOpen(true)}
+        onClick={() => { setImageFailed(false); setIsOpen(true); }}
         className="block cursor-zoom-in"
         aria-label={`View larger image: ${alt}`}
       >

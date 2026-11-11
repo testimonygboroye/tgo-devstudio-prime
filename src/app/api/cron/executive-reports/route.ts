@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Types } from "mongoose";
 import { connectToDatabase } from "@/lib/db";
 import { getExecutiveSnapshot } from "@/lib/analytics/executive";
 import { ExecutiveReportSchedule, ExecutiveReportRun } from "@/models/ExecutiveIntelligence";
@@ -29,10 +30,10 @@ export async function GET(request: NextRequest) {
       const run = await ExecutiveReportRun.create({ scheduleId: schedule._id, name: schedule.name, periodStart: schedule.lastRunAt || new Date(Date.now() - 30 * 86400000), periodEnd: new Date(), snapshot, generatedBy: "schedule", createdBy: schedule.createdBy });
       const founderRoles = await Role.find({ isFounderRole: true }).select("_id").lean();
       const founderUsers = await User.find({ role: { $in: founderRoles.map((item) => item._id) }, accountType: "staff", isBanned: { $ne: true } }).select("_id").lean();
-      const recipients = founderUsers.length ? founderUsers.map((item) => item._id) : [schedule.createdBy];
+      const recipients = founderUsers.length ? founderUsers.map((item) => item._id) : [new Types.ObjectId(schedule.createdBy)];
       const reportChannel = await UnifiedConversation.findOneAndUpdate(
         { kind: "channel", title: "Executive Reports" },
-        { $set: { memberIds: recipients, lastMessageAt: new Date() }, $setOnInsert: { kind: "channel", title: "Executive Reports", createdBy: schedule.createdBy } },
+        { $set: { memberIds: recipients, lastMessageAt: new Date() }, $setOnInsert: { kind: "channel", title: "Executive Reports", createdBy: new Types.ObjectId(schedule.createdBy) } },
         { upsert: true, new: true, setDefaultsOnInsert: true }
       );
       await UnifiedMessage.create({ conversationId: reportChannel._id, senderType: "system", senderLabel: "Executive Intelligence", body: "Scheduled report generated: " + schedule.name + "\\nRun ID: " + String(run._id) + "\\n\\n" + JSON.stringify(snapshot).slice(0, 9000), messageType: "system" });

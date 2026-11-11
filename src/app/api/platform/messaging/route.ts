@@ -47,21 +47,23 @@ export async function POST(request: NextRequest) {
   const actorName = String(session.user.name || session.user.email || "Team member").slice(0, 160);
 
   if (body.action === "create") {
-    const kind = String(body.kind || "direct");
-    if (!validKinds.includes(kind as typeof validKinds[number])) return fail("Unsupported conversation type.");
+    const requestedKind = String(body.kind || "direct");
+    if (!validKinds.includes(requestedKind as typeof validKinds[number])) return fail("Unsupported conversation type.");
+    const kind = requestedKind as typeof validKinds[number];
     if (kind === "ai" && !session.role.isFounderRole) return forbiddenResponse("Founder access is required to create AI conversations.");
     const ids = Array.isArray(body.memberIds) ? body.memberIds.filter((id): id is string => typeof id === "string" && Types.ObjectId.isValid(id)).slice(0, 100) : [];
     if (kind === "direct" && ids.length !== 1) return fail("A direct conversation requires exactly one other team member.");
     if (kind === "ai" && (!body.aiAgentId || !Types.ObjectId.isValid(String(body.aiAgentId)))) return fail("Select a valid AI employee.");
-    const members = Array.from(new Set([String(actorId), ...ids]));
+    const members = Array.from(new Set([String(actorId), ...ids])).map((id) => new Types.ObjectId(id));
+    const aiAgentId = String(body.aiAgentId || "");
     if (kind === "ai") {
-      const agent = await AIAgent.findOne({ _id: body.aiAgentId, enabled: true }).select("name");
+      const agent = await AIAgent.findOne({ _id: aiAgentId, enabled: true }).select("name");
       if (!agent) return fail("The selected AI employee is not enabled.", 404);
     }
     const conversation = await UnifiedConversation.create({
       kind, title: String(body.title || "").trim().slice(0, 160),
       createdBy: actorId, memberIds: members,
-      aiAgentId: kind === "ai" ? body.aiAgentId : undefined,
+      aiAgentId: kind === "ai" ? new Types.ObjectId(aiAgentId) : undefined,
     });
     await writePlatformAuditEvent({ actorType: "human", actorId: String(actorId), actorLabel: actorName, action: "communications.conversation.created", module: "communications", targetType: "UnifiedConversation", targetId: String(conversation._id), outcome: "success", metadata: { kind, memberCount: members.length } });
     return NextResponse.json({ status: "ok", conversationId: String(conversation._id) }, { status: 201 });

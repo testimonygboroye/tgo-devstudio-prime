@@ -4,7 +4,7 @@ import { ArrowUpRight, Users, Sparkles } from "lucide-react";
 import { connectToDatabase } from "@/lib/db";
 import TeamMember from "@/models/TeamMember";
 import { getServerLocale } from "@/lib/i18n/serverLocale";
-import { createTranslator, getLocalizedContent } from "@/lib/i18n/translationHelper";
+import { getLocalizedContent } from "@/lib/i18n/translationHelper";
 import { TRANSLATABLE_FIELDS } from "@/lib/i18n/translatableFields";
 import PublicEmptyState from "@/components/public/PublicEmptyState";
 import SmartImage from "@/components/public/SmartImage";

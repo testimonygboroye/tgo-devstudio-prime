@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { connectToDatabase } from "@/lib/db";
 import TeamMember from "@/models/TeamMember";
 import { ArrowLeft } from "lucide-react";
+import SmartImage from "@/components/public/SmartImage";
 import { getServerLocale } from "@/lib/i18n/serverLocale";
 import {
   createTranslator,
@@ -103,8 +104,8 @@ export default async function TeamMemberDetailPage({
   );
 
   return (
-    <main className="min-h-screen px-6 py-16 sm:px-12">
-      <div className="mx-auto max-w-2xl">
+    <main className="team-detail-page">
+      <div className="home-container team-detail-container">
         <Link
           href="/team"
           className="flex items-center gap-1 text-sm text-neutral-400 hover:text-brand-cyan-300"
@@ -113,17 +114,8 @@ export default async function TeamMemberDetailPage({
           {t("team.backToTeam")}
         </Link>
 
-        <div className="mt-8 flex flex-col items-center text-center sm:flex-row sm:items-start sm:text-left sm:gap-6">
-          {member.photo?.url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={member.photo.url}
-              alt={member.photo.altText || member.name}
-              className="h-32 w-32 flex-shrink-0 rounded-full object-cover"
-            />
-          ) : (
-            <div className="h-32 w-32 flex-shrink-0 rounded-full bg-base-800" />
-          )}
+        <div className="team-detail-profile">
+          <SmartImage src={member.photo?.url} alt={member.photo?.altText || member.name} label={member.name} className="team-detail-avatar" />
 
           <div className="mt-4 sm:mt-0">
             <h1 className="text-3xl font-bold text-neutral-100 sm:text-4xl">
@@ -175,7 +167,7 @@ export default async function TeamMemberDetailPage({
           </div>
         </div>
 
-        <div className="mt-10 border-t border-base-800 pt-8">
+        <div className="team-detail-bio">
           <h2 className="text-sm font-semibold uppercase tracking-widest text-neutral-500">
             {t("team.about")}
           </h2>

@@ -10,13 +10,14 @@ export default function HeroMoment(){
   let width=0,height=0,particles:Particle[]=[];
   let pointerX=-10000,pointerY=-10000,frame=0,lastFrame=0,visible=true,pageVisible=!document.hidden,disposed=false;
   const reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const frameInterval=1000/30,radius=155,radius2=radius*radius;
+  const isSmallScreen=window.matchMedia("(max-width: 767px)").matches;
+  const frameInterval=1000/(isSmallScreen?16:24),radius=isSmallScreen?118:155,radius2=radius*radius;
   function staticFrame(){ctx!.clearRect(0,0,width,height);for(const p of particles){ctx!.beginPath();ctx!.arc(p.baseX,p.baseY,p.size,0,Math.PI*2);ctx!.fillStyle=`rgba(${p.rgb},0.14)`;ctx!.fill();}}
   function resize(){
    const parent=canvas!.parentElement;if(!parent)return;width=parent.clientWidth;height=parent.clientHeight;
    const dpr=Math.min(window.devicePixelRatio||1,1.25);
    canvas!.width=Math.round(width*dpr);canvas!.height=Math.round(height*dpr);canvas!.style.width=width+"px";canvas!.style.height=height+"px";ctx!.setTransform(dpr,0,0,dpr,0,0);
-   const spacing=46,cols=Math.ceil(width/spacing)+1,rows=Math.ceil(height/spacing)+1;particles=[];
+   const spacing=isSmallScreen?58:46,cols=Math.ceil(width/spacing)+1,rows=Math.ceil(height/spacing)+1;particles=[];
    for(let row=0;row<rows;row++)for(let col=0;col<cols;col++){
     const t=(col+row)/(cols+rows),r=Math.round(V.r+(C.r-V.r)*t),g=Math.round(V.g+(C.g-V.g)*t),b=Math.round(V.b+(C.b-V.b)*t),x=col*spacing,y=row*spacing;
     particles.push({x,y,baseX:x,baseY:y,size:1.15,rgb:`${r}, ${g}, ${b}`});

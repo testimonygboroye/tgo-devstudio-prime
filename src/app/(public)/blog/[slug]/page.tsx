@@ -10,6 +10,7 @@ import { getPubliclyVisibleFilter } from "@/lib/utils/blogVisibility";
 import { sanitizeBlogHtml } from "@/lib/sanitizeHtml";
 import { calculateReadingTime } from "@/lib/utils/readingTime";
 import ImageLightbox from "@/components/shared/ImageLightbox";
+import SmartImage from "@/components/public/SmartImage";
 import { getServerLocale } from "@/lib/i18n/serverLocale";
 import {
   createTranslator,
@@ -316,7 +317,7 @@ export default async function BlogDetailPage({
   };
 
   return (
-    <main className="min-h-screen px-6 py-20 sm:px-12">
+    <main className="blog-article-page">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -331,7 +332,7 @@ export default async function BlogDetailPage({
         }}
       />
 
-      <article className="mx-auto max-w-2xl">
+      <article className="blog-article-layout">
         <span className="eyebrow-label">
           {t("nav.blog")}
         </span>
@@ -369,12 +370,7 @@ export default async function BlogDetailPage({
               src={coverImageUrl}
               alt={coverImageAlt}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={coverImageUrl}
-                alt={coverImageAlt}
-                className="w-full rounded-xl"
-              />
+              <SmartImage src={coverImageUrl} alt={coverImageAlt} label={post.title} className="w-full rounded-xl" />
             </ImageLightbox>
           </div>
         )}

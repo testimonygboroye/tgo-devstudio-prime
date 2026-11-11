@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { connectToDatabase } from "@/lib/db";
 import Project from "@/models/Project";
 import ImageLightbox from "@/components/shared/ImageLightbox";
+import SmartImage from "@/components/public/SmartImage";
 import { getServerLocale } from "@/lib/i18n/serverLocale";
 import { createTranslator, getLocalizedContent } from "@/lib/i18n/translationHelper";
 import { TRANSLATABLE_FIELDS } from "@/lib/i18n/translatableFields";
@@ -178,12 +179,7 @@ export default async function CaseStudyDetailPage({ params }: PageProps) {
               src={project.images[0].url}
               alt={project.images[0].altText}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={project.images[0].url}
-                alt={project.images[0].altText}
-                className="w-full rounded-xl"
-              />
+              <SmartImage src={project.images[0].url} alt={project.images[0].altText} label={project.title} className="w-full rounded-xl" />
             </ImageLightbox>
           </div>
         )}
@@ -250,12 +246,7 @@ export default async function CaseStudyDetailPage({ params }: PageProps) {
                   src={image.url}
                   alt={image.altText}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={image.url}
-                    alt={image.altText}
-                    className="w-full rounded-lg"
-                  />
+                  <SmartImage src={image.url} alt={image.altText} label={project.title} className="w-full rounded-lg" />
                 </ImageLightbox>
               )
             )}

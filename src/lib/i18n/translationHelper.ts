@@ -52,34 +52,37 @@ export function createTranslator(locale: Locale) {
 /**
  * Localizes a Mongoose/plain document based on the current locale.
  */
-export function getLocalizedContent<T extends Record<string, any>>(
+export function getLocalizedContent<T extends object>(
   doc: T,
   locale: Locale,
   fields: readonly (keyof T)[]
 ): T {
-  if (locale === "en" || !doc.translations) {
+  const document = doc as T & {
+    translations?: Map<string, Record<string, unknown>> | Record<string, Record<string, unknown>>;
+  };
+
+  if (locale === "en" || !document.translations) {
     return doc;
   }
 
-  // Handle both Map and plain object for translations
-  let translations: any = null;
-  if (doc.translations instanceof Map) {
-    translations = doc.translations.get(locale);
-  } else if (typeof doc.translations === 'object') {
-    translations = doc.translations[locale];
+  let translations: Record<string, unknown> | null = null;
+  if (document.translations instanceof Map) {
+    translations = document.translations.get(locale) ?? null;
+  } else if (typeof document.translations === "object") {
+    translations = document.translations[locale] ?? null;
   }
 
   if (!translations) {
     return doc;
   }
 
-  const localized = { ...doc };
+  const localized = Object.assign({}, doc) as Record<string, unknown>;
   for (const field of fields) {
-    const val = translations[field as string];
-    if (val !== undefined && val !== null && val !== "") {
-      localized[field] = val;
+    const value = translations[String(field)];
+    if (value !== undefined && value !== null && value !== "") {
+      localized[String(field)] = value;
     }
   }
 
-  return localized;
+  return localized as T;
 }

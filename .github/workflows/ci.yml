@@ -187,6 +187,38 @@ jobs:
           'src/app/(public)/services/catalogue/page.tsx'
           'src/app/(public)/services/page.tsx'
           src/lib/clients/__tests__/validation.test.ts
+          'src/app/(public)/about/page.tsx'
+          'src/app/(public)/blog/page.tsx'
+          'src/app/(public)/blog/[slug]/page.tsx'
+          'src/app/(public)/book-a-call/page.tsx'
+          'src/app/(public)/careers/page.tsx'
+          'src/app/(public)/contact/page.tsx'
+          'src/app/(public)/faq/page.tsx'
+          'src/app/(public)/help/page.tsx'
+          'src/app/(public)/page.tsx'
+          'src/app/(public)/portfolio/[slug]/page.tsx'
+          'src/app/(public)/portfolio/page.tsx'
+          'src/app/(public)/process/page.tsx'
+          'src/app/(public)/services/[slug]/page.tsx'
+          'src/app/(public)/services/page.tsx'
+          'src/app/(public)/stack/page.tsx'
+          'src/app/(public)/team/page.tsx'
+          'src/app/(public)/testimonials/page.tsx'
+          src/app/not-found.tsx
+          src/components/public/SmartImage.tsx
+          src/components/shared/ImageLightbox.tsx
+          'src/app/(public)/industries/page.tsx'
+          'src/app/(public)/engagement-models/page.tsx'
+          'src/app/(public)/loading.tsx'
+          src/app/sitemap.ts
+          'src/app/(public)/error.tsx'
+          'src/app/(public)/careers/[slug]/page.tsx'
+          'src/app/(public)/help/[id]/page.tsx'
+          'src/app/(public)/team/[slug]/page.tsx'
+          'src/app/(public)/testimonials/[id]/page.tsx'
+          src/components/public/HeroMoment.tsx
+          src/components/public/HomepageMediaExperience.tsx
+          src/lib/i18n/translatableFields.ts
 
       - name: Type check and production build
         run: npm run build

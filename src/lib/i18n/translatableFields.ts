@@ -37,6 +37,6 @@ export const TRANSLATABLE_FIELDS = {
   AboutSettings: ["founderRole", "founderDescription"] as const,
   BookACallSettings: ["title", "description"] as const,
   HelpArticle: ["title", "contentHtml"] as const,
-  StackItem: ["name", "description"] as const,
+  StackItem: ["title", "description"] as const,
   PageContent: ["content"] as const,
 };

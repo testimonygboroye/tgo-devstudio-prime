@@ -5,7 +5,7 @@ import { useSwipeSidebar } from "@/hooks/useSwipeSidebar";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Menu, X, Layers, Briefcase, Newspaper, DoorOpen, Mail, Info, Workflow, Users, Star, PhoneCall, Boxes, HelpCircle, ChevronDown, MessageCircleQuestion, Settings, ArrowLeft, ShieldCheck, FileText } from "lucide-react";
+import { Menu, X, Layers, Briefcase, Newspaper, DoorOpen, Mail, Info, Workflow, Users, Star, PhoneCall, Boxes, HelpCircle, ChevronDown, MessageCircleQuestion, Settings, ArrowLeft, ShieldCheck, FileText, Package, Building2, Handshake } from "lucide-react";
 import HelpSearchPopup from "@/components/shared/HelpSearchPopup";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 
@@ -25,6 +25,9 @@ export default function SiteHeader() {
     ]},
     { title: "Capabilities & Work", links: [
       { label: t("nav.services"), href: "/services", icon: Layers },
+      { label: "Industries", href: "/industries", icon: Building2 },
+      { label: "Ways to work together", href: "/engagement-models", icon: Handshake },
+      { label: "Service Packages", href: "/services/catalogue", icon: Package },
       { label: t("nav.process"), href: "/process", icon: Workflow },
       { label: t("nav.portfolio"), href: "/portfolio", icon: Briefcase },
       { label: t("nav.stack"), href: "/stack", icon: Boxes },
@@ -49,8 +52,8 @@ export default function SiteHeader() {
   ];
 
   return (
-    <header className="sticky top-0 z-50">
-      <div className="border-b border-base-800 bg-base-950/95">
+    <header className="tgo-public-header sticky top-0 z-50">
+      <div className="tgo-public-header-bar border-b border-base-800 bg-base-950/95">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 sm:px-12">
           <Link href="/" className="flex items-center gap-2" onClick={() => setIsMenuOpen(false)}>
             <Image src="/logo.png" alt="TGO DevStudio logo" width={36} height={36} priority />

@@ -19,6 +19,9 @@ export default function SiteFooter() {
   const COMPANY_LINKS = [
     { label: t("nav.about"), href: "/about" },
     { label: t("nav.services"), href: "/services" },
+    { label: "Industries", href: "/industries" },
+    { label: "Ways to work together", href: "/engagement-models" },
+    { label: "Service packages", href: "/services/catalogue" },
     { label: t("nav.process"), href: "/process" },
     { label: t("nav.team"), href: "/team" },
     { label: t("nav.stack"), href: "/stack" },
@@ -45,7 +48,7 @@ export default function SiteFooter() {
   ];
 
   return (
-    <footer className="border-t" style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-page)" }}>
+    <footer className="tgo-public-footer border-t" style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-page)" }}>
       <div className="mx-auto max-w-6xl px-6 py-16 sm:px-12">
         <div className="grid gap-10 sm:grid-cols-4">
           <div className="sm:col-span-1">

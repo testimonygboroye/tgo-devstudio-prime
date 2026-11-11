@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import SmartImage from "@/components/public/SmartImage";
 type Props={settings:{
  enabled?:boolean;countdownEnabled?:boolean;countdownVisible?:boolean;launchDate?:string|Date|null;title?:string;description?:string;
@@ -16,7 +16,7 @@ function remainingTime(target:number,now:number){
  return {years,months,days,hours,minutes,seconds:total};
 }
 export default function LaunchExperience({settings}:Props){
- const [now,setNow]=useState(Date.now()),[mediaIndex,setMediaIndex]=useState(0);
+ const [now,setNow]=useState(0),[mediaIndex,setMediaIndex]=useState(0);
  const videoRef=useRef<HTMLVideoElement>(null);
  const target=useMemo(()=>settings.launchDate?new Date(settings.launchDate).getTime():0,[settings.launchDate]);
  const hasTarget=Boolean(target&&!Number.isNaN(target));
@@ -25,10 +25,10 @@ export default function LaunchExperience({settings}:Props){
  const video=afterTarget&&settings.afterLaunchVideoUrl?settings.afterLaunchVideoUrl:settings.videoUrl;
  const image=afterTarget&&settings.afterLaunchFlyerUrl?settings.afterLaunchFlyerUrl:settings.flyerUrl;
  const media=useMemo(()=>[...(video?[{kind:"video" as const,url:video}]:[]),...(image?[{kind:"image" as const,url:image}]:[])],[video,image]);
- const current=media[mediaIndex]||null;
+ const current=media.length?media[mediaIndex%media.length]:null;
  const overrideSeconds=(settings.videoDurationHours||0)*3600+(settings.videoDurationMinutes||0)*60+(settings.videoDurationSeconds||0);
  const useOverride=Boolean(settings.useVideoDurationOverride&&overrideSeconds>0);
- const advance=()=>setMediaIndex(i=>media.length>0?(i+1)%media.length:0);
+ const advance=useCallback(()=>setMediaIndex(i=>media.length>0?(i+1)%media.length:0),[media.length]);
  useEffect(()=>{if(!settings.enabled||!countdownEnabled||!hasTarget||afterTarget)return;const id=window.setInterval(()=>setNow(Date.now()),1000);return()=>window.clearInterval(id);},[settings.enabled,countdownEnabled,hasTarget,afterTarget]);
  useEffect(()=>{setMediaIndex(0);},[afterTarget,video,image]);
  useEffect(()=>{if(!settings.videoAudioEnabled)return;const resumeAudioVideo=()=>{const element=videoRef.current;if(element?.paused)void element.play().catch(()=>{});};window.addEventListener("pointerdown",resumeAudioVideo,{once:true});window.addEventListener("touchstart",resumeAudioVideo,{once:true});window.addEventListener("keydown",resumeAudioVideo,{once:true});return()=>{window.removeEventListener("pointerdown",resumeAudioVideo);window.removeEventListener("touchstart",resumeAudioVideo);window.removeEventListener("keydown",resumeAudioVideo);};},[settings.videoAudioEnabled,current?.url]);
@@ -39,7 +39,7 @@ export default function LaunchExperience({settings}:Props){
   if(duration<=0)return;
   const timer=window.setTimeout(advance,duration*1000);
   return()=>window.clearTimeout(timer);
- },[mediaIndex,current?.kind,current?.url,useOverride,overrideSeconds,settings.flyerSeconds,settings.flyerDurationMinutes,settings.flyerDurationSeconds,media.length]);
+ },[mediaIndex,current,current?.kind,current?.url,useOverride,overrideSeconds,settings.flyerSeconds,settings.flyerDurationMinutes,settings.flyerDurationSeconds,media.length,advance]);
  if(!settings.enabled)return null;
  const countdown=countdownEnabled&&hasTarget&&!afterTarget?remainingTime(target,now):null;
  const showCountdown=Boolean(countdown&&settings.countdownVisible!==false);

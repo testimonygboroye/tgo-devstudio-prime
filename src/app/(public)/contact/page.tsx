@@ -23,6 +23,7 @@ export default async function ContactPage() {
         </aside>
         <div className="contact-form-shell"><div className="contact-form-heading"><span>PROJECT ENQUIRY</span><b>Give us the useful details.</b><small>Fields marked as required help us respond meaningfully.</small></div><ContactForm/><div className="contact-form-foot"><CheckCircle2 size={14}/> No obligation. Just a clear first step.</div></div>
       </div></section>
+      <section className="services-bottom-cta"><div className="home-container"><span className="eyebrow-label">{page.ctaEyebrow}</span><h2>{page.ctaHeading}</h2><p>{page.ctaDescription}</p><Link href={page.ctaPrimaryHref} className="btn-premium-primary inline-flex items-center gap-2 rounded-full px-7 py-4 font-semibold text-white">{page.ctaPrimaryLabel} <ArrowUpRight size={17}/></Link></div></section>
     </main>
   );
 }

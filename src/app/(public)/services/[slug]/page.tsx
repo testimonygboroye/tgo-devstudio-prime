@@ -7,7 +7,8 @@ import { getServerLocale } from "@/lib/i18n/serverLocale";
 import { createTranslator, getLocalizedContent } from "@/lib/i18n/translationHelper";
 import { TRANSLATABLE_FIELDS } from "@/lib/i18n/translatableFields";
 import { SERVICE_ICON_MAP } from "@/lib/constants/serviceIcons";
-import { Code, ArrowLeft } from "lucide-react";
+import { Code, ArrowLeft, ArrowUpRight, Compass, ShieldCheck, Rocket } from "lucide-react";
+import SmartImage from "@/components/public/SmartImage";
 import { slugify } from "@/lib/utils/slugify";
 import { getSiteUrl } from "@/lib/siteUrl";
 
@@ -162,126 +163,28 @@ export default async function ServiceDetailPage({
   };
 
   return (
-    <main className="min-h-screen px-6 py-20 sm:px-12">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(schema),
-        }}
-      />
-
-      <div className="mx-auto max-w-4xl">
-        <Link
-          href="/services"
-          className="inline-flex items-center gap-2 text-sm text-neutral-400 hover:text-brand-cyan-300"
-        >
-          <ArrowLeft size={16} />
-          {t("nav.services")}
-        </Link>
-
-        <div className="mt-10 flex h-16 w-16 items-center justify-center rounded-2xl brand-gradient-bg text-base-950">
-          <IconComp size={28} />
-        </div>
-
-        <span className="eyebrow-label mt-8 block">
-          TGO DevStudio Service
-        </span>
-
-        <h1
-          className="heading-premium mt-4 text-5xl font-bold brand-gradient-text sm:text-6xl"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
-          {service.title}
-        </h1>
-
-        <p
-          className="mt-6 max-w-3xl text-xl leading-relaxed"
-          style={{ color: "var(--text-secondary)" }}
-        >
-          {service.summary}
-        </p>
-
-        <div className="mt-12 grid gap-6 sm:grid-cols-3">
-          <div className="surface-card">
-            <div className="surface-card-inner p-6">
-              <p className="text-sm font-semibold text-brand-cyan-300">
-                Strategy
-              </p>
-              <p
-                className="mt-2 text-sm leading-relaxed"
-                style={{ color: "var(--text-secondary)" }}
-              >
-                We align technical decisions with business objectives,
-                users and long-term product growth.
-              </p>
-            </div>
+    <main className="service-detail-page">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{__html:JSON.stringify(schema)}}/>
+      <div className="home-container service-detail-container">
+        <Link href="/services" className="service-detail-back"><ArrowLeft size={16}/>{t("nav.services")}</Link>
+        <section className="service-detail-hero">
+          <div className="service-detail-hero-copy">
+            <span className="service-detail-icon"><IconComp size={27}/></span>
+            <span className="eyebrow-label">TGO DEVSTUDIO · SERVICE CAPABILITY</span>
+            <h1>{service.title}</h1>
+            <p>{service.summary}</p>
+            <div className="service-detail-actions"><Link href="/contact" className="btn-premium-primary inline-flex items-center gap-2 rounded-full px-6 py-3.5 font-semibold text-white">Discuss this service <ArrowUpRight size={17}/></Link><Link href="/book-a-call" className="service-detail-secondary">Book a discovery call <ArrowUpRight size={16}/></Link></div>
           </div>
-
-          <div className="surface-card">
-            <div className="surface-card-inner p-6">
-              <p className="text-sm font-semibold text-brand-cyan-300">
-                Engineering
-              </p>
-              <p
-                className="mt-2 text-sm leading-relaxed"
-                style={{ color: "var(--text-secondary)" }}
-              >
-                Production-focused engineering built for reliability,
-                maintainability, performance and scale.
-              </p>
-            </div>
-          </div>
-
-          <div className="surface-card">
-            <div className="surface-card-inner p-6">
-              <p className="text-sm font-semibold text-brand-cyan-300">
-                Delivery
-              </p>
-              <p
-                className="mt-2 text-sm leading-relaxed"
-                style={{ color: "var(--text-secondary)" }}
-              >
-                Clear communication, measurable progress and a product
-                that is ready for real users.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <section className="mt-16 border-t pt-12" style={{ borderColor: "var(--border-subtle)" }}>
-          <h2
-            className="text-3xl font-semibold"
-            style={{ color: "var(--text-primary)" }}
-          >
-            Build with TGO DevStudio
-          </h2>
-
-          <p
-            className="mt-4 max-w-3xl leading-relaxed"
-            style={{ color: "var(--text-secondary)" }}
-          >
-            Tell us what you are building, the problem you are solving and
-            where you want the product to go. TGO DevStudio can help turn
-            the idea into a reliable, production-ready digital product.
-          </p>
-
-          <div className="mt-8 flex flex-wrap gap-4">
-            <Link
-              href="/contact"
-              className="btn-premium-primary rounded-full px-7 py-3 font-semibold text-base-950"
-            >
-              Start a Conversation
-            </Link>
-
-            <Link
-              href="/book-a-call"
-              className="btn-premium-secondary rounded-full px-7 py-3 font-semibold"
-              style={{ color: "var(--text-primary)" }}
-            >
-              Book a Discovery Call
-            </Link>
+          {service.coverImage?.url&&<div className="service-detail-image"><SmartImage src={service.coverImage.url} alt={service.coverImage.altText||service.title} label={service.title}/></div>}
+        </section>
+        <section className="service-detail-method"><div className="service-detail-section-heading"><span className="eyebrow-label">How we deliver</span><h2>Considered at every layer.</h2><p>We connect the business goal, the user experience and the engineering decisions so the finished product works as one.</p></div>
+          <div className="service-detail-pillars">
+            <article><span><Compass size={21}/></span><small>01 / STRATEGY</small><h3>Start with the right problem.</h3><p>We align technical decisions with business objectives, users and long-term product growth.</p></article>
+            <article><span><ShieldCheck size={21}/></span><small>02 / ENGINEERING</small><h3>Build on dependable foundations.</h3><p>Production-focused engineering built for reliability, maintainability, performance and scale.</p></article>
+            <article><span><Rocket size={21}/></span><small>03 / DELIVERY</small><h3>Make progress visible.</h3><p>Clear communication, measurable milestones and a product that is ready for real users.</p></article>
           </div>
         </section>
+        <section className="service-detail-cta"><div><span className="eyebrow-label">Make the next move</span><h2>Build with TGO DevStudio.</h2><p>Tell us what you are building, the problem you are solving and where you want the product to go. We can help turn the idea into a reliable, production-ready digital product.</p></div><div className="flex flex-wrap gap-3"><Link href="/contact" className="btn-premium-primary inline-flex items-center gap-2 rounded-full px-7 py-3.5 font-semibold text-white">Start a conversation <ArrowUpRight size={17}/></Link><Link href="/book-a-call" className="btn-premium-secondary inline-flex items-center gap-2 rounded-full px-7 py-3.5 font-semibold" style={{color:"var(--text-primary)"}}>Book a call <ArrowUpRight size={17}/></Link></div></section>
       </div>
     </main>
   );

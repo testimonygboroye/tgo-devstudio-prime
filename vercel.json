@@ -12,6 +12,14 @@
     {
       "path": "/api/cron/engagement-expiry",
       "schedule": "30 3 * * *"
+    },
+    {
+      "path": "/api/cron/webhook-delivery",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/sales-followups",
+      "schedule": "*/15 * * * *"
     }
   ]
 }

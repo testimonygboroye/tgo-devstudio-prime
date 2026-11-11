@@ -1,0 +1,5 @@
+import {Schema,model,models,type Document,type Model,Types} from "mongoose";
+export interface IMarketingCampaignDelivery extends Document{campaignId:Types.ObjectId;subscriberId:Types.ObjectId;email:string;status:"pending"|"sending"|"sent"|"failed";attempts:number;lastError?:string;sentAt?:Date;createdAt:Date;updatedAt:Date}
+const schema=new Schema<IMarketingCampaignDelivery>({campaignId:{type:Schema.Types.ObjectId,ref:"MarketingCampaign",required:true,index:true},subscriberId:{type:Schema.Types.ObjectId,ref:"NewsletterSubscriber",required:true},email:{type:String,required:true,lowercase:true,trim:true},status:{type:String,enum:["pending","sending","sent","failed"],default:"pending",index:true},attempts:{type:Number,default:0,min:0},lastError:{type:String,default:"",maxlength:500},sentAt:Date},{timestamps:true});
+schema.index({campaignId:1,subscriberId:1},{unique:true});schema.index({campaignId:1,status:1,createdAt:1});
+const M:Model<IMarketingCampaignDelivery>=models.MarketingCampaignDelivery||model<IMarketingCampaignDelivery>("MarketingCampaignDelivery",schema);export default M;

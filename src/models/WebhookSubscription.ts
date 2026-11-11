@@ -1,0 +1,4 @@
+import {Schema,model,models,type Document,type Model,Types} from "mongoose";
+export interface IWebhookSubscription extends Document{name:string;url:string;secretCiphertext:string;events:string[];active:boolean;createdBy:Types.ObjectId;updatedBy:Types.ObjectId;lastDeliveredAt?:Date;createdAt:Date;updatedAt:Date}
+const schema=new Schema<IWebhookSubscription>({name:{type:String,required:true,trim:true,maxlength:120},url:{type:String,required:true,trim:true,maxlength:2000},secretCiphertext:{type:String,required:true,select:false},events:{type:[String],required:true,default:[]},active:{type:Boolean,default:true,index:true},createdBy:{type:Schema.Types.ObjectId,ref:"User",required:true},updatedBy:{type:Schema.Types.ObjectId,ref:"User",required:true},lastDeliveredAt:Date},{timestamps:true});
+schema.index({active:1,updatedAt:-1});const M:Model<IWebhookSubscription>=models.WebhookSubscription||model<IWebhookSubscription>("WebhookSubscription",schema);export default M;

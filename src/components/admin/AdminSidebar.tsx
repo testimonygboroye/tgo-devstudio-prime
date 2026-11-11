@@ -52,6 +52,7 @@ import {
   ClipboardList,
   PlugZap,
   Megaphone,
+  SearchCheck,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -77,6 +78,7 @@ const NAV_GROUPS = [
   { title: "Integration & Growth", items: [
     { label: "Integration Centre", hrefSuffix: "/integrations", icon: PlugZap, badgeKey: null },
     { label: "Marketing & Sales", hrefSuffix: "/growth", icon: Megaphone, badgeKey: null },
+    { label: "SEO Operations", hrefSuffix: "/seo", icon: SearchCheck, badgeKey: null },
   ]},
   { title: "Commercial & Delivery", items: [
     { label: "Sales & Delivery", hrefSuffix: "/commercial", icon: ShoppingCart, badgeKey: null },

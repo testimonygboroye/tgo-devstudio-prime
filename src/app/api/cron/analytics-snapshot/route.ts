@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
-  const secret = process.env.CRON_SECRET;
+  const secret = process.env.PLATFORM_AUTOMATION_CRON_SECRET || process.env.CRON_SECRET;
 
   if (!secret) {
     return NextResponse.json(

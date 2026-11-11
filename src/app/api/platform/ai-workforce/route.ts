@@ -4,6 +4,7 @@ import { getServerSession } from "@/lib/auth/serverSession";
 import { connectToDatabase } from "@/lib/db";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import { AIProvider, AIAgent, AITask } from "@/models/AIWorkforce";
+import { UnifiedConversation, UnifiedMessage } from "@/models/UnifiedConversation";
 import { decryptProviderSecret, encryptProviderSecret } from "@/lib/ai/provider-secrets";
 import { runProviderCompletion } from "@/lib/ai/provider-runtime";
 import { AIWorkspace, AIMemory } from "@/models/AIKnowledge";
@@ -249,6 +250,10 @@ export async function POST(request: NextRequest) {
         task.providerRequestId = completion.providerRequestId;
         task.completedAt = new Date();
         await task.save();
+        if (["communications", "ai_conversation"].includes(String(payload.source || "")) && mongoose.Types.ObjectId.isValid(String(payload.conversationId || ""))) {
+          const conversation = await UnifiedConversation.findById(String(payload.conversationId));
+          if (conversation) { await UnifiedMessage.create({ conversationId: conversation._id, senderType: "ai", senderLabel: agent.name, body: completion.text.slice(0, 12000), status: "sent" }); conversation.lastMessageAt = new Date(); await conversation.save(); }
+        }
         if (task.operation) await writePlatformAuditEvent({ actorType: "ai", actorId: String(agent._id), actorLabel: agent.name, action: "ai.business_tool_executed", module: "ai-workforce", targetType: task.operation, targetId: String(payload.clientId || payload.projectId || task._id), outcome: "success", metadata: { taskId: String(task._id), approvedBy: task.approvedBy } });
         await writePlatformAuditEvent({ actorType: "ai", actorId: String(agent._id), actorLabel: agent.name, action: "ai.task.completed", module: "ai-workforce", targetType: "AITask", targetId: String(task._id), outcome: "success", metadata: { model: agent.modelName, inputTokens: completion.inputTokens, outputTokens: completion.outputTokens, providerRequestId: completion.providerRequestId } });
         return NextResponse.json({ status: "ok", message: "AI task completed.", taskId: task._id, result: task.result, usage: { inputTokens: completion.inputTokens, outputTokens: completion.outputTokens } });
@@ -257,6 +262,11 @@ export async function POST(request: NextRequest) {
         task.error = (error instanceof Error ? error.message : "AI execution failed.").slice(0, 2000);
         task.completedAt = new Date();
         await task.save();
+        const failedPayload = (task.operationPayload || {}) as Record<string, unknown>;
+        if (["communications", "ai_conversation"].includes(String(failedPayload.source || "")) && mongoose.Types.ObjectId.isValid(String(failedPayload.conversationId || ""))) {
+          const conversation = await UnifiedConversation.findById(String(failedPayload.conversationId));
+          if (conversation) await UnifiedMessage.create({ conversationId: conversation._id, senderType: "system", senderLabel: "TGO system", body: "The assigned AI task failed. Review its execution record in AI Workforce." });
+        }
         await writePlatformAuditEvent({ actorType: "system", actorId: "ai-workforce-runtime", action: "ai.task.failed", module: "ai-workforce", targetType: "AITask", targetId: String(task._id), outcome: "failure", metadata: { error: task.error, attempt: task.executionAttempts } });
         return NextResponse.json({ status: "error", message: "AI task failed. Review the recorded error before retrying.", taskId: task._id, error: task.error }, { status: 502 });
       }

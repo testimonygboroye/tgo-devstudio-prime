@@ -1,0 +1,56 @@
+name: TGO Platform Automation
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: tgo-platform-automation
+  cancel-in-progress: false
+
+jobs:
+  run-automation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Run protected platform jobs
+        shell: bash
+        env:
+          APP_BASE_URL: ${{ secrets.APP_BASE_URL }}
+          PLATFORM_AUTOMATION_CRON_SECRET: ${{ secrets.PLATFORM_AUTOMATION_CRON_SECRET }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$APP_BASE_URL" || -z "$PLATFORM_AUTOMATION_CRON_SECRET" ]]; then
+            echo "::warning::Add APP_BASE_URL and PLATFORM_AUTOMATION_CRON_SECRET in repository Actions secrets to enable automation."
+            exit 0
+          fi
+          base="${APP_BASE_URL%/}"
+          failed=0
+          endpoints=(
+            "/api/cron/webhook-delivery"
+            "/api/cron/sales-followups"
+            "/api/cron/executive-reports"
+            "/api/cron/marketing-campaigns"
+            "/api/cron/support-escalation"
+            "/api/cron/engagement-expiry"
+            "/api/cron/analytics-snapshot"
+          )
+          for endpoint in "${endpoints[@]}"; do
+            echo "::group::${endpoint}"
+            if curl --fail-with-body --silent --show-error --max-time 30 \
+              --header "Authorization: Bearer ${PLATFORM_AUTOMATION_CRON_SECRET}" \
+              --header "User-Agent: TGO-GitHub-Automation/1.0" \
+              "${base}${endpoint}"; then
+              echo
+              echo "Completed: ${endpoint}"
+            else
+              echo
+              echo "::error::Automation endpoint failed: ${endpoint}"
+              failed=1
+            fi
+            echo "::endgroup::"
+          done
+          exit "$failed"

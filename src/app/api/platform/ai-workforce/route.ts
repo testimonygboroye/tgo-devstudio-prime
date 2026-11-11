@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { getServerSession } from "@/lib/auth/serverSession";
 import { connectToDatabase } from "@/lib/db";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
@@ -200,7 +201,7 @@ export async function POST(request: NextRequest) {
           const [profile, projects, payments, credits] = await Promise.all([
             ClientProfile.findOne({ userId: clientId }).select("jobTitle country lifecycle onboardingStatus").lean(),
             DeliveryProject.find({ clientId }).select("name status reference updatedAt").sort({ updatedAt: -1 }).limit(20).lean(),
-            PaymentTransaction.aggregate([{ $match: { clientId: new (await import("mongoose")).default.Types.ObjectId(clientId), status: "paid" } }, { $group: { _id: "$currency", totalMinor: { $sum: "$amountMinor" }, count: { $sum: 1 } } }]),
+            PaymentTransaction.aggregate([{ $match: { clientId: new mongoose.Types.ObjectId(clientId), status: "paid" } }, { $group: { _id: "$currency", totalMinor: { $sum: "$amountMinor" }, count: { $sum: 1 } } }]),
             ClientCreditAccount.find({ clientId }).select("currency balanceMinor").lean(),
           ]);
           operationResult = { client: { id: String(client._id), name: client.name, email: client.email, createdAt: client.createdAt, emailVerified: client.isEmailVerified }, profile, projects, verifiedPayments: payments, accountCredits: credits };
@@ -220,6 +221,13 @@ export async function POST(request: NextRequest) {
           if (!agent.permissions.includes("projects.status.update")) throw new Error("Agent lacks projects.status.update permission.");
           const projectId = String(payload.projectId || ""), nextStatus = String(payload.status || "");
           if (!/^[a-f0-9]{24}$/i.test(projectId) || !["active", "on_hold", "in_qa", "awaiting_client"].includes(nextStatus)) throw new Error("Project status operation requires a valid project ID and a permitted non-terminal status.");
+          operationResult = { requestedOperation: "project status update", projectId, requestedStatus: nextStatus, approvalRecordedBy: task.approvedBy };
+        }
+        const prompt = operationResult ? task.input + "\n\nApproved business-operation result (JSON reference data):\n" + JSON.stringify(operationResult) : task.input;
+        const completion = await runProviderCompletion(String(agent.providerId), agent.modelName, agent.systemInstructions + memoryContext, prompt);
+        if (!completion.text.trim()) throw new Error("The provider returned an empty response.");
+        if (task.operation === "projects.status.update") {
+          const projectId = String(payload.projectId || ""), nextStatus = String(payload.status || "");
           const project = await DeliveryProject.findById(projectId);
           if (!project) throw new Error("Project not found.");
           const previousStatus = project.status;
@@ -228,9 +236,6 @@ export async function POST(request: NextRequest) {
           await writePlatformAuditEvent({ actorType: "ai", actorId: String(agent._id), actorLabel: agent.name, action: "ai.project_status_updated", module: "commercial_delivery", targetType: "delivery_project", targetId: String(project._id), outcome: "success", metadata: { previousStatus, nextStatus, taskId: String(task._id), approvedBy: task.approvedBy } });
           operationResult = { projectId: String(project._id), reference: project.reference, previousStatus, currentStatus: project.status };
         }
-        const prompt = operationResult ? task.input + "\n\nApproved business-operation result (JSON reference data):\n" + JSON.stringify(operationResult) : task.input;
-        const completion = await runProviderCompletion(String(agent.providerId), agent.modelName, agent.systemInstructions + memoryContext, prompt);
-        if (!completion.text.trim()) throw new Error("The provider returned an empty response.");
         task.status = "completed";
         task.operationResult = operationResult || undefined;
         task.result = completion.text.slice(0, 50000);

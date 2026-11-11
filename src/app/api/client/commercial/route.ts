@@ -25,6 +25,7 @@ import FinanceInvoice from "@/models/FinanceInvoice";
 import ClientCreditAccount from "@/models/ClientCreditAccount";
 import FinanceInstallmentPlan from "@/models/FinanceInstallmentPlan";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
+import { awardEngagementPoints } from "@/lib/engagement/award";
 
 export const dynamic="force-dynamic";
 function fail(message:string,status=400){return NextResponse.json({ok:false,error:message},{status});}
@@ -141,6 +142,7 @@ export async function POST(request:NextRequest) {
       const existing=await ProjectClientReview.findOne({projectId:project._id,clientId:user._id});
       if(existing)return fail("You have already submitted a review for this project.",409);
       const review=await ProjectClientReview.create({projectId:project._id,clientId:user._id,rating,title,feedback,status:"submitted",submittedAt:new Date()});
+      await awardEngagementPoints({clientId:String(user._id),eventKey:"project-review:"+String(review._id),eventType:"review_submitted",metadata:{projectId:String(project._id),reviewId:String(review._id),rating}});
       await logClient(session,"client.project_review_submitted","project_client_review",String(review._id),"Client submitted a completed-project review.",{projectId:String(project._id),rating});
       return NextResponse.json({ok:true,message:"Thank you. Your project review has been submitted for moderation.",item:review},{status:201});
     }

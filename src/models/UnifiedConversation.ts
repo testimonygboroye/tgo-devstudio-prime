@@ -49,6 +49,7 @@ export interface IUnifiedMessage extends Document {
   readBy: Types.ObjectId[];
   reactions: { emoji: string; userId: Types.ObjectId }[];
   pinned: boolean;
+  attachments: { name: string; url: string; mimeType: string; size: number }[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -69,6 +70,7 @@ const MessageSchema = new Schema<IUnifiedMessage>({
   readBy: [{ type: Schema.Types.ObjectId, ref: "User" }],
   reactions: [{ emoji: { type: String, maxlength: 12 }, userId: { type: Schema.Types.ObjectId, ref: "User" } }],
   pinned: { type: Boolean, default: false, index: true },
+  attachments: [{ name: { type: String, maxlength: 180 }, url: { type: String, maxlength: 2048 }, mimeType: { type: String, maxlength: 120 }, size: { type: Number, min: 0, max: 20971520 } }],
 }, { timestamps: true });
 MessageSchema.index({ conversationId: 1, createdAt: -1 });
 MessageSchema.index({ externalMessageId: 1 }, { unique: true, sparse: true });

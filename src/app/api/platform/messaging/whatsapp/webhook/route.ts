@@ -2,13 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { connectToDatabase } from "@/lib/db";
 import { UnifiedConversation, UnifiedMessage } from "@/models/UnifiedConversation";
+import { getVerifiedIntegrationCredentials } from "@/lib/integrations/credentials";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   const query = request.nextUrl.searchParams;
-  const verifyToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN;
+  const credentials = await getVerifiedIntegrationCredentials("whatsapp_cloud");
+  const verifyToken = credentials?.webhookVerifyToken;
   if (query.get("hub.mode") === "subscribe" && verifyToken && query.get("hub.verify_token") === verifyToken) {
     return new Response(query.get("hub.challenge") || "", { status: 200, headers: { "Content-Type": "text/plain" } });
   }
@@ -17,7 +19,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const raw = await request.text();
-  const appSecret = process.env.WHATSAPP_APP_SECRET;
+  const credentials = await getVerifiedIntegrationCredentials("whatsapp_cloud");
+  const appSecret = credentials?.appSecret;
   const signature = request.headers.get("x-hub-signature-256") || "";
   if (!appSecret || !signature.startsWith("sha256=")) return NextResponse.json({ error: "Webhook signature is not configured." }, { status: 401 });
   const expected = "sha256=" + createHmac("sha256", appSecret).update(raw).digest("hex");

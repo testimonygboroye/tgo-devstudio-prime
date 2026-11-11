@@ -2,15 +2,28 @@ import Link from "next/link";
 import { getServerSession } from "@/lib/auth/serverSession";
 import { guardCanEdit } from "@/lib/auth/pageGuards";
 import { getAdminBasePath } from "@/lib/adminPath";
-import { ArrowUpRight, Building2, Handshake } from "lucide-react";
+import { ArrowUpRight, Building2, Handshake, Info, Mail, Workflow, Layers3, Briefcase, Newspaper, Users, DoorOpen, Star, Boxes, HelpCircle, CalendarDays, Package } from "lucide-react";
 
 export default async function PublicLandingPagesHub() {
   const session = await getServerSession();
   guardCanEdit(session!, "pageContent");
   const basePath = getAdminBasePath();
   const pages = [
-    { key: "industries", title: "Industries", description: "Edit the industry landing page, sector cards, iconography, descriptions and calls to action.", icon: Building2 },
-    { key: "engagement-models", title: "Engagement Models", description: "Edit the ways of working page, engagement cards, delivery descriptions and calls to action.", icon: Handshake },
+    { key: "industries", title: "Industries", description: "Edit industry positioning, sector cards and calls to action.", icon: Building2 },
+    { key: "engagement-models", title: "Engagement Models", description: "Edit ways of working, delivery models and engagement cards.", icon: Handshake },
+    { key: "about", title: "About", description: "Edit the public About page hero, story framing and closing call to action.", icon: Info },
+    { key: "contact", title: "Contact", description: "Edit contact page messaging and enquiry introduction.", icon: Mail },
+    { key: "process", title: "Our Process", description: "Edit the process page hero, introduction and closing action.", icon: Workflow },
+    { key: "services", title: "Services", description: "Edit service page positioning, capability introduction and calls to action.", icon: Layers3 },
+    { key: "portfolio", title: "Portfolio", description: "Edit portfolio page messaging and case-study introduction.", icon: Briefcase },
+    { key: "blog", title: "Blog", description: "Edit journal messaging, SEO and article introduction.", icon: Newspaper },
+    { key: "team", title: "Team", description: "Edit team page messaging and studio introduction.", icon: Users },
+    { key: "careers", title: "Careers", description: "Edit careers messaging and opportunity introduction.", icon: DoorOpen },
+    { key: "testimonials", title: "Testimonials", description: "Edit testimonials page copy and review introduction.", icon: Star },
+    { key: "stack", title: "Technology Stack", description: "Edit technology page messaging and engineering introduction.", icon: Boxes },
+    { key: "help", title: "Help Centre", description: "Edit help centre headings and support messaging.", icon: HelpCircle },
+    { key: "book-a-call", title: "Book a Call", description: "Edit discovery call messaging and scheduler introduction.", icon: CalendarDays },
+    { key: "services-catalogue", title: "Service Catalogue", description: "Edit service package catalogue messaging and CTAs.", icon: Package },
   ];
   return (
     <div>

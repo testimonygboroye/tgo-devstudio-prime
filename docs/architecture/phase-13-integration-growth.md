@@ -17,6 +17,13 @@
 3. For Brevo email sending, ensure `BREVO_SENDER_EMAIL` is configured and verified with Brevo.
 4. Confirm the required provider permissions and production account ownership before enabling downstream actions.
 
+## Sales and marketing workspace
+
+- The founder Marketing & Sales page reads and updates the existing SalesLead collection rather than creating duplicate lead identities.
+- Lead creation and stage/follow-up/note updates are persisted in MongoDB and written to the shared PlatformAuditEvent log.
+- Marketing campaign records can be created and edited as drafts. The audience count shown for newsletter subscribers is read live from the existing consent-status collection.
+- Campaign dispatch, scheduling, delivery retries, SMS consent collection, attribution pixels and campaign analytics are intentionally not exposed as operational actions yet. Existing newsletter broadcasting remains separate and unchanged.
+
 ## Explicit capability boundaries
 
 A saved credential is not proof of a working integration. Only successful provider verification sets the connection state to connected. OAuth-based Google integrations require their dedicated consent/callback flow. Webhook subscriptions, durable delivery queues/retries, campaign scheduling/dispatch and campaign attribution are not represented as live by this initial connector registry and must be implemented and tested before being exposed as operational actions.

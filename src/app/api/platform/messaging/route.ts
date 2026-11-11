@@ -75,7 +75,8 @@ export async function POST(request: NextRequest) {
   if (body.action === "send") {
     const conversationId = String(body.conversationId || "");
     const content = typeof body.body === "string" ? body.body.trim() : "";
-    if (!Types.ObjectId.isValid(conversationId) || !content || content.length > 12000) return fail("A valid conversation and message (1–12,000 characters) are required.");
+    const attachments = Array.isArray(body.attachments) ? body.attachments.slice(0, 5).filter((item): item is { name: string; url: string; mimeType: string; size: number } => Boolean(item && typeof item === "object" && typeof item.url === "string" && item.url.startsWith("https://res.cloudinary.com/") && typeof item.name === "string" && typeof item.mimeType === "string" && Number(item.size) > 0 && Number(item.size) <= 20971520)) : [];
+    if (!Types.ObjectId.isValid(conversationId) || (!content && !attachments.length) || content.length > 12000) return fail("A valid conversation and text or attachment are required.");
     const conversation = await UnifiedConversation.findById(conversationId);
     if (!conversation) return fail("Conversation not found.", 404);
     if (!conversation.memberIds.some((id) => String(id) === String(actorId)) && !session.role.isFounderRole) return forbiddenResponse("You are not a member of this conversation.");
@@ -85,7 +86,7 @@ export async function POST(request: NextRequest) {
       if (!root) return fail("Thread root message does not belong to this conversation.");
       threadRootId = root.threadRootId || root._id;
     }
-    const message = await UnifiedMessage.create({ conversationId, senderType: "human", senderId: actorId, senderLabel: actorName, body: content, status: "sent", readBy: [actorId], threadRootId });
+    const message = await UnifiedMessage.create({ conversationId, senderType: "human", senderId: actorId, senderLabel: actorName, body: content, status: "sent", readBy: [actorId], threadRootId, attachments, messageType: attachments.some((item) => item.mimeType.startsWith("audio/")) ? "audio" : attachments.length ? "file" : "text" });
     conversation.lastMessageAt = new Date();
     await conversation.save();
 
@@ -122,6 +123,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    if (conversation.kind === "whatsapp" && attachments.length) return fail("WhatsApp media sending is not enabled yet; send text within the customer service window.", 409);
     if (conversation.kind === "whatsapp") {
       if (!conversation.externalOptInAt || !conversation.externalContactId || !conversation.externalLastInboundAt || Date.now() - conversation.externalLastInboundAt.getTime() > 24 * 60 * 60 * 1000) return fail("WhatsApp free-form replies are available only within 24 hours of the contact\u2019s latest inbound message. Outside that window, an approved WhatsApp template is required.", 409);
       const credentials = await getVerifiedIntegrationCredentials("whatsapp_cloud");

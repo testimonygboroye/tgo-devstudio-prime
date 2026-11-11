@@ -196,5 +196,29 @@ export async function POST(request: NextRequest) {
     await writePlatformAuditEvent({ actorType: "human", actorId: String(actorId), actorLabel: actorName, action: "ai.task.assigned_from_communications", module: "communications", targetType: "AITask", targetId: String(task._id), outcome: "success", metadata: { agentId, status: task.status } });
     return NextResponse.json({ status: "ok", taskId: String(task._id), taskStatus: task.status, message: "Task recorded in the AI workforce queue." }, { status: 201 });
   }
+  if (body.action === "translate") {
+    const agentId = String(body.agentId || "");
+    const input = String(body.input || "").trim();
+    const targetLanguage = String(body.targetLanguage || "").trim().slice(0, 80);
+    if (!Types.ObjectId.isValid(agentId) || input.length < 1 || input.length > 12000 || !targetLanguage) return fail("Choose an AI employee, enter text, and specify the target language.");
+    const agent = await AIAgent.findOne({ _id: agentId, enabled: true });
+    if (!agent) return fail("The selected AI employee is unavailable.", 404);
+    if (agent.requiresApproval) return fail("This AI employee requires approval. Choose an enabled translation agent configured for direct, text-only replies.", 409);
+    const dayStart = new Date(); dayStart.setUTCHours(0, 0, 0, 0);
+    const usage = await AITask.aggregate([{ $match: { agentId: agent._id, status: { $in: ["completed", "running"] }, createdAt: { $gte: dayStart } } }, { $group: { _id: null, tokens: { $sum: { $add: ["$inputTokens", "$outputTokens"] } } } }]);
+    if (Number(usage[0]?.tokens || 0) >= agent.maxDailyTokens) return fail("The selected AI employee has reached its daily token budget.", 429);
+    const task = await AITask.create({ agentId: agent._id, title: "Translate to " + targetLanguage, input: input.slice(0, 20000), requestedBy: String(actorId), status: "running", startedAt: new Date(), executionAttempts: 1, operationPayload: { source: "communications_translation", targetLanguage } });
+    try {
+      const completion = await runProviderCompletion(String(agent.providerId), agent.modelName, agent.systemInstructions + "\\n\\nYou are performing a text-only translation task. Translate faithfully into " + targetLanguage + ". Preserve meaning, names, tone, and paragraph formatting. Do not add explanations, notes, or quotation marks; return only the translation.", input);
+      task.status = "completed"; task.result = completion.text.slice(0, 50000); task.inputTokens = completion.inputTokens; task.outputTokens = completion.outputTokens; task.providerRequestId = completion.providerRequestId; task.completedAt = new Date(); await task.save();
+      await writePlatformAuditEvent({ actorType: "ai", actorId: String(agent._id), actorLabel: agent.name, action: "communications.text_translated", module: "communications", targetType: "AITask", targetId: String(task._id), outcome: "success", metadata: { targetLanguage, inputTokens: completion.inputTokens, outputTokens: completion.outputTokens } });
+      return NextResponse.json({ status: "ok", translatedText: completion.text.slice(0, 12000), taskId: String(task._id), usage: { inputTokens: completion.inputTokens, outputTokens: completion.outputTokens } });
+    } catch (error) {
+      task.status = "failed"; task.error = (error instanceof Error ? error.message : "Translation failed.").slice(0, 2000); task.completedAt = new Date(); await task.save();
+      await writePlatformAuditEvent({ actorType: "ai", actorId: String(agent._id), actorLabel: agent.name, action: "communications.translation_failed", module: "communications", targetType: "AITask", targetId: String(task._id), outcome: "failure", metadata: { targetLanguage, error: task.error } });
+      return fail("Translation failed. Review the AI task record and provider connection.", 502);
+    }
+  }
+
   return fail("Unsupported communications action.");
 }

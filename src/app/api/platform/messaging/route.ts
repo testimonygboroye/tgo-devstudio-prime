@@ -41,6 +41,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const session = await getAuthenticatedSession(request);
   if (!session) return unauthorizedResponse();
+  if (session.user.accountType !== "staff") return forbiddenResponse("Staff access is required.");
   await connectToDatabase();
   const body = await request.json().catch(() => ({})) as Record<string, unknown>;
   const actorId = session.user._id as Types.ObjectId;

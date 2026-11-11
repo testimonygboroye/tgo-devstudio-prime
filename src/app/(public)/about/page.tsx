@@ -52,7 +52,7 @@ export default async function AboutPage() {
       <section className="about-hero ambient-glow">
         <div className="about-hero-inner">
           <span className="eyebrow-label">{publicCopy.heroEyebrow}</span>
-          <h1>{page.title}</h1>
+          <h1>{publicCopy.heroHeadline || page.title}<br/><em>{publicCopy.heroAccent}</em></h1>
           <p>{publicCopy.heroDescription}</p>
           <div className="about-hero-actions"><Link href="/services" className="btn-premium-primary inline-flex items-center gap-2 rounded-full px-6 py-3.5 font-semibold text-white">What we do <ArrowUpRight size={17}/></Link><Link href="/contact" className="about-quiet-link">Talk with the studio <ArrowRight size={16}/></Link></div>
           <div className="about-hero-art" aria-hidden="true"><div className="about-art-ring about-art-ring-a"/><div className="about-art-ring about-art-ring-b"/><div className="about-art-core"><Sparkles size={32}/><b>TGO</b><small>IDEAS INTO SYSTEMS</small></div><span className="about-art-node about-node-one"/><span className="about-art-node about-node-two"/><span className="about-art-node about-node-three"/></div>

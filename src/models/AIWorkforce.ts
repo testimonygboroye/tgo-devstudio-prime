@@ -48,7 +48,7 @@ const AIAgentSchema = new Schema<IAIAgent>({
   systemInstructions: { type: String, required: true, maxlength: 12000 },
   permissions: { type: [String], default: [] },
   requiresApproval: { type: Boolean, default: true },
-  maxDailyTokens: { type: Number, default: 100000, min: 1000, max: 1000000 },
+  maxDailyTokens: { type: Number, default: 100000, min: 5000, max: 1000000 },
   enabled: { type: Boolean, default: false },
   createdBy: { type: String, required: true },
 }, { timestamps: true });

@@ -54,7 +54,7 @@ export default function SiteHeader({ settings }: { settings?: PublicSiteChromeSe
       { label: "Accessibility", href: "/accessibility", icon: FileText },
     ]},
   ];
-  const NAV_GROUPS = settings?.navigationGroups?.length
+  const NAV_GROUPS = settings
     ? settings.navigationGroups.map((group) => ({ title: group.title, links: group.links.map((link) => ({ label: link.label, href: link.href, icon: getNavigationIcon(link.icon) })) }))
     : DRAWER_NAV_GROUPS;
 

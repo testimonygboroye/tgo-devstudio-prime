@@ -3,7 +3,7 @@ import { connectToDatabase } from "@/lib/db";
 import Invite from "@/models/Invite";
 import User from "@/models/User";
 import { hashToken } from "@/lib/auth/tokens";
-import { hashPassword } from "@/lib/auth/passwords";
+import { hashPassword } from "@/lib/auth/passwords";\nimport EmployeeProfile from "@/models/EmployeeProfile";\nimport Department from "@/models/Department";\nimport Position from "@/models/Position";\nimport BusinessMembership from "@/models/BusinessMembership";\nimport { writePlatformAuditEvent } from "@/lib/platform/audit";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();

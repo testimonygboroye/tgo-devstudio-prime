@@ -48,7 +48,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   const body = await request.json();
   const { status } = body as { status?: string };
 
-  const allowedStatuses = ["new", "reviewed", "shortlisted", "rejected", "hired"];
+  const allowedStatuses = ["new", "reviewed", "shortlisted", "rejected"];
   if (!status || !allowedStatuses.includes(status)) {
     return NextResponse.json({ status: "error", message: "Invalid status." }, { status: 400 });
   }
@@ -60,7 +60,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ status: "error", message: "Application not found." }, { status: 404 });
   }
 
-  const transitions: Record<string, string[]> = { reviewed: ["new"], shortlisted: ["new", "reviewed"], hired: ["shortlisted"], rejected: ["new", "reviewed", "shortlisted"], new: ["reviewed", "rejected"] };
+  const transitions: Record<string, string[]> = { reviewed: ["new"], shortlisted: ["new", "reviewed"], rejected: ["new", "reviewed", "shortlisted"], new: ["reviewed", "rejected"] };
   if (!transitions[status]?.includes(application.status)) return NextResponse.json({ status: "error", message: "This recruitment stage transition is not allowed." }, { status: 409 });
   const previousStatus = application.status;
   application.status = status as typeof application.status;

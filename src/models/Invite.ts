@@ -9,7 +9,7 @@ export interface IInvite extends Document {
   usedAt?: Date;
   approvalStatus: "pending" | "approved" | "rejected";
   approvedBy?: Types.ObjectId;
-  approvedAt?: Date;
+  approvedAt?: Date;\n  recruitmentApplicationId?: Types.ObjectId;\n  onboardingDepartmentId?: Types.ObjectId;\n  onboardingPositionId?: Types.ObjectId;\n  onboardingEmploymentType?: "full_time"|"part_time"|"contract"|"intern";\n  onboardingWorkLocation?: "remote"|"hybrid"|"onsite";\n  onboardingStartDate?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -24,7 +24,7 @@ const InviteSchema = new Schema<IInvite>(
     usedAt: { type: Date },
     approvalStatus: { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
     approvedBy: { type: Schema.Types.ObjectId, ref: "User" },
-    approvedAt: { type: Date },
+    approvedAt: { type: Date },\n    recruitmentApplicationId: { type: Schema.Types.ObjectId, ref: "JobApplication" },\n    onboardingDepartmentId: { type: Schema.Types.ObjectId, ref: "Department" },\n    onboardingPositionId: { type: Schema.Types.ObjectId, ref: "Position" },\n    onboardingEmploymentType: { type: String, enum: ["full_time","part_time","contract","intern"] },\n    onboardingWorkLocation: { type: String, enum: ["remote","hybrid","onsite"] },\n    onboardingStartDate: { type: Date },
   },
   { timestamps: true }
 );

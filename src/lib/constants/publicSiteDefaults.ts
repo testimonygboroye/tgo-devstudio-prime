@@ -405,5 +405,29 @@ export const PUBLIC_PAGE_DEFAULTS: Record<PublicPageKey, PublicPageDefault> = {
     ctaSecondaryLabel: "Book a discovery call",
     ctaSecondaryHref: "/book-a-call",
   }),
-
+,
+  faq: makePublicPageDefault("faq", {
+    metaTitle: "FAQ | TGO DevStudio Prime",
+    metaDescription: "Answers to common questions about working with TGO DevStudio, project delivery and support.",
+    heroEyebrow: "Support · Frequently asked questions",
+    heroHeadline: "Clear answers.",
+    heroAccent: "Better next steps.",
+    heroDescription: "Start here for practical answers about our services, project delivery, client experience and how to get support.",
+    introEyebrow: "The answers you need",
+    introHeading: "Browse by topic.",
+    introDescription: "Explore common questions and practical guidance. If you need a more specific answer, the team is ready to help.",
+    cards: [
+      { icon: "MessageCircleQuestion", eyebrow: "01", title: "What can TGO DevStudio help me build?", subtitle: "", description: "We work across custom software, websites, web applications, mobile apps, SaaS platforms, AI systems, cloud solutions, cybersecurity and tailored digital products. The right approach depends on your goals and requirements.", bulletPoints: [], displayOrder: 1 },
+      { icon: "MessageCircleQuestion", eyebrow: "02", title: "How do I start a project?", subtitle: "", description: "Send us a project enquiry or arrange a discovery call. We will discuss the problem, clarify scope and priorities, and provide a written proposal where there is a suitable fit.", bulletPoints: [], displayOrder: 2 },
+      { icon: "MessageCircleQuestion", eyebrow: "03", title: "How are project costs and timelines determined?", subtitle: "", description: "They depend on requirements, complexity, integrations, deliverables and schedule. We confirm the agreed scope, milestones and fees in the project proposal or engagement document.", bulletPoints: [], displayOrder: 3 },
+      { icon: "MessageCircleQuestion", eyebrow: "04", title: "Where can I get help or ask about my information?", subtitle: "", description: "Visit our Help Centre for support, or read the Privacy Policy for information requests.", bulletPoints: [], displayOrder: 4 },
+    ],
+    ctaEyebrow: "Need a more specific answer?",
+    ctaHeading: "Talk to a real person.",
+    ctaDescription: "Tell us what you are trying to do. We will help point you in the right direction.",
+    ctaPrimaryLabel: "Contact the studio",
+    ctaPrimaryHref: "/contact",
+    ctaSecondaryLabel: "Visit the Help Centre",
+    ctaSecondaryHref: "/help",
+  })
 };

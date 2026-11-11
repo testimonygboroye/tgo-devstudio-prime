@@ -2,9 +2,9 @@
 
 ## Portable scheduler
 
-The Cloudflare Worker under `automation/cloudflare-worker` is a provider-independent timer and HTTP caller. It invokes protected application routes for webhook delivery, sales follow-ups, executive reports, scheduled email campaigns, support SLA escalation, engagement expiry, and analytics snapshots. It does not connect to MongoDB or contain database credentials. Set `APP_BASE_URL` to the currently active host and synchronize `PLATFORM_AUTOMATION_CRON_SECRET` between the Worker and application environment. The manual trigger uses a separate secret.
+The GitHub Actions workflow `.github/workflows/platform-automation.yml` is the recommended free scheduler for this public repository. It invokes protected application routes every 15 minutes using standard GitHub-hosted Linux runners, which are free for public repositories. A Cloudflare Worker alternative is also supplied under `automation/cloudflare-worker`. Either scheduler invokes the same protected application routes for webhook delivery, sales follow-ups, executive reports, scheduled email campaigns, support SLA escalation, engagement expiry, and analytics snapshots. Enable only one scheduler at a time to avoid duplicate job execution. Neither scheduler connects to MongoDB or contains database credentials. Set `APP_BASE_URL` to the currently active host and synchronize `PLATFORM_AUTOMATION_CRON_SECRET` between the scheduler and application environment.
 
-The same protected routes can be called by another scheduler or self-hosted cron runner. No Render Cron Job, Vercel Cron, or Netlify Scheduled Function is required. The application host remains replaceable.
+The same protected routes can be called by another scheduler. No Render Cron Job, Vercel Cron, or Netlify Scheduled Function is required. The application host remains replaceable.
 
 ## Unified communications
 

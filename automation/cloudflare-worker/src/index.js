@@ -2,6 +2,7 @@ const JOBS = [
   "/api/cron/webhook-delivery",
   "/api/cron/sales-followups",
   "/api/cron/executive-reports",
+  "/api/cron/marketing-campaigns",
   "/api/cron/support-escalation",
   "/api/cron/engagement-expiry",
   "/api/cron/analytics-snapshot"

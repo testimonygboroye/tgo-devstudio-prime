@@ -6,6 +6,7 @@ import { connectToDatabase } from "@/lib/db";
 import { UnifiedConversation, UnifiedMessage } from "@/models/UnifiedConversation";
 import User from "@/models/User";
 import { AIAgent, AITask } from "@/models/AIWorkforce";
+import { runProviderCompletion } from "@/lib/ai/provider-runtime";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import { getVerifiedIntegrationCredentials } from "@/lib/integrations/credentials";
 
@@ -80,6 +81,39 @@ export async function POST(request: NextRequest) {
     const message = await UnifiedMessage.create({ conversationId, senderType: "human", senderId: actorId, senderLabel: actorName, body: content, status: "sent", readBy: [actorId], threadRootId: typeof body.threadRootId === "string" && Types.ObjectId.isValid(body.threadRootId) ? body.threadRootId : undefined });
     conversation.lastMessageAt = new Date();
     await conversation.save();
+
+    if (conversation.kind === "ai" && conversation.aiAgentId) {
+      const agent = await AIAgent.findOne({ _id: conversation.aiAgentId, enabled: true });
+      if (!agent) return fail("The assigned AI employee is currently unavailable.", 409);
+      const task = await AITask.create({ agentId: agent._id, title: "Conversation with " + actorName, input: content, requestedBy: String(actorId), status: agent.requiresApproval ? "awaiting_approval" : "queued", operationPayload: { source: "ai_conversation", conversationId } });
+      if (agent.requiresApproval) {
+        await UnifiedMessage.create({ conversationId, senderType: "system", senderLabel: "TGO system", body: "Your message has been saved. This AI employee requires approval before responding. Task " + String(task._id) + " is awaiting approval." });
+        return NextResponse.json({ status: "ok", message: { id: String(message._id), body: message.body, createdAt: message.createdAt, senderLabel: actorName, senderType: "human" }, taskStatus: "awaiting_approval" }, { status: 201 });
+      }
+      const dayStart = new Date(); dayStart.setUTCHours(0, 0, 0, 0);
+      const usage = await AITask.aggregate([{ $match: { agentId: agent._id, status: { $in: ["completed", "running"] }, createdAt: { $gte: dayStart } } }, { $group: { _id: null, tokens: { $sum: { $add: ["$inputTokens", "$outputTokens"] } } } }]);
+      if (Number(usage[0]?.tokens || 0) >= agent.maxDailyTokens) {
+        task.status = "awaiting_approval"; task.error = "Daily token budget reached; founder review required."; await task.save();
+        await UnifiedMessage.create({ conversationId, senderType: "system", senderLabel: "TGO system", body: "The AI employee reached its configured daily token budget. This task is waiting for founder review." });
+        return NextResponse.json({ status: "ok", taskStatus: "awaiting_approval", message: "Daily AI budget reached; task queued for review." }, { status: 201 });
+      }
+      task.status = "running"; task.startedAt = new Date(); task.executionAttempts += 1; await task.save();
+      try {
+        const history = await UnifiedMessage.find({ conversationId, deletedAt: { $exists: false } }).sort({ createdAt: -1 }).limit(24).lean();
+        const prompt = history.reverse().map((item) => (item.senderLabel || "Participant") + ": " + item.body).join("\\n\\n");
+        const completion = await runProviderCompletion(String(agent.providerId), agent.modelName, agent.systemInstructions + "\\n\\nYou are responding as " + agent.name + " in the TGO DevStudio internal communications platform. Reply conversationally. You have no external tools in this conversation; do not claim to have performed actions you did not execute.", prompt);
+        task.status = "completed"; task.result = completion.text.slice(0, 50000); task.inputTokens = completion.inputTokens; task.outputTokens = completion.outputTokens; task.providerRequestId = completion.providerRequestId; task.completedAt = new Date(); await task.save();
+        const reply = await UnifiedMessage.create({ conversationId, senderType: "ai", senderLabel: agent.name, body: completion.text.slice(0, 12000), status: "sent" });
+        conversation.lastMessageAt = new Date(); await conversation.save();
+        await writePlatformAuditEvent({ actorType: "ai", actorId: String(agent._id), actorLabel: agent.name, action: "ai.conversation.replied", module: "communications", targetType: "AITask", targetId: String(task._id), outcome: "success", metadata: { conversationId, inputTokens: completion.inputTokens, outputTokens: completion.outputTokens } });
+        return NextResponse.json({ status: "ok", message: { id: String(reply._id), body: reply.body, createdAt: reply.createdAt, senderLabel: agent.name, senderType: "ai" }, taskStatus: "completed" }, { status: 201 });
+      } catch (error) {
+        task.status = "failed"; task.error = (error instanceof Error ? error.message : "AI response failed.").slice(0, 2000); task.completedAt = new Date(); await task.save();
+        await UnifiedMessage.create({ conversationId, senderType: "system", senderLabel: "TGO system", body: "The AI employee could not complete this response. The failed run is recorded in AI Workforce for review." });
+        await writePlatformAuditEvent({ actorType: "ai", actorId: String(agent._id), actorLabel: agent.name, action: "ai.conversation.failed", module: "communications", targetType: "AITask", targetId: String(task._id), outcome: "failure", metadata: { conversationId, error: task.error } });
+        return NextResponse.json({ status: "ok", taskStatus: "failed", message: "Your message is saved. The AI response failed and is recorded for review." }, { status: 201 });
+      }
+    }
 
     if (conversation.kind === "whatsapp") {
       if (!conversation.externalOptInAt || !conversation.externalContactId || !conversation.externalLastInboundAt || Date.now() - conversation.externalLastInboundAt.getTime() > 24 * 60 * 60 * 1000) return fail("WhatsApp free-form replies are available only within 24 hours of the contact\u2019s latest inbound message. Outside that window, an approved WhatsApp template is required.", 409);

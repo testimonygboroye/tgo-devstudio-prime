@@ -79,6 +79,15 @@ export const PLATFORM_MODULE_REGISTRY: readonly PlatformModuleDefinition[] = [
     status: "planned",
   },
   {
+    id: "executive-intelligence",
+    name: "Executive Intelligence",
+    description: "Company-wide evidence-based analytics, forecasting, risk detection, recommendations, scheduled reports and decision tracking.",
+    category: "intelligence",
+    requiredPermission: "platform.access",
+    status: "available",
+    href: "/executive-intelligence",
+  },
+  {
     id: "ai-workforce",
     name: "AI Workforce",
     description: "Governed AI agents, provider connections and delegated execution.",

@@ -5,6 +5,6 @@
     { "path": "/api/cron/support-escalation", "schedule": "0 9 * * *" },
     { "path": "/api/cron/engagement-expiry", "schedule": "30 3 * * *" },
     { "path": "/api/cron/webhook-delivery", "schedule": "0 4 * * *" },
-    { "path": "/api/cron/sales-followups", "schedule": "0 5 * * *" }
+    { "path": "/api/cron/sales-followups", "schedule": "0 5 * * *" },\n    { "path": "/api/cron/executive-reports", "schedule": "0 6 * * *" }
   ]
 }

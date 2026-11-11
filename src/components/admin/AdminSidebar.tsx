@@ -53,6 +53,7 @@ import {
   PlugZap,
   Megaphone,
   SearchCheck,
+  BrainCircuit,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -66,6 +67,7 @@ interface AdminSidebarProps {
 const NAV_GROUPS = [
   { title: "Founder", items: [
     { label: "Founder Control Centre", hrefSuffix: "/platform", icon: Crown, badgeKey: null },
+    { label: "Executive Intelligence", hrefSuffix: "/executive-intelligence", icon: BrainCircuit, badgeKey: null },
     { label: "Business Roles", hrefSuffix: "/business-roles", icon: KeySquare, badgeKey: null },
     { label: "Business Ecosystem", hrefSuffix: "/businesses", icon: Building2, badgeKey: null },
   ]},

@@ -1,0 +1,120 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Activity, AlertTriangle, ArrowDownRight, ArrowUpRight, BrainCircuit, CalendarClock, CheckCircle2, CircleDollarSign, Download, Gauge, Loader2, MessageSquareText, RefreshCw, ShieldCheck, Sparkles, Target, Users, Workflow } from "lucide-react";
+
+type AnyRecord = Record<string, any>;
+const number = (value: unknown) => new Intl.NumberFormat("en").format(Number(value || 0));
+const moneyMinor = (value: number, currency: string) => {
+  try { return new Intl.NumberFormat("en", { style: "currency", currency, maximumFractionDigits: 0 }).format(value / 100); }
+  catch { return currency + " " + number(value / 100); }
+};
+function Card({ label, value, detail, icon: Icon, tone = "violet" }: { label: string; value: string | number; detail: string; icon: any; tone?: string }) {
+  const tones: Record<string,string> = { violet: "bg-violet-500/10 text-violet-300", cyan: "bg-cyan-500/10 text-cyan-300", amber: "bg-amber-500/10 text-amber-300", emerald: "bg-emerald-500/10 text-emerald-300" };
+  return <article className="surface-card rounded-2xl border border-[var(--border-subtle)] p-5"><div className="flex items-start justify-between gap-3"><div><p className="text-sm text-[var(--text-secondary)]">{label}</p><p className="mt-3 text-3xl font-bold text-[var(--text-primary)]">{value}</p><p className="mt-1 text-xs text-[var(--text-muted)]">{detail}</p></div><span className={`rounded-xl p-3 ${tones[tone] || tones.violet}`}><Icon size={20}/></span></div></article>;
+}
+function Panel({ title, icon: Icon, children, action }: { title: string; icon: any; children: React.ReactNode; action?: React.ReactNode }) {
+  return <section className="surface-card rounded-2xl border border-[var(--border-subtle)] p-5 sm:p-6"><div className="mb-5 flex flex-wrap items-center justify-between gap-3"><h2 className="flex items-center gap-2 text-lg font-bold text-[var(--text-primary)]"><Icon size={19} className="text-cyan-400"/>{title}</h2>{action}</div>{children}</section>;
+}
+export default function ExecutiveIntelligence() {
+  const [data, setData] = useState<AnyRecord | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState("");
+  const [error, setError] = useState("");
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState("");
+  const [decisionTitle, setDecisionTitle] = useState("");
+  const [decisionText, setDecisionText] = useState("");
+  const [reportName, setReportName] = useState("Executive operating report");
+  const [frequency, setFrequency] = useState("weekly");
+  const [reportAnswer, setReportAnswer] = useState("");
+
+  const load = useCallback(async () => {
+    setLoading(true); setError("");
+    try { const response = await fetch("/api/platform/executive-intelligence", { cache: "no-store" }); const json = await response.json(); if (!response.ok || !json.ok) throw new Error(json.error || "Could not load executive intelligence."); setData(json); }
+    catch (e) { setError(e instanceof Error ? e.message : "Could not load executive intelligence."); }
+    finally { setLoading(false); }
+  }, []);
+  useEffect(() => { void load(); }, [load]);
+
+  async function act(action: string, payload: AnyRecord = {}) {
+    setBusy(action); setError("");
+    try { const response = await fetch("/api/platform/executive-intelligence", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, ...payload }) }); const json = await response.json(); if (!response.ok || !json.ok) throw new Error(json.error || "Action failed."); await load(); return json; }
+    catch (e) { setError(e instanceof Error ? e.message : "Action failed."); return null; }
+    finally { setBusy(""); }
+  }
+  const snapshot = data?.snapshot;
+  const currencies = useMemo(() => Object.entries(snapshot?.revenue?.verifiedCollected || {}) as [string, AnyRecord][], [snapshot]);
+  const insightCount = data?.generatedInsights?.length || 0;
+
+  function downloadReport(report: AnyRecord) {
+    const blob = new Blob([JSON.stringify(report.snapshot, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = (String(report.name || "executive-report").replace(/[^a-z0-9-]+/gi, "-").toLowerCase()) + ".json"; a.click(); URL.revokeObjectURL(url);
+  }
+
+  return <div className="space-y-7 pb-12">
+    <section className="relative overflow-hidden rounded-3xl border border-violet-400/20 bg-[radial-gradient(circle_at_85%_10%,rgba(46,197,240,.22),transparent_30%),linear-gradient(125deg,#10162f,#211647_55%,#101b35)] p-6 shadow-2xl sm:p-8">
+      <div className="pointer-events-none absolute -right-16 -top-24 h-72 w-72 rounded-full bg-violet-500/20 blur-3xl"/>
+      <div className="relative flex flex-col justify-between gap-6 lg:flex-row lg:items-end"><div className="max-w-3xl"><p className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[.18em] text-cyan-100"><BrainCircuit size={14}/> Phase 14 · Executive intelligence</p><h1 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">Executive Intelligence</h1><p className="mt-3 text-sm leading-6 text-slate-300 sm:text-base">A live, evidence-based view of company performance, delivery, people, clients, AI operations and decisions. Figures are sourced from the platform's operational records.</p></div><button onClick={() => void load()} disabled={loading} className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-semibold text-white hover:bg-white/15 disabled:opacity-50"><RefreshCw size={16} className={loading ? "animate-spin" : ""}/> Refresh intelligence</button></div>
+      <div className="relative mt-6 flex flex-wrap gap-3 text-xs text-slate-300"><span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">Verified financial records</span><span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">Live operational records</span><span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">Founder-only access</span>{snapshot?.generatedAt && <span className="px-2 py-1.5">Updated {new Date(snapshot.generatedAt).toLocaleString()}</span>}</div>
+    </section>
+    {error && <div role="alert" className="rounded-xl border border-rose-400/30 bg-rose-400/10 p-4 text-sm text-rose-200">{error}</div>}
+    {loading && !data ? <div className="flex items-center gap-3 rounded-2xl border border-[var(--border-subtle)] p-8 text-sm text-[var(--text-secondary)]"><Loader2 className="animate-spin"/> Loading live company intelligence…</div> : snapshot && <>
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Card label="Active delivery projects" value={snapshot.projects.byStatus.active || 0} detail={`${snapshot.projects.overdue} overdue · ${snapshot.projects.blockedMilestones} blocked milestones`} icon={Workflow} tone={snapshot.projects.overdue ? "amber" : "cyan"}/>
+        <Card label="Active workforce" value={snapshot.workforce.byStatus.active || 0} detail={`${snapshot.workforce.activeDepartments} active departments`} icon={Users} tone="violet"/>
+        <Card label="Client accounts" value={snapshot.clients.total} detail={`${snapshot.clients.newLast30Days} new in the last 30 days`} icon={Target} tone="cyan"/>
+        <Card label="Support first-response risks" value={snapshot.support.overdueFirstResponses} detail="Open tickets past first-response deadline" icon={AlertTriangle} tone={snapshot.support.overdueFirstResponses ? "amber" : "emerald"}/>
+      </section>
+
+      <div className="grid gap-5 xl:grid-cols-[1.2fr_.8fr]">
+        <Panel title="Verified collected payments" icon={CircleDollarSign}>
+          <p className="mb-4 text-xs text-[var(--text-muted)]">Net of recorded refunds. Currency totals are intentionally kept separate; values are not combined across currencies.</p>
+          {currencies.length ? <div className="grid gap-3 sm:grid-cols-2">{currencies.map(([currency, row]) => <div key={currency} className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-2)] p-4"><p className="text-xs font-semibold uppercase tracking-wider text-cyan-300">{currency}</p><p className="mt-2 text-2xl font-bold text-[var(--text-primary)]">{moneyMinor(Number(row.amountMinor), currency)}</p><p className="mt-1 text-xs text-[var(--text-muted)]">{number(row.transactions)} verified transactions</p></div>)}</div> : <p className="rounded-xl bg-[var(--bg-surface-2)] p-5 text-sm text-[var(--text-muted)]">No verified payment transactions are recorded yet.</p>}
+          <div className="mt-5 flex flex-wrap gap-2">{Object.entries(snapshot.revenue.paymentStatuses || {}).map(([status, count]) => <span key={status} className="rounded-full border border-[var(--border-subtle)] px-3 py-1.5 text-xs text-[var(--text-secondary)]">{status.replaceAll("_"," ")} · {number(count)}</span>)}</div>
+        </Panel>
+        <Panel title="Revenue forecast" icon={Gauge}>
+          <p className="mb-4 text-xs text-[var(--text-muted)]">A directional linear trend from up to six months of verified collections. Not a guarantee or accounting forecast.</p>
+          <div className="space-y-3">{(data.forecasts || []).map((forecast: AnyRecord) => <div key={forecast.currency} className="rounded-xl bg-[var(--bg-surface-2)] p-4"><div className="flex items-center justify-between"><span className="font-semibold text-[var(--text-primary)]">{forecast.currency}</span><span className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">{forecast.confidence.replaceAll("_"," ")}</span></div><p className="mt-2 text-xl font-bold text-cyan-300">{forecast.nextMonthAmountMinor === null ? "Insufficient history" : moneyMinor(forecast.nextMonthAmountMinor, forecast.currency)}</p><p className="mt-1 text-xs text-[var(--text-muted)]">{forecast.historyMonths} months of history</p></div>)}</div>
+        </Panel>
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-2">
+        <Panel title="Delivery & project health" icon={Workflow}><div className="grid grid-cols-2 gap-3">{Object.entries(snapshot.projects.byStatus).map(([status,count]) => <div key={status} className="rounded-xl bg-[var(--bg-surface-2)] p-3"><p className="text-xs capitalize text-[var(--text-muted)]">{status.replaceAll("_"," ")}</p><p className="mt-1 text-xl font-bold text-[var(--text-primary)]">{number(count)}</p></div>)}</div></Panel>
+        <Panel title="Workforce & departments" icon={Users}><div className="grid grid-cols-2 gap-3">{Object.entries(snapshot.workforce.byStatus).map(([status,count]) => <div key={status} className="rounded-xl bg-[var(--bg-surface-2)] p-3"><p className="text-xs capitalize text-[var(--text-muted)]">{status.replaceAll("_"," ")}</p><p className="mt-1 text-xl font-bold text-[var(--text-primary)]">{number(count)}</p></div>)}</div><p className="mt-3 text-xs text-[var(--text-muted)]">{number(snapshot.workforce.activeDepartments)} active departments · {number(snapshot.workforce.attendanceLast30Days.records)} attendance records in 30 days · {number(snapshot.workforce.attendanceLast30Days.hoursRecorded)} hours recorded</p></Panel>
+        <Panel title="Client lifecycle" icon={Target}><div className="grid grid-cols-2 gap-3">{Object.entries(snapshot.clients.lifecycle).map(([status,count]) => <div key={status} className="rounded-xl bg-[var(--bg-surface-2)] p-3"><p className="text-xs capitalize text-[var(--text-muted)]">{status.replaceAll("_"," ")}</p><p className="mt-1 text-xl font-bold text-[var(--text-primary)]">{number(count)}</p></div>)}</div><p className="mt-3 text-xs text-[var(--text-muted)]">{number(snapshot.clients.total)} client user accounts · {number(snapshot.clients.newLast30Days)} new in 30 days</p></Panel>
+        <Panel title="AI workforce activity" icon={BrainCircuit}><div className="grid grid-cols-2 gap-3"><div className="rounded-xl bg-[var(--bg-surface-2)] p-3"><p className="text-xs text-[var(--text-muted)]">Enabled agents</p><p className="mt-1 text-xl font-bold text-[var(--text-primary)]">{number(snapshot.aiWorkforce.agents.true)}</p></div><div className="rounded-xl bg-[var(--bg-surface-2)] p-3"><p className="text-xs text-[var(--text-muted)]">Verified providers</p><p className="mt-1 text-xl font-bold text-[var(--text-primary)]">{number(snapshot.aiWorkforce.providers.success)}</p></div>{Object.entries(snapshot.aiWorkforce.tasks).map(([status,count]) => <div key={status} className="rounded-xl bg-[var(--bg-surface-2)] p-3"><p className="text-xs capitalize text-[var(--text-muted)]">{status.replaceAll("_"," ")}</p><p className="mt-1 text-lg font-bold text-[var(--text-primary)]">{number(count)}</p></div>)}</div><p className="mt-3 text-xs text-[var(--text-muted)]">{number(snapshot.aiWorkforce.tokens.input + snapshot.aiWorkforce.tokens.output)} recorded tokens across AI tasks</p></Panel>
+      </div>
+
+      <Panel title="AI natural-language analytics" icon={MessageSquareText}>
+        <p className="mb-3 text-sm text-[var(--text-secondary)]">Ask a question about aggregated company performance. Answers use a verified, enabled AI employee and the current aggregate snapshot—not unrestricted client or employee records.</p>
+        <form onSubmit={async e => { e.preventDefault(); const result = await act("analytics.ask", { question }); if (result) setAnswer(result.answer || "The AI provider returned no answer."); }} className="space-y-3"><textarea value={question} onChange={e => setQuestion(e.target.value)} rows={3} maxLength={2000} placeholder="Example: What are the biggest operational risks right now, and which metrics support that assessment?" className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-2)] p-4 text-sm text-[var(--text-primary)] outline-none focus:border-cyan-400"/><div className="flex flex-wrap items-center justify-between gap-3"><span className="text-xs text-[var(--text-muted)]">Requires an enabled agent and a connection-verified AI provider.</span><button disabled={!!busy || question.trim().length < 4} className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-violet-500 disabled:opacity-50">{busy === "analytics.ask" ? <Loader2 className="animate-spin" size={15}/> : <Sparkles size={15}/>} Analyse company</button></div></form>
+        {answer && <div className="mt-4 whitespace-pre-wrap rounded-xl border border-cyan-400/20 bg-cyan-400/5 p-4 text-sm leading-6 text-[var(--text-primary)]">{answer}</div>}
+      </Panel>
+
+      <Panel title="Risk detection & recommendations" icon={ShieldCheck} action={<button onClick={() => void act("insights.refresh")} disabled={!!busy} className="inline-flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:border-cyan-400/40"><RefreshCw size={14}/> Generate current insights</button>}>
+        <p className="mb-4 text-xs text-[var(--text-muted)]">{insightCount} deterministic signals detected from the current snapshot. Approving a supported follow-up creates a real Business Operations workflow record.</p>
+        <div className="space-y-3">{(data.recommendations || []).length ? data.recommendations.map((item: AnyRecord) => <article key={String(item._id)} className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-2)] p-4"><div className="flex flex-wrap items-center justify-between gap-2"><h3 className="font-semibold text-[var(--text-primary)]">{item.title}</h3><span className="rounded-full bg-amber-400/10 px-2.5 py-1 text-[10px] font-semibold uppercase text-amber-300">{item.priority} · {item.status}</span></div><p className="mt-2 text-sm text-[var(--text-secondary)]">{item.summary}</p><p className="mt-2 text-xs text-[var(--text-muted)]">{item.rationale}</p>{item.status === "proposed" && <div className="mt-3 flex flex-wrap gap-2"><button onClick={() => void act("recommendation.review",{id:item._id,decision:"approve"})} disabled={!!busy} className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">Approve recommendation</button><button onClick={() => void act("recommendation.review",{id:item._id,decision:"reject"})} disabled={!!busy} className="rounded-lg border border-[var(--border-subtle)] px-3 py-2 text-xs font-semibold text-[var(--text-secondary)] disabled:opacity-50">Reject</button></div>}{item.operationId && <p className="mt-2 text-xs text-emerald-300">Operational follow-up created: {String(item.operationId)}</p>}</article>) : <p className="rounded-xl bg-[var(--bg-surface-2)] p-5 text-sm text-[var(--text-muted)]">No stored recommendations yet. Generate current insights to evaluate detected risks.</p>}</div>
+      </Panel>
+
+      <div className="grid gap-5 xl:grid-cols-2">
+        <Panel title="Executive decisions" icon={Target}>
+          <form onSubmit={async e => {e.preventDefault(); const result = await act("decision.create",{title:decisionTitle,decision:decisionText}); if(result){setDecisionTitle("");setDecisionText("");}}} className="mb-4 space-y-2"><input value={decisionTitle} onChange={e=>setDecisionTitle(e.target.value)} required minLength={3} maxLength={180} placeholder="Decision title" className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface-2)] p-3 text-sm text-[var(--text-primary)]"/><textarea value={decisionText} onChange={e=>setDecisionText(e.target.value)} required minLength={5} maxLength={5000} rows={2} placeholder="Record the decision and intended outcome" className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface-2)] p-3 text-sm text-[var(--text-primary)]"/><button disabled={!!busy} className="rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white">Record decision</button></form>
+          <div className="space-y-2">{(data.decisions || []).map((item:AnyRecord)=><div key={String(item._id)} className="rounded-xl bg-[var(--bg-surface-2)] p-3"><div className="flex flex-wrap justify-between gap-2"><p className="font-semibold text-[var(--text-primary)]">{item.title}</p><span className="text-[10px] uppercase text-cyan-300">{item.status}</span></div><p className="mt-1 text-sm text-[var(--text-secondary)]">{item.decision}</p>{item.status !== "completed" && item.status !== "cancelled" && <button onClick={()=>void act("decision.update",{id:item._id,status:"completed",outcome:"Marked completed by founder."})} className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-emerald-300"><CheckCircle2 size={13}/> Mark completed</button>}</div>)}</div>
+        </Panel>
+        <Panel title="Scheduled operational reports" icon={CalendarClock}>
+          <form onSubmit={async e=>{e.preventDefault();const result=await act("schedule.create",{name:reportName,frequency});if(result)setReportAnswer("Schedule saved. The daily scheduler will generate its next report at the displayed due time.");}} className="mb-4 flex flex-col gap-2 sm:flex-row"><input value={reportName} onChange={e=>setReportName(e.target.value)} minLength={3} maxLength={140} className="min-w-0 flex-1 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface-2)] p-3 text-sm text-[var(--text-primary)]"/><select value={frequency} onChange={e=>setFrequency(e.target.value)} className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface-2)] p-3 text-sm text-[var(--text-primary)]"><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select><button disabled={!!busy} className="rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white">Add schedule</button></form>
+          {reportAnswer && <p className="mb-3 text-xs text-emerald-300">{reportAnswer}</p>}
+          <div className="space-y-2">{(data.schedules || []).map((item:AnyRecord)=><div key={String(item._id)} className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[var(--bg-surface-2)] p-3"><div><p className="text-sm font-semibold text-[var(--text-primary)]">{item.name}</p><p className="mt-1 text-xs text-[var(--text-muted)]">{item.frequency} · next run {new Date(item.nextRunAt).toLocaleString()} · {item.active?"active":"paused"}</p></div><button onClick={()=>void act("schedule.toggle",{id:item._id})} className="rounded-lg border border-[var(--border-subtle)] px-3 py-2 text-xs text-[var(--text-secondary)]">{item.active?"Pause":"Resume"}</button></div>)}</div>
+          <button onClick={()=>void act("report.run",{name:"Founder generated operational report"})} disabled={!!busy} className="mt-4 inline-flex items-center gap-2 rounded-lg border border-cyan-400/30 px-3 py-2 text-xs font-semibold text-cyan-300"><Activity size={14}/> Generate report now</button>
+          <div className="mt-3 space-y-2">{(data.reports || []).map((report:AnyRecord)=><div key={String(report._id)} className="flex items-center justify-between gap-2 rounded-xl border border-[var(--border-subtle)] p-3"><div><p className="text-sm font-semibold text-[var(--text-primary)]">{report.name}</p><p className="text-xs text-[var(--text-muted)]">{new Date(report.createdAt).toLocaleString()}</p></div><button onClick={()=>downloadReport(report)} className="inline-flex items-center gap-1 text-xs text-cyan-300"><Download size={14}/> JSON</button></div>)}</div>
+        </Panel>
+      </div>
+      <Panel title="Platform reliability" icon={ShieldCheck}><div className="grid grid-cols-2 gap-3">{Object.entries(snapshot.platform?.events || {}).map(([status,count]) => <div key={status} className="rounded-xl bg-[var(--bg-surface-2)] p-3"><p className="text-xs capitalize text-[var(--text-muted)]">{status} events</p><p className="mt-1 text-xl font-bold text-[var(--text-primary)]">{number(count)}</p></div>)}{Object.entries(snapshot.platform?.integrations || {}).map(([status,count]) => <div key={status} className="rounded-xl bg-[var(--bg-surface-2)] p-3"><p className="text-xs capitalize text-[var(--text-muted)]">{status} integrations</p><p className="mt-1 text-xl font-bold text-[var(--text-primary)]">{number(count)}</p></div>)}</div><p className="mt-3 text-xs text-[var(--text-muted)]">Connection records are not counted as healthy unless their status is connected; event delivery is based on the shared outbox.</p></Panel>
+      <Panel title="Data coverage & operating definitions" icon={Activity}>
+        <div className="grid gap-3 sm:grid-cols-2">{Object.entries(snapshot.coverage || {}).map(([key,value])=><div key={key} className="rounded-xl bg-[var(--bg-surface-2)] p-3"><p className="text-xs font-semibold uppercase tracking-wider text-cyan-300">{key}</p><p className="mt-1 text-xs leading-5 text-[var(--text-secondary)]">{String(value)}</p></div>)}</div>
+        <p className="mt-4 text-xs text-[var(--text-muted)]">Ledger balances are reported by currency and account code. Forecasts are directional only. No metric is fabricated when its source collection has no records.</p>
+      </Panel>
+    </>}
+  </div>;
+}

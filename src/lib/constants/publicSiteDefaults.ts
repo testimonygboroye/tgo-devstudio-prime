@@ -219,7 +219,7 @@ export const PUBLIC_PAGE_DEFAULTS: Record<PublicPageKey, PublicPageDefault> = {
     ctaPrimaryHref: "/contact",
     ctaSecondaryLabel: "Book a call",
     ctaSecondaryHref: "/book-a-call",
-  },,
+  },
   about: makePublicPageDefault("about", {
     metaTitle: "About | TGO DevStudio Prime",
     metaDescription: "The story, mission and people behind TGO DevStudio.",

@@ -78,13 +78,14 @@ export default async function HomePage() {
     LaunchSettings.findOne().lean(),
   ]);
 
-  const hero = getLocalizedContent({ ...HOME_DEFAULTS, ...(rawSettings || {}) }, locale, TRANSLATABLE_FIELDS.HomeSettings as any);
-  const projects = featuredProjects.map((item) => getLocalizedContent(item, locale, TRANSLATABLE_FIELDS.Project as any));
-  const serviceList = services.map((item) => getLocalizedContent(item, locale, TRANSLATABLE_FIELDS.Service as any));
-  const steps = processSteps.map((item) => getLocalizedContent(item, locale, TRANSLATABLE_FIELDS.ProcessStep as any));
-  const team = teamMembers.map((item) => getLocalizedContent(item, locale, TRANSLATABLE_FIELDS.TeamMember as any));
-  const posts = latestPosts.map((item) => getLocalizedContent(item, locale, TRANSLATABLE_FIELDS.BlogPost as any));
-  const reviews = featuredReviews.map((item) => getLocalizedContent(item, locale, TRANSLATABLE_FIELDS.Review as any));
+  const localize = <T extends Record<string, unknown>>(doc: T, fields: readonly string[]) => getLocalizedContent(doc, locale, fields as readonly (keyof T)[]);
+  const hero = localize({ ...HOME_DEFAULTS, ...(rawSettings || {}) }, TRANSLATABLE_FIELDS.HomeSettings);
+  const projects = featuredProjects.map((item) => localize(item, TRANSLATABLE_FIELDS.Project));
+  const serviceList = services.map((item) => localize(item, TRANSLATABLE_FIELDS.Service));
+  const steps = processSteps.map((item) => localize(item, TRANSLATABLE_FIELDS.ProcessStep));
+  const team = teamMembers.map((item) => localize(item, TRANSLATABLE_FIELDS.TeamMember));
+  const posts = latestPosts.map((item) => localize(item, TRANSLATABLE_FIELDS.BlogPost));
+  const reviews = featuredReviews.map((item) => localize(item, TRANSLATABLE_FIELDS.Review));
 
   return (
     <main className="home-page">
@@ -160,7 +161,7 @@ export default async function HomePage() {
           <div className="home-capability-grid">
             {capabilityPillars.map(({icon:Icon,title,text},index)=><article className="home-capability-card" key={title}><div className="home-card-index">0{index+1}</div><span className="home-icon-tile"><Icon size={23}/></span><h3>{title}</h3><p>{text}</p><Link href="/services" aria-label={"Explore "+title}><ArrowUpRight size={18}/></Link></article>)}
           </div>
-          {serviceList.length>0&&<div className="home-service-ribbon"><span>OUR SERVICE LINES</span><div>{serviceList.map((service,index)=>{const Icon=SERVICE_ICON_MAP[service.icon];return <Link href="/services" key={service._id.toString()}>{Icon?<Icon size={15}/>:<Code2 size={15}/>} {service.title}</Link>})}</div></div>}
+          {serviceList.length>0&&<div className="home-service-ribbon"><span>OUR SERVICE LINES</span><div>{serviceList.map((service)=>{const Icon=SERVICE_ICON_MAP[service.icon];return <Link href="/services" key={service._id.toString()}>{Icon?<Icon size={15}/>:<Code2 size={15}/>} {service.title}</Link>})}</div></div>}
         </div>
       </section>
 

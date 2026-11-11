@@ -9,7 +9,13 @@ export interface IInvite extends Document {
   usedAt?: Date;
   approvalStatus: "pending" | "approved" | "rejected";
   approvedBy?: Types.ObjectId;
-  approvedAt?: Date;\n  recruitmentApplicationId?: Types.ObjectId;\n  onboardingDepartmentId?: Types.ObjectId;\n  onboardingPositionId?: Types.ObjectId;\n  onboardingEmploymentType?: "full_time"|"part_time"|"contract"|"intern";\n  onboardingWorkLocation?: "remote"|"hybrid"|"onsite";\n  onboardingStartDate?: Date;
+  approvedAt?: Date;
+  recruitmentApplicationId?: Types.ObjectId;
+  onboardingDepartmentId?: Types.ObjectId;
+  onboardingPositionId?: Types.ObjectId;
+  onboardingEmploymentType?: "full_time" | "part_time" | "contract" | "intern";
+  onboardingWorkLocation?: "remote" | "hybrid" | "onsite";
+  onboardingStartDate?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -24,7 +30,13 @@ const InviteSchema = new Schema<IInvite>(
     usedAt: { type: Date },
     approvalStatus: { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
     approvedBy: { type: Schema.Types.ObjectId, ref: "User" },
-    approvedAt: { type: Date },\n    recruitmentApplicationId: { type: Schema.Types.ObjectId, ref: "JobApplication" },\n    onboardingDepartmentId: { type: Schema.Types.ObjectId, ref: "Department" },\n    onboardingPositionId: { type: Schema.Types.ObjectId, ref: "Position" },\n    onboardingEmploymentType: { type: String, enum: ["full_time","part_time","contract","intern"] },\n    onboardingWorkLocation: { type: String, enum: ["remote","hybrid","onsite"] },\n    onboardingStartDate: { type: Date },
+    approvedAt: { type: Date },
+    recruitmentApplicationId: { type: Schema.Types.ObjectId, ref: "JobApplication" },
+    onboardingDepartmentId: { type: Schema.Types.ObjectId, ref: "Department" },
+    onboardingPositionId: { type: Schema.Types.ObjectId, ref: "Position" },
+    onboardingEmploymentType: { type: String, enum: ["full_time", "part_time", "contract", "intern"] },
+    onboardingWorkLocation: { type: String, enum: ["remote", "hybrid", "onsite"] },
+    onboardingStartDate: { type: Date },
   },
   { timestamps: true }
 );

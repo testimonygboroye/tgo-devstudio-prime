@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
+import SmartImage from "@/components/public/SmartImage";
 type Props={settings:{
  enabled?:boolean;countdownEnabled?:boolean;countdownVisible?:boolean;launchDate?:string|Date|null;title?:string;description?:string;
  videoUrl?:string;flyerUrl?:string;afterLaunchVideoUrl?:string;afterLaunchFlyerUrl?:string;
@@ -28,7 +29,7 @@ export default function LaunchExperience({settings}:Props){
  const overrideSeconds=(settings.videoDurationHours||0)*3600+(settings.videoDurationMinutes||0)*60+(settings.videoDurationSeconds||0);
  const useOverride=Boolean(settings.useVideoDurationOverride&&overrideSeconds>0);
  const advance=()=>setMediaIndex(i=>media.length>0?(i+1)%media.length:0);
- useEffect(()=>{const id=window.setInterval(()=>setNow(Date.now()),1000);return()=>window.clearInterval(id);},[]);
+ useEffect(()=>{if(!settings.enabled||!countdownEnabled||!hasTarget||afterTarget)return;const id=window.setInterval(()=>setNow(Date.now()),1000);return()=>window.clearInterval(id);},[settings.enabled,countdownEnabled,hasTarget,afterTarget]);
  useEffect(()=>{setMediaIndex(0);},[afterTarget,video,image]);
  useEffect(()=>{if(!settings.videoAudioEnabled)return;const resumeAudioVideo=()=>{const element=videoRef.current;if(element?.paused)void element.play().catch(()=>{});};window.addEventListener("pointerdown",resumeAudioVideo,{once:true});window.addEventListener("touchstart",resumeAudioVideo,{once:true});window.addEventListener("keydown",resumeAudioVideo,{once:true});return()=>{window.removeEventListener("pointerdown",resumeAudioVideo);window.removeEventListener("touchstart",resumeAudioVideo);window.removeEventListener("keydown",resumeAudioVideo);};},[settings.videoAudioEnabled,current?.url]);
  useEffect(()=>{
@@ -48,7 +49,7 @@ export default function LaunchExperience({settings}:Props){
   <div className="relative mx-auto max-w-6xl">
    {(settings.title||settings.description)&&<div className="mx-auto max-w-3xl text-center"><span className="eyebrow-label">TGO DevStudio</span>{settings.title&&<h2 className="heading-premium mt-3 text-3xl font-bold brand-gradient-text sm:text-5xl">{settings.title}</h2>}{settings.description&&<p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-neutral-300 sm:text-base">{settings.description}</p>}</div>}
    {current&&<div className="mx-auto mt-8 max-w-5xl overflow-hidden rounded-3xl border border-white/10 bg-black shadow-2xl shadow-violet-950/30">
-    {current.kind==="video"?<video ref={videoRef} key={current.url} src={current.url} autoPlay muted={!settings.videoAudioEnabled} playsInline controls={false} disablePictureInPicture controlsList="nodownload noplaybackrate noremoteplayback" loop={false} onContextMenu={e=>e.preventDefault()} onEnded={advance} className="pointer-events-none max-h-[68vh] w-full object-contain"/>:<img src={current.url} alt={settings.title||"TGO DevStudio homepage media"} className="max-h-[68vh] w-full object-contain"/>}
+    {current.kind==="video"?<video ref={videoRef} key={current.url} src={current.url} autoPlay muted={!settings.videoAudioEnabled} playsInline controls={false} disablePictureInPicture controlsList="nodownload noplaybackrate noremoteplayback" loop={false} onContextMenu={e=>e.preventDefault()} onEnded={advance} className="pointer-events-none max-h-[68vh] w-full object-contain"/>:<SmartImage src={current.url} alt={settings.title||"TGO DevStudio homepage media"} label={settings.title||"TGO DevStudio"} className="max-h-[68vh] w-full object-contain"/>}
    </div>}
    {showCountdown&&countdown&&<div className="mx-auto mt-8 max-w-5xl rounded-2xl border border-brand-cyan-400/20 bg-white/[.035] p-4 sm:p-6"><p className="mb-4 text-center text-xs font-semibold uppercase tracking-[.22em] text-brand-cyan-300">Countdown</p><div className="grid grid-cols-3 gap-2 sm:grid-cols-6 sm:gap-3">{units.map(([label,value])=><div key={label} className="rounded-xl border border-white/10 bg-black/30 px-2 py-3 text-center"><div className="font-mono text-2xl font-bold text-white sm:text-3xl">{String(value).padStart(2,"0")}</div><div className="mt-1 text-[10px] uppercase tracking-widest text-neutral-400 sm:text-xs">{label}</div></div>)}</div></div>}
   </div>

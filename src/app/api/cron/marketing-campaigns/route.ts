@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
   const base = (process.env.APP_BASE_URL || process.env.SITE_URL || "").replace(/\/$/, "");
   if (!base) return NextResponse.json({ error: "APP_BASE_URL or SITE_URL is required for unsubscribe links." }, { status: 503 });
   await connectToDatabase();
-  const campaigns = await MarketingCampaign.find({ status: { $in: ["queued", "sending"] }, channel: "email", audience: "newsletter_subscribers" }).sort({ updatedAt: 1 }).limit(10);
+  const campaigns = await MarketingCampaign.find({ status: { $in: ["queued", "sending"] }, channel: "email", audience: "newsletter_subscribers", $or: [{ scheduledAt: { $exists: false } }, { scheduledAt: null }, { scheduledAt: { $lte: new Date() } }] }).sort({ updatedAt: 1 }).limit(10);
   let sent = 0, failed = 0, processed = 0;
   for (const campaign of campaigns) {
     await MarketingCampaignDelivery.updateMany({ campaignId: campaign._id, status: "sending", updatedAt: { $lt: new Date(Date.now() - 15 * 60 * 1000) } }, { $set: { status: "pending", lastError: "Recovered interrupted campaign delivery." } });

@@ -5,6 +5,7 @@ import ClientActivity from "@/models/ClientActivity";
 import User from "@/models/User";
 import { connectToDatabase } from "@/lib/db";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
+import { awardEngagementPoints } from "@/lib/engagement/award";
 
 export const dynamic = "force-dynamic";
 export async function GET() {
@@ -47,6 +48,7 @@ export async function PATCH(request:NextRequest) {
   if(lastName!==undefined)accountUpdate.lastName=lastName;
   if(Object.keys(accountUpdate).length){const account=await User.findOne({_id:session.user._id,accountType:"client"});if(!account)return NextResponse.json({error:"Client account not found."},{status:404});Object.assign(account,accountUpdate);const names=[accountUpdate.firstName??account.firstName,accountUpdate.middleName??account.middleName,accountUpdate.lastName??account.lastName].filter(Boolean);account.name=names.join(" ");await account.save();}
   if(!profile)return NextResponse.json({error:"Client profile not found."},{status:404});
+  if(onboardingStatus==="completed")await awardEngagementPoints({clientId:String(session.user._id),eventKey:"profile-completed:"+String(session.user._id),eventType:"profile_completed",metadata:{onboardingStatus}});
   const fields=[...Object.keys(values),...(Object.keys(accountUpdate).length?Object.keys(accountUpdate):[])];
   await Promise.all([
     ClientActivity.create({clientId:session.user._id,actorId:session.user._id,actorType:"client",action:"client.profile_updated",summary:"Client updated their personal and contact details.",metadata:{fields}}),

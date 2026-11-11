@@ -3,7 +3,7 @@ import {useCallback,useEffect,useMemo,useState,type FormEvent} from "react";
 import {Activity,Archive,ArrowUpRight,BadgeCheck,BriefcaseBusiness,CalendarDays,Check,ClipboardList,FileText,GraduationCap,Landmark,Package,Plus,RefreshCw,Search,ShieldCheck,Truck,UserRound,Workflow,X} from "lucide-react";
 type Kind="all"|"recruitment"|"contract"|"training"|"procurement"|"vendor"|"asset"|"policy"|"compliance"|"document"|"calendar"|"approval"|"workflow"|"payroll_integration";
 type RecordItem={id:string;type:Exclude<Kind,"all">;title:string;description:string;details:string;reference:string;status:string;ownerName:string;departmentName:string;employeeName:string;vendorName:string;amount:number|null;currency:string;startDate:string;dueDate:string;documentUrl:string};
-type Employee={id:string;code:string;name:string};type Department={id:string;name:string};
+type Employee={id:string;userId:string;code:string;name:string};type Department={id:string;name:string};
 type Data={records:RecordItem[];counts:{type:string;status:string;count:number}[];employees:Employee[];departments:Department[]};
 const kinds:{id:Exclude<Kind,"all">;label:string;description:string;icon:typeof BriefcaseBusiness}[]=[
 {id:"recruitment",label:"Recruitment",description:"Hiring requests and recruitment stages.",icon:UserRound},

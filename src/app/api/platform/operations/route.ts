@@ -25,7 +25,7 @@ export async function GET(request:NextRequest){
   EmployeeProfile.find({employmentStatus:{$in:["active","onboarding"]}}).populate("userId","name").select("employeeCode userId").sort({employeeCode:1}).limit(500).lean(),
   Department.find({status:"active"}).select("name").sort({name:1}).lean()
  ]);
- return NextResponse.json({records:rows.map(x=>serialize(x as unknown as Record<string,unknown>)),counts:counts.map((x:{_id:{type:string;status:string};count:number})=>({type:x._id.type,status:x._id.status,count:x.count})),employees:employees.map(x=>({id:String(x._id),code:x.employeeCode,name:x.userId&&typeof x.userId==="object"&&"name"in x.userId?String(x.userId.name):"Staff member"})),departments:departments.map(x=>({id:String(x._id),name:x.name}))},{headers:{"Cache-Control":"private, no-store"}});
+ return NextResponse.json({records:rows.map(x=>serialize(x as unknown as Record<string,unknown>)),counts:counts.map((x:{_id:{type:string;status:string};count:number})=>({type:x._id.type,status:x._id.status,count:x.count})),employees:employees.map(x=>({id:String(x._id),userId:x.userId&&typeof x.userId==="object"&&"_id"in x.userId?String(x.userId._id):String(x.userId),code:x.employeeCode,name:x.userId&&typeof x.userId==="object"&&"name"in x.userId?String(x.userId.name):"Staff member"})),departments:departments.map(x=>({id:String(x._id),name:x.name}))},{headers:{"Cache-Control":"private, no-store"}});
 }
 export async function POST(request:NextRequest){
  const a=await auth();if("response"in a)return a.response;let b:Record<string,unknown>;try{b=await request.json();}catch{return fail("Invalid request body.");}

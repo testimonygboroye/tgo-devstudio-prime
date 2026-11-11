@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 function safeHref(value: unknown): value is string {
   if (typeof value !== "string" || !value.trim() || value.length > 500) return false;
   const href = value.trim();
-  return (href.startsWith("/") && !href.startsWith("//") && !href.includes("\\\\")) || /^https:\/\//i.test(href) || /^mailto:[^\s]+$/i.test(href) || /^tel:[+0-9(). -]+$/i.test(href);
+  return (href.startsWith("/") && !href.startsWith("//") && !href.includes(String.fromCharCode(92))) || /^https:\/\//i.test(href) || /^mailto:[^\s]+$/i.test(href) || /^tel:[+0-9(). -]+$/i.test(href);
 }
 
 function validLinks(value: unknown): value is Array<{ label: string; href: string; icon?: string }> {

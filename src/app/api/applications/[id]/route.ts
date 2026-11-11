@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Types } from "mongoose";
+import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import { connectToDatabase } from "@/lib/db";
 import JobApplication from "@/models/JobApplication";
 import { getAuthenticatedSession } from "@/lib/auth/session";

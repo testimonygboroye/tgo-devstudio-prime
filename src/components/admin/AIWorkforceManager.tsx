@@ -3,7 +3,12 @@ import { useCallback, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { Bot, BrainCircuit, CheckCircle2, CircleAlert, Cpu, KeyRound, Loader2, Plus, RefreshCw, ShieldCheck, Workflow } from "lucide-react";
 
-type Data = { providers: any[]; agents: any[]; tasks: any[]; workspaces:any[]; memories:any[] };
+type ProviderItem = { _id:string; name:string; provider:string; lastTestStatus?:string; enabled:boolean };
+type AgentItem = { _id:string; name:string; role:string; department:string; providerId?:{name?:string}; modelName:string; enabled:boolean; permissions:string[] };
+type TaskItem = { _id:string; title:string; agentId?:{name?:string}; status:string };
+type WorkspaceItem = { _id:string; name:string; department:string; description:string };
+type MemoryItem = { _id:string; title:string; scope:string; source:string };
+type Data = { providers:ProviderItem[]; agents:AgentItem[]; tasks:TaskItem[]; workspaces:WorkspaceItem[]; memories:MemoryItem[] };
 const empty: Data = { providers: [], agents: [], tasks: [], workspaces: [], memories: [] };
 export default function AIWorkforceManager() {
   const [data,setData] = useState<Data>(empty);

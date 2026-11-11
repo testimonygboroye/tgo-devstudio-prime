@@ -50,6 +50,7 @@ import {
   ChevronRight,
   LifeBuoy,
   ClipboardList,
+  PlugZap,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -71,6 +72,9 @@ const NAV_GROUPS = [
   ]},
   { title: "Growth & Engagement", items: [
     { label: "Rewards & Referrals", hrefSuffix: "/engagement", icon: Gift, badgeKey: null },
+  ]},
+  { title: "Integration & Growth", items: [
+    { label: "Integration Centre", hrefSuffix: "/integrations", icon: PlugZap, badgeKey: null },
   ]},
   { title: "Commercial & Delivery", items: [
     { label: "Sales & Delivery", hrefSuffix: "/commercial", icon: ShoppingCart, badgeKey: null },

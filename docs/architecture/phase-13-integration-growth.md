@@ -30,11 +30,10 @@ The Cloudflare Worker is a timer and HTTP caller only; it does not access MongoD
 
 ## Required account setup
 
-1. Deploy the Cloudflare Worker using `automation/cloudflare-worker/README.md`.
-2. Configure `APP_BASE_URL` and `PLATFORM_AUTOMATION_CRON_SECRET` as Cloudflare Worker variables/secrets.
-3. Configure `APP_BASE_URL` on the application host. Keep the same `PLATFORM_AUTOMATION_CRON_SECRET` there.
-4. Configure Google OAuth credentials and authorize Search Console / GA4 if reporting is required.
-5. Create a Meta Developer app with WhatsApp product, configure its webhook URL as `https://YOUR_APP_DOMAIN/api/platform/messaging/whatsapp/webhook`, subscribe to `messages` and message status events, then save the permanent access token, phone number ID, WABA ID, app secret and webhook verify token in Integration Centre. Test the connection before enabling live messaging.
+1. Add the GitHub Actions repository secrets `APP_BASE_URL` and `PLATFORM_AUTOMATION_CRON_SECRET`, then run **Actions → TGO Platform Automation** once. The workflow runs every 15 minutes after merge. Standard GitHub-hosted runners are free for this public repository. Alternatively, deploy the Cloudflare Worker using `automation/cloudflare-worker/README.md`; enable only one scheduler.
+2. Configure `APP_BASE_URL` and `PLATFORM_AUTOMATION_CRON_SECRET` on the application host. The cron secret must match the selected scheduler.
+3. Configure Google OAuth credentials and authorize Search Console / GA4 if reporting is required.
+4. Create a Meta Developer app with WhatsApp product, save and verify the WhatsApp Cloud API credentials in Integration Centre, then configure the webhook URL as `https://YOUR_APP_DOMAIN/api/platform/messaging/whatsapp/webhook`, use the same verify token, and subscribe to the `messages` field.
 
 ## Capability boundaries
 

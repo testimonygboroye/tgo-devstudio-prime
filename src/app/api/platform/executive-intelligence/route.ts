@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     }
     if (action === "recommendation.review") {
       if (!Types.ObjectId.isValid(String(body.id || "")) || !["approve", "reject"].includes(String(body.decision))) return fail("A valid recommendation and approval decision are required.");
-      const recommendation = await ExecutiveRecommendation.findOne({ _id: body.id, status: "proposed" });
+      const recommendation = await ExecutiveRecommendation.findOne({ _id: new Types.ObjectId(String(body.id)), status: "proposed" });
       if (!recommendation) return fail("Recommendation not found or already reviewed.", 404);
       if (body.decision === "approve" && recommendation.actionType === "create_follow_up") {
         const payload = recommendation.actionPayload || {};
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
       if (!Types.ObjectId.isValid(String(body.id || ""))) return fail("Invalid decision identifier.");
       const status = String(body.status || "");
       if (!["open", "in_progress", "completed", "cancelled"].includes(status)) return fail("Invalid decision status.");
-      const row = await ExecutiveDecision.findByIdAndUpdate(body.id, { $set: { status, outcome: String(body.outcome || "").slice(0, 3000), updatedBy: actorId, completedAt: status === "completed" ? new Date() : undefined } }, { new: true, runValidators: true });
+      const row = await ExecutiveDecision.findByIdAndUpdate(new Types.ObjectId(String(body.id)), { $set: { status, outcome: String(body.outcome || "").slice(0, 3000), updatedBy: actorId, completedAt: status === "completed" ? new Date() : undefined } }, { new: true, runValidators: true });
       if (!row) return fail("Decision not found.", 404);
       await writePlatformAuditEvent({ actorType: "human", actorId, actorLabel: auth.session.user.name, action: "executive.decision.updated", module: "executive-intelligence", targetType: "ExecutiveDecision", targetId: String(row._id), outcome: "success", metadata: { status } });
       return NextResponse.json({ ok: true, decision: row });
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
     }
     if (action === "schedule.toggle") {
       if (!Types.ObjectId.isValid(String(body.id || ""))) return fail("Invalid report schedule.");
-      const schedule = await ExecutiveReportSchedule.findOne({ _id: body.id, createdBy: actorId });
+      const schedule = await ExecutiveReportSchedule.findOne({ _id: new Types.ObjectId(String(body.id)), createdBy: actorId });
       if (!schedule) return fail("Report schedule not found.", 404);
       schedule.active = !schedule.active; if (schedule.active && schedule.nextRunAt < new Date()) schedule.nextRunAt = nextRun(schedule.frequency);
       await schedule.save();

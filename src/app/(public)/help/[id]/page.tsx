@@ -5,74 +5,50 @@ import { useRouter, useParams } from "next/navigation";
 import { X } from "lucide-react";
 import { sanitizeBlogHtml } from "@/lib/sanitizeHtml";
 
-interface Article {
-  title: string;
-  bodyHtml: string;
-  category: string;
-}
+interface Article { title:string; bodyHtml:string; category:string; }
 
-export default function HelpArticleViewerPage() {
-  const router = useRouter();
-  const params = useParams();
-  const [article, setArticle] = useState<Article | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
+export default function HelpArticleViewerPage(){
+  const router=useRouter();
+  const params=useParams<{id:string}>();
+  const [article,setArticle]=useState<Article|null>(null);
+  const [isLoading,setIsLoading]=useState(true);
+  const [error,setError]=useState("");
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const res = await fetch(`/api/help-articles/${params.id}`);
-        const data = await res.json();
-        if (data.status !== "ok") {
-          setError(data.message || "Article not found.");
-          setIsLoading(false);
-          return;
-        }
+  useEffect(()=>{
+    const controller=new AbortController();
+    async function load(){
+      try{
+        const res=await fetch("/api/help-articles/"+params.id,{signal:controller.signal});
+        if(!res.ok)throw new Error("Article request failed");
+        const data=await res.json();
+        if(controller.signal.aborted)return;
+        if(data.status!=="ok"){setError(data.message||"Article not found.");return;}
         setArticle(data.article);
-      } catch {
-        setError("Failed to load article.");
-      } finally {
-        setIsLoading(false);
+      }catch(loadError){
+        if(loadError instanceof Error&&loadError.name==="AbortError")return;
+        setError("Failed to load article. Please try again or contact support.");
+      }finally{
+        if(!controller.signal.aborted)setIsLoading(false);
       }
     }
     load();
-  }, [params.id]);
+    return()=>controller.abort();
+  },[params.id]);
 
-  function handleClose() {
-    let returnPath = "/";
-    try {
-      returnPath = window.sessionStorage.getItem("help-return-path") || "/";
-    } catch {
-      // ignore
-    }
+  function handleClose(){
+    let returnPath="/help";
+    try{returnPath=window.sessionStorage.getItem("help-return-path")||"/help";}catch{/* ignore unavailable storage */}
     router.push(returnPath);
   }
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 px-4" onClick={handleClose}>
-      <div className="surface-card max-h-[85vh] w-full max-w-2xl overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="surface-card-inner p-6 sm:p-8">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              {article && <span className="eyebrow-label">{article.category}</span>}
-              <h1 className="mt-2 text-2xl font-bold" style={{ color: "var(--text-primary)" }}>
-                {isLoading ? "Loading..." : article?.title || "Not Found"}
-              </h1>
-            </div>
-            <button onClick={handleClose} style={{ color: "var(--text-muted)" }}>
-              <X size={22} />
-            </button>
-          </div>
-
-          {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
-
-          {article && (
-            <div
-              className="prose prose-invert mt-7 max-w-none"
-              style={{ color: "var(--text-secondary)" }}
-              dangerouslySetInnerHTML={{ __html: sanitizeBlogHtml(article.bodyHtml) }}
-            />
-          )}
+  return(
+    <div className="help-article-overlay" role="dialog" aria-modal="true" aria-labelledby="help-article-title" onClick={handleClose}>
+      <div className="help-article-dialog" onClick={event=>event.stopPropagation()}>
+        <div className="help-article-dialog-inner">
+          <div className="help-article-dialog-heading"><div>{article&&<span className="eyebrow-label">{article.category}</span>}<h1 id="help-article-title">{isLoading?"Loading…":article?.title||"Article unavailable"}</h1></div><button type="button" onClick={handleClose} aria-label="Close help article"><X size={22}/></button></div>
+          {error&&<p className="help-article-error">{error}</p>}
+          {article&&<div className="prose help-article-body" dangerouslySetInnerHTML={{__html:sanitizeBlogHtml(article.bodyHtml)}}/>}
+          {isLoading&&<div className="help-article-loading" role="status">Loading article content…</div>}
         </div>
       </div>
     </div>

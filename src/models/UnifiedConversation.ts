@@ -4,7 +4,7 @@ export type ConversationKind = "direct" | "group" | "channel" | "whatsapp" | "ai
 export interface IUnifiedConversation extends Document {
   kind: ConversationKind;
   title: string;
-  createdBy: Types.ObjectId;
+  createdBy?: Types.ObjectId;
   memberIds: Types.ObjectId[];
   aiAgentId?: Types.ObjectId;
   externalContactId?: string;
@@ -18,7 +18,7 @@ export interface IUnifiedConversation extends Document {
 const ConversationSchema = new Schema<IUnifiedConversation>({
   kind: { type: String, enum: ["direct", "group", "channel", "whatsapp", "ai"], required: true, index: true },
   title: { type: String, trim: true, maxlength: 160, default: "" },
-  createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
+  createdBy: { type: Schema.Types.ObjectId, ref: "User", index: true },
   memberIds: [{ type: Schema.Types.ObjectId, ref: "User" }],
   aiAgentId: { type: Schema.Types.ObjectId, ref: "AIAgent" },
   externalContactId: { type: String, trim: true, maxlength: 80 },

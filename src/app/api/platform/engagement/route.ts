@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
     if (!candidate?.referredClientId || String(candidate.referrerId) === String(candidate.referredClientId)) return NextResponse.json({ error: "Referral is not eligible for qualification." }, { status: 409 });
     const rule = await EngagementReferralRule.findOne({ key: "default" }).lean();
     if (rule && !rule.active) return NextResponse.json({ error: "Referral qualification is disabled." }, { status: 409 });
-    const paid = await PaymentTransaction.aggregate([{ $match: { clientId: candidate.referredClientId, status: "paid", currency } }, { $group: { _id: null, total: { $sum: "$amountMinor" } } }]);
+    const paid = await PaymentTransaction.aggregate([{ $match: { clientId: candidate.referredClientId, status: "paid", currency, createdAt: { $gte: candidate.attributedAt || candidate.createdAt } } }, { $group: { _id: null, total: { $sum: "$amountMinor" } } }]);
     const paidMinor = Number(paid[0]?.total || 0);
     if (paidMinor <= 0 || paidMinor < Number(rule?.minimumPurchaseMinor || 0)) return NextResponse.json({ error: "The referred client must complete verified paid transactions meeting the minimum in the selected currency." }, { status: 409 });
     const commissionMinor = Math.floor(paidMinor * Number(rule?.commissionPercent ?? 5) / 100);

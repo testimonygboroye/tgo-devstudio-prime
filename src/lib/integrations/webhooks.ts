@@ -1,0 +1,5 @@
+import {connectToDatabase} from "@/lib/db";
+import WebhookSubscription from "@/models/WebhookSubscription";
+import WebhookDelivery from "@/models/WebhookDelivery";
+export const WEBHOOK_EVENT_TYPES=["sales.lead.created","sales.lead.updated","marketing.campaign.created","marketing.campaign.sent","commerce.payment.succeeded","project.created"] as const;
+export async function enqueueWebhookDeliveries(input:{eventId:string;eventName:string;payload:Record<string,unknown>}){if(!WEBHOOK_EVENT_TYPES.includes(input.eventName as typeof WEBHOOK_EVENT_TYPES[number]))return 0;await connectToDatabase();const subscriptions=await WebhookSubscription.find({active:true,events:input.eventName}).select("_id").lean();if(!subscriptions.length)return 0;await WebhookDelivery.bulkWrite(subscriptions.map(s=>({updateOne:{filter:{subscriptionId:s._id,eventId:input.eventId},update:{$setOnInsert:{subscriptionId:s._id,eventId:input.eventId,eventName:input.eventName,payload:input.payload,status:"pending",attempts:0,availableAt:new Date()}},upsert:true}})),{ordered:false});return subscriptions.length;}

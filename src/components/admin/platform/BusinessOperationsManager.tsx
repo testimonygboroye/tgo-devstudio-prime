@@ -18,7 +18,7 @@ const kinds:{id:Exclude<Kind,"all">;label:string;description:string;icon:typeof 
 {id:"calendar",label:"Business calendar",description:"Operational dates and milestones.",icon:CalendarDays},
 {id:"approval",label:"Approvals",description:"Traceable requests and decisions.",icon:Check},
 {id:"workflow",label:"Workflows",description:"Internal procedures and accountable owners.",icon:Workflow},
-{id:"payroll_integration",label:"Payroll integrations",description:"Connector readiness register; no live payroll processing.",icon:Activity}
+{id:"payroll_integration",label:"Payroll integrations",description:"External provider records; manage pay runs in Payroll & Compensation.",icon:Activity}
 ];
 const emptyForm=(type:Exclude<Kind,"all">)=>({type,title:"",description:"",details:"",reference:"",vendorName:"",ownerId:"",departmentId:"",employeeId:"",amount:"",currency:"NGN",startDate:"",dueDate:"",documentUrl:""});
 const label=(v:string)=>v.replaceAll("_"," ").replace(/\b\w/g,c=>c.toUpperCase());

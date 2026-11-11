@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
       const name = value.contacts?.[0]?.profile?.name || incoming.from;
       const conversation = await UnifiedConversation.findOneAndUpdate(
         { kind: "whatsapp", externalContactId: incoming.from },
-        { $set: { externalContactName: name, lastMessageAt: new Date() }, $setOnInsert: { kind: "whatsapp", title: name, memberIds: [], createdBy: undefined } },
+        { $set: { externalContactName: name, lastMessageAt: new Date(), externalOptInAt: new Date(), externalLastInboundAt: new Date() }, $setOnInsert: { kind: "whatsapp", title: name, memberIds: [], createdBy: undefined } },
         { new: true, upsert: true, setDefaultsOnInsert: true }
       ).catch(async () => UnifiedConversation.findOne({ kind: "whatsapp", externalContactId: incoming.from }));
       if (!conversation) continue;

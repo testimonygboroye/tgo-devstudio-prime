@@ -3,6 +3,10 @@ import type { PublicPageKey } from "@/models/PublicPageContent";
 export const PUBLIC_SITE_SETTINGS_DEFAULTS = {
   brandName: "TGO DevStudio",
   brandDescriptor: "TGO DevStudio Prime",
+  siteTitle: "TGO DevStudio Prime",
+  siteDescription: "TGO DevStudio builds premium software, websites, apps, SaaS platforms, AI systems, cloud solutions, and custom digital products.",
+  faviconUrl: "/favicon.png",
+  openGraphImageUrl: "/opengraph-image",
   logoUrl: "/logo.png",
   logoAlt: "TGO DevStudio logo",
   announcementEnabled: false,

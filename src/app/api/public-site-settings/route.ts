@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { connectToDatabase } from "@/lib/db";
 import { getAuthenticatedSession } from "@/lib/auth/session";
 import { unauthorizedResponse, forbiddenResponse, requireContentPermission } from "@/lib/auth/authorize";
@@ -103,6 +103,7 @@ export async function PUT(request: NextRequest) {
     { upsert: true, new: true, runValidators: true }
   ).lean();
 
+  revalidateTag("public-site-settings", "max");
   revalidatePath("/", "layout");
   return NextResponse.json({ status: "ok", settings }, { headers: { "Cache-Control": "no-store, max-age=0" } });
 }

@@ -3,6 +3,8 @@ import { ArrowLeft, Compass, Home, Search } from "lucide-react";
 import { getPublicSiteSettings } from "@/lib/publicSite/getPublicSiteSettings";
 import { PUBLIC_SITE_SETTINGS_DEFAULTS } from "@/lib/constants/publicSiteDefaults";
 
+export const dynamic = "force-dynamic";
+
 export default async function NotFound() {
   const settings = await getPublicSiteSettings();
   const copy = settings || PUBLIC_SITE_SETTINGS_DEFAULTS;

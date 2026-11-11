@@ -30,7 +30,7 @@ export default function LaunchExperience({settings}:Props){
  const useOverride=Boolean(settings.useVideoDurationOverride&&overrideSeconds>0);
  const advance=useCallback(()=>setMediaIndex(i=>media.length>0?(i+1)%media.length:0),[media.length]);
  useEffect(()=>{if(!settings.enabled||!countdownEnabled||!hasTarget||afterTarget)return;const id=window.setInterval(()=>setNow(Date.now()),1000);return()=>window.clearInterval(id);},[settings.enabled,countdownEnabled,hasTarget,afterTarget]);
- useEffect(()=>{setMediaIndex(0);},[afterTarget,video,image]);
+
  useEffect(()=>{if(!settings.videoAudioEnabled)return;const resumeAudioVideo=()=>{const element=videoRef.current;if(element?.paused)void element.play().catch(()=>{});};window.addEventListener("pointerdown",resumeAudioVideo,{once:true});window.addEventListener("touchstart",resumeAudioVideo,{once:true});window.addEventListener("keydown",resumeAudioVideo,{once:true});return()=>{window.removeEventListener("pointerdown",resumeAudioVideo);window.removeEventListener("touchstart",resumeAudioVideo);window.removeEventListener("keydown",resumeAudioVideo);};},[settings.videoAudioEnabled,current?.url]);
  useEffect(()=>{
   if(!current||media.length===0)return;

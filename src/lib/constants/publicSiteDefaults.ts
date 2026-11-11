@@ -88,9 +88,31 @@ export const PUBLIC_SITE_SETTINGS_DEFAULTS = {
   ],
 } as const;
 
+type PublicPageDefault = {
+  pageKey: PublicPageKey;
+  metaTitle: string;
+  metaDescription: string;
+  heroEyebrow: string;
+  heroHeadline: string;
+  heroAccent: string;
+  heroDescription: string;
+  heroNote: string;
+  introEyebrow: string;
+  introHeading: string;
+  introDescription: string;
+  cards: Array<{ icon: string; eyebrow: string; title: string; subtitle: string; description: string; bulletPoints: string[]; displayOrder: number }>;
+  ctaEyebrow: string;
+  ctaHeading: string;
+  ctaDescription: string;
+  ctaPrimaryLabel: string;
+  ctaPrimaryHref: string;
+  ctaSecondaryLabel: string;
+  ctaSecondaryHref: string;
+};
+
 function makePublicPageDefault(
   pageKey: PublicPageKey,
-  values: Partial<Omit<(typeof PUBLIC_PAGE_DEFAULTS)[PublicPageKey], "pageKey">>
+  values: Partial<Omit<PublicPageDefault, "pageKey">>
 ) {
   return {
     pageKey,
@@ -116,27 +138,7 @@ function makePublicPageDefault(
   };
 }
 
-export const PUBLIC_PAGE_DEFAULTS: Record<PublicPageKey, {
-  pageKey: PublicPageKey;
-  metaTitle: string;
-  metaDescription: string;
-  heroEyebrow: string;
-  heroHeadline: string;
-  heroAccent: string;
-  heroDescription: string;
-  heroNote: string;
-  introEyebrow: string;
-  introHeading: string;
-  introDescription: string;
-  cards: Array<{ icon: string; eyebrow: string; title: string; subtitle: string; description: string; bulletPoints: string[]; displayOrder: number }>;
-  ctaEyebrow: string;
-  ctaHeading: string;
-  ctaDescription: string;
-  ctaPrimaryLabel: string;
-  ctaPrimaryHref: string;
-  ctaSecondaryLabel: string;
-  ctaSecondaryHref: string;
-}> = {
+export const PUBLIC_PAGE_DEFAULTS: Record<PublicPageKey, PublicPageDefault> = {
   industries: {
     pageKey: "industries",
     metaTitle: "Industry Solutions | TGO DevStudio Prime",

@@ -19,6 +19,7 @@ export default function CommunicationsHub() {
   const [uploading,setUploading]=useState(false);
   const [recording,setRecording]=useState(false);
   const recorderRef=useRef<MediaRecorder|null>(null);
+  const speechRef=useRef<any>(null);
   const chunksRef=useRef<BlobPart[]>([]);
   const [threadReplyId,setThreadReplyId]=useState<string|undefined>(undefined);
   const [loading,setLoading]=useState(true);
@@ -35,14 +36,17 @@ export default function CommunicationsHub() {
   async function send(){if(!active||!draft.trim())return;const body=draft;setDraft("");const r=await fetch("/api/platform/messaging",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"send",conversationId:active._id,body,attachments,threadRootId:threadReplyId})});const d=await r.json();if(!r.ok){setNotice(d.message||"Message could not be sent.");setDraft(body);return;}await loadMessages(active._id);await loadList();setThreadReplyId(undefined);setAttachments([]);}
   async function uploadFile(file:File){setUploading(true);const form=new FormData();form.append("file",file);const r=await fetch("/api/platform/messaging/upload",{method:"POST",body:form});const d=await r.json();if(!r.ok){setNotice(d.error||"Upload failed.");}else{setAttachments(old=>[...old,d.attachment].slice(0,5));setNotice("Attachment uploaded.");}setUploading(false);}
   async function toggleRecording(){
-    if(recording){recorderRef.current?.stop();setRecording(false);return;}
+    if(recording){recorderRef.current?.stop();speechRef.current?.stop?.();speechRef.current=null;setRecording(false);return;}
     if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==="undefined"){setNotice("Voice recording is not supported by this browser.");return;}
     try{
       const stream=await navigator.mediaDevices.getUserMedia({audio:true});
       const recorder=new MediaRecorder(stream);chunksRef.current=[];recorderRef.current=recorder;
+      const speechWindow=window as unknown as {SpeechRecognition?:new()=>any;webkitSpeechRecognition?:new()=>any};
+      const Speech=speechWindow.SpeechRecognition||speechWindow.webkitSpeechRecognition;
+      if(Speech){const speech=new Speech();speech.lang="en-NG";speech.continuous=true;speech.interimResults=true;speech.onresult=(event:any)=>{let finalText="";for(let i=event.resultIndex;i<event.results.length;i++){if(event.results[i].isFinal)finalText+=event.results[i][0]?.transcript||"";}if(finalText.trim())setDraft(previous=>(previous?previous+" ":"")+finalText.trim());};speech.onerror=()=>{};try{speech.start();speechRef.current=speech;}catch{speechRef.current=null;}}
       recorder.ondataavailable=(event)=>{if(event.data.size)chunksRef.current.push(event.data);};
-      recorder.onstop=()=>{const blob=new Blob(chunksRef.current,{type:recorder.mimeType||"audio/webm"});stream.getTracks().forEach(track=>track.stop());if(blob.size){const file=new File([blob],"voice-note-"+Date.now()+".webm",{type:blob.type});void uploadFile(file);}};
-      recorder.start();setRecording(true);setNotice("Recording voice note… press Stop when finished.");
+      recorder.onstop=()=>{speechRef.current?.stop?.();speechRef.current=null;const blob=new Blob(chunksRef.current,{type:recorder.mimeType||"audio/webm"});stream.getTracks().forEach(track=>track.stop());if(blob.size){const file=new File([blob],"voice-note-"+Date.now()+".webm",{type:blob.type});void uploadFile(file);}};
+      recorder.start();setRecording(true);setNotice("Recording voice note… live speech transcription will appear in the message box when your browser supports it.");
     }catch{setNotice("Microphone permission was denied or unavailable.");}
   }
   async function editMessage(messageId:string,current:string){const next=window.prompt("Edit message",current);if(!next?.trim())return;const r=await fetch("/api/platform/messaging",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"edit",messageId,body:next})});const d=await r.json();if(!r.ok)setNotice(d.message||"Could not edit message.");if(active)await loadMessages(active._id);}

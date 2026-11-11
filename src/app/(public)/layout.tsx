@@ -6,23 +6,14 @@ import CookieConsentBanner from "@/components/public/CookieConsentBanner";
 import HelpDiscoveryPrompt from "@/components/shared/HelpDiscoveryPrompt";
 import AnalyticsTracker from "@/components/public/AnalyticsTracker";
 import ShareCurrentPage from "@/components/public/ShareCurrentPage";
-import { connectToDatabase } from "@/lib/db";
-import PublicSiteSettings from "@/models/PublicSiteSettings";
-import type { PublicSiteChromeSettings } from "@/lib/publicSite/types";
+import { getPublicSiteSettings } from "@/lib/publicSite/getPublicSiteSettings";
 
 export default async function PublicLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  let siteSettings: PublicSiteChromeSettings | null = null;
-  try {
-    await connectToDatabase();
-    const saved = await PublicSiteSettings.findOne().lean();
-    if (saved) siteSettings = saved as unknown as PublicSiteChromeSettings;
-  } catch {
-    // Keep the public site available with its built-in navigation and footer if settings are unavailable.
-  }
+  const siteSettings = await getPublicSiteSettings();
 
   return (
     <>

@@ -189,7 +189,7 @@ export async function POST(request: NextRequest) {
                 task.inputTokens = Math.ceil(task.input.length / 4);
         task.outputTokens = 4096;
         await task.save();
-        const dailyUsage = await AITask.aggregate([{ $match: { agentId: agent._id, status: { $in: ["completed", "running", "failed"] }, createdAt: { $gte: dayStart } } }, { $group: { _id: null, tokens: { $sum: { $add: ["$inputTokens", "$outputTokens"] } } } }]);
+        const dailyUsage = await AITask.aggregate([{ $match: { agentId: agent._id, status: { $in: ["completed", "running", "failed"] }, $or: [{ startedAt: { $gte: dayStart } }, { completedAt: { $gte: dayStart } }] } }, { $group: { _id: null, tokens: { $sum: { $add: ["$inputTokens", "$outputTokens"] } } } }]);
         const usedTokens = Number(dailyUsage[0]?.tokens || 0);
         if (usedTokens > agent.maxDailyTokens) throw new Error("Agent daily token budget exhausted (" + usedTokens + "/" + agent.maxDailyTokens + ").");
         const memories = await AIMemory.find({ active: true, $and: [{ $or: [{ expiresAt: { $exists: false } }, { expiresAt: { $gt: new Date() } }] }], $or: [{ scope: "agent", agentId: agent._id }, { scope: "shared", $or: [{ workspaceId: agent.workspaceId }, { workspaceId: { $exists: false } }] }] }).sort({ updatedAt: -1 }).limit(12).lean();

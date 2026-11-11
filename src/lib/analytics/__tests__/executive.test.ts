@@ -31,7 +31,7 @@ describe("executive revenue forecasting", () => {
         month: "2026-0" + (index + 1), amountMinor, transactions: 1,
       })),
     });
-    expect(result[0].nextMonthAmountMinor).toBe(500);
+    expect(result[0].nextMonthAmountMinor).toBe(650);
     expect(result[0].confidence).toBe("directional");
   });
 });

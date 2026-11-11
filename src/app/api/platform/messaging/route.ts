@@ -31,8 +31,10 @@ export async function GET(request: NextRequest) {
     await UnifiedMessage.updateMany({ conversationId, senderId: { $ne: session.user._id }, readBy: { $ne: session.user._id } }, { $addToSet: { readBy: session.user._id }, $set: { status: "read" } });
     const query = searchParams.get("q")?.trim().slice(0, 100) || "";
     const messageFilter: Record<string, unknown> = { conversationId };
-    if (query) messageFilter.body = { $regex: query.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\    const messages = await UnifiedMessage.find({ conversationId }).sort({ createdAt: 1 }).limit(300).lean();
-    return NextResponse.json({ status: "ok", conversation, messages }"), $options: "i" };
+    if (query) {
+      const escapedQuery = query.split("").map((character) => ["\\", ".", "+", "*", "?", "^", "$", "(", ")", "[", "]", "{", "}", "|"].includes(character) ? "\\" + character : character).join("");
+      messageFilter.body = { $regex: escapedQuery, $options: "i" };
+    }
     const messages = await UnifiedMessage.find(messageFilter).sort({ createdAt: 1 }).limit(300).lean();
     return NextResponse.json({ status: "ok", conversation, messages, isFounder: session.role.isFounderRole }, { headers: { "Cache-Control": "private, no-store" } });
   }

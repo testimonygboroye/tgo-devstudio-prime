@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
     if (!conversation) return fail("Conversation not found.", 404);
     const isMember = conversation.memberIds.some((member: unknown) => String((member as {_id?: unknown})._id || member) === String(session.user._id));
     if (!isMember && !session.role.isFounderRole) return forbiddenResponse("You are not a member of this conversation.");
+    await UnifiedMessage.updateMany({ conversationId, senderId: { $ne: session.user._id }, readBy: { $ne: session.user._id } }, { $addToSet: { readBy: session.user._id }, $set: { status: "read" } });
     const messages = await UnifiedMessage.find({ conversationId }).sort({ createdAt: 1 }).limit(300).lean();
     return NextResponse.json({ status: "ok", conversation, messages }, { headers: { "Cache-Control": "private, no-store" } });
   }
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
     const conversation = await UnifiedConversation.findById(conversationId);
     if (!conversation) return fail("Conversation not found.", 404);
     if (!conversation.memberIds.some((id) => String(id) === String(actorId)) && !session.role.isFounderRole) return forbiddenResponse("You are not a member of this conversation.");
-    const message = await UnifiedMessage.create({ conversationId, senderType: "human", senderId: actorId, senderLabel: actorName, body: content, status: "sent", readBy: [actorId] });
+    const message = await UnifiedMessage.create({ conversationId, senderType: "human", senderId: actorId, senderLabel: actorName, body: content, status: "sent", readBy: [actorId], threadRootId: typeof body.threadRootId === "string" && Types.ObjectId.isValid(body.threadRootId) ? body.threadRootId : undefined });
     conversation.lastMessageAt = new Date();
     await conversation.save();
 
@@ -98,6 +99,35 @@ export async function POST(request: NextRequest) {
       }
     }
     return NextResponse.json({ status: "ok", message: { id: String(message._id), body: message.body, createdAt: message.createdAt, senderLabel: actorName, senderType: "human" } }, { status: 201 });
+  }
+
+  if (["react", "edit", "delete", "pin"].includes(String(body.action))) {
+    const messageId = String(body.messageId || "");
+    if (!Types.ObjectId.isValid(messageId)) return fail("A valid message ID is required.");
+    const message = await UnifiedMessage.findById(messageId);
+    if (!message) return fail("Message not found.", 404);
+    const conversation = await UnifiedConversation.findById(message.conversationId);
+    if (!conversation || (!conversation.memberIds.some((id) => String(id) === String(actorId)) && !session.role.isFounderRole)) return forbiddenResponse("You cannot modify this conversation.");
+    if (body.action === "react") {
+      const emoji = String(body.emoji || "").slice(0, 12);
+      if (!emoji) return fail("Choose a reaction.");
+      const existing = message.reactions.find((reaction) => String(reaction.userId) === String(actorId) && reaction.emoji === emoji);
+      if (existing) message.reactions = message.reactions.filter((reaction) => !(String(reaction.userId) === String(actorId) && reaction.emoji === emoji));
+      else message.reactions.push({ emoji, userId: actorId });
+    } else if (body.action === "edit") {
+      if (String(message.senderId || "") !== String(actorId)) return forbiddenResponse("Only the message author can edit this message.");
+      const nextBody = String(body.body || "").trim();
+      if (!nextBody || nextBody.length > 12000) return fail("Edited message must contain 1–12,000 characters.");
+      message.body = nextBody; message.editedAt = new Date();
+    } else if (body.action === "delete") {
+      if (String(message.senderId || "") !== String(actorId) && !session.role.isFounderRole) return forbiddenResponse("Only the author or a founder can delete this message.");
+      message.deletedAt = new Date(); message.body = "This message was deleted.";
+    } else {
+      if (!session.role.isFounderRole) return forbiddenResponse("Only a founder can pin or unpin messages.");
+      message.pinned = Boolean(body.pinned);
+    }
+    await message.save();
+    return NextResponse.json({ status: "ok", message: "Message updated." });
   }
 
   if (body.action === "ai.task") {

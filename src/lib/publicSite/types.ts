@@ -5,6 +5,10 @@ export interface PublicSiteSocialLink { label: string; href: string; platform: s
 export interface PublicSiteChromeSettings {
   brandName: string;
   brandDescriptor: string;
+  siteTitle: string;
+  siteDescription: string;
+  faviconUrl: string;
+  openGraphImageUrl: string;
   logoUrl: string;
   logoAlt: string;
   announcementEnabled: boolean;

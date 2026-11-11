@@ -241,12 +241,13 @@ export async function POST(request: NextRequest) {
         }
         task.status = "completed";
         task.operationResult = operationResult || undefined;
-        task.result = completion.text.slice(0, 50000);
+        task.result = (completion.text + (operationResult ? "\n\nBusiness operation result:\n" + JSON.stringify(operationResult) : "")).slice(0, 50000);
         task.inputTokens = completion.inputTokens;
         task.outputTokens = completion.outputTokens;
         task.providerRequestId = completion.providerRequestId;
         task.completedAt = new Date();
         await task.save();
+        if (task.operation) await writePlatformAuditEvent({ actorType: "ai", actorId: String(agent._id), actorLabel: agent.name, action: "ai.business_tool_executed", module: "ai-workforce", targetType: task.operation, targetId: String(payload.clientId || payload.projectId || task._id), outcome: "success", metadata: { taskId: String(task._id), approvedBy: task.approvedBy } });
         await writePlatformAuditEvent({ actorType: "ai", actorId: String(agent._id), actorLabel: agent.name, action: "ai.task.completed", module: "ai-workforce", targetType: "AITask", targetId: String(task._id), outcome: "success", metadata: { model: agent.modelName, inputTokens: completion.inputTokens, outputTokens: completion.outputTokens, providerRequestId: completion.providerRequestId } });
         return NextResponse.json({ status: "ok", message: "AI task completed.", taskId: task._id, result: task.result, usage: { inputTokens: completion.inputTokens, outputTokens: completion.outputTokens } });
       } catch (error) {

@@ -80,7 +80,7 @@ export default async function HomePage() {
     StackItem.find({ publishStatus: "published" }).sort({ displayOrder: 1 }).limit(16).lean(),
   ]);
 
-  const localize = <T extends Record<string, unknown>>(doc: T, fields: readonly string[]) => getLocalizedContent(doc, locale, fields as readonly (keyof T)[]);
+  const localize = <T extends object>(doc: T, fields: readonly string[]): T => getLocalizedContent(doc as T & Record<string, any>, locale, fields as readonly (keyof (T & Record<string, any>))[]) as T;
   const hero = localize({ ...HOME_DEFAULTS, ...(rawSettings || {}) }, TRANSLATABLE_FIELDS.HomeSettings);
   const projects = featuredProjects.map((item) => localize(item, TRANSLATABLE_FIELDS.Project));
   const serviceList = services.map((item) => localize(item, TRANSLATABLE_FIELDS.Service));

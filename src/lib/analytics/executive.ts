@@ -12,6 +12,8 @@ import FinancialLedgerEntry from "@/models/FinancialLedgerEntry";
 import AttendanceRecord from "@/models/AttendanceRecord";
 import PlatformEvent from "@/models/PlatformEvent";
 import IntegrationConnection from "@/models/IntegrationConnection";
+import SalesLead from "@/models/SalesLead";
+import MarketingCampaign from "@/models/MarketingCampaign";
 import PlatformAuditEvent from "@/models/PlatformAuditEvent";
 import { AIAgent, AITask, AIProvider } from "@/models/AIWorkforce";
 
@@ -25,7 +27,7 @@ export async function getExecutiveSnapshot() {
   const [
     paidRevenue, paymentCounts, monthlyRevenue, orderCounts, projectCounts, overdueProjects, blockedMilestones,
     workforceCounts, departmentCounts, clientCounts, clientLifecycle, supportCounts, overdueTickets,
-    operationCounts, agentCounts, taskCounts, tokenTotals, providerCounts, auditCounts, ledgerTotals, attendanceSummary, platformEventCounts, integrationCounts,
+    operationCounts, agentCounts, taskCounts, tokenTotals, providerCounts, auditCounts, ledgerTotals, attendanceSummary, platformEventCounts, integrationCounts, leadCounts, campaignCounts,
   ] = await Promise.all([
     PaymentTransaction.aggregate([
       { $match: { status: { $in: ["paid", "partially_refunded"] }, verifiedAt: { $exists: true } } },
@@ -57,6 +59,8 @@ export async function getExecutiveSnapshot() {
     AttendanceRecord.aggregate([{ $match: { workDate: { $gte: thirtyDaysAgo.toISOString().slice(0, 10) } } }, { $group: { _id: null, records: { $sum: 1 }, completedShifts: { $sum: { $cond: [{ $ne: ["$clockOutAt", null] }, 1, 0] } }, minutes: { $sum: { $cond: [{ $and: [{ $ne: ["$clockOutAt", null] }, { $ne: ["$clockInAt", null] }] }, { $divide: [{ $subtract: ["$clockOutAt", "$clockInAt"] }, 60000] }, 0] } } } }]),
     PlatformEvent.aggregate([{ $group: { _id: "$status", count: { $sum: 1 } } }]),
     IntegrationConnection.aggregate([{ $group: { _id: "$status", count: { $sum: 1 } } }]),
+    SalesLead.aggregate([{ $group: { _id: "$stage", count: { $sum: 1 } } }]),
+    MarketingCampaign.aggregate([{ $group: { _id: "$status", count: { $sum: 1 } } }]),
   ]);
 
   const countMap = (rows: Array<{ _id: string | boolean | null; count: number }>) =>
@@ -92,6 +96,7 @@ export async function getExecutiveSnapshot() {
     aiWorkforce: { agents: countMap(agentCounts), tasks: aiTaskStatus, tokens: { input: Number(token.inputTokens || 0), output: Number(token.outputTokens || 0) }, providers: countMap(providerCounts) },
     activity: { auditEventsLast30Days: auditCounts },
     platform: { events: countMap(platformEventCounts), integrations: countMap(integrationCounts) },
+    salesMarketing: { leadsByStage: countMap(leadCounts), campaignsByStatus: countMap(campaignCounts), totalLeads: leadCounts.reduce((sum, row) => sum + Number(row.count || 0), 0) },
   };
 }
 

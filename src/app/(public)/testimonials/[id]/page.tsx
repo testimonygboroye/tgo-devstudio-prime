@@ -67,8 +67,8 @@ export default async function TestimonialDetailPage({ params }: PageProps) {
   );
 
   return (
-    <main className="min-h-screen px-6 py-16 sm:px-12">
-      <div className="mx-auto max-w-2xl">
+    <main className="testimonial-detail-page">
+      <div className="home-container testimonial-detail-container">
         <Link
           href="/testimonials"
           className="flex items-center gap-1 text-sm text-neutral-400 hover:text-brand-cyan-300"
@@ -76,7 +76,7 @@ export default async function TestimonialDetailPage({ params }: PageProps) {
           <ArrowLeft size={16} /> {t("testimonials.backToTestimonials")}
         </Link>
 
-        <div className="mt-8 rounded-xl border border-base-800 bg-base-900 p-8">
+        <div className="testimonial-detail-card">
           {review.featured && (
             <span className="mb-4 inline-block rounded-full bg-brand-cyan-400/20 px-2 py-0.5 text-xs text-brand-cyan-300">
               {t("testimonials.featured")}

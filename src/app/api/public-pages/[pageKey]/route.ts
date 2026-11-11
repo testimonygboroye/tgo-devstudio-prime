@@ -86,7 +86,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
   await connectToDatabase();
   const saved = await PublicPageContent.findOneAndUpdate(
     { pageKey },
-    { $set: update, lastUpdatedBy: session.user._id },
+    { $set: { ...update, lastUpdatedBy: session.user._id } },
     { upsert: true, new: true, runValidators: true }
   ).lean();
 

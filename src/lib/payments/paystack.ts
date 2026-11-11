@@ -12,6 +12,7 @@ import {getPaymentProvider} from "@/lib/payments/provider";
 import FinanceInvoice from "@/models/FinanceInvoice";
 import FinanceInstallmentPlan from "@/models/FinanceInstallmentPlan";
 import {ensureFinanceReceipt} from "@/lib/finance/receipts";
+import {enqueueWebhookDeliveries} from "@/lib/integrations/webhooks";
 export async function verifyAndRecordPaystackPayment(reference:string){
  await connectToDatabase();
  const initial=await PaymentTransaction.findOne({reference});if(!initial)throw new Error("Payment reference was not found.");
@@ -89,5 +90,5 @@ export async function verifyAndRecordPaystackPayment(reference:string){
    await FinancialLedgerEntry.insertMany(ledgerEntries as unknown as Parameters<typeof FinancialLedgerEntry.insertMany>[0],{session});
   });
  }finally{await session.endSession();}
- const verified=await PaymentTransaction.findOne({reference});if(!verified)throw new Error("Verified payment record was not found.");return verified;
+ const verified=await PaymentTransaction.findOne({reference});if(!verified)throw new Error("Verified payment record was not found.");if(verified.status==="paid")await enqueueWebhookDeliveries({eventId:"payment:"+String(verified._id)+":paid",eventName:"commerce.payment.succeeded",payload:{paymentId:String(verified._id),reference:verified.reference,amount:verified.amount,currency:verified.currency,orderId:String(verified.orderId),clientId:String(verified.clientId),verifiedAt:verified.verifiedAt?.toISOString()||new Date().toISOString()}});return verified;
 }

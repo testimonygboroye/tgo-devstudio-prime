@@ -1,5 +1,7 @@
 import ClientAuthForm from "@/components/client/ClientAuthForm";
+
 export const metadata = { title: "Create Client Account | TGO DevStudio" };
+
 export default async function ClientRegisterPage({ searchParams }: { searchParams: Promise<{ ref?: string }> }) {
   const params = await searchParams;
   const referralCode = String(params.ref || "").trim().toUpperCase();

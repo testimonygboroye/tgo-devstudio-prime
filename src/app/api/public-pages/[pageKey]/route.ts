@@ -7,6 +7,14 @@ import PublicPageContent, { type PublicPageKey, type IPublicPageContent } from "
 import { PUBLIC_PAGE_DEFAULTS } from "@/lib/constants/publicSiteDefaults";
 
 export const dynamic = "force-dynamic";
+
+function serializePageSettings(pageKey: PublicPageKey, record: Record<string, unknown> | null) {
+  const settings: Record<string, unknown> = { ...PUBLIC_PAGE_DEFAULTS[pageKey] };
+  for (const key of Object.keys(PUBLIC_PAGE_DEFAULTS[pageKey])) {
+    if (record && record[key] !== undefined) settings[key] = record[key];
+  }
+  return settings;
+}
 const PAGE_KEYS: PublicPageKey[] = ["industries", "engagement-models", "about", "contact", "process", "services", "portfolio", "blog", "team", "careers", "testimonials", "stack", "help", "book-a-call", "services-catalogue", "faq"];
 
 function safeHref(value: unknown): value is string {
@@ -41,7 +49,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
   const saved = await PublicPageContent.findOne({ pageKey: resolvedPageKey }).lean();
   return NextResponse.json({
     status: "ok",
-    settings: { ...PUBLIC_PAGE_DEFAULTS[pageKey as PublicPageKey], ...(saved || {}), pageKey },
+    settings: serializePageSettings(resolvedPageKey, saved as unknown as Record<string, unknown> | null),
     isDefault: !saved,
   }, { headers: { "Cache-Control": "no-store, max-age=0" } });
 }
@@ -94,5 +102,5 @@ export async function PUT(request: NextRequest, context: RouteContext) {
   ).lean();
 
   revalidatePath(resolvedPageKey === "services-catalogue" ? "/services/catalogue" : "/" + resolvedPageKey);
-  return NextResponse.json({ status: "ok", settings: saved }, { headers: { "Cache-Control": "no-store, max-age=0" } });
+  return NextResponse.json({ status: "ok", settings: serializePageSettings(resolvedPageKey, saved as unknown as Record<string, unknown> | null) }, { headers: { "Cache-Control": "no-store, max-age=0" } });
 }

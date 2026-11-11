@@ -16,5 +16,6 @@ export default function SmartImage({ src, alt, label, className = "" }: {
       <ImageOff className="tgo-image-fallback-icon" size={15}/>
     </div>
   );
+  // eslint-disable-next-line @next/next/no-img-element
   return <img src={src} alt={alt} loading="lazy" decoding="async" onError={() => setFailed(true)} className={className}/>;
 }

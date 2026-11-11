@@ -62,6 +62,18 @@ main{width:min(100%,650px);padding:clamp(25px,6vw,48px);border:1px solid rgba(13
    timer=setTimeout(()=>location.replace(target),2200);
   }catch(error){checking=false;}
  }
+ const retryButton=document.getElementById("retry");
+ retryButton.addEventListener("click",async()=>{
+  retryButton.disabled=true;
+  retryButton.textContent="Checking connection…";
+  await verify();
+  if(!restored){
+   retryButton.disabled=false;
+   retryButton.textContent="Try again ↗";
+   const hint=document.querySelector(".hint");
+   if(hint)hint.textContent="Still offline. Your cached homepage remains available; reconnect and try again to return to the requested page.";
+  }
+ });
  window.addEventListener("online",verify);
  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")verify();});
  const poll=setInterval(verify,2500);

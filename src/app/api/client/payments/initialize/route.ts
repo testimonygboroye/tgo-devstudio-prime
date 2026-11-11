@@ -104,8 +104,8 @@ export async function POST(request:NextRequest){
  const amount=fromMinorUnits(amountMinor,currency);if(!Number.isSafeInteger(amountMinor)||amountMinor<1)return fail("The payment amount is invalid.");
  const reference=`TGO_${randomUUID().replace(/-/g,"").slice(0,24).toUpperCase()}`;
  const payment=await PaymentTransaction.create({reference,provider:"paystack",paymentMethod:"card",clientId:user._id,orderId:order._id,milestoneId,invoiceId,installmentId,amount,amountMinor,currency,status:"pending",...(couponCode?{couponCode,discountMinor}:{})});
- if(coupon){
-  const reserved=await EngagementRedemption.findOneAndUpdate({_id:coupon._id,couponStatus:"issued"},{$set:{couponStatus:"reserved",couponPaymentReference:reference}},{new:true});
+ if(couponId){
+  const reserved=await EngagementRedemption.findOneAndUpdate({_id:couponId,couponStatus:"issued"},{$set:{couponStatus:"reserved",couponPaymentReference:reference}},{new:true});
   if(!reserved){await PaymentTransaction.deleteOne({_id:payment._id});return fail("This coupon was just redeemed in another checkout. Refresh and try again.",409);}
  }
  try{

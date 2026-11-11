@@ -8,6 +8,14 @@ import { PUBLIC_SITE_SETTINGS_DEFAULTS } from "@/lib/constants/publicSiteDefault
 
 export const dynamic = "force-dynamic";
 
+function serializePublicSettings(record: Record<string, unknown> | null) {
+  const settings: Record<string, unknown> = { ...PUBLIC_SITE_SETTINGS_DEFAULTS };
+  for (const key of Object.keys(PUBLIC_SITE_SETTINGS_DEFAULTS)) {
+    if (record && record[key] !== undefined) settings[key] = record[key];
+  }
+  return settings;
+}
+
 function safeHref(value: unknown): value is string {
   if (typeof value !== "string" || !value.trim() || value.length > 500) return false;
   const href = value.trim();
@@ -45,7 +53,7 @@ export async function GET() {
   const saved = await PublicSiteSettings.findOne().lean();
   return NextResponse.json({
     status: "ok",
-    settings: { ...PUBLIC_SITE_SETTINGS_DEFAULTS, ...(saved || {}) },
+    settings: serializePublicSettings(saved as unknown as Record<string, unknown> | null),
     isDefault: !saved,
   }, { headers: { "Cache-Control": "no-store, max-age=0" } });
 }
@@ -105,5 +113,5 @@ export async function PUT(request: NextRequest) {
 
   revalidateTag("public-site-settings", "max");
   revalidatePath("/", "layout");
-  return NextResponse.json({ status: "ok", settings }, { headers: { "Cache-Control": "no-store, max-age=0" } });
+  return NextResponse.json({ status: "ok", settings: serializePublicSettings(settings as unknown as Record<string, unknown> | null) }, { headers: { "Cache-Control": "no-store, max-age=0" } });
 }

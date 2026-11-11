@@ -1,25 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "crons": [
-    {
-      "path": "/api/cron/analytics-snapshot",
-      "schedule": "0 8 * * *"
-    },
-    {
-      "path": "/api/cron/support-escalation",
-      "schedule": "0 9 * * *"
-    },
-    {
-      "path": "/api/cron/engagement-expiry",
-      "schedule": "30 3 * * *"
-    },
-    {
-      "path": "/api/cron/webhook-delivery",
-      "schedule": "*/5 * * * *"
-    },
-    {
-      "path": "/api/cron/sales-followups",
-      "schedule": "*/15 * * * *"
-    }
+    { "path": "/api/cron/analytics-snapshot", "schedule": "0 8 * * *" },
+    { "path": "/api/cron/support-escalation", "schedule": "0 9 * * *" },
+    { "path": "/api/cron/engagement-expiry", "schedule": "30 3 * * *" },
+    { "path": "/api/cron/webhook-delivery", "schedule": "0 4 * * *" },
+    { "path": "/api/cron/sales-followups", "schedule": "0 5 * * *" }
   ]
 }

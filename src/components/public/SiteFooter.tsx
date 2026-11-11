@@ -48,8 +48,8 @@ export default function SiteFooter({ settings }: { settings?: PublicSiteChromeSe
     ] },
   ];
 
-  const footerSections = settings?.footerSections?.length ? settings.footerSections : fallbackSections;
-  const socialLinks = settings?.socialLinks?.length
+  const footerSections = settings ? settings.footerSections : fallbackSections;
+  const socialLinks = settings
     ? settings.socialLinks
     : [
         { label: "WhatsApp", href: "https://wa.me/message/LUJ6PXE3ISDZF1", platform: "whatsapp" },

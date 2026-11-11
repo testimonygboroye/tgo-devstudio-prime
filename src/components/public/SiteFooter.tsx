@@ -19,6 +19,8 @@ export default function SiteFooter() {
   const COMPANY_LINKS = [
     { label: t("nav.about"), href: "/about" },
     { label: t("nav.services"), href: "/services" },
+    { label: "Industries", href: "/industries" },
+    { label: "Ways to work together", href: "/engagement-models" },
     { label: "Service packages", href: "/services/catalogue" },
     { label: t("nav.process"), href: "/process" },
     { label: t("nav.team"), href: "/team" },

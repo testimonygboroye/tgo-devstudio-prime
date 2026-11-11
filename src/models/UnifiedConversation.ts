@@ -10,6 +10,7 @@ export interface IUnifiedConversation extends Document {
   externalContactId?: string;
   externalContactName?: string;
   externalOptInAt?: Date;
+  externalLastInboundAt?: Date;
   lastMessageAt?: Date;
   archivedAt?: Date;
   createdAt: Date;
@@ -24,6 +25,7 @@ const ConversationSchema = new Schema<IUnifiedConversation>({
   externalContactId: { type: String, trim: true, maxlength: 80 },
   externalContactName: { type: String, trim: true, maxlength: 160 },
   externalOptInAt: Date,
+  externalLastInboundAt: Date,
   lastMessageAt: Date,
   archivedAt: Date,
 }, { timestamps: true });

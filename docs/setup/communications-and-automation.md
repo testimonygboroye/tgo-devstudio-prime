@@ -13,6 +13,23 @@ Use the same cron secret on every app host that should accept scheduler calls. D
 
 ## 2. Set up the free portable scheduler
 
+### Recommended: GitHub Actions (no additional scheduler account)
+
+The repository is public, so standard GitHub-hosted Linux runners are free for this workflow. It runs the protected automation endpoints every 15 minutes and can also be started manually. GitHub's official billing guidance confirms standard runner use is free for public repositories: https://docs.github.com/en/actions/concepts/billing-and-usage.
+
+1. Open the repository: https://github.com/testimonygboroye/tgo-devstudio-prime
+2. Go to **Settings → Secrets and variables → Actions**.
+3. Add repository secret `APP_BASE_URL` with the canonical public origin of the active app, with no trailing slash.
+4. Add repository secret `PLATFORM_AUTOMATION_CRON_SECRET` with the exact same value configured in the app host.
+5. After this change is merged into `main`, open **Actions → TGO Platform Automation** and run it once with **Run workflow**.
+6. Confirm the run succeeds. The same workflow then runs every 15 minutes automatically.
+
+Do not enable paid/larger runners. Do not put secrets in workflow YAML, commits, browser code, screenshots, or chat.
+
+### Alternative: Cloudflare Workers Free
+
+Use this only if you prefer an independent scheduler outside GitHub Actions. Do **not** enable both schedulers at the same time because that would run the same jobs twice.
+
 1. Open https://dash.cloudflare.com/ and sign in.
 2. Go to **Workers & Pages** and create a Worker named `tgo-platform-automation`.
 3. Copy the code from `automation/cloudflare-worker/src/index.js` into the Worker editor and deploy.
@@ -20,9 +37,9 @@ Use the same cron secret on every app host that should accept scheduler calls. D
 5. Add `PLATFORM_AUTOMATION_CRON_SECRET` as a secret matching the app environment.
 6. Add `MANUAL_TRIGGER_SECRET` as a different random secret.
 7. Under **Settings → Triggers → Cron Triggers**, add `*/15 * * * *`.
-8. Open the Worker `/health` URL. Then run the manual test described in `automation/cloudflare-worker/README.md` and inspect Worker logs.
+8. Open the Worker's `/health` URL. Then run the manual test described in `automation/cloudflare-worker/README.md` and inspect Worker logs.
 
-The Worker calls only protected application routes. Changing hosting providers later requires changing `APP_BASE_URL`, not rewriting the scheduler. Check Cloudflare's current Free plan limits before changing frequency.
+The application remains portable: change only `APP_BASE_URL` when moving between Render, Vercel, Netlify, or another compatible host. Both schedulers call the same protected application endpoints; only one scheduler should be active at a time.
 
 ## 3. Connect WhatsApp Cloud API
 

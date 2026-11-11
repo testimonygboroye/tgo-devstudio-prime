@@ -14,8 +14,8 @@ export async function runProviderCompletion(providerId: string, model: string, s
   const key = decryptProviderSecret(provider.encryptedApiKey);
   const timeout = AbortSignal.timeout(60000);
   if (provider.provider === "google") {
-    const url = "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent?key=" + encodeURIComponent(key);
-    const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, signal: timeout, cache: "no-store", body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 4096, temperature: 0.2 } }) });
+    const url = "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent";
+    const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, signal: timeout, cache: "no-store", body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 4096, temperature: 0.2 } }) });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error("Gemini request failed (" + response.status + "): " + String(data?.error?.message || "Provider error").slice(0, 500));
     return { text: (data.candidates?.[0]?.content?.parts || []).map((p: { text?: string }) => p.text || "").join(""), inputTokens: Number(data.usageMetadata?.promptTokenCount || 0), outputTokens: Number(data.usageMetadata?.candidatesTokenCount || 0) };

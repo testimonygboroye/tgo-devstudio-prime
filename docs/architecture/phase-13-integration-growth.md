@@ -8,7 +8,7 @@
 - GitHub/Vercel read-only project/deployment inventory.
 - Signed outgoing webhooks with idempotent delivery records, retries, backoff and a protected delivery worker.
 - Sales pipeline backed by the existing SalesLead collection, with audit history and scheduled follow-up notifications.
-- Marketing campaign drafts and consent-filtered newsletter email delivery with per-recipient records, retry handling and unsubscribe links.
+- Marketing campaign drafts and consent-filtered newsletter email delivery with per-recipient records, retry handling, unsubscribe links, and future send-at-time scheduling.
 - A protected marketing campaign worker now processes queued newsletter campaigns in batches.
 - Portable automation Worker under `automation/cloudflare-worker`. It runs the protected webhook, sales follow-up, executive report, campaign, analytics, support escalation and engagement expiry jobs independently of the application host.
 - Automation runner uses `APP_BASE_URL` (or `SITE_URL`) and no longer hard-codes Render.
@@ -18,7 +18,7 @@
 - WhatsApp Cloud API credentials can be saved and verified through the encrypted Integration Centre.
 - Inbound webhook validates Meta's `X-Hub-Signature-256`, deduplicates provider message IDs, stores inbound text messages, and updates sent/delivered/read status callbacks.
 - Human WhatsApp replies are sent through Meta Graph API only while the contact's 24-hour customer-service window is active. Approved template messaging outside that window is not implemented.
-- The admin Messages page now hosts a unified communications interface with direct conversations, groups, channels, AI conversations, threaded replies, reactions, read receipts, text messages, file/audio attachments and in-browser voice-note recording.
+- The admin Messages page now hosts a unified communications interface with direct conversations, groups, channels, AI conversations, threaded replies, reactions, read receipts, text messages, file/audio attachments and in-browser voice-note recording with live browser speech-to-text where supported.
 - AI conversation replies use the configured, verified AI provider. Agents requiring approval create approval-queue tasks; agents without approval requirements can generate text-only replies within their configured daily token budget. The chat runtime does not execute external tools.
 - AI task assignments from the communications interface are recorded in the existing AI Workforce task queue and audit trail.
 
@@ -41,8 +41,8 @@ The Cloudflare Worker is a timer and HTTP caller only; it does not access MongoD
 - SMS delivery is not enabled as a free service; real carrier SMS incurs provider charges. Keep SMS verification disabled unless a paid sender is explicitly approved.
 - WhatsApp template creation/approval, template dispatch, media download from inbound WhatsApp, and provider billing controls are not included in this release.
 - Campaign audiences remain limited to subscribed newsletter recipients. All-client/manual segments are not dispatched until their consent and lawful-basis rules are implemented.
-- Email open/click/conversion attribution and scheduled campaign send-at-time are not represented as complete.
-- The voice-note feature uploads and plays audio attachments. Server-side transcription and translation are not included; browser capabilities vary by device and language.
+- Email open/click/conversion attribution is not represented as complete. Scheduled newsletter email campaigns are queued with a future send time and released by the portable campaign worker.
+- The voice-note feature uploads and plays audio attachments. Live browser speech recognition can add final transcript text to the draft on supported browsers; server-side transcription and built-in translation are not included.
 - The communications interface currently polls for updates; realtime WebSocket presence/typing indicators and push-to-WhatsApp reporting are not yet implemented.
 
 ## Security and data handling

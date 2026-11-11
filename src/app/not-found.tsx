@@ -1,18 +1,11 @@
 import Link from "next/link";
+import { ArrowLeft, Compass, Home, Search } from "lucide-react";
 
 export default function NotFound() {
   return (
-    <main className="ambient-glow relative flex min-h-screen flex-col items-center justify-center gap-6 px-6 text-center">
-      <span className="eyebrow-label justify-center">Error 404</span>
-      <h1 className="heading-premium text-6xl font-bold brand-gradient-text sm:text-8xl" style={{ fontFamily: "var(--font-display)" }}>
-        Page Not Found
-      </h1>
-      <p className="max-w-md leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-        The page you&apos;re looking for doesn&apos;t exist or may have been moved.
-      </p>
-      <Link href="/" className="btn-premium-primary mt-4 rounded-full px-8 py-3.5 font-semibold text-base-950">
-        Back to Home
-      </Link>
+    <main className="tgo-not-found ambient-glow">
+      <div className="not-found-orbit" aria-hidden="true"><span/><span/><span/><b>404</b></div>
+      <div className="not-found-copy"><span className="eyebrow-label">A little off course</span><h1>This page<br/><em>isn’t here.</em></h1><p>The address may have changed, the page may have moved, or the link may have taken a wrong turn. Let’s get you somewhere useful.</p><div className="not-found-actions"><Link href="/" className="btn-premium-primary inline-flex items-center gap-2 rounded-full px-7 py-3.5 font-semibold text-white"><Home size={17}/> Back to homepage</Link><Link href="/contact" className="btn-premium-secondary inline-flex items-center gap-2 rounded-full px-7 py-3.5 font-semibold" style={{color:"var(--text-primary)"}}>Contact the studio <ArrowLeft size={16}/></Link></div><div className="not-found-shortcuts"><Link href="/services"><Compass size={15}/> Explore services</Link><Link href="/portfolio"><Search size={15}/> Browse our work</Link></div></div>
     </main>
   );
 }

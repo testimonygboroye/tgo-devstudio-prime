@@ -405,7 +405,6 @@ export const PUBLIC_PAGE_DEFAULTS: Record<PublicPageKey, PublicPageDefault> = {
     ctaSecondaryLabel: "Book a discovery call",
     ctaSecondaryHref: "/book-a-call",
   }),
-,
   faq: makePublicPageDefault("faq", {
     metaTitle: "FAQ | TGO DevStudio Prime",
     metaDescription: "Answers to common questions about working with TGO DevStudio, project delivery and support.",

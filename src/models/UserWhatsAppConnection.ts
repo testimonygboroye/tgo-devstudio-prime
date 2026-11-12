@@ -7,7 +7,7 @@ export interface IUserWhatsAppConnection extends Document {
 const schema = new Schema<IUserWhatsAppConnection>({
   userId: { type: Schema.Types.ObjectId, ref: "User", required: true, unique: true, index: true },
   phoneNumberId: { type: String, required: true, unique: true, trim: true, maxlength: 80 },
-  personalPhoneNumber: { type: String, required: true, trim: true, maxlength: 30 },
+  personalPhoneNumber: { type: String, required: true, unique: true, trim: true, maxlength: 30 },
   businessAccountId: { type: String, required: true, trim: true, maxlength: 80 },
   credentialsCiphertext: { type: String, required: true, select: false },
   status: { type: String, enum: ["connected", "error", "disconnected"], default: "connected", index: true },

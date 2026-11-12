@@ -9,7 +9,8 @@ export const dynamic = "force-dynamic";
 const fail = (message: string, status = 400) => NextResponse.json({ status: "error", message }, { status });
 export async function GET(request: NextRequest) {
   const session = await getAuthenticatedSession(request); if (!session) return unauthorizedResponse();
-  if (session.user.accountType !== "staff") return forbiddenResponse();
+  if (session.user.accountType !== "staff" && session.user.accountType !== "client") return forbiddenResponse();
+  if (session.user.accountType === "client" && !session.user.isEmailVerified) return forbiddenResponse("Verify your email before connecting WhatsApp.");
   await connectToDatabase();
   const row = await UserWhatsAppConnection.findOne({ userId: session.user._id }).select("+credentialsCiphertext").lean();
   if (!row) return NextResponse.json({ status: "ok", connected: false });
@@ -18,7 +19,8 @@ export async function GET(request: NextRequest) {
 }
 export async function POST(request: NextRequest) {
   const session = await getAuthenticatedSession(request); if (!session) return unauthorizedResponse();
-  if (session.user.accountType !== "staff") return forbiddenResponse();
+  if (session.user.accountType !== "staff" && session.user.accountType !== "client") return forbiddenResponse();
+  if (session.user.accountType === "client" && !session.user.isEmailVerified) return forbiddenResponse("Verify your email before connecting WhatsApp.");
   const body = await request.json().catch(() => ({})) as Record<string, unknown>;
   const accessToken = String(body.accessToken || "").trim(), phoneNumberId = String(body.phoneNumberId || "").trim();
   const businessAccountId = String(body.businessAccountId || "").trim(), appSecret = String(body.appSecret || "").trim();
@@ -40,7 +42,8 @@ export async function POST(request: NextRequest) {
 }
 export async function DELETE(request: NextRequest) {
   const session = await getAuthenticatedSession(request); if (!session) return unauthorizedResponse();
-  if (session.user.accountType !== "staff") return forbiddenResponse();
+  if (session.user.accountType !== "staff" && session.user.accountType !== "client") return forbiddenResponse();
+  if (session.user.accountType === "client" && !session.user.isEmailVerified) return forbiddenResponse("Verify your email before connecting WhatsApp.");
   await connectToDatabase(); await UserWhatsAppConnection.deleteOne({ userId: session.user._id });
   return NextResponse.json({ status: "ok", connected: false });
 }

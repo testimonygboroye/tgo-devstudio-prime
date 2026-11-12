@@ -72,14 +72,18 @@ export async function POST(request: NextRequest) {
   const appSecret = String(body.appSecret || "").trim();
   const webhookVerifyToken = String(body.webhookVerifyToken || "").trim();
   const legacyMode = Boolean(accessToken && legacyPhoneNumberId && businessAccountId && appSecret && webhookVerifyToken);
+  const existing = await UserWhatsAppConnection.findOne({ userId: auth.session.user._id }).select("+credentialsCiphertext");
+  let existingCredentials: Record<string, string> = {};
+  try { if (existing?.credentialsCiphertext) existingCredentials = decryptCredentials(existing.credentialsCiphertext); } catch {}
   const shared = legacyMode ? null : await getSharedSender();
+  const keepLegacyCredentials = !legacyMode && !shared && Boolean(existingCredentials.accessToken);
   const sender = legacyMode ? {
     accessToken,
     phoneNumberId: legacyPhoneNumberId,
     businessAccountId,
     appSecret,
     webhookVerifyToken,
-  } : shared;
+  } : shared || existingCredentials;
 
   if (!sender?.accessToken || !sender.phoneNumberId || !sender.businessAccountId) {
     return fail("TGO's WhatsApp Cloud API sender is not configured yet. The founder must connect WhatsApp Cloud API in Admin → Integrations first.", 503);
@@ -103,9 +107,10 @@ export async function POST(request: NextRequest) {
     lastError: "",
   };
   if (legacyMode) set.credentialsCiphertext = encryptCredentials({ accessToken, appSecret, webhookVerifyToken, displayPhone: meta.display_phone_number || "" });
+  else if (keepLegacyCredentials && existing?.credentialsCiphertext) set.credentialsCiphertext = existing.credentialsCiphertext;
   await UserWhatsAppConnection.findOneAndUpdate(
     { userId: auth.session.user._id },
-    { $set: set, $setOnInsert: { userId: auth.session.user._id }, ...(legacyMode ? {} : { $unset: { credentialsCiphertext: 1 } }) },
+    { $set: set, $setOnInsert: { userId: auth.session.user._id }, ...(legacyMode || keepLegacyCredentials ? {} : { $unset: { credentialsCiphertext: 1 } }) },
     { upsert: true, new: true, runValidators: true },
   );
   return NextResponse.json({

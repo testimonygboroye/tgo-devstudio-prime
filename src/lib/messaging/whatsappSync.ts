@@ -4,10 +4,12 @@ import UserWhatsAppDelivery from "@/models/UserWhatsAppDelivery";
 import { decryptCredentials } from "@/lib/integrations/crypto";
 import type { IUnifiedConversation, IUnifiedMessage } from "@/models/UnifiedConversation";
 
-export async function mirrorMessageToPersonalWhatsApp(conversation: IUnifiedConversation, message: IUnifiedMessage) {
+export async function mirrorMessageToPersonalWhatsApp(conversation: IUnifiedConversation, message: IUnifiedMessage, excludeUserId?: Types.ObjectId | string) {
   const members = conversation.memberIds || [];
-  if (!members.length || message.senderType === "external" || message.senderType === "system") return;
-  const connections = await UserWhatsAppConnection.find({ userId: { $in: members }, status: "connected" }).select("+credentialsCiphertext");
+  if (!members.length || message.senderType === "system") return;
+  const filter: Record<string, unknown> = { userId: { $in: members }, status: "connected" };
+  if (excludeUserId) filter.userId = { $in: members, $ne: excludeUserId };
+  const connections = await UserWhatsAppConnection.find(filter).select("+credentialsCiphertext");
   await Promise.allSettled(connections.map(async (connection) => {
     const credentials = decryptCredentials(connection.credentialsCiphertext);
     if (!credentials.accessToken || !connection.phoneNumberId || !connection.personalPhoneNumber) return;

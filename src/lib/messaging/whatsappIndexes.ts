@@ -2,6 +2,14 @@ import UserWhatsAppConnection from "@/models/UserWhatsAppConnection";
 
 let migration: Promise<void> | null = null;
 
+async function dropIfPresent(indexName: string) {
+  try { await UserWhatsAppConnection.collection.dropIndex(indexName); }
+  catch (error) {
+    const detail = error as { code?: number; codeName?: string };
+    if (detail.code !== 27 && detail.codeName !== "IndexNotFound") throw error;
+  }
+}
+
 /**
  * Older deployments created a unique phoneNumberId index. A shared TGO
  * sender intentionally serves many opted-in recipients, so migrate that
@@ -12,9 +20,9 @@ export async function ensureWhatsAppRecipientIndexes() {
     migration = (async () => {
       const indexes = await UserWhatsAppConnection.collection.indexes().catch(() => []);
       const legacySenderIndex = indexes.find((index) => index.name === "phoneNumberId_1" && index.unique === true);
-      if (legacySenderIndex) await UserWhatsAppConnection.collection.dropIndex("phoneNumberId_1").catch(() => undefined);
+      if (legacySenderIndex) await dropIfPresent("phoneNumberId_1");
       const legacyRecipientIndex = indexes.find((index) => index.name === "personalPhoneNumber_1" && index.unique === true);
-      if (legacyRecipientIndex) await UserWhatsAppConnection.collection.dropIndex("personalPhoneNumber_1").catch(() => undefined);
+      if (legacyRecipientIndex) await dropIfPresent("personalPhoneNumber_1");
       await UserWhatsAppConnection.collection.createIndex(
         { phoneNumberId: 1, personalPhoneNumber: 1, status: 1 },
         { name: "phoneNumberId_personalPhoneNumber_status" },

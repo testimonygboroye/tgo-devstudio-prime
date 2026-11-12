@@ -53,6 +53,7 @@ export async function POST(request: NextRequest) {
   let accepted = 0;
   for (const entry of payload.entry || []) for (const change of entry.changes || []) {
     const value = change.value || {};
+    if (value.metadata?.phone_number_id !== connection.row.phoneNumberId) continue;
     for (const status of value.statuses || []) {
       if (!status.id) continue;
       const normalized = status.status === "read" ? "read" : status.status === "delivered" ? "delivered" : status.status === "failed" ? "failed" : "sent";

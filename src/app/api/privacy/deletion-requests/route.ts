@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
   const reference = "TGO-PRIV-" + new Date().toISOString().slice(0,10).replace(/-/g,"") + "-" + randomUUID().slice(0,8).toUpperCase();
   const item = await DataDeletionRequest.create({ reference, name, email, accountIdentifier, service, details, status: "received" });
   after(async () => {
-    try { await sendAdminPush({ title: "New privacy request", body: reference + " · " + name, url: getAdminBasePath() + "/privacy-requests", category: "privacy", tag: reference }); } catch (error) { console.error("[Privacy] Admin notification failed:", error); }
+    try { await sendAdminPush({ title: "New privacy request", body: reference + " · " + name, url: getAdminBasePath() + "/privacy-requests", category: "system", tag: reference }); } catch (error) { console.error("[Privacy] Admin notification failed:", error); }
   });
   return NextResponse.json({ status: "ok", reference, message: "Your privacy request has been received. Keep this reference number for follow-up. We may contact you to verify your identity before taking action." }, { status: 201 });
 }

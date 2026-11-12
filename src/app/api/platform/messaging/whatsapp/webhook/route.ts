@@ -80,6 +80,14 @@ export async function POST(request: NextRequest) {
       const senderNumber = incoming.from.replace(/[^0-9]/g, "");
       const recipient = await UserWhatsAppConnection.findOne({ phoneNumberId, personalPhoneNumber: senderNumber, status: "connected" });
       if (!recipient || !recipient.optInAt) continue;
+      const inboundText = incoming.type === "text" ? String(incoming.text?.body || "").trim() : "";
+      if (["stop", "unsubscribe", "cancel", "end", "quit"].includes(inboundText.toLowerCase())) {
+        recipient.status = "disconnected";
+        recipient.optInAt = undefined;
+        recipient.lastInboundAt = undefined;
+        await recipient.save();
+        continue;
+      }
       recipient.lastInboundAt = new Date();
       await recipient.save();
 

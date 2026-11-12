@@ -5,7 +5,7 @@ import SmartImage from "@/components/public/SmartImage";
 
 type Props = { settings: {
   enabled?: boolean; countdownEnabled?: boolean; countdownVisible?: boolean;
-  launchDate?: string | Date | null; title?: string; description?: string;
+  launchDate?: string | Date | null; title?: string; description?: string; countdownLabel?: string; countdownStatusLabel?: string;
   videoUrl?: string; flyerUrl?: string; afterLaunchVideoUrl?: string; afterLaunchFlyerUrl?: string;
   flyerSeconds?: number; flyerDurationMinutes?: number; flyerDurationSeconds?: number;
   videoAudioEnabled?: boolean; videoDurationHours?: number; videoDurationMinutes?: number;
@@ -115,7 +115,7 @@ export default function HomepageMediaExperience({ settings }: Props) {
         )}
         {countdown && settings.countdownVisible !== false && (
           <div className="homepage-countdown mx-auto mt-8 max-w-5xl">
-            <div className="homepage-countdown-heading"><span>COUNTDOWN</span><span>LIVE TIMER</span></div>
+            <div className="homepage-countdown-heading"><span>{settings.countdownLabel || "COUNTDOWN"}</span><span>{settings.countdownStatusLabel || "LIVE TIMER"}</span></div>
             <div className="homepage-countdown-grid">{units.map(([label, value]) => (
               <div key={label} className="homepage-countdown-unit"><strong>{String(value).padStart(2, "0")}</strong><span>{label}</span></div>
             ))}</div>

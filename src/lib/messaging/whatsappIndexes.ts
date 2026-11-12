@@ -11,8 +11,10 @@ export async function ensureWhatsAppRecipientIndexes() {
   if (!migration) {
     migration = (async () => {
       const indexes = await UserWhatsAppConnection.collection.indexes().catch(() => []);
-      const legacy = indexes.find((index) => index.name === "phoneNumberId_1" && index.unique === true);
-      if (legacy) await UserWhatsAppConnection.collection.dropIndex("phoneNumberId_1");
+      const legacySenderIndex = indexes.find((index) => index.name === "phoneNumberId_1" && index.unique === true);
+      if (legacySenderIndex) await UserWhatsAppConnection.collection.dropIndex("phoneNumberId_1");
+      const legacyRecipientIndex = indexes.find((index) => index.name === "personalPhoneNumber_1" && index.unique === true);
+      if (legacyRecipientIndex) await UserWhatsAppConnection.collection.dropIndex("personalPhoneNumber_1");
       await UserWhatsAppConnection.collection.createIndex(
         { phoneNumberId: 1, personalPhoneNumber: 1, status: 1 },
         { name: "phoneNumberId_personalPhoneNumber_status" },

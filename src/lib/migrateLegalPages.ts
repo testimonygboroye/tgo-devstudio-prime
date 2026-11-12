@@ -10,7 +10,7 @@ const LEGAL_TYPES: PageContentType[] = [
   "accessibility",
 ];
 
-const AI_PRIVACY_SECTION = `<h2>AI assistants and automated support</h2>
+export const AI_PRIVACY_SECTION = `<h2>AI assistants and automated support</h2>
 <p>Where enabled, TGO DevStudio provides separate AI assistants for public website visitors, authenticated clients and authorised staff. The public assistant is limited to public website information and general client-portal access guidance. The client assistant may use information belonging to the signed-in client account, including that client's projects, milestones, deliverables, support history, invoices, payments and account-credit records. The staff assistant is limited to the signed-in staff member's own authorised account context and platform guidance; it is not intended to expose another person's private records.</p>
 <p>When you send a message to an assistant, your message and the minimum authorised context needed to answer may be sent to the AI model provider configured for that assistant. Depending on the active configuration, providers may include Google Gemini, OpenAI or Anthropic Claude. If a configured primary provider is unavailable, a separately configured fallback provider may receive the same request. Each provider processes information under its applicable terms, privacy notice and account settings. We do not control the provider's independent systems.</p>
 <p>These three chat assistants are designed for read-only explanations and guidance. They are not given business-operation tools and cannot change project, payment, account or workforce records. Separate internal AI workforce features, if enabled, are governed by their own role permissions, activity logging and human-approval requirements.</p>

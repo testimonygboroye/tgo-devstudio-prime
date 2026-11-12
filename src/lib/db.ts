@@ -93,9 +93,10 @@ export async function connectToDatabase(): Promise<typeof mongoose> {
   cached.promise = mongoose.connect(MONGODB_URI, {
     bufferCommands: false,
     serverSelectionTimeoutMS: 10000,
-    maxPoolSize: 10,
+    connectTimeoutMS: 10000,
+    maxPoolSize: 5,
     minPoolSize: 0,
-    maxIdleTimeMS: 60000,
+    maxIdleTimeMS: 20000,
   }).then(async () => {
     cached.conn = mongoose;
     await ensureIdentityIndexes();

@@ -407,7 +407,7 @@ export async function POST(request: NextRequest) {
         } else if (task.operation === "site.routes.health_check") {
           if (!agent.permissions.includes("site.routes.health_check")) throw new Error("Agent lacks site.routes.health_check permission.");
           const siteUrl = getSiteUrl();
-          const routes = ["/", "/about", "/services", "/industries", "/engagement-models", "/services/catalogue", "/process", "/portfolio", "/stack", "/blog", "/team", "/testimonials", "/faq", "/contact", "/book-a-call", "/help", "/privacy-policy", "/terms-of-service", "/usage-policy", "/accessibility", "/client/login", "/admin/login", "/workforce", "/workspaces", "/admin/dashboard"];
+          const routes = ["/", "/about", "/services", "/industries", "/engagement-models", "/services/catalogue", "/process", "/portfolio", "/stack", "/blog", "/team", "/testimonials", "/faq", "/contact", "/book-a-call", "/help", "/privacy-policy", "/terms-of-service", "/usage-policy", "/accessibility", "/data-deletion", "/client/login", "/admin/login", "/workforce", "/workspaces", "/admin/dashboard"];
           const checks = await Promise.all(routes.map(async (route) => {
             try {
               const response = await fetch(new URL(route, siteUrl), {

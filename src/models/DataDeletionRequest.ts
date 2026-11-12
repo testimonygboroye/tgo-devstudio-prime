@@ -18,7 +18,7 @@ export interface IDataDeletionRequest extends Document {
   updatedAt: Date;
 }
 const schema = new Schema<IDataDeletionRequest>({
-  reference: { type: String, required: true, unique: true, index: true, maxlength: 40 },
+  reference: { type: String, required: true, unique: true, maxlength: 40 },
   name: { type: String, required: true, trim: true, maxlength: 120 },
   email: { type: String, required: true, trim: true, lowercase: true, maxlength: 254, index: true },
   accountIdentifier: { type: String, required: true, trim: true, maxlength: 180 },

@@ -5,6 +5,7 @@ import { connectToDatabase } from "@/lib/db";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import { AIProvider, AIAgent, AITask } from "@/models/AIWorkforce";
 import { UnifiedConversation, UnifiedMessage } from "@/models/UnifiedConversation";
+import { mirrorMessageToPersonalWhatsApp } from "@/lib/messaging/whatsappSync";
 import { decryptProviderSecret, encryptProviderSecret } from "@/lib/ai/provider-secrets";
 import { runProviderCompletion } from "@/lib/ai/provider-runtime";
 import { AIWorkspace, AIMemory } from "@/models/AIKnowledge";
@@ -251,8 +252,12 @@ export async function POST(request: NextRequest) {
         task.completedAt = new Date();
         await task.save();
         if (["communications", "ai_conversation"].includes(String(payload.source || "")) && mongoose.Types.ObjectId.isValid(String(payload.conversationId || ""))) {
-          const conversation = await UnifiedConversation.findById(String(payload.conversationId));
-          if (conversation) { await UnifiedMessage.create({ conversationId: conversation._id, senderType: "ai", senderLabel: agent.name, body: completion.text.slice(0, 12000), status: "sent" }); conversation.lastMessageAt = new Date(); await conversation.save(); }
+          const conversation = await UnifiedConversation.findOne({ _id: String(payload.conversationId), memberIds: task.requestedBy });
+          if (conversation) {
+            const reply = await UnifiedMessage.create({ conversationId: conversation._id, senderType: "ai", senderLabel: agent.name, body: completion.text.slice(0, 12000), status: "sent" });
+            conversation.lastMessageAt = new Date(); await conversation.save();
+            await mirrorMessageToPersonalWhatsApp(conversation, reply);
+          }
         }
         if (task.operation) await writePlatformAuditEvent({ actorType: "ai", actorId: String(agent._id), actorLabel: agent.name, action: "ai.business_tool_executed", module: "ai-workforce", targetType: task.operation, targetId: String(payload.clientId || payload.projectId || task._id), outcome: "success", metadata: { taskId: String(task._id), approvedBy: task.approvedBy } });
         await writePlatformAuditEvent({ actorType: "ai", actorId: String(agent._id), actorLabel: agent.name, action: "ai.task.completed", module: "ai-workforce", targetType: "AITask", targetId: String(task._id), outcome: "success", metadata: { model: agent.modelName, inputTokens: completion.inputTokens, outputTokens: completion.outputTokens, providerRequestId: completion.providerRequestId } });

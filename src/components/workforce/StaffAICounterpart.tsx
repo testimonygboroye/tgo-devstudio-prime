@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Bot, LoaderCircle, Send, RefreshCw, ShieldCheck, Sparkles } from "lucide-react";
 
 type Agent = { _id: string; name: string; role: string; department: string; description?: string; modelName: string; requiresApproval: boolean; providerId?: { name?: string; provider?: string } };
@@ -36,7 +36,7 @@ export default function StaffAICounterpart() {
 
   useEffect(() => { const timer = window.setTimeout(() => void load(), 0); return () => window.clearTimeout(timer); }, [load]);
 
-  async function submit(event: React.FormEvent<HTMLFormElement>) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!agentId || !title.trim() || !input.trim()) return;
     setBusy(true); setError(""); setNotice("");

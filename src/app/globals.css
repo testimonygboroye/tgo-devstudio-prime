@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./public-experience-fixes.css";
 @plugin "@tailwindcss/typography";
 
 @theme {

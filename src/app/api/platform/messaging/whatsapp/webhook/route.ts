@@ -73,8 +73,9 @@ export async function POST(request: NextRequest) {
       }
       const name = value.contacts?.[0]?.profile?.name || "Me";
       const text = incoming.type === "text" ? String(incoming.text?.body || "").slice(0, 12000) : "[WhatsApp " + (incoming.type || "message") + " received. Media import is not enabled yet.]";
-      await UnifiedMessage.create({ conversationId: conversation._id, senderType: "external", senderLabel: name, body: text, externalMessageId: incoming.id, status: "delivered", messageType: incoming.type === "audio" ? "audio" : "text" });
+      const inboundMessage = await UnifiedMessage.create({ conversationId: conversation._id, senderType: "external", senderLabel: name, body: text, externalMessageId: incoming.id, status: "delivered", messageType: incoming.type === "audio" ? "audio" : "text" });
       conversation.lastMessageAt = new Date(); await conversation.save(); accepted++;
+      await mirrorMessageToPersonalWhatsApp(conversation, inboundMessage, connection.row.userId);
       if (conversation.kind === "ai" && conversation.aiAgentId && incoming.type === "text" && text.trim()) {
         const agent = await AIAgent.findOne({ _id: conversation.aiAgentId, enabled: true });
         if (agent) {

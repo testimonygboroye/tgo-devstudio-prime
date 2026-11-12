@@ -56,7 +56,7 @@ export async function PUT(request: NextRequest) {
       if (!fallbackProvider) return NextResponse.json({ message: "The fallback provider must be enabled and connection-verified." }, { status: 409 });
       fallbackId = fallbackProvider._id;
     }
-    const setFields: Record<string, unknown> = {
+    const setFields: NonNullable<UpdateQuery<IAIChatbotConfig>["$set"]> = {
       scope, providerId: provider._id, modelName, enabled: item.enabled === true,
       welcomeMessage, updatedBy: auth.session.user._id,
     };

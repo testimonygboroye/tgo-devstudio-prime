@@ -41,7 +41,7 @@ export default function HomepageMediaExperience({ settings }: Props) {
 
   useEffect(() => {
     if (!settings.enabled || !countdownEnabled || !hasTarget || afterTarget) return;
-    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    const id = window.setInterval(() => { window.requestAnimationFrame(() => setNow(Date.now())); }, 1000);
     return () => window.clearInterval(id);
   }, [settings.enabled, countdownEnabled, hasTarget, afterTarget]);
 

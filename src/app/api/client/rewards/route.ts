@@ -21,7 +21,7 @@ export async function GET() {
   if (!session) return NextResponse.json({ error: "Verified client sign-in required." }, { status: 401 });
   await connectToDatabase();
   const clientId = session.user._id;
-  const profile = await EngagementProfile.findOneAndUpdate({ clientId }, { $setOnInsert: { clientId } }, { upsert: true, new: true, setDefaultsOnInsert: true }).lean();
+  const profile = await EngagementProfile.findOneAndUpdate({ clientId }, { $setOnInsert: { clientId } }, { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }).lean();
   const [rewards, referrals, redemptions, badges] = await Promise.all([
     EngagementReward.find({ active: true, $or: [{ stock: -1 }, { $expr: { $gt: ["$stock", "$redeemed"] } }] }).sort({ pointsCost: 1 }).lean(),
     EngagementReferral.find({ referrerId: clientId }).sort({ createdAt: -1 }).limit(50).lean(),
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
       if (stockUpdate.modifiedCount !== 1) throw new Error("This reward was just redeemed by another request. Please retry.");
       const profile = await EngagementProfile.findOneAndUpdate(
         { clientId, points: { $gte: reward.pointsCost } },
-        { $inc: { points: -reward.pointsCost } }, { new: true, session: dbSession }
+        { $inc: { points: -reward.pointsCost } }, { returnDocument: "after", session: dbSession }
       );
       if (!profile) throw new Error("You do not have enough points for this reward.");
       profile.tier = tierForLifetimePoints(profile.lifetimePoints);
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
         await ClientCreditAccount.findOneAndUpdate(
           { clientId, currency: reward.currency },
           { $inc: { balanceMinor: reward.creditMinor }, $setOnInsert: { clientId, currency: reward.currency } },
-          { upsert: true, new: true, session: dbSession }
+          { upsert: true, returnDocument: "after", session: dbSession }
         );
         await FinancialLedgerEntry.create([
           { entryKey: `${reference}:debit`, accountCode: "revenue", direction: "debit", amountMinor: reward.creditMinor, currency: reward.currency, source: "manual_adjustment", sourceReference: reference, clientId, postedAt: new Date(), metadata: { reason: "engagement_reward" } },

@@ -2,7 +2,6 @@ import Link from "next/link";
 import { getServerSession } from "@/lib/auth/serverSession";
 import { guardCanView } from "@/lib/auth/pageGuards";
 import { getAdminBasePath } from "@/lib/adminPath";
-
 export default async function PagesHubPage() {
   const session = await getServerSession();
   guardCanView(session!, "pageContent");
@@ -19,15 +18,15 @@ export default async function PagesHubPage() {
     <p className="font-mono text-xs uppercase tracking-widest text-neutral-400">Content</p>
     <h1 className="mt-1 text-3xl font-bold brand-gradient-text">Site Pages</h1>
     <div className="mt-8 grid gap-4 sm:grid-cols-2">
-      {pages.map(page => <Link key={page.type} href={`${basePath}/pages/${page.type}`} className="group block rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 shadow-lg transition-all hover:-translate-y-1 hover:border-brand-cyan-400/60 hover:shadow-xl">
+      {pages.map(page => <Link key={page.type} href={basePath + "/pages/" + page.type} className="group block rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 shadow-lg transition-all hover:-translate-y-1 hover:border-brand-cyan-400/60 hover:shadow-xl">
         <span className="font-semibold text-neutral-100">{page.label}</span>
         <p className="mt-1 text-sm text-neutral-400">{page.description}</p>
       </Link>)}
     </div>
-    <div className="mt-6 rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-5">
+    {session?.role?.isFounderRole && <div className="mt-6 rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-5">
       <h2 className="font-semibold text-[var(--text-primary)]">Privacy request operations</h2>
       <p className="mt-1 text-sm text-[var(--text-secondary)]">Review submitted requests, document identity verification, record retention exceptions and audit the final decision.</p>
-      <Link href={`${basePath}/privacy-requests`} className="mt-4 inline-flex rounded-xl bg-gradient-to-r from-violet-600 to-cyan-500 px-4 py-2.5 text-sm font-semibold text-white">Open privacy request queue</Link>
-    </div>
+      <Link href={basePath + "/privacy-requests"} className="mt-4 inline-flex rounded-xl bg-gradient-to-r from-violet-600 to-cyan-500 px-4 py-2.5 text-sm font-semibold text-white">Open privacy request queue</Link>
+    </div>}
   </div>;
 }

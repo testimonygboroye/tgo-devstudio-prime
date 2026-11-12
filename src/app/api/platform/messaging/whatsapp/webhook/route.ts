@@ -80,6 +80,12 @@ export async function POST(request: NextRequest) {
       const senderNumber = incoming.from.replace(/[^0-9]/g, "");
       const recipient = await UserWhatsAppConnection.findOne({ phoneNumberId, personalPhoneNumber: senderNumber, status: "connected" });
       if (!recipient || !recipient.optInAt) continue;
+      try {
+        await UserWhatsAppDelivery.create({ userId: recipient.userId, externalMessageId: incoming.id, status: "delivered", direction: "inbound" });
+      } catch {
+        // WhatsApp may retry webhooks; the unique external message id makes processing idempotent.
+        continue;
+      }
       const inboundText = incoming.type === "text" ? String(incoming.text?.body || "").trim() : "";
       if (["stop", "unsubscribe", "cancel", "end", "quit"].includes(inboundText.toLowerCase())) {
         recipient.status = "disconnected";
@@ -118,6 +124,7 @@ export async function POST(request: NextRequest) {
           ticket.status = "waiting_on_team";
           await ticket.save();
         }
+        await UserWhatsAppDelivery.updateOne({ externalMessageId: incoming.id }, { $set: { supportTicketId: ticket._id } });
         accepted++;
         continue;
       }
@@ -154,6 +161,7 @@ export async function POST(request: NextRequest) {
         status: "delivered",
         messageType: incoming.type === "audio" ? "audio" : "text",
       });
+      await UserWhatsAppDelivery.updateOne({ externalMessageId: incoming.id }, { $set: { messageId: message._id } });
       conversation.lastMessageAt = new Date();
       await conversation.save();
       accepted++;

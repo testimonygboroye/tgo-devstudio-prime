@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { connectToDatabase } from "@/lib/db";
+import { randomUUID } from "node:crypto";
+import User from "@/models/User";
+import SupportTicket from "@/models/SupportTicket";
 import { UnifiedConversation, UnifiedMessage } from "@/models/UnifiedConversation";
 import UserWhatsAppConnection from "@/models/UserWhatsAppConnection";
 import UserWhatsAppDelivery from "@/models/UserWhatsAppDelivery";
@@ -79,6 +82,37 @@ export async function POST(request: NextRequest) {
       if (!recipient || !recipient.optInAt) continue;
       recipient.lastInboundAt = new Date();
       await recipient.save();
+
+      const account = await User.findById(recipient.userId).select("accountType name").lean();
+      if (account?.accountType === "client") {
+        const clientText = incoming.type === "text"
+          ? String(incoming.text?.body || "").slice(0, 10000)
+          : "[WhatsApp " + (incoming.type || "message") + " received. Open WhatsApp to view the original media.]";
+        if (!clientText.trim()) continue;
+        let ticket = await SupportTicket.findOne({ clientId: recipient.userId, status: { $nin: ["resolved", "closed"] } }).sort({ updatedAt: -1 });
+        if (!ticket) {
+          const now = new Date();
+          ticket = await SupportTicket.create({
+            reference: "TGO-SUP-" + now.toISOString().slice(0, 10).replace(/-/g, "") + "-" + randomUUID().slice(0, 8).toUpperCase(),
+            clientId: recipient.userId,
+            subject: "WhatsApp support conversation",
+            description: clientText,
+            category: "General enquiry",
+            status: "open",
+            priority: "normal",
+            escalationLevel: 0,
+            firstResponseDueAt: new Date(now.getTime() + 24 * 60 * 60 * 1000),
+            resolutionDueAt: new Date(now.getTime() + 72 * 60 * 60 * 1000),
+            messages: [{ senderId: recipient.userId, senderType: "client", body: clientText, attachments: [], createdAt: now }],
+          });
+        } else {
+          ticket.messages.push({ senderId: recipient.userId, senderType: "client", body: clientText, attachments: [], createdAt: new Date() });
+          ticket.status = "waiting_on_team";
+          await ticket.save();
+        }
+        accepted++;
+        continue;
+      }
 
       let conversation = recipient.currentConversationId
         ? await UnifiedConversation.findOne({ _id: recipient.currentConversationId, memberIds: recipient.userId })

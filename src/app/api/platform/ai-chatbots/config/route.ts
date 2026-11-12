@@ -64,7 +64,7 @@ export async function PUT(request: NextRequest) {
       setFields.fallbackProviderId = fallbackId;
       setFields.fallbackModelName = fallbackModelName;
     }
-    const update: UpdateQuery<IAIChatbotConfig> = fallback
+    const update: UpdateQuery<IAIChatbotConfig> = fallbackId
       ? { $set: setFields }
       : { $set: setFields, $unset: { fallbackProviderId: 1, fallbackModelName: 1 } };
     const saved = await AIChatbotConfig.findOneAndUpdate(

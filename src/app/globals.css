@@ -1319,3 +1319,51 @@ main form input[type="checkbox"], main form input[type="radio"] { accent-color: 
 .tgo-image-fallback-icon { position:absolute; right:12px; bottom:12px; color:#71809d; }
 .not-found-illustration,.public-error-illustration { display:block; width:min(100%,440px); height:auto; margin:0 auto 1.8rem; border:1px solid rgba(137,157,202,.16); border-radius:24px; box-shadow:0 25px 75px rgba(0,0,0,.25); }
 @media(max-width:640px){.not-found-illustration,.public-error-illustration{width:min(100%,340px);margin-bottom:1.25rem;border-radius:18px}.tgo-image-fallback{min-height:145px}}
+
+/* Consistent page-opening art direction across the public route catalogue. */
+main > section[class*="-hero"]:first-of-type,
+main > section[class*="-intro"]:first-of-type {
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  border-bottom:1px solid rgba(139,157,198,.15);
+  background:
+    radial-gradient(ellipse at 88% 18%,rgba(46,197,240,.12),transparent 44%),
+    radial-gradient(ellipse at 12% 0%,rgba(91,46,232,.17),transparent 48%),
+    linear-gradient(145deg,#111629 0%,#0b1020 56%,#090d18 100%);
+}
+main > section[class*="-hero"]:first-of-type::after,
+main > section[class*="-intro"]:first-of-type::after {
+  content:"";
+  position:absolute;
+  z-index:-1;
+  inset:0;
+  pointer-events:none;
+  opacity:.28;
+  background-image:radial-gradient(rgba(134,157,220,.45) .7px,transparent .7px);
+  background-size:36px 36px;
+  mask-image:linear-gradient(90deg,transparent,#000 24%,#000 86%,transparent);
+}
+main > section[class*="-hero"]:first-of-type h1,
+main > section[class*="-intro"]:first-of-type h1 {
+  max-width:18ch;
+  font-size:clamp(2.55rem,5.5vw,5.1rem);
+  font-weight:800;
+  line-height:1.02;
+  letter-spacing:-.067em;
+  text-wrap:balance;
+}
+main > section[class*="-hero"]:first-of-type p,
+main > section[class*="-intro"]:first-of-type p {
+  max-width:48rem;
+  color:#b6c0d4;
+  font-size:clamp(1rem,1.45vw,1.22rem);
+  line-height:1.8;
+  text-wrap:pretty;
+}
+@media(max-width:640px){
+  main > section[class*="-hero"]:first-of-type,
+  main > section[class*="-intro"]:first-of-type { padding-top:clamp(3rem,12vw,4.25rem); padding-bottom:clamp(3rem,12vw,4.25rem); }
+  main > section[class*="-hero"]:first-of-type h1,
+  main > section[class*="-intro"]:first-of-type h1 { font-size:clamp(2.35rem,10vw,3.55rem); }
+}

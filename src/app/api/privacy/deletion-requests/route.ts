@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 export async function GET(request: NextRequest) {
   const reference = (request.nextUrl.searchParams.get("reference") || "").trim().toUpperCase();
   const email = (request.nextUrl.searchParams.get("email") || "").trim().toLowerCase();
-  if (!/^TGO-PRIV-\\d{8}-[A-F0-9]{16}$/.test(reference) || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) {
+  if (!/^TGO-PRIV-\d{8}-[A-F0-9]{16}$/.test(reference) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return NextResponse.json({ status: "error", message: "Enter a valid request reference and the email address used when submitting it." }, { status: 400 });
   }
   await connectToDatabase();

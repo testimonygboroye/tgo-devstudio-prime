@@ -75,3 +75,41 @@ export async function mirrorMessageToPersonalWhatsApp(
     }
   }));
 }
+
+
+export async function sendSupportWhatsAppToClient(
+  clientId: Types.ObjectId | string,
+  supportTicketId: Types.ObjectId | string,
+  text: string,
+): Promise<{ sent: boolean; reason?: string }> {
+  const connection = await UserWhatsAppConnection.findOne({ userId: clientId, status: "connected" }).select("+credentialsCiphertext");
+  if (!connection || !connection.optInAt) return { sent: false, reason: "No opted-in WhatsApp destination is registered." };
+  if (!connection.lastInboundAt || Date.now() - connection.lastInboundAt.getTime() > 24 * 60 * 60 * 1000) {
+    return { sent: false, reason: "The WhatsApp customer-service window is closed; an approved template is required." };
+  }
+
+  let credentials: Record<string, string> = {};
+  try { if (connection.credentialsCiphertext) credentials = decryptCredentials(connection.credentialsCiphertext); } catch {}
+  if (!credentials.accessToken) {
+    const integration = await IntegrationConnection.findOne({ providerId: "whatsapp_cloud_api", status: "connected" }).select("+credentialsCiphertext");
+    if (integration) { try { credentials = decryptCredentials(integration.credentialsCiphertext); } catch {} }
+  }
+  const phoneNumberId = connection.phoneNumberId || credentials.phoneNumberId;
+  if (!credentials.accessToken || !phoneNumberId) return { sent: false, reason: "The shared WhatsApp sender is not configured." };
+
+  try {
+    const externalMessageId = await sendWhatsAppPayload(phoneNumberId, credentials.accessToken, connection.personalPhoneNumber, {
+      type: "text",
+      text: { preview_url: false, body: String(text || "").slice(0, 3000) },
+    });
+    await UserWhatsAppDelivery.create({
+      supportTicketId,
+      userId: connection.userId,
+      externalMessageId,
+      status: "sent",
+    });
+    return { sent: true };
+  } catch (error) {
+    return { sent: false, reason: error instanceof Error ? error.message : "WhatsApp delivery failed." };
+  }
+}

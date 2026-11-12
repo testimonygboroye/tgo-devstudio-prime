@@ -8,7 +8,7 @@ export default function PublicError({error,reset}:{error:Error&{digest?:string};
   useEffect(()=>{console.error("Public site route error:",error);},[error]);
   return(
     <main className="public-error-state">
-      <div className="public-error-mark"><AlertTriangle size={27}/><span/></div>
+      <img src="/images/illustrations/error-recovery.svg" alt="" aria-hidden="true" className="public-error-illustration"/><div className="public-error-mark"><AlertTriangle size={27}/><span/></div>
       <span className="eyebrow-label">A temporary interruption</span>
       <h1>We hit a small<br/><em>technical pause.</em></h1>
       <p>The page could not finish loading this time. Your work has not been changed. You can safely try again or return to another part of the site.</p>

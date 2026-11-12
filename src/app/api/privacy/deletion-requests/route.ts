@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { randomUUID } from "node:crypto";
+import { randomBytes } from "node:crypto";
 import { connectToDatabase } from "@/lib/db";
 import DataDeletionRequest from "@/models/DataDeletionRequest";
 import { verifyTurnstileToken } from "@/lib/turnstile";
@@ -9,6 +9,26 @@ import { after } from "next/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+export async function GET(request: NextRequest) {
+  const reference = (request.nextUrl.searchParams.get("reference") || "").trim().toUpperCase();
+  const email = (request.nextUrl.searchParams.get("email") || "").trim().toLowerCase();
+  if (!/^TGO-PRIV-\\d{8}-[A-F0-9]{16}$/.test(reference) || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) {
+    return NextResponse.json({ status: "error", message: "Enter a valid request reference and the email address used when submitting it." }, { status: 400 });
+  }
+  await connectToDatabase();
+  const item = await DataDeletionRequest.findOne({ reference, email });
+  if (!item) return NextResponse.json({ status: "error", message: "We could not find a request matching those details." }, { status: 404 });
+  const now = new Date();
+  if (!item.lookupWindowStartedAt || now.getTime() - item.lookupWindowStartedAt.getTime() > 10 * 60 * 1000) {
+    item.lookupWindowStartedAt = now;
+    item.lookupCount = 0;
+  }
+  if (item.lookupCount >= 5) return NextResponse.json({ status: "error", message: "Too many status checks. Please wait ten minutes before trying again." }, { status: 429 });
+  item.lookupCount += 1;
+  await item.save();
+  return NextResponse.json({ status: "ok", request: { reference: item.reference, status: item.status, submittedAt: item.createdAt, lastUpdatedAt: item.updatedAt }, message: "This is the latest recorded status. For clarification, contact TGO DevStudio and quote your reference." }, { headers: { "Cache-Control": "no-store" } });
+}
 
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null) as null | Record<string, unknown>;
@@ -28,7 +48,7 @@ export async function POST(request: NextRequest) {
   await connectToDatabase();
   const recent = await DataDeletionRequest.countDocuments({ email, createdAt: { $gte: new Date(Date.now() - 10 * 60 * 1000) } });
   if (recent >= 3) return NextResponse.json({ status: "error", message: "Too many requests were submitted recently. Please try again later." }, { status: 429 });
-  const reference = "TGO-PRIV-" + new Date().toISOString().slice(0,10).replace(/-/g,"") + "-" + randomUUID().slice(0,8).toUpperCase();
+  const reference = "TGO-PRIV-" + new Date().toISOString().slice(0,10).replace(/-/g,"") + "-" + randomBytes(8).toString("hex").toUpperCase();
   const item = await DataDeletionRequest.create({ reference, name, email, accountIdentifier, service, details, status: "received" });
   after(async () => {
     try { await sendAdminPush({ title: "New privacy request", body: reference + " · " + name, url: getAdminBasePath() + "/privacy-requests", category: "system", tag: reference }); } catch (error) { console.error("[Privacy] Admin notification failed:", error); }

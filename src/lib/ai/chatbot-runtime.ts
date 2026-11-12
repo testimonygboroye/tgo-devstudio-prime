@@ -88,7 +88,7 @@ export async function handleAIChat(request:NextRequest,scope:Scope,method:"GET"|
  const config=await AIChatbotConfig.findOne({scope,enabled:true}).lean();
  if(method==="GET"){
   const {row,token}=await getSession(scope,request,auth.session);
-  const response=json({enabled:Boolean(config),welcomeMessage:config?.welcomeMessage||"Hello. How can I help?",messages:(row.messages||[]).slice(-40).map(m=>({messageId:m.messageId,role:m.role,content:m.content,feedback:m.feedback,createdAt:m.createdAt}))});
+  const response=json({enabled:Boolean(config),welcomeMessage:config?.welcomeMessage||"Hello. How can I help?",messages:(row.messages||[]).slice(-40).map(m=>({messageId:m.messageId,role:m.role,content:m.content,feedback:m.feedback,sources:m.sources||[],createdAt:m.createdAt}))});
   return attachPublicCookie(response,scope,token);
  }
  if(method==="DELETE"){
@@ -124,7 +124,7 @@ export async function handleAIChat(request:NextRequest,scope:Scope,method:"GET"|
  try{
   const completion=await runProviderCompletion(String(config.providerId),config.modelName,system,prompt);
   if(!completion.text.trim())throw new Error("The AI provider returned an empty response.");
-  const assistantMessage={messageId:randomUUID(),role:"assistant" as const,content:completion.text.slice(0,8000),inputTokens:completion.inputTokens,outputTokens:completion.outputTokens,createdAt:new Date()};
+  const assistantMessage={messageId:randomUUID(),role:"assistant" as const,content:completion.text.slice(0,8000),inputTokens:completion.inputTokens,outputTokens:completion.outputTokens,sources:context.sources.slice(0,20),createdAt:new Date()};
   row.messages.push(assistantMessage);row.dailyRequests+=1;row.dailyTokens+=completion.inputTokens+completion.outputTokens;
   if(row.messages.length>80)row.messages=row.messages.slice(-80);
   await row.save();

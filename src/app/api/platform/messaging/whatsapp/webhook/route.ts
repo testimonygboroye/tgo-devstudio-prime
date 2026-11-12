@@ -129,11 +129,12 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
+      const conversationKey = String(recipient.userId) + ":" + recipient.personalPhoneNumber;
       let conversation = recipient.currentConversationId
         ? await UnifiedConversation.findOne({ _id: recipient.currentConversationId, memberIds: recipient.userId })
         : null;
       if (!conversation) {
-        conversation = await UnifiedConversation.findOne({ kind: "whatsapp", memberIds: recipient.userId, externalContactId: recipient.personalPhoneNumber });
+        conversation = await UnifiedConversation.findOne({ kind: "whatsapp", memberIds: recipient.userId, externalContactId: conversationKey });
       }
       if (!conversation) {
         conversation = await UnifiedConversation.create({
@@ -141,7 +142,7 @@ export async function POST(request: NextRequest) {
           title: "WhatsApp conversation",
           createdBy: recipient.userId,
           memberIds: [recipient.userId],
-          externalContactId: recipient.personalPhoneNumber,
+          externalContactId: conversationKey,
           externalContactName: "My WhatsApp",
         });
       }

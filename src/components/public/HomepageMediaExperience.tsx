@@ -23,7 +23,6 @@ function addMonths(date: Date, months: number) {
 }
 
 function remainingTime(target: number, now: number) {
-  const end = new Date(target);
   let cursor = new Date(now);
   let years = 0;
   while (years < 100 && new Date(cursor.getFullYear() + 1, cursor.getMonth(), cursor.getDate(), cursor.getHours(), cursor.getMinutes(), cursor.getSeconds()).getTime() <= target) {

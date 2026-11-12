@@ -54,6 +54,7 @@ import {
   Megaphone,
   SearchCheck,
   BrainCircuit,
+  Search,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -158,6 +159,12 @@ export default function AdminSidebar({
   const collapsed = isCollapsed && !isMobileOpen;
 
   const basePathSegment = basePath;
+  const [navQuery, setNavQuery] = useState("");
+  const normalizedQuery = navQuery.trim().toLowerCase();
+  const visibleGroups = NAV_GROUPS
+    .filter((group) => (group.title !== "Founder" && group.title !== "Commercial & Delivery" && group.title !== "AI Workforce" && group.title !== "Growth & Engagement") || isFounder)
+    .map((group) => ({ ...group, items: group.items.filter((item) => !normalizedQuery || group.title.toLowerCase().includes(normalizedQuery) || item.label.toLowerCase().includes(normalizedQuery)) }))
+    .filter((group) => group.items.length > 0);
 
   const loadCounts = useCallback(async () => {
     try {
@@ -226,8 +233,9 @@ export default function AdminSidebar({
         </button>
       </div>
 
-      <nav className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4 space-y-1">
-        {NAV_GROUPS.filter((group) => (group.title !== "Founder" && group.title !== "Commercial & Delivery" && group.title !== "AI Workforce" && group.title !== "Growth & Engagement") || isFounder).map((group) => {
+      <nav aria-label="Admin navigation" className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4 space-y-1">
+        {!collapsed && <label className="mb-3 flex items-center gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-page)] px-3 py-2.5 text-[var(--text-muted)] focus-within:border-brand-cyan-400"><Search size={16} className="shrink-0"/><input type="search" value={navQuery} onChange={(event) => setNavQuery(event.target.value)} placeholder="Find an admin page..." aria-label="Find an admin page" className="min-w-0 w-full bg-transparent text-xs text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)]"/>{navQuery && <button type="button" onClick={() => setNavQuery("")} aria-label="Clear navigation search" className="text-xs text-brand-cyan-300">Clear</button>}</label>}
+        {visibleGroups.map((group) => {
           const groupActive = group.items.some((item) => pathname.startsWith(`${basePathSegment}${item.hrefSuffix}`));
           return (
             <details key={group.title} open={groupActive || undefined} className="group/nav mb-2">
@@ -255,6 +263,7 @@ export default function AdminSidebar({
             </details>
           );
         })}
+        {visibleGroups.length === 0 && <p className="rounded-xl border border-dashed border-[var(--border-subtle)] px-3 py-5 text-center text-xs leading-5 text-[var(--text-muted)]">No admin pages match “{navQuery}”.</p>}
       </nav>
 
       <div className="flex-shrink-0 border-t border-[var(--border-subtle)] p-4 bg-[var(--bg-surface-2)]/50">

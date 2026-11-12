@@ -18,6 +18,7 @@ import PaymentTransaction from "@/models/PaymentTransaction";
 import FinanceInvoice from "@/models/FinanceInvoice";
 import FinancialLedgerEntry from "@/models/FinancialLedgerEntry";
 import ClientCreditAccount from "@/models/ClientCreditAccount";
+import { EngagementProfile, EngagementReward, EngagementReferral, EngagementRedemption, EngagementBadgeAward, EngagementEvent, EngagementEarnRule, EngagementCampaign, EngagementReferralRule } from "@/models/Engagement";
 import SupportTicket from "@/models/SupportTicket";
 import EmployeeProfile from "@/models/EmployeeProfile";
 import PayrollCompensation from "@/models/PayrollCompensation";
@@ -47,7 +48,7 @@ async function privateContext(scope:Scope,session:NonNullable<ChatSession>){
  const pub=await publicContext();
  if(scope==="client"){
   const userId=session.user._id;
-  const [profile,projects,orders,tickets,invoices,payments,creditAccounts,ledgerEntries]=await Promise.all([
+  const [profile,projects,orders,tickets,invoices,payments,creditAccounts,ledgerEntries,engagementProfile,rewardCatalogue,referrals,redemptions,badges,engagementEvents,earnRules,activeCampaigns,referralRule]=await Promise.all([
    ClientProfile.findOne({userId}).select("jobTitle country lifecycle onboardingStatus").lean(),
    DeliveryProject.find({clientId:userId}).select("reference name summary status priority startDate targetDate completedAt updatedAt").sort({updatedAt:-1}).limit(30).lean(),
    CommercialOrder.find({clientId:userId}).select("reference title amount currency status paymentStatus paymentVerifiedAt createdAt updatedAt").sort({createdAt:-1}).limit(30).lean(),
@@ -63,8 +64,8 @@ async function privateContext(scope:Scope,session:NonNullable<ChatSession>){
    DeliveryTask.find({projectId:{$in:ids}}).select("projectId milestoneId title description status priority dueDate completedAt").sort({dueDate:1}).limit(200).lean(),
    ProjectDeliverable.find({projectId:{$in:ids}}).select("projectId milestoneId title description version status clientApprovedAt releasedAt").sort({createdAt:-1}).limit(100).lean(),
   ]);
-  const account={profile,projects,orders,milestones,tasks,deliverables,invoices,paymentTransactions:payments,creditAccounts,financialLedgerEntries:ledgerEntries,supportTickets:tickets.map(t=>({...t,messages:(t.messages||[]).slice(-8).map(m=>({senderType:m.senderType,body:m.body,createdAt:m.createdAt}))}))};
-  const sources=[...pub.sources,...projects.map(p=>"Your project: "+p.reference+" · "+p.name),...orders.map(o=>"Your order: "+o.reference),...invoices.map(i=>"Your invoice: "+i.reference),...payments.map(p=>"Your payment: "+p.reference),...tickets.map(t=>"Your support request: "+t.reference)];
+  const safeReferrals=referrals.map(r=>({role:String(r.referrerId)===String(userId)?"referrer":"referred",code:String(r.referrerId)===String(userId)?r.code:undefined,status:r.status,attributedAt:r.attributedAt,qualifiedAt:r.qualifiedAt,commissionMinor:String(r.referrerId)===String(userId)?r.commissionMinor:undefined,currency:r.currency,createdAt:r.createdAt}));\n  const engagement={profile:engagementProfile,rewardCatalogue,referrals:safeReferrals,redemptions,badges,events:engagementEvents,activeEarnRules:earnRules,activeCampaigns,referralRule};\n  const account={profile,projects,orders,milestones,tasks,deliverables,invoices,paymentTransactions:payments,creditAccounts,financialLedgerEntries:ledgerEntries,engagement,supportTickets:tickets.map(t=>({...t,messages:(t.messages||[]).slice(-8).map(m=>({senderType:m.senderType,body:m.body,createdAt:m.createdAt}))}))};
+  const sources=[...pub.sources,...projects.map(p=>"Your project: "+p.reference+" · "+p.name),...orders.map(o=>"Your order: "+o.reference),...invoices.map(i=>"Your invoice: "+i.reference),...payments.map(p=>"Your payment: "+p.reference),"Your rewards, points and referral account",...tickets.map(t=>"Your support request: "+t.reference)];
   return {data:{public:pub.data,authenticatedClientAccount:account},sources};
  }
  const employee=await EmployeeProfile.findOne({userId:session.user._id}).populate("departmentId","name").populate("positionId","title").select("employeeCode departmentId positionId employmentStatus employmentType startDate timezone workLocation").lean();

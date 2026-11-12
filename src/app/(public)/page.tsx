@@ -31,7 +31,20 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export const metadata: Metadata = {
+  title: "Premium Software Engineering & Digital Product Studio",
+  description: "TGO DevStudio engineers premium websites, web and mobile applications, SaaS platforms, AI-powered systems and cloud products. From strategy to launch, build technology that moves your business forward.",
   alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    url: "/",
+    title: "TGO DevStudio Prime | Software Built Like It Matters",
+    description: "A full-stack engineering studio building premium production-grade digital products, intelligent systems and scalable platforms.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "TGO DevStudio Prime | Software Built Like It Matters",
+    description: "Premium software engineering, digital products, AI systems and cloud platforms.",
+  },
 };
 
 const capabilityPillars = [

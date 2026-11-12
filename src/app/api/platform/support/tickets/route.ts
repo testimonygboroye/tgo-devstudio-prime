@@ -7,6 +7,7 @@ import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import User from "@/models/User";
 import SupportSettings from "@/models/SupportSettings";
 import {sendSupportNotification} from "@/lib/support/notifications";
+import { sendSupportWhatsAppToClient } from "@/lib/messaging/whatsappSync";
 
 export const dynamic = "force-dynamic";
 function fail(error:string,status=400){return NextResponse.json({ok:false,error},{status});}
@@ -70,11 +71,14 @@ export async function PATCH(request:NextRequest){
     if(ticket.priority==="low"||ticket.priority==="normal")ticket.priority="high";
   }else return fail("Unsupported support action.");
   await ticket.save();
+  let whatsappDelivery: { sent: boolean; reason?: string } | null = null;
   if(action==="reply"){
+    const replyText = typeof body.message === "string" ? body.message.trim() : "";
+    whatsappDelivery = await sendSupportWhatsAppToClient(ticket.clientId, ticket._id, "TGO Support · " + ticket.reference + "\\n" + replyText);
     const ticketClient=await User.findById(ticket.clientId).select("email name").lean();
     const settings=await SupportSettings.findOne({key:"global"}).lean();
     if(settings?.notifications?.emailEnabled!==false&&ticketClient?.email)void sendSupportNotification({toEmail:ticketClient.email,toName:ticketClient.name,subject:"TGO Support replied to "+ticket.reference,message:"A support team member has replied. Sign in to your client portal to read the message and respond."}).catch(e=>console.error("Support reply email failed",e));
   }
-  await writePlatformAuditEvent({actorType:"human",actorId:String(actor.user._id),actorLabel:actor.user.name,action:"support.ticket_"+String(action),module:"support",targetType:"support_ticket",targetId:String(ticket._id),outcome:"success",metadata:{reference:ticket.reference,status:ticket.status,priority:ticket.priority,escalationLevel:ticket.escalationLevel}});
+  await writePlatformAuditEvent({actorType:"human",actorId:String(actor.user._id),actorLabel:actor.user.name,action:"support.ticket_"+String(action),module:"support",targetType:"support_ticket",targetId:String(ticket._id),outcome:"success",metadata:{reference:ticket.reference,status:ticket.status,priority:ticket.priority,escalationLevel:ticket.escalationLevel,whatsappDelivered:whatsappDelivery?.sent||false,whatsappSkipReason:whatsappDelivery?.reason||""}});
   return NextResponse.json({ok:true,ticket:{id:String(ticket._id),reference:ticket.reference,status:ticket.status,priority:ticket.priority,assignedTo:ticket.assignedTo,escalationLevel:ticket.escalationLevel}});
 }

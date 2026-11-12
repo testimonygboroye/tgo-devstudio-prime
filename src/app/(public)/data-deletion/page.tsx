@@ -6,6 +6,7 @@ import { getServerLocale } from "@/lib/i18n/serverLocale";
 import { getLocalizedContent } from "@/lib/i18n/translationHelper";
 import LegalPageShell from "@/components/public/LegalPageShell";
 import DataDeletionRequestForm from "@/components/public/DataDeletionRequestForm";
+import DataDeletionRequestTracker from "@/components/public/DataDeletionRequestTracker";
 
 export const revalidate = 300;
 export const metadata: Metadata = {
@@ -28,7 +29,7 @@ export default async function DataDeletionPage() {
         <p className="text-xs font-semibold uppercase tracking-[.2em] text-cyan-500">Secure request form</p>
         <h2 className="mt-2 text-2xl font-bold text-[var(--text-primary)]">Submit a privacy request</h2>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--text-secondary)]">Provide enough information for our team to locate the relevant account or communication. We will verify your identity before disclosing or deleting personal information.</p>
-        <div className="mt-6"><DataDeletionRequestForm/></div>
+        <div className="mt-6"><DataDeletionRequestForm/></div><div className="mt-8"><DataDeletionRequestTracker/></div>
       </div>
     </section>
   </>;

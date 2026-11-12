@@ -53,7 +53,8 @@
 .tgo-image-fallback-icon { z-index: 2; }
 
 .stack-page > div {
-  width: min(100% - 40px, 64rem);
+  width: calc(100% - 40px);
+  max-width: 64rem;
   margin-inline: auto;
 }
 .stack-page .surface-card-inner { min-width: 0; }
@@ -129,7 +130,7 @@
 .public-settings-panel .surface-card {
   min-width: 0;
   min-height: 104px;
-  padding: 2px;
+  padding: 16px;
   text-decoration: none;
 }
 .public-settings-panel .surface-card > span { min-width: 0; }

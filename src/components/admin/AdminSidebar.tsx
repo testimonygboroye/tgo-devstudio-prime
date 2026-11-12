@@ -65,6 +65,10 @@ interface AdminSidebarProps {
 }
 
 const NAV_GROUPS = [
+  { title: "Overview", items: [
+    { label: "Dashboard", hrefSuffix: "/dashboard", icon: LayoutDashboard, badgeKey: null },
+    { label: "Visitor Analytics", hrefSuffix: "/analytics", icon: BarChart3, badgeKey: null },
+  ]},
   { title: "Founder", items: [
     { label: "Founder Control Centre", hrefSuffix: "/platform", icon: Crown, badgeKey: null },
     { label: "Executive Intelligence", hrefSuffix: "/executive-intelligence", icon: BrainCircuit, badgeKey: null },
@@ -86,10 +90,6 @@ const NAV_GROUPS = [
     { label: "Sales & Delivery", hrefSuffix: "/commercial", icon: ShoppingCart, badgeKey: null },
     { label: "Finance & Payments", hrefSuffix: "/finance", icon: WalletCards, badgeKey: null },
     { label: "Customer Support", hrefSuffix: "/support", icon: LifeBuoy, badgeKey: null },
-  ]},
-  { title: "Overview", items: [
-    { label: "Dashboard", hrefSuffix: "/dashboard", icon: LayoutDashboard, badgeKey: null },
-    { label: "Visitor Analytics", hrefSuffix: "/analytics", icon: BarChart3, badgeKey: null },
   ]},
   { title: "People & Access", items: [
     { label: "Invites", hrefSuffix: "/invites", icon: UserPlus, badgeKey: null },

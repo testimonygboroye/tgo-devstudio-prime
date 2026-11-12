@@ -10,6 +10,7 @@ import { decryptProviderSecret, encryptProviderSecret } from "@/lib/ai/provider-
 import { runProviderCompletion } from "@/lib/ai/provider-runtime";
 import { AIWorkspace, AIMemory } from "@/models/AIKnowledge";
 import User from "@/models/User";
+import EmployeeProfile from "@/models/EmployeeProfile";
 import ClientProfile from "@/models/ClientProfile";
 import DeliveryProject from "@/models/DeliveryProject";
 import DeliveryMilestone from "@/models/DeliveryMilestone";
@@ -18,15 +19,39 @@ import ProjectDeliverable from "@/models/ProjectDeliverable";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-async function founder() {
-  const session = await getServerSession();
-  if (!session?.role?.isFounderRole) return null;
-  return session;
-}
 export async function GET() {
-  const session = await founder();
-  if (!session) return NextResponse.json({ status: "error", message: "Forbidden" }, { status: 403 });
+  const session = await getServerSession();
+  if (!session) return NextResponse.json({ status: "error", message: "Authentication required." }, { status: 401 });
   await connectToDatabase();
+
+  if (!session.role?.isFounderRole) {
+    const employee = await EmployeeProfile.findOne({
+      userId: session.user._id,
+      employmentStatus: "active",
+      accessSuspendedByWorkforce: { $ne: true },
+    }).populate("departmentId", "name").lean();
+    if (!employee) return NextResponse.json({ status: "error", message: "Active employee access is required." }, { status: 403 });
+    const departmentName = String((employee.departmentId as unknown as { name?: string })?.name || "");
+    const scope = [
+      { assignedUserId: session.user._id },
+      ...(departmentName ? [{ department: departmentName }] : []),
+      { department: "Customer Support" },
+      { department: "Website Operations" },
+    ];
+    const agents = await AIAgent.find({ enabled: true, $or: scope })
+      .select("name role department description workspaceId assignedUserId providerId modelName permissions requiresApproval maxDailyTokens enabled")
+      .populate("providerId", "name provider")
+      .sort({ department: 1, name: 1 }).lean();
+    const agentIds = agents.map((agent) => agent._id);
+    const workspaceIds = [...new Set(agents.map((agent) => String(agent.workspaceId || "")).filter(Boolean))];
+    const [tasks, workspaces, memories] = await Promise.all([
+      AITask.find({ agentId: { $in: agentIds }, requestedBy: String(session.user._id) }).populate("agentId", "name role").sort({ createdAt: -1 }).limit(100).lean(),
+      AIWorkspace.find({ _id: { $in: workspaceIds }, active: true }).sort({ name: 1 }).lean(),
+      AIMemory.find({ active: true, $or: [{ agentId: { $in: agentIds } }, { scope: "shared", workspaceId: { $in: workspaceIds } }] }).select("title scope agentId workspaceId tags source updatedAt").sort({ updatedAt: -1 }).limit(100).lean(),
+    ]);
+    return NextResponse.json({ status: "ok", providers: [], agents, tasks, workspaces, memories }, { headers: { "Cache-Control": "private, no-store" } });
+  }
+
   const [providers, agents, tasks, workspaces, memories] = await Promise.all([
     AIProvider.find().select("-encryptedApiKey").sort({ createdAt: -1 }).lean(),
     AIAgent.find().populate("providerId", "name provider").sort({ createdAt: -1 }).lean(),
@@ -37,11 +62,44 @@ export async function GET() {
   return NextResponse.json({ status: "ok", providers, agents, tasks, workspaces, memories });
 }
 export async function POST(request: NextRequest) {
-  const session = await founder();
-  if (!session) return NextResponse.json({ status: "error", message: "Forbidden" }, { status: 403 });
+  const session = await getServerSession();
+  if (!session) return NextResponse.json({ status: "error", message: "Authentication required." }, { status: 401 });
   await connectToDatabase();
   const body = await request.json().catch(() => ({}));
   const actorId = String(session.user._id);
+  const isFounder = Boolean(session.role?.isFounderRole);
+  let employeeScope: { department: string; userId: string } | null = null;
+  if (!isFounder) {
+    const employee = await EmployeeProfile.findOne({
+      userId: session.user._id,
+      employmentStatus: "active",
+      accessSuspendedByWorkforce: { $ne: true },
+    }).populate("departmentId", "name").lean();
+    if (!employee) return NextResponse.json({ status: "error", message: "Active employee access is required." }, { status: 403 });
+    employeeScope = {
+      department: String((employee.departmentId as unknown as { name?: string })?.name || ""),
+      userId: actorId,
+    };
+    if (!["task.enqueue", "task.delegate"].includes(String(body.action || ""))) {
+      return NextResponse.json({ status: "error", message: "This action is reserved for the founder." }, { status: 403 });
+    }
+    const visibleAgentScope = [
+      { assignedUserId: session.user._id },
+      ...(employeeScope.department ? [{ department: employeeScope.department }] : []),
+      { department: "Customer Support" },
+      { department: "Website Operations" },
+    ];
+    if (body.action === "task.enqueue") {
+      const allowedAgent = await AIAgent.exists({ _id: body.agentId, enabled: true, $or: visibleAgentScope });
+      if (!allowedAgent) return NextResponse.json({ status: "error", message: "That AI employee is outside your assigned workspace." }, { status: 403 });
+    } else {
+      const [parent, target] = await Promise.all([
+        AITask.exists({ _id: body.taskId, requestedBy: actorId }),
+        AIAgent.exists({ _id: body.agentId, enabled: true, $or: visibleAgentScope }),
+      ]);
+      if (!parent || !target) return NextResponse.json({ status: "error", message: "Delegation is limited to your own tasks and AI employees within your authorised scope." }, { status: 403 });
+    }
+  }
   try {
     if (body.action === "team.provision") {
       const provider = await AIProvider.findOne({ _id: body.providerId, enabled: true, lastTestStatus: "success" });

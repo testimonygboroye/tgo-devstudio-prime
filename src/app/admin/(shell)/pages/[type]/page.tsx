@@ -14,6 +14,7 @@ const TYPE_LABELS: Record<string, string> = {
   "terms-of-service": "Consumer Terms of Service",
   "usage-policy": "Website Usage Policy",
   accessibility: "Accessibility Statement",
+  "data-deletion": "Data Deletion & Privacy Requests",
 };
 
 export default async function PageContentEditPage({ params }: PageProps) {
@@ -22,21 +23,15 @@ export default async function PageContentEditPage({ params }: PageProps) {
   const { type } = await params;
 
   const label = TYPE_LABELS[type];
-  if (!label) {
-    notFound();
-  }
+  if (!label) notFound();
 
   return (
     <div>
       <p className="font-mono text-xs uppercase tracking-widest text-neutral-400">Content</p>
       <h1 className="mt-1 text-3xl font-bold brand-gradient-text">{label}</h1>
       <div className="mt-8">
-        <PageContentEditClient type={type as "about" | "privacy-policy" | "terms-of-service" | "usage-policy" | "accessibility"} />
-        {type === "about" && (
-          <div className="mt-8">
-            <FounderSettingsClient />
-          </div>
-        )}
+        <PageContentEditClient type={type as "about" | "privacy-policy" | "terms-of-service" | "usage-policy" | "accessibility" | "data-deletion"} />
+        {type === "about" && <div className="mt-8"><FounderSettingsClient /></div>}
       </div>
     </div>
   );

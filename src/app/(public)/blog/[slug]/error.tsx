@@ -20,6 +20,7 @@ export default function BlogDetailError({
   return (
     <main className="flex min-h-screen items-center justify-center px-6 py-20">
       <section className="surface-card w-full max-w-xl text-center">
+        <img src="/images/illustrations/error-recovery.svg" alt="" aria-hidden="true" className="public-error-illustration" />
         <div className="surface-card-inner p-8 sm:p-10">
           <p className="font-mono text-xs uppercase tracking-[0.25em] text-neutral-500">
             Blog

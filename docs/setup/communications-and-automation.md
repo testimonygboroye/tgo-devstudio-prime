@@ -41,27 +41,50 @@ Use this only if you prefer an independent scheduler outside GitHub Actions. Do 
 
 The application remains portable: change only `APP_BASE_URL` when moving between Render, Vercel, Netlify, or another compatible host. Both schedulers call the same protected application endpoints; only one scheduler should be active at a time.
 
-## 3. Connect WhatsApp Cloud API
+## 3. Connect each person's own WhatsApp
 
-1. Open https://developers.facebook.com/apps/ and create or select a Meta app.
-2. Add the **WhatsApp** product and connect the intended WhatsApp Business Account and business phone number.
-3. Obtain the Meta app secret, a WhatsApp access token with the required WhatsApp messaging permissions, the Phone Number ID, and the WhatsApp Business Account ID.
-4. Create a strong random **Verify token**. Keep it ready for the Meta webhook setup.
-5. In TGO Admin → Integrations, save these values under **WhatsApp Cloud API**, then run **Verify WhatsApp phone number**. The integration must show as connected before Meta's verification request can succeed.
-6. In the Meta app's webhook configuration, use this callback URL:
+WhatsApp is **personal per platform user**, not one shared company inbox. The founder connects the founder's own WhatsApp destination; each staff member can separately connect their own. A user's messages are mirrored only to the WhatsApp destination configured on that user's account, and a WhatsApp reply is routed back into the same private conversation. Other users do not receive that person's private AI or team conversations.
+
+Important: the official WhatsApp Cloud API sends from a **WhatsApp Business Platform phone number** to the user's personal WhatsApp number. It does not sign in to or take over an existing personal WhatsApp account. Each person who wants two-way mirroring needs access to a Meta Business account and a WhatsApp Business Platform phone number. If they only have a personal WhatsApp number and no Cloud API business number, they can still use the platform normally, but WhatsApp mirroring remains disconnected.
+
+### Connect your own account in TGO
+
+1. Open **Admin → Communications / Messages** while signed in to your own staff account.
+2. Expand **My personal WhatsApp**.
+3. Create or select your Meta app at https://developers.facebook.com/apps/ and add the **WhatsApp** product.
+4. In WhatsApp → API Setup / WhatsApp Manager, connect your own WhatsApp Business Account and business phone number. Copy the **Phone Number ID** and **WhatsApp Business Account ID**.
+5. Create a Meta access token with the WhatsApp Business messaging permissions required for your number. Copy the **Meta App Secret** from App Settings → Basic.
+6. Choose your own long random **Webhook Verify Token**. It is not your Meta access token.
+7. Enter these six values into your own TGO Communications connection form:
+   - Meta access token
+   - Business Phone Number ID
+   - WhatsApp Business Account ID
+   - Your personal WhatsApp destination number, in international digits-only format (Nigeria example: `2348012345678`, without the leading +)
+   - Meta App Secret
+   - Webhook Verify Token
+8. Select **Verify and connect my WhatsApp**. TGO verifies the business phone number and stores the credentials encrypted. Your access token and app secret are not displayed again.
+9. In the Meta app, open **WhatsApp → Configuration → Webhooks**. Set the callback URL to:
    `https://YOUR_PUBLIC_APP_HOST/api/platform/messaging/whatsapp/webhook`
-7. Enter the exact same Verify token from step 4 and complete webhook verification. Subscribe the WhatsApp webhook to the `messages` field; message delivery status updates arrive through the same webhook.
-8. Send a message from a test/allowed phone to the business number; the inbound message should appear in Admin → Messages.
+10. Enter the exact Verify Token you saved in TGO, verify the callback, and subscribe to the **messages** field. Delivery/read status notifications use the same webhook.
+11. From your personal WhatsApp number, send a message to the connected WhatsApp Business phone number. It should appear in your private TGO Communications space.
 
-Keep all credentials in the encrypted Integration Centre. Never put them in source files or browser settings. Rotate tokens if they are exposed.
+Repeat these steps independently for every team member who wants WhatsApp mirroring. A member must connect their own Cloud API business number and their own personal destination number. A connection cannot be claimed by another platform account. A member can disconnect their own connection at any time from the same Communications panel.
 
-### Messaging safeguards
+### How conversation synchronization works
 
-- Incoming messages are synchronized with their external sender and delivery IDs; signed webhook payloads are verified before processing.
-- Free-form WhatsApp replies are accepted only within 24 hours of the contact's latest inbound message. Outside that window, this implementation blocks free-form replies. Approved template selection and template delivery are not yet exposed in this interface.
-- An inbound message opens the WhatsApp customer-service window; it is **not** treated as blanket marketing consent.
-- Media received through WhatsApp currently appears as a message placeholder; inbound media download/storage is not enabled.
-- WhatsApp provider charges, template fees, and Meta policy limits are controlled by Meta and may apply. Do not assume all WhatsApp messaging is free.
+- When a member sends a message in a platform conversation, the message is delivered to the personal WhatsApp destinations connected by the conversation's participants.
+- A reply sent from WhatsApp is added to the same platform conversation. Other connected participants receive their own WhatsApp copy; the sender does not receive a duplicate echo.
+- AI replies in a private AI conversation are mirrored to the connected user's WhatsApp. Replies from WhatsApp continue that same AI conversation, subject to the AI employee's approval and daily token budget.
+- Conversation visibility is membership-based. Founder status does not grant access to another employee's private conversations.
+- Without a personal WhatsApp connection, a member's messages remain available in the platform and are not sent to another person's WhatsApp.
+
+### Messaging safeguards and limitations
+
+- Meta verifies webhook payload signatures before messages are accepted. Each business phone number is mapped to one platform user and only messages from that user's configured personal destination number are accepted.
+- Free-form WhatsApp messaging is subject to Meta's customer-service window, opt-in requirements, templates, and other policy rules. This implementation currently supports free-form text mirroring and does not yet expose approved template selection/delivery outside the service window.
+- WhatsApp media received through the webhook currently appears as a message placeholder; inbound media download/storage is not enabled yet. Platform voice notes and attachments are available in the platform itself.
+- An inbound message is not treated as blanket marketing consent. WhatsApp provider charges, template fees, and Meta policy limits are controlled by Meta and may apply. Do not assume all WhatsApp messaging is free.
+- Never paste access tokens, app secrets, or webhook tokens into ChatGPT or commit them to Git. Enter them only into the encrypted per-user connection form. Rotate them if exposed.
 
 ## 4. Voice notes and transcription
 
@@ -69,4 +92,4 @@ The communications composer can record and upload audio using the device microph
 
 ## 5. AI employees in conversations
 
-Founder users can open an AI conversation or assign a message as an AI task. The existing AI Workforce provider, agent enablement, daily token budget, permissions, and approval settings remain authoritative. Tasks requiring approval remain in the approval queue. Agent/provider API usage may incur costs under the configured provider's plan.
+Staff members can open AI conversations and assign tasks where their role permits. The existing AI Workforce provider, agent enablement, daily token budget, permissions, and approval settings remain authoritative. Tasks requiring approval remain in the approval queue. Agent/provider API usage may incur costs under the configured provider's plan.

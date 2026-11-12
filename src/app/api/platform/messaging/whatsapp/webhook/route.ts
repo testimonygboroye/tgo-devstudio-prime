@@ -70,8 +70,8 @@ export async function POST(request: NextRequest) {
       if (!conversation && connection.row.currentConversationId) conversation = await UnifiedConversation.findOne({ _id: connection.row.currentConversationId, memberIds: connection.row.userId });
       if (!conversation) {
         conversation = await UnifiedConversation.create({ kind: "whatsapp", title: "My WhatsApp", createdBy: connection.row.userId, memberIds: [connection.row.userId], externalContactId: connection.row.personalPhoneNumber, externalContactName: "My personal WhatsApp" });
-        connection.row.currentConversationId = conversation._id; await connection.row.save();
       }
+      connection.row.currentConversationId = conversation._id; await connection.row.save();
       const name = value.contacts?.[0]?.profile?.name || "Me";
       const text = incoming.type === "text" ? String(incoming.text?.body || "").slice(0, 12000) : "[WhatsApp " + (incoming.type || "message") + " received. Media import is not enabled yet.]";
       const inboundMessage = await UnifiedMessage.create({ conversationId: conversation._id, senderType: "external", senderLabel: name, body: text, externalMessageId: incoming.id, status: "delivered", messageType: incoming.type === "audio" ? "audio" : "text" });

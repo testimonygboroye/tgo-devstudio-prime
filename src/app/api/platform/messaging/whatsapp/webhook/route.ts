@@ -4,6 +4,9 @@ import { connectToDatabase } from "@/lib/db";
 import { UnifiedConversation, UnifiedMessage } from "@/models/UnifiedConversation";
 import UserWhatsAppConnection from "@/models/UserWhatsAppConnection";
 import UserWhatsAppDelivery from "@/models/UserWhatsAppDelivery";
+import { AIAgent, AITask } from "@/models/AIWorkforce";
+import { runProviderCompletion } from "@/lib/ai/provider-runtime";
+import { mirrorMessageToPersonalWhatsApp } from "@/lib/messaging/whatsappSync";
 import { decryptCredentials } from "@/lib/integrations/crypto";
 
 export const runtime = "nodejs";
@@ -72,6 +75,36 @@ export async function POST(request: NextRequest) {
       const text = incoming.type === "text" ? String(incoming.text?.body || "").slice(0, 12000) : "[WhatsApp " + (incoming.type || "message") + " received. Media import is not enabled yet.]";
       await UnifiedMessage.create({ conversationId: conversation._id, senderType: "external", senderLabel: name, body: text, externalMessageId: incoming.id, status: "delivered", messageType: incoming.type === "audio" ? "audio" : "text" });
       conversation.lastMessageAt = new Date(); await conversation.save(); accepted++;
+      if (conversation.kind === "ai" && conversation.aiAgentId && incoming.type === "text" && text.trim()) {
+        const agent = await AIAgent.findOne({ _id: conversation.aiAgentId, enabled: true });
+        if (agent) {
+          const task = await AITask.create({ agentId: agent._id, title: "WhatsApp conversation with " + name, input: text, requestedBy: String(connection.row.userId), status: agent.requiresApproval ? "awaiting_approval" : "queued", operationPayload: { source: "whatsapp_ai_conversation", conversationId: String(conversation._id) } });
+          if (agent.requiresApproval) {
+            await UnifiedMessage.create({ conversationId: conversation._id, senderType: "system", senderLabel: "TGO system", body: "Your WhatsApp message was received. This AI employee requires approval before responding. Task " + String(task._id) + " is awaiting approval." });
+          } else {
+            const dayStart = new Date(); dayStart.setUTCHours(0, 0, 0, 0);
+            const usage = await AITask.aggregate([{ $match: { agentId: agent._id, status: { $in: ["completed", "running"] }, createdAt: { $gte: dayStart } } }, { $group: { _id: null, tokens: { $sum: { $add: ["$inputTokens", "$outputTokens"] } } } }]);
+            if (Number(usage[0]?.tokens || 0) >= agent.maxDailyTokens) {
+              task.status = "awaiting_approval"; task.error = "Daily token budget reached; founder review required."; await task.save();
+              await UnifiedMessage.create({ conversationId: conversation._id, senderType: "system", senderLabel: "TGO system", body: "The AI employee reached its configured daily token budget. Your WhatsApp message is waiting for founder review." });
+            } else {
+              task.status = "running"; task.startedAt = new Date(); task.executionAttempts += 1; await task.save();
+              try {
+                const history = await UnifiedMessage.find({ conversationId: conversation._id, deletedAt: { $exists: false } }).sort({ createdAt: -1 }).limit(24).lean();
+                const prompt = history.reverse().map((item) => (item.senderLabel || "Participant") + ": " + item.body).join("\n\n");
+                const completion = await runProviderCompletion(String(agent.providerId), agent.modelName, agent.systemInstructions + "\n\nYou are responding as " + agent.name + " in the owner's private TGO conversation. Reply conversationally. Do not claim actions you did not perform.", prompt);
+                task.status = "completed"; task.result = completion.text.slice(0, 50000); task.inputTokens = completion.inputTokens; task.outputTokens = completion.outputTokens; task.providerRequestId = completion.providerRequestId; task.completedAt = new Date(); await task.save();
+                const reply = await UnifiedMessage.create({ conversationId: conversation._id, senderType: "ai", senderLabel: agent.name, body: completion.text.slice(0, 12000), status: "sent" });
+                conversation.lastMessageAt = new Date(); await conversation.save();
+                await mirrorMessageToPersonalWhatsApp(conversation, reply);
+              } catch (error) {
+                task.status = "failed"; task.error = (error instanceof Error ? error.message : "AI response failed.").slice(0, 2000); task.completedAt = new Date(); await task.save();
+                await UnifiedMessage.create({ conversationId: conversation._id, senderType: "system", senderLabel: "TGO system", body: "The AI employee could not complete this WhatsApp response. The failed run is recorded for review." });
+              }
+            }
+          }
+        }
+      }
     }
   }
   return NextResponse.json({ ok: true, accepted });

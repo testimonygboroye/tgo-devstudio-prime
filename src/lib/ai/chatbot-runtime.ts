@@ -76,7 +76,7 @@ async function privateContext(scope:Scope,session:NonNullable<ChatSession>){
    {$match:{"lines.employeeId":employee._id}},
    {$sort:{paymentDate:-1}},
    {$limit:20},
-   {$project:{period:1,currency:1,status:1,paymentDate:1,createdAt:1,lines:{$map:{input:{$filter:{input:"$lines",as:"line",cond:{$eq:["$line.employeeId",employee._id]}}},as:"line",in:{employeeCode:"$line.employeeCode",employeeName:"$line.employeeName",departmentName:"$line.departmentName",baseSalaryMinor:"$line.baseSalaryMinor",allowances:"$line.allowances",deductions:"$line.deductions",grossMinor:"$line.grossMinor",employeeDeductionsMinor:"$line.employeeDeductionsMinor",employerContributionsMinor:"$line.employerContributionsMinor",netMinor:"$line.netMinor",currency:"$line.currency"}}}}},
+   {$project:{period:1,currency:1,status:1,paymentDate:1,createdAt:1,lines:{$map:{input:{$filter:{input:"$lines",as:"line",cond:{$eq:["$$line.employeeId",employee._id]}}},as:"line",in:{employeeCode:"$$line.employeeCode",employeeName:"$$line.employeeName",departmentName:"$$line.departmentName",baseSalaryMinor:"$$line.baseSalaryMinor",allowances:"$$line.allowances",deductions:"$$line.deductions",grossMinor:"$$line.grossMinor",employeeDeductionsMinor:"$$line.employeeDeductionsMinor",employerContributionsMinor:"$$line.employerContributionsMinor",netMinor:"$$line.netMinor",currency:"$$line.currency"}}}}},
   ]);
  }
  const ownAccount={name:session.user.name,email:session.user.email,accountType:session.user.accountType,role:session.role.name,employee:employee||null,ownCompensation,ownPayrollHistory};

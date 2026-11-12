@@ -57,6 +57,15 @@ async function privateContext(scope:Scope,session:NonNullable<ChatSession>){
    PaymentTransaction.find({clientId:userId}).select("reference provider orderId milestoneId amount amountMinor currency status paymentMethod verifiedAt createdAt").sort({createdAt:-1}).limit(100).lean(),
    ClientCreditAccount.find({clientId:userId}).select("currency balanceMinor updatedAt").lean(),
    FinancialLedgerEntry.find({clientId:userId}).select("orderId accountCode direction amountMinor currency source sourceReference postedAt").sort({postedAt:-1}).limit(200).lean(),
+   EngagementProfile.findOne({clientId:userId}).select("points lifetimePoints tier").lean(),
+   EngagementReward.find({active:true,$or:[{stock:-1},{$expr:{$gt:["$stock","$redeemed"]}}]}).select("name description kind pointsCost creditMinor currency discountPercent stock redeemed").sort({pointsCost:1}).limit(50).lean(),
+   EngagementReferral.find({$or:[{referrerId:userId},{referredClientId:userId}]}).select("code referrerId status attributedAt qualifiedAt commissionMinor currency createdAt").sort({createdAt:-1}).limit(50).lean(),
+   EngagementRedemption.find({clientId:userId}).populate("rewardId","name kind").select("reference pointsSpent status couponCode couponStatus couponExpiresAt createdAt rewardId").sort({createdAt:-1}).limit(50).lean(),
+   EngagementBadgeAward.find({clientId:userId}).populate("badgeId","name description lifetimePointsRequired").select("awardedAt badgeId").sort({awardedAt:-1}).limit(50).lean(),
+   EngagementEvent.find({clientId:userId}).select("eventType points expiresAt expiredAt createdAt").sort({createdAt:-1}).limit(100).lean(),
+   EngagementEarnRule.find({active:true}).select("eventType points dailyCap").lean(),
+   EngagementCampaign.find({active:true,startsAt:{$lte:new Date()},endsAt:{$gte:new Date()}}).select("name startsAt endsAt multiplier").lean(),
+   EngagementReferralRule.findOne({key:"default",active:true}).select("minimumPurchaseMinor referrerPoints").lean(),
   ]);
   const ids=projects.map(p=>p._id);
   const [milestones,tasks,deliverables]=await Promise.all([
@@ -64,7 +73,9 @@ async function privateContext(scope:Scope,session:NonNullable<ChatSession>){
    DeliveryTask.find({projectId:{$in:ids}}).select("projectId milestoneId title description status priority dueDate completedAt").sort({dueDate:1}).limit(200).lean(),
    ProjectDeliverable.find({projectId:{$in:ids}}).select("projectId milestoneId title description version status clientApprovedAt releasedAt").sort({createdAt:-1}).limit(100).lean(),
   ]);
-  const safeReferrals=referrals.map(r=>({role:String(r.referrerId)===String(userId)?"referrer":"referred",code:String(r.referrerId)===String(userId)?r.code:undefined,status:r.status,attributedAt:r.attributedAt,qualifiedAt:r.qualifiedAt,commissionMinor:String(r.referrerId)===String(userId)?r.commissionMinor:undefined,currency:r.currency,createdAt:r.createdAt}));\n  const engagement={profile:engagementProfile,rewardCatalogue,referrals:safeReferrals,redemptions,badges,events:engagementEvents,activeEarnRules:earnRules,activeCampaigns,referralRule};\n  const account={profile,projects,orders,milestones,tasks,deliverables,invoices,paymentTransactions:payments,creditAccounts,financialLedgerEntries:ledgerEntries,engagement,supportTickets:tickets.map(t=>({...t,messages:(t.messages||[]).slice(-8).map(m=>({senderType:m.senderType,body:m.body,createdAt:m.createdAt}))}))};
+  const safeReferrals=referrals.map(r=>({role:String(r.referrerId)===String(userId)?"referrer":"referred",code:String(r.referrerId)===String(userId)?r.code:undefined,status:r.status,attributedAt:r.attributedAt,qualifiedAt:r.qualifiedAt,commissionMinor:String(r.referrerId)===String(userId)?r.commissionMinor:undefined,currency:r.currency,createdAt:r.createdAt}));
+  const engagement={profile:engagementProfile,rewardCatalogue,referrals:safeReferrals,redemptions,badges,events:engagementEvents,activeEarnRules:earnRules,activeCampaigns,referralRule};
+  const account={profile,projects,orders,milestones,tasks,deliverables,invoices,paymentTransactions:payments,creditAccounts,financialLedgerEntries:ledgerEntries,engagement,supportTickets:tickets.map(t=>({...t,messages:(t.messages||[]).slice(-8).map(m=>({senderType:m.senderType,body:m.body,createdAt:m.createdAt}))}))};
   const sources=[...pub.sources,...projects.map(p=>"Your project: "+p.reference+" · "+p.name),...orders.map(o=>"Your order: "+o.reference),...invoices.map(i=>"Your invoice: "+i.reference),...payments.map(p=>"Your payment: "+p.reference),"Your rewards, points and referral account",...tickets.map(t=>"Your support request: "+t.reference)];
   return {data:{public:pub.data,authenticatedClientAccount:account},sources};
  }

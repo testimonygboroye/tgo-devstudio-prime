@@ -30,6 +30,7 @@ export default function GlobalError({
     <html lang="en">
       <body style={{ margin: 0, minHeight: "100vh", background: "radial-gradient(ellipse at 50% 0%, rgba(91,46,232,.22), transparent 55%), #0B0E14", color: "#F1F3F8", fontFamily: "Arial, Helvetica, sans-serif" }}>
         <main style={{ boxSizing: "border-box", display: "flex", minHeight: "100vh", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 22, padding: "48px 24px", textAlign: "center" }}>
+          <img src="/images/illustrations/error-recovery.svg" alt="" aria-hidden="true" style={{ display: "block", width: "min(100%, 390px)", height: "auto", borderRadius: 22, border: "1px solid rgba(139,157,198,.2)" }} />
           <div style={{ display: "inline-flex", alignItems: "center", gap: 9, border: "1px solid rgba(46,197,240,.25)", background: "rgba(46,197,240,.08)", borderRadius: 999, padding: "8px 14px", color: "#8DE8FA", fontSize: 11, fontWeight: 700, letterSpacing: ".16em", textTransform: "uppercase" }}>
             <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#2EC5F0" }} /> TGO DevStudio · Recovery
           </div>

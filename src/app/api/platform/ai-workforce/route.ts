@@ -147,7 +147,7 @@ export async function POST(request: NextRequest) {
       // New agents still start with no permissions; every business operation remains approval-gated.
       agent.requiresApproval = true;
       await agent.save();
-      await writePlatformAuditEvent({ actorType: "human", actorId, action: body.action === "agent.enable" ? "ai.agent.enabled" : "ai.agent.disabled", module: "ai-workforce", targetType: "AIAgent", targetId: String(agent._id), outcome: "success", metadata: { enabled: agent.enabled, permissions: [] } });
+      await writePlatformAuditEvent({ actorType: "human", actorId, action: body.action === "agent.enable" ? "ai.agent.enabled" : "ai.agent.disabled", module: "ai-workforce", targetType: "AIAgent", targetId: String(agent._id), outcome: "success", metadata: { enabled: agent.enabled, permissions: agent.permissions } });
       return NextResponse.json({ status: "ok", message: agent.enabled ? "Agent enabled for approval-gated AI text tasks." : "Agent disabled." });
     }
     if (body.action === "task.enqueue") {
@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
       const task = await AITask.findOneAndUpdate({ _id: body.taskId, status: "awaiting_approval" }, { $set: { status: body.action === "task.approve" ? "queued" : "cancelled", approvedBy: actorId } }, { new: true });
       if (!task) return NextResponse.json({ status: "error", message: "Task not found or already reviewed." }, { status: 409 });
       await writePlatformAuditEvent({ actorType: "human", actorId, action: body.action === "task.approve" ? "ai.task.approved" : "ai.task.rejected", module: "ai-workforce", targetType: "AITask", targetId: String(task._id), outcome: "success" });
-      return NextResponse.json({ status: "ok", taskId: task._id, statusValue: task.status, message: "Approval recorded. The task can now be run by its assigned agent within its text-only limits." });
+      return NextResponse.json({ status: "ok", taskId: task._id, statusValue: task.status, message: "Approval recorded. The task can now be run by its assigned agent within its granted tool permissions." });
     }
     if (body.action === "task.delegate") {
       if (!body.taskId || !body.agentId) return NextResponse.json({ status: "error", message: "Parent task and target agent are required." }, { status: 400 });
@@ -187,7 +187,6 @@ export async function POST(request: NextRequest) {
       try {
         const agent = await AIAgent.findOne({ _id: task.agentId, enabled: true });
         if (!agent || agent.requiresApproval !== true) throw new Error("Agent is disabled or its approval policy is invalid.");
-        if (agent.permissions.length > 0) throw new Error("This execution adapter only supports text-only agents; operational tools are not enabled.");
         const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0);
                 task.inputTokens = Math.ceil(task.input.length / 4);
         task.outputTokens = 4096;

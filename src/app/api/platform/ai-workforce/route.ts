@@ -45,6 +45,79 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({}));
   const actorId = String(session.user._id);
   try {
+    if (body.action === "team.provision") {
+      const provider = await AIProvider.findOne({ _id: body.providerId, enabled: true, lastTestStatus: "success" });
+      const modelName = String(body.model || "").trim();
+      if (!provider) return NextResponse.json({ status: "error", message: "Select an enabled, connection-verified AI provider." }, { status: 409 });
+      if (!modelName || modelName.length > 120 || !/^[a-zA-Z0-9._:-]+$/.test(modelName)) return NextResponse.json({ status: "error", message: "Select a valid model from the provider catalogue." }, { status: 400 });
+
+      const definitions = [
+        { name: "Chief of Staff", role: "Chief of Staff", department: "Executive Office", permissions: ["clients.read_summary", "projects.read_summary"] },
+        { name: "Business Strategy Director", role: "Business Strategy Director", department: "Strategy & Research", permissions: ["projects.read_summary"] },
+        { name: "CTO", role: "Chief Technology Officer", department: "Engineering & Technology", permissions: ["projects.read_summary"] },
+        { name: "Project Operations Manager", role: "Project Operations Manager", department: "Project Delivery", permissions: ["projects.read_summary", "projects.status.update"] },
+        { name: "QA Lead", role: "Quality Assurance Lead", department: "Quality Assurance", permissions: ["projects.read_summary"] },
+        { name: "DevOps Architect", role: "DevOps Architect", department: "DevOps & Infrastructure", permissions: [] },
+        { name: "Client Success Director", role: "Client Success Director", department: "Client Relations", permissions: ["clients.read_summary", "projects.read_summary"] },
+        { name: "Client Onboarding Specialist", role: "Client Onboarding Specialist", department: "Client Onboarding", permissions: ["clients.read_summary"] },
+        { name: "Sales Director", role: "Sales Director", department: "Sales & Growth", permissions: ["clients.read_summary"] },
+        { name: "Customer Support Specialist", role: "Customer Support Specialist", department: "Customer Support", permissions: ["clients.read_summary"] },
+        { name: "Marketing Director", role: "Marketing Director", department: "Marketing & Communications", permissions: [] },
+        { name: "SEO Specialist", role: "SEO Specialist", department: "SEO & Search", permissions: [] },
+        { name: "Content Director", role: "Content Director", department: "Content & Editorial", permissions: [] },
+        { name: "Finance Analyst", role: "Finance Analyst", department: "Finance & Administration", permissions: [] },
+        { name: "Research Analyst", role: "Research Analyst", department: "Research & Intelligence", permissions: [] },
+        { name: "Security & Compliance Officer", role: "Security & Compliance Officer", department: "Security & Compliance", permissions: [] },
+        { name: "AI Site Operations Lead", role: "AI Site Operations Lead", department: "Website Operations", permissions: ["projects.read_summary"] },
+        { name: "Public Experience QA Specialist", role: "Public Website QA Specialist", department: "Public Experience", permissions: [] },
+        { name: "Client Portal QA Specialist", role: "Client Portal QA Specialist", department: "Client Experience", permissions: [] },
+        { name: "Admin Platform QA Specialist", role: "Admin Platform QA Specialist", department: "Platform Operations", permissions: [] },
+      ] as const;
+
+      const workspaceIds = new Map<string, mongoose.Types.ObjectId>();
+      for (const department of [...new Set(definitions.map((item) => item.department))]) {
+        const workspace = await AIWorkspace.findOneAndUpdate(
+          { name: department + " Workspace", department, createdBy: actorId },
+          { $setOnInsert: { name: department + " Workspace", department, description: "Founder-governed AI collaboration workspace for " + department + ".", active: true, createdBy: actorId } },
+          { upsert: true, new: true, setDefaultsOnInsert: true },
+        );
+        workspaceIds.set(department, workspace._id as mongoose.Types.ObjectId);
+      }
+
+      let createdCount = 0;
+      let existingCount = 0;
+      for (const definition of definitions) {
+        const existing = await AIAgent.findOne({ name: definition.name, department: definition.department, createdBy: actorId });
+        if (existing) { existingCount += 1; continue; }
+        const instructions = "You are " + definition.name + ", TGO DevStudio's " + definition.role + ". Work only within your assigned responsibilities and explicitly granted tools. Treat client and company information as confidential. Never invent facts, credentials, employee identities, financial values or completed work. Business operations require a founder-approved task and must be audited. Escalate work outside your scope to the founder.";
+        await AIAgent.create({
+          name: definition.name,
+          role: definition.role,
+          department: definition.department,
+          description: "Founder-governed AI employee. Operational permissions are limited to the approved tool registry.",
+          workspaceId: workspaceIds.get(definition.department),
+          providerId: provider._id,
+          modelName,
+          systemInstructions: instructions,
+          permissions: [...definition.permissions],
+          requiresApproval: true,
+          maxDailyTokens: 100000,
+          enabled: false,
+          createdBy: actorId,
+        });
+        createdCount += 1;
+      }
+      await writePlatformAuditEvent({
+        actorType: "human", actorId, actorLabel: session.user.name,
+        action: "ai.workforce.provisioned", module: "ai-workforce",
+        targetType: "AIWorkforce", targetId: String(provider._id), outcome: "success",
+        metadata: { createdCount, existingCount, departments: workspaceIds.size, provider: provider.name, modelName },
+      });
+      return NextResponse.json({
+        status: "ok", createdCount, existingCount, departmentCount: workspaceIds.size,
+        message: createdCount + " AI employees provisioned across " + workspaceIds.size + " departments. They remain disabled until individually reviewed and enabled.",
+      });
+    }
     if (body.action === "workspace.create") {
       const name = String(body.name || "").trim();
       if (name.length < 2) return NextResponse.json({ status: "error", message: "Workspace name is required." }, { status: 400 });

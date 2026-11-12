@@ -14,6 +14,8 @@ export interface IDataDeletionRequest extends Document {
   verifiedAt?: Date;
   resolvedAt?: Date;
   handledBy?: Types.ObjectId;
+  lookupCount: number;
+  lookupWindowStartedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -30,6 +32,8 @@ const schema = new Schema<IDataDeletionRequest>({
   verifiedAt: Date,
   resolvedAt: Date,
   handledBy: { type: Schema.Types.ObjectId, ref: "User" },
+  lookupCount: { type: Number, default: 0, min: 0 },
+  lookupWindowStartedAt: Date,
 }, { timestamps: true });
 schema.index({ status: 1, createdAt: -1 });
 const DataDeletionRequest: Model<IDataDeletionRequest> = models.DataDeletionRequest || model<IDataDeletionRequest>("DataDeletionRequest", schema);

@@ -4,6 +4,7 @@ import { getAuthenticatedSession } from "@/lib/auth/session";
 import { unauthorizedResponse, forbiddenResponse } from "@/lib/auth/authorize";
 import { connectToDatabase } from "@/lib/db";
 import { UnifiedConversation, UnifiedMessage } from "@/models/UnifiedConversation";
+import { writePlatformAuditEvent } from "@/lib/platform/audit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,6 +38,7 @@ export async function GET(request: NextRequest) {
   const filter: Record<string, unknown> = { conversationId };
   if (from || to) filter.createdAt = { ...(from ? { $gte: from } : {}), ...(to ? { $lte: new Date(to.getTime() + 24 * 60 * 60 * 1000 - 1) } : {}) };
   const messages = await UnifiedMessage.find(filter).sort({ createdAt: 1 }).limit(20000).lean();
+  await writePlatformAuditEvent({ actorType: "human", actorId: String(session.user._id), actorLabel: session.user.name, action: "communications.history_exported", module: "communications", targetType: "UnifiedConversation", targetId: conversationId, outcome: "success", metadata: { messageCount: messages.length, allTime, from: from?.toISOString() || "", to: to?.toISOString() || "" } });
   const payload = {
     format: "tgo-communications-archive",
     version: 1,

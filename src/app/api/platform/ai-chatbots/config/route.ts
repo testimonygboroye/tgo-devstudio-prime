@@ -47,20 +47,21 @@ export async function PUT(request: NextRequest) {
     }
     const provider = await AIProvider.findOne({ _id: providerId, enabled: true, lastTestStatus: "success" });
     if (!provider) return NextResponse.json({ message: "Every chatbot must use an enabled, successfully tested primary provider." }, { status: 409 });
-    let fallback: Awaited<ReturnType<typeof AIProvider.findOne>> = null;
+    let fallbackId: mongoose.Types.ObjectId | null = null;
     if (fallbackProviderId || fallbackModelName) {
       if (!mongoose.isValidObjectId(fallbackProviderId) || !fallbackModelName || !/^[a-zA-Z0-9._:-]+$/.test(fallbackModelName) || fallbackModelName.length > 120 || fallbackProviderId === providerId) {
         return NextResponse.json({ message: "Choose a different verified fallback provider and a model from its catalogue, or clear both fallback fields." }, { status: 400 });
       }
-      fallback = await AIProvider.findOne({ _id: fallbackProviderId, enabled: true, lastTestStatus: "success" });
-      if (!fallback) return NextResponse.json({ message: "The fallback provider must be enabled and connection-verified." }, { status: 409 });
+      const fallbackProvider = await AIProvider.findOne({ _id: fallbackProviderId, enabled: true, lastTestStatus: "success" });
+      if (!fallbackProvider) return NextResponse.json({ message: "The fallback provider must be enabled and connection-verified." }, { status: 409 });
+      fallbackId = fallbackProvider._id;
     }
     const setFields: Record<string, unknown> = {
       scope, providerId: provider._id, modelName, enabled: item.enabled === true,
       welcomeMessage, updatedBy: auth.session.user._id,
     };
-    if (fallback) {
-      setFields.fallbackProviderId = fallback._id;
+    if (fallbackId) {
+      setFields.fallbackProviderId = fallbackId;
       setFields.fallbackModelName = fallbackModelName;
     }
     const update: UpdateQuery<IAIChatbotConfig> = fallback

@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
             reference: "TGO-SUP-" + now.toISOString().slice(0, 10).replace(/-/g, "") + "-" + randomUUID().slice(0, 8).toUpperCase(),
             clientId: recipient.userId,
             subject: "WhatsApp support conversation",
-            description: clientText,
+            description: clientText.length >= 10 ? clientText : "WhatsApp message: " + clientText,
             category: "General enquiry",
             status: "open",
             priority: "normal",

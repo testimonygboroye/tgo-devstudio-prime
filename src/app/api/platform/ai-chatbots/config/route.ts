@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import mongoose from "mongoose";
+import mongoose, { type UpdateQuery } from "mongoose";
 import { getServerSession } from "@/lib/auth/serverSession";
 import { connectToDatabase } from "@/lib/db";
-import { AIChatbotConfig } from "@/models/AIChatbot";
+import { AIChatbotConfig, type IAIChatbotConfig, type AIChatbotScope } from "@/models/AIChatbot";
 import { AIProvider } from "@/models/AIWorkforce";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
 export const runtime = "nodejs";
@@ -31,12 +31,12 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ message: "Configure exactly the public, client and admin assistants." }, { status: 400 });
   }
   await connectToDatabase();
-  const scopes = ["public", "client", "admin"];
+  const scopes: AIChatbotScope[] = ["public", "client", "admin"];
   const results: Array<Record<string, unknown>> = [];
   for (const raw of body.configs) {
     if (!raw || typeof raw !== "object") return NextResponse.json({ message: "Invalid chatbot configuration." }, { status: 400 });
     const item = raw as Record<string, unknown>;
-    const scope = String(item.scope || "");
+    const scope = String(item.scope || "") as AIChatbotScope;
     const providerId = String(item.providerId || "");
     const modelName = String(item.modelName || "").trim();
     const fallbackProviderId = String(item.fallbackProviderId || "").trim();
@@ -55,17 +55,25 @@ export async function PUT(request: NextRequest) {
       fallback = await AIProvider.findOne({ _id: fallbackProviderId, enabled: true, lastTestStatus: "success" });
       if (!fallback) return NextResponse.json({ message: "The fallback provider must be enabled and connection-verified." }, { status: 409 });
     }
-    const update: Record<string, unknown> = {
-      $set: { scope, providerId: provider._id, modelName, enabled: item.enabled === true, welcomeMessage, updatedBy: auth.session.user._id },
-      ...(fallback ? { $setOnInsert: {} } : { $unset: { fallbackProviderId: 1, fallbackModelName: 1 } }),
+    const setFields: Record<string, unknown> = {
+      scope, providerId: provider._id, modelName, enabled: item.enabled === true,
+      welcomeMessage, updatedBy: auth.session.user._id,
     };
     if (fallback) {
-      (update.$set as Record<string, unknown>).fallbackProviderId = fallback._id;
-      (update.$set as Record<string, unknown>).fallbackModelName = fallbackModelName;
+      setFields.fallbackProviderId = fallback._id;
+      setFields.fallbackModelName = fallbackModelName;
     }
-    const saved = await AIChatbotConfig.findOneAndUpdate({ scope }, update, { upsert: true, new: true, runValidators: true });
-    if (!saved) throw new Error("Chatbot configuration could not be saved.");
-    results.push({ scope: saved.scope, providerId: String(saved.providerId), modelName: saved.modelName, fallbackProviderId: saved.fallbackProviderId ? String(saved.fallbackProviderId) : "", fallbackModelName: saved.fallbackModelName || "", enabled: saved.enabled, welcomeMessage: saved.welcomeMessage });
+    const update: UpdateQuery<IAIChatbotConfig> = fallback
+      ? { $set: setFields }
+      : { $set: setFields, $unset: { fallbackProviderId: 1, fallbackModelName: 1 } };
+    const saved = await AIChatbotConfig.findOneAndUpdate(
+      { scope }, update, { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
+    ).orFail();
+    results.push({
+      scope: saved.scope, providerId: String(saved.providerId), modelName: saved.modelName,
+      fallbackProviderId: saved.fallbackProviderId ? String(saved.fallbackProviderId) : "",
+      fallbackModelName: saved.fallbackModelName || "", enabled: saved.enabled, welcomeMessage: saved.welcomeMessage,
+    });
   }
   await writePlatformAuditEvent({
     actorType: "human", actorId: String(auth.session.user._id), actorLabel: auth.session.user.name,

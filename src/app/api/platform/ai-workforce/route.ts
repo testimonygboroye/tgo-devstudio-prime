@@ -10,25 +10,48 @@ import { decryptProviderSecret, encryptProviderSecret } from "@/lib/ai/provider-
 import { runProviderCompletion } from "@/lib/ai/provider-runtime";
 import { AIWorkspace, AIMemory } from "@/models/AIKnowledge";
 import User from "@/models/User";
+import EmployeeProfile from "@/models/EmployeeProfile";
 import ClientProfile from "@/models/ClientProfile";
 import DeliveryProject from "@/models/DeliveryProject";
 import DeliveryMilestone from "@/models/DeliveryMilestone";
 import DeliveryTask from "@/models/DeliveryTask";
 import ProjectDeliverable from "@/models/ProjectDeliverable";
-import PaymentTransaction from "@/models/PaymentTransaction";
-import ClientCreditAccount from "@/models/ClientCreditAccount";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-async function founder() {
-  const session = await getServerSession();
-  if (!session?.role?.isFounderRole) return null;
-  return session;
-}
 export async function GET() {
-  const session = await founder();
-  if (!session) return NextResponse.json({ status: "error", message: "Forbidden" }, { status: 403 });
+  const session = await getServerSession();
+  if (!session) return NextResponse.json({ status: "error", message: "Authentication required." }, { status: 401 });
   await connectToDatabase();
+
+  if (!session.role?.isFounderRole) {
+    const employee = await EmployeeProfile.findOne({
+      userId: session.user._id,
+      employmentStatus: "active",
+      accessSuspendedByWorkforce: { $ne: true },
+    }).populate("departmentId", "name").lean();
+    if (!employee) return NextResponse.json({ status: "error", message: "Active employee access is required." }, { status: 403 });
+    const departmentName = String((employee.departmentId as unknown as { name?: string })?.name || "");
+    const scope = [
+      { assignedUserId: session.user._id },
+      ...(departmentName ? [{ department: departmentName }] : []),
+      { department: "Customer Support" },
+      { department: "Website Operations" },
+    ];
+    const agents = await AIAgent.find({ enabled: true, $or: scope })
+      .select("name role department description workspaceId assignedUserId providerId modelName permissions requiresApproval maxDailyTokens enabled")
+      .populate("providerId", "name provider")
+      .sort({ department: 1, name: 1 }).lean();
+    const agentIds = agents.map((agent) => agent._id);
+    const workspaceIds = [...new Set(agents.map((agent) => String(agent.workspaceId || "")).filter(Boolean))];
+    const [tasks, workspaces, memories] = await Promise.all([
+      AITask.find({ agentId: { $in: agentIds }, requestedBy: String(session.user._id) }).populate("agentId", "name role").sort({ createdAt: -1 }).limit(100).lean(),
+      AIWorkspace.find({ _id: { $in: workspaceIds }, active: true }).sort({ name: 1 }).lean(),
+      AIMemory.find({ active: true, $or: [{ agentId: { $in: agentIds } }, { scope: "shared", workspaceId: { $in: workspaceIds } }] }).select("title scope agentId workspaceId tags source updatedAt").sort({ updatedAt: -1 }).limit(100).lean(),
+    ]);
+    return NextResponse.json({ status: "ok", providers: [], agents, tasks, workspaces, memories }, { headers: { "Cache-Control": "private, no-store" } });
+  }
+
   const [providers, agents, tasks, workspaces, memories] = await Promise.all([
     AIProvider.find().select("-encryptedApiKey").sort({ createdAt: -1 }).lean(),
     AIAgent.find().populate("providerId", "name provider").sort({ createdAt: -1 }).lean(),
@@ -39,12 +62,165 @@ export async function GET() {
   return NextResponse.json({ status: "ok", providers, agents, tasks, workspaces, memories });
 }
 export async function POST(request: NextRequest) {
-  const session = await founder();
-  if (!session) return NextResponse.json({ status: "error", message: "Forbidden" }, { status: 403 });
+  const session = await getServerSession();
+  if (!session) return NextResponse.json({ status: "error", message: "Authentication required." }, { status: 401 });
   await connectToDatabase();
   const body = await request.json().catch(() => ({}));
   const actorId = String(session.user._id);
+  const isFounder = Boolean(session.role?.isFounderRole);
+  let employeeScope: { department: string; userId: string } | null = null;
+  if (!isFounder) {
+    const employee = await EmployeeProfile.findOne({
+      userId: session.user._id,
+      employmentStatus: "active",
+      accessSuspendedByWorkforce: { $ne: true },
+    }).populate("departmentId", "name").lean();
+    if (!employee) return NextResponse.json({ status: "error", message: "Active employee access is required." }, { status: 403 });
+    employeeScope = {
+      department: String((employee.departmentId as unknown as { name?: string })?.name || ""),
+      userId: actorId,
+    };
+    if (!["task.enqueue", "task.delegate"].includes(String(body.action || ""))) {
+      return NextResponse.json({ status: "error", message: "This action is reserved for the founder." }, { status: 403 });
+    }
+    const visibleAgentScope = [
+      { assignedUserId: session.user._id },
+      ...(employeeScope.department ? [{ department: employeeScope.department }] : []),
+      { department: "Customer Support" },
+      { department: "Website Operations" },
+    ];
+    if (body.action === "task.enqueue") {
+      const allowedAgent = await AIAgent.exists({ _id: body.agentId, enabled: true, $or: visibleAgentScope });
+      if (!allowedAgent) return NextResponse.json({ status: "error", message: "That AI employee is outside your assigned workspace." }, { status: 403 });
+    } else {
+      const [parent, target] = await Promise.all([
+        AITask.exists({ _id: body.taskId, requestedBy: actorId }),
+        AIAgent.exists({ _id: body.agentId, enabled: true, $or: visibleAgentScope }),
+      ]);
+      if (!parent || !target) return NextResponse.json({ status: "error", message: "Delegation is limited to your own tasks and AI employees within your authorised scope." }, { status: 403 });
+    }
+  }
   try {
+    if (body.action === "team.provision") {
+      const provider = await AIProvider.findOne({ _id: body.providerId, enabled: true, lastTestStatus: "success" });
+      const modelName = String(body.model || "").trim();
+      if (!provider) return NextResponse.json({ status: "error", message: "Select an enabled, connection-verified AI provider." }, { status: 409 });
+      if (!modelName || modelName.length > 120 || !/^[a-zA-Z0-9._:-]+$/.test(modelName)) return NextResponse.json({ status: "error", message: "Select a valid model from the provider catalogue." }, { status: 400 });
+
+      const definitions = [
+        { name: "Chief of Staff", role: "Chief of Staff", department: "Executive Office", permissions: ["clients.read_summary", "projects.read_summary"] },
+        { name: "Business Strategy Director", role: "Business Strategy Director", department: "Strategy & Research", permissions: ["projects.read_summary"] },
+        { name: "CTO", role: "Chief Technology Officer", department: "Engineering & Technology", permissions: ["projects.read_summary"] },
+        { name: "Project Operations Manager", role: "Project Operations Manager", department: "Project Delivery", permissions: ["projects.read_summary", "projects.status.update"] },
+        { name: "QA Lead", role: "Quality Assurance Lead", department: "Quality Assurance", permissions: ["projects.read_summary"] },
+        { name: "DevOps Architect", role: "DevOps Architect", department: "DevOps & Infrastructure", permissions: [] },
+        { name: "Client Success Director", role: "Client Success Director", department: "Client Relations", permissions: ["clients.read_summary", "projects.read_summary"] },
+        { name: "Client Onboarding Specialist", role: "Client Onboarding Specialist", department: "Client Onboarding", permissions: ["clients.read_summary"] },
+        { name: "Sales Director", role: "Sales Director", department: "Sales & Growth", permissions: ["clients.read_summary"] },
+        { name: "Customer Support Specialist", role: "Customer Support Specialist", department: "Customer Support", permissions: ["clients.read_summary"] },
+        { name: "Marketing Director", role: "Marketing Director", department: "Marketing & Communications", permissions: [] },
+        { name: "SEO Specialist", role: "SEO Specialist", department: "SEO & Search", permissions: [] },
+        { name: "Content Director", role: "Content Director", department: "Content & Editorial", permissions: [] },
+        { name: "Finance Analyst", role: "Finance Analyst", department: "Finance & Administration", permissions: [] },
+        { name: "Research Analyst", role: "Research Analyst", department: "Research & Intelligence", permissions: [] },
+        { name: "Security & Compliance Officer", role: "Security & Compliance Officer", department: "Security & Compliance", permissions: [] },
+        { name: "AI Site Operations Lead", role: "AI Site Operations Lead", department: "Website Operations", permissions: ["projects.read_summary"] },
+        { name: "Public Experience QA Specialist", role: "Public Website QA Specialist", department: "Public Experience", permissions: [] },
+        { name: "Client Portal QA Specialist", role: "Client Portal QA Specialist", department: "Client Experience", permissions: [] },
+        { name: "Admin Platform QA Specialist", role: "Admin Platform QA Specialist", department: "Platform Operations", permissions: [] },
+      ] as const;
+
+      const workspaceIds = new Map<string, mongoose.Types.ObjectId>();
+      for (const department of [...new Set(definitions.map((item) => item.department))]) {
+        const workspace = await AIWorkspace.findOneAndUpdate(
+          { name: department + " Workspace", department, createdBy: actorId },
+          { $setOnInsert: { name: department + " Workspace", department, description: "Founder-governed AI collaboration workspace for " + department + ".", active: true, createdBy: actorId } },
+          { upsert: true, new: true, setDefaultsOnInsert: true },
+        );
+        workspaceIds.set(department, workspace._id as mongoose.Types.ObjectId);
+      }
+
+      let createdCount = 0;
+      let existingCount = 0;
+      for (const definition of definitions) {
+        const existing = await AIAgent.findOne({ name: definition.name, department: definition.department, createdBy: actorId });
+        if (existing) { existingCount += 1; continue; }
+        const instructions = "You are " + definition.name + ", TGO DevStudio's " + definition.role + ". Work only within your assigned responsibilities and explicitly granted tools. Treat client and company information as confidential. Never invent facts, credentials, employee identities, financial values or completed work. Business operations require a founder-approved task and must be audited. Escalate work outside your scope to the founder.";
+        await AIAgent.create({
+          name: definition.name,
+          role: definition.role,
+          department: definition.department,
+          description: "Founder-governed AI employee. Operational permissions are limited to the approved tool registry.",
+          workspaceId: workspaceIds.get(definition.department),
+          providerId: provider._id,
+          modelName,
+          systemInstructions: instructions,
+          permissions: [...definition.permissions],
+          requiresApproval: true,
+          maxDailyTokens: 100000,
+          enabled: false,
+          createdBy: actorId,
+        });
+        createdCount += 1;
+      }
+
+      // Create one private, permission-minimal AI counterpart for each real active employee.
+      // No placeholder human records or compensation details are created or read.
+      let counterpartCount = 0;
+      let counterpartExistingCount = 0;
+      const activeEmployees = await EmployeeProfile.find({
+        employmentStatus: "active",
+        accessSuspendedByWorkforce: { $ne: true },
+      }).populate("userId", "name").populate("departmentId", "name").populate("positionId", "title").lean();
+      for (const employee of activeEmployees) {
+        const person = employee.userId as unknown as { _id?: mongoose.Types.ObjectId; name?: string } | null;
+        const personId = person?._id || (employee.userId as unknown as mongoose.Types.ObjectId);
+        if (!personId || !mongoose.isValidObjectId(String(personId))) continue;
+        const existing = await AIAgent.findOne({ assignedUserId: personId });
+        if (existing) { counterpartExistingCount += 1; continue; }
+        const department = String((employee.departmentId as unknown as { name?: string })?.name || "General Operations");
+        const position = String((employee.positionId as unknown as { title?: string })?.title || "Team Member");
+        let workspaceId = workspaceIds.get(department);
+        if (!workspaceId) {
+          const workspace = await AIWorkspace.findOneAndUpdate(
+            { name: department + " Workspace", department, createdBy: actorId },
+            { $setOnInsert: { name: department + " Workspace", department, description: "Private AI collaboration workspace for the " + department + " department.", active: true, createdBy: actorId } },
+            { upsert: true, new: true, setDefaultsOnInsert: true },
+          ).orFail();
+          workspaceId = workspace._id as mongoose.Types.ObjectId;
+          workspaceIds.set(department, workspaceId);
+        }
+        const employeeName = String(person?.name || employee.employeeCode || "Employee").trim();
+        await AIAgent.create({
+          name: (employeeName + " — AI Counterpart").slice(0, 100),
+          role: (position + " AI Counterpart").slice(0, 100),
+          department,
+          description: "Private AI counterpart assigned to one active employee. No business tools are granted by default.",
+          workspaceId,
+          assignedUserId: personId,
+          providerId: provider._id,
+          modelName,
+          systemInstructions: "You are the private AI counterpart for " + employeeName + ", a TGO DevStudio " + position + " in " + department + ". Support their authorised work, planning, drafting and analysis. Do not disclose another employee's information. You have no business-operation permissions unless the founder grants them separately. Never invent facts, credentials, financial data or completed actions. Escalate requests outside the employee's scope to the founder.",
+          permissions: [],
+          requiresApproval: true,
+          maxDailyTokens: 50000,
+          enabled: false,
+          createdBy: actorId,
+        });
+        counterpartCount += 1;
+      }
+
+      await writePlatformAuditEvent({
+        actorType: "human", actorId, actorLabel: session.user.name,
+        action: "ai.workforce.provisioned", module: "ai-workforce",
+        targetType: "AIWorkforce", targetId: String(provider._id), outcome: "success",
+        metadata: { createdCount, existingCount, counterpartCount, counterpartExistingCount, departments: workspaceIds.size, provider: provider.name, modelName },
+      });
+      return NextResponse.json({
+        status: "ok", createdCount, existingCount, counterpartCount, counterpartExistingCount, departmentCount: workspaceIds.size,
+        message: createdCount + " AI department employees and " + counterpartCount + " private employee counterparts provisioned. All remain disabled until individually reviewed and enabled.",
+      });
+    }
     if (body.action === "workspace.create") {
       const name = String(body.name || "").trim();
       if (name.length < 2) return NextResponse.json({ status: "error", message: "Workspace name is required." }, { status: 400 });
@@ -147,7 +323,7 @@ export async function POST(request: NextRequest) {
       // New agents still start with no permissions; every business operation remains approval-gated.
       agent.requiresApproval = true;
       await agent.save();
-      await writePlatformAuditEvent({ actorType: "human", actorId, action: body.action === "agent.enable" ? "ai.agent.enabled" : "ai.agent.disabled", module: "ai-workforce", targetType: "AIAgent", targetId: String(agent._id), outcome: "success", metadata: { enabled: agent.enabled, permissions: [] } });
+      await writePlatformAuditEvent({ actorType: "human", actorId, action: body.action === "agent.enable" ? "ai.agent.enabled" : "ai.agent.disabled", module: "ai-workforce", targetType: "AIAgent", targetId: String(agent._id), outcome: "success", metadata: { enabled: agent.enabled, permissions: agent.permissions } });
       return NextResponse.json({ status: "ok", message: agent.enabled ? "Agent enabled for approval-gated AI text tasks." : "Agent disabled." });
     }
     if (body.action === "task.enqueue") {
@@ -170,7 +346,7 @@ export async function POST(request: NextRequest) {
       const task = await AITask.findOneAndUpdate({ _id: body.taskId, status: "awaiting_approval" }, { $set: { status: body.action === "task.approve" ? "queued" : "cancelled", approvedBy: actorId } }, { new: true });
       if (!task) return NextResponse.json({ status: "error", message: "Task not found or already reviewed." }, { status: 409 });
       await writePlatformAuditEvent({ actorType: "human", actorId, action: body.action === "task.approve" ? "ai.task.approved" : "ai.task.rejected", module: "ai-workforce", targetType: "AITask", targetId: String(task._id), outcome: "success" });
-      return NextResponse.json({ status: "ok", taskId: task._id, statusValue: task.status, message: "Approval recorded. The task can now be run by its assigned agent within its text-only limits." });
+      return NextResponse.json({ status: "ok", taskId: task._id, statusValue: task.status, message: "Approval recorded. The task can now be run by its assigned agent within its granted tool permissions." });
     }
     if (body.action === "task.delegate") {
       if (!body.taskId || !body.agentId) return NextResponse.json({ status: "error", message: "Parent task and target agent are required." }, { status: 400 });
@@ -187,7 +363,6 @@ export async function POST(request: NextRequest) {
       try {
         const agent = await AIAgent.findOne({ _id: task.agentId, enabled: true });
         if (!agent || agent.requiresApproval !== true) throw new Error("Agent is disabled or its approval policy is invalid.");
-        if (agent.permissions.length > 0) throw new Error("This execution adapter only supports text-only agents; operational tools are not enabled.");
         const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0);
                 task.inputTokens = Math.ceil(task.input.length / 4);
         task.outputTokens = 4096;
@@ -205,21 +380,20 @@ export async function POST(request: NextRequest) {
           if (!/^[a-f0-9]{24}$/i.test(clientId)) throw new Error("A valid client ID is required for this operation.");
           const client = await User.findOne({ _id: clientId, accountType: "client" }).select("name email createdAt isEmailVerified").lean();
           if (!client) throw new Error("Client account not found.");
-          const [profile, projects, payments, credits] = await Promise.all([
+          const [profile, projects] = await Promise.all([
             ClientProfile.findOne({ userId: clientId }).select("jobTitle country lifecycle onboardingStatus").lean(),
             DeliveryProject.find({ clientId }).select("name status reference updatedAt").sort({ updatedAt: -1 }).limit(20).lean(),
-            PaymentTransaction.aggregate([{ $match: { clientId: new mongoose.Types.ObjectId(clientId), status: "paid" } }, { $group: { _id: "$currency", totalMinor: { $sum: "$amountMinor" }, count: { $sum: 1 } } }]),
-            ClientCreditAccount.find({ clientId }).select("currency balanceMinor").lean(),
           ]);
-          operationResult = { client: { id: String(client._id), name: client.name, email: client.email, createdAt: client.createdAt, emailVerified: client.isEmailVerified }, profile, projects, verifiedPayments: payments, accountCredits: credits };
+          // AI client summaries deliberately exclude payments, credits, salaries, bank data and other financial records.
+          operationResult = { client: { id: String(client._id), name: client.name, email: client.email, createdAt: client.createdAt, emailVerified: client.isEmailVerified }, profile, projects };
         } else if (task.operation === "projects.read_summary") {
           if (!agent.permissions.includes("projects.read_summary")) throw new Error("Agent lacks projects.read_summary permission.");
           const projectId = String(payload.projectId || "");
           if (!/^[a-f0-9]{24}$/i.test(projectId)) throw new Error("A valid project ID is required for this operation.");
-          const project = await DeliveryProject.findById(projectId).select("reference name summary status priority clientId targetDate completedAt").lean();
+          const project = await DeliveryProject.findById(projectId).select("reference name summary status priority targetDate completedAt").lean();
           if (!project) throw new Error("Project not found.");
           const [milestones, tasks, deliverables] = await Promise.all([
-            DeliveryMilestone.find({ projectId }).select("title status paymentStatus qaStatus clientApprovalStatus").sort({ sequence: 1 }).lean(),
+            DeliveryMilestone.find({ projectId }).select("title status qaStatus clientApprovalStatus").sort({ sequence: 1 }).lean(),
             DeliveryTask.find({ projectId }).select("title status priority dueDate").sort({ dueDate: 1 }).limit(100).lean(),
             ProjectDeliverable.find({ projectId }).select("title status clientApprovedAt releasedAt").sort({ createdAt: -1 }).limit(50).lean(),
           ]);

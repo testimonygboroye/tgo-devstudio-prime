@@ -7,35 +7,22 @@ import HelpDiscoveryPrompt from "@/components/shared/HelpDiscoveryPrompt";
 import AnalyticsTracker from "@/components/public/AnalyticsTracker";
 import ShareCurrentPage from "@/components/public/ShareCurrentPage";
 import PublicRouteScrollReset from "@/components/public/PublicRouteScrollReset";
+import AIChatWidget from "@/components/shared/AIChatWidget";
 import { getPublicSiteSettings } from "@/lib/publicSite/getPublicSiteSettings";
 
-export default async function PublicLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default async function PublicLayout({ children }: { children: React.ReactNode }) {
   const siteSettings = await getPublicSiteSettings();
-
-  return (
-    <>
-      <PublicRouteScrollReset />
-      <SiteHeader settings={siteSettings} />
-
-      {children}
-
-      <ShareCurrentPage />
-
-      <SiteFooter settings={siteSettings} />
-
-      <SocialFloatingButton />
-
-      <BackToTopButton position="left" />
-
-      <CookieConsentBanner />
-
-      <HelpDiscoveryPrompt />
-
-      <AnalyticsTracker />
-    </>
-  );
+  return <>
+    <PublicRouteScrollReset />
+    <SiteHeader settings={siteSettings} />
+    {children}
+    <ShareCurrentPage />
+    <SiteFooter settings={siteSettings} />
+    <SocialFloatingButton />
+    <BackToTopButton position="left" />
+    <CookieConsentBanner />
+    <HelpDiscoveryPrompt />
+    <AnalyticsTracker />
+    <AIChatWidget scope="public" />
+  </>;
 }

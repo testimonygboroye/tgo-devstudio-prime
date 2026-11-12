@@ -67,13 +67,13 @@ interface AdminSidebarProps {
 const NAV_GROUPS = [
   { title: "Overview", items: [
     { label: "Dashboard", hrefSuffix: "/dashboard", icon: LayoutDashboard, badgeKey: null },
-    { label: "Visitor Analytics", hrefSuffix: "/analytics", icon: BarChart3, badgeKey: null },
   ]},
   { title: "Founder", items: [
     { label: "Founder Control Centre", hrefSuffix: "/platform", icon: Crown, badgeKey: null },
     { label: "Executive Intelligence", hrefSuffix: "/executive-intelligence", icon: BrainCircuit, badgeKey: null },
     { label: "Business Roles", hrefSuffix: "/business-roles", icon: KeySquare, badgeKey: null },
     { label: "Business Ecosystem", hrefSuffix: "/businesses", icon: Building2, badgeKey: null },
+    { label: "Visitor Analytics", hrefSuffix: "/analytics", icon: BarChart3, badgeKey: null },
   ]},
   { title: "AI Workforce", items: [
     { label: "AI Command Centre", hrefSuffix: "/ai-workforce", icon: Bot, badgeKey: null },

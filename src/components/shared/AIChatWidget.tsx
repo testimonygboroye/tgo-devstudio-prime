@@ -1,11 +1,13 @@
 "use client";
 import { useCallback,useEffect,useRef,useState } from "react";
+import { usePathname } from "next/navigation";
 import { Bot,ChevronDown,ExternalLink,MessageCircle,Send,ShieldCheck,ThumbsDown,ThumbsUp,Trash2,X } from "lucide-react";
 type Scope="public"|"client"|"admin";
 type ChatMessage={messageId:string;role:"user"|"assistant";content:string;feedback?:"helpful"|"unhelpful";sources?:string[];createdAt?:string};
 const endpoint:Record<Scope,string>={public:"/api/public/ai-chat",client:"/api/client/ai-chat",admin:"/api/admin/ai-chat"};
 const supportHref:Record<Scope,string>={public:"/contact",client:"/client/support",admin:"/admin/messages"};
 export default function AIChatWidget({scope,adminBasePath="/admin"}:{scope:Scope;adminBasePath?:string}){
+ const pathname=usePathname();
  const [open,setOpen]=useState(false),[enabled,setEnabled]=useState(false),[welcome,setWelcome]=useState("Hello. How can I help?"),[messages,setMessages]=useState<ChatMessage[]>([]),[draft,setDraft]=useState(""),[busy,setBusy]=useState(false),[error,setError]=useState("");
  const scrollRef=useRef<HTMLDivElement>(null);
  const api=endpoint[scope];
@@ -13,7 +15,7 @@ export default function AIChatWidget({scope,adminBasePath="/admin"}:{scope:Scope
  const load=useCallback(async()=>{try{const r=await fetch(api,{cache:"no-store"});const j=await r.json();if(!r.ok)throw new Error(j.message||"Assistant could not be loaded.");setEnabled(Boolean(j.enabled));setWelcome(String(j.welcomeMessage||"Hello. How can I help?"));setMessages((j.messages||[]) as ChatMessage[]);}catch(e){setError(e instanceof Error?e.message:"Assistant unavailable.");}},[api]);
  useEffect(()=>{if(open)void load();},[open,load]);
  useEffect(()=>{if(open)scrollRef.current?.scrollTo({top:scrollRef.current.scrollHeight,behavior:"smooth"});},[messages,open,busy]);
- async function send(event?:React.FormEvent){event?.preventDefault();const message=draft.trim();if(!message||busy||!enabled)return;setDraft("");setError("");setBusy(true);setMessages(old=>[...old,{messageId:"pending-"+Date.now(),role:"user",content:message}]);try{const r=await fetch(api,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message})});const j=await r.json();if(!r.ok)throw new Error(j.message||"The assistant could not answer.");const answer={...j.message,sources:j.sources||[]};setMessages(old=>[...old,answer]);}catch(e){setError(e instanceof Error?e.message:"The assistant is temporarily unavailable.");}finally{setBusy(false);}}
+ async function send(event?:React.FormEvent){event?.preventDefault();const message=draft.trim();if(!message||busy||!enabled)return;setDraft("");setError("");setBusy(true);setMessages(old=>[...old,{messageId:"pending-"+Date.now(),role:"user",content:message}]);try{const r=await fetch(api,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message,currentPage:pathname})});const j=await r.json();if(!r.ok)throw new Error(j.message||"The assistant could not answer.");const answer={...j.message,sources:j.sources||[]};setMessages(old=>[...old,answer]);}catch(e){setError(e instanceof Error?e.message:"The assistant is temporarily unavailable.");}finally{setBusy(false);}}
  async function feedback(messageId:string,value:"helpful"|"unhelpful"){try{const r=await fetch(api,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({messageId,feedback:value})});if(r.ok)setMessages(old=>old.map(m=>m.messageId===messageId?{...m,feedback:value}:m));}catch{/* Feedback is optional and never blocks chat. */}}
  async function clearHistory(){if(!window.confirm("Clear this assistant's conversation history for this session/account?"))return;setError("");try{const r=await fetch(api,{method:"DELETE"});const j=await r.json();if(!r.ok)throw new Error(j.message||"Could not clear history.");setMessages([]);}catch(e){setError(e instanceof Error?e.message:"Could not clear history.");}}
  const title=scope==="public"?"TGO Website Assistant":scope==="client"?"Your TGO Client Assistant":"TGO Internal Assistant";

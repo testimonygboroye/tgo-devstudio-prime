@@ -5,10 +5,72 @@ import { connectToDatabase } from "@/lib/db";
 import { AIChatbotConfig } from "@/models/AIChatbot";
 import { AIProvider } from "@/models/AIWorkforce";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
-export const runtime="nodejs";
-export const dynamic="force-dynamic";
-async function founder(){const session=await getServerSession();if(!session)return {response:NextResponse.json({message:"Authentication required."},{status:401})} as const;if(!session.role?.isFounderRole)return {response:NextResponse.json({message:"Founder access required."},{status:403})} as const;return {session} as const;}
-export async function GET(){const auth=await founder();if("response" in auth)return auth.response;await connectToDatabase();const [providers,configs]=await Promise.all([AIProvider.find({enabled:true,lastTestStatus:"success"}).select("name provider").sort({name:1}).lean(),AIChatbotConfig.find({}).sort({scope:1}).lean()]);return NextResponse.json({providers,configs},{headers:{"Cache-Control":"private, no-store"}});}
-export async function PUT(request:NextRequest){const auth=await founder();if("response" in auth)return auth.response;const body=await request.json().catch(()=>null) as null|Record<string,unknown>;if(!body||!Array.isArray(body.configs))return NextResponse.json({message:"A chatbot configuration list is required."},{status:400});if(body.configs.length!==3)return NextResponse.json({message:"Configure exactly the public, client and admin assistants."},{status:400});await connectToDatabase();const scopes=["public","client","admin"];const results=[];for(const raw of body.configs){if(!raw||typeof raw!=="object")return NextResponse.json({message:"Invalid chatbot configuration."},{status:400});const item=raw as Record<string,unknown>;const scope=String(item.scope||"");const providerId=String(item.providerId||"");const modelName=String(item.modelName||"").trim();const welcomeMessage=String(item.welcomeMessage||"").trim();if(!scopes.includes(scope)||!mongoose.isValidObjectId(providerId)||!modelName||!/^[a-zA-Z0-9._:-]+$/.test(modelName)||modelName.length>120||welcomeMessage.length>300)return NextResponse.json({message:"A valid scope, verified provider, catalogue model and short welcome message are required."},{status:400});const provider=await AIProvider.findOne({_id:providerId,enabled:true,lastTestStatus:"success"});if(!provider)return NextResponse.json({message:"Every chatbot must use an enabled, successfully tested AI provider."},{status:409});const saved=await AIChatbotConfig.findOneAndUpdate({scope},{ $set:{scope,providerId:provider._id,modelName,enabled:item.enabled===true,welcomeMessage,updatedBy:auth.session.user._id}},{upsert:true,new:true,runValidators:true});if(!saved)throw new Error("Chatbot configuration could not be saved.");results.push({scope:saved.scope,providerId:String(saved.providerId),modelName:saved.modelName,enabled:saved.enabled,welcomeMessage:saved.welcomeMessage});}
-await writePlatformAuditEvent({actorType:"human",actorId:String(auth.session.user._id),actorLabel:auth.session.user.name,action:"ai.chatbots.configuration_updated",module:"ai-chatbots",targetType:"AIChatbotConfig",outcome:"success",metadata:{scopes:results.map(x=>x.scope),enabled:results.filter(x=>x.enabled).map(x=>x.scope)}});
-return NextResponse.json({configs:results,message:"Chatbot settings saved. Each assistant uses its own policy and authenticated scope."});}
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+async function founder() {
+  const session = await getServerSession();
+  if (!session) return { response: NextResponse.json({ message: "Authentication required." }, { status: 401 }) } as const;
+  if (!session.role?.isFounderRole) return { response: NextResponse.json({ message: "Founder access required." }, { status: 403 }) } as const;
+  return { session } as const;
+}
+export async function GET() {
+  const auth = await founder();
+  if ("response" in auth) return auth.response;
+  await connectToDatabase();
+  const [providers, configs] = await Promise.all([
+    AIProvider.find({ enabled: true, lastTestStatus: "success" }).select("name provider").sort({ name: 1 }).lean(),
+    AIChatbotConfig.find({}).sort({ scope: 1 }).lean(),
+  ]);
+  return NextResponse.json({ providers, configs }, { headers: { "Cache-Control": "private, no-store" } });
+}
+export async function PUT(request: NextRequest) {
+  const auth = await founder();
+  if ("response" in auth) return auth.response;
+  const body = await request.json().catch(() => null) as null | Record<string, unknown>;
+  if (!body || !Array.isArray(body.configs) || body.configs.length !== 3) {
+    return NextResponse.json({ message: "Configure exactly the public, client and admin assistants." }, { status: 400 });
+  }
+  await connectToDatabase();
+  const scopes = ["public", "client", "admin"];
+  const results: Array<Record<string, unknown>> = [];
+  for (const raw of body.configs) {
+    if (!raw || typeof raw !== "object") return NextResponse.json({ message: "Invalid chatbot configuration." }, { status: 400 });
+    const item = raw as Record<string, unknown>;
+    const scope = String(item.scope || "");
+    const providerId = String(item.providerId || "");
+    const modelName = String(item.modelName || "").trim();
+    const fallbackProviderId = String(item.fallbackProviderId || "").trim();
+    const fallbackModelName = String(item.fallbackModelName || "").trim();
+    const welcomeMessage = String(item.welcomeMessage || "").trim();
+    if (!scopes.includes(scope) || !mongoose.isValidObjectId(providerId) || !modelName || !/^[a-zA-Z0-9._:-]+$/.test(modelName) || modelName.length > 120 || welcomeMessage.length > 300) {
+      return NextResponse.json({ message: "A valid scope, verified provider, catalogue model and short welcome message are required." }, { status: 400 });
+    }
+    const provider = await AIProvider.findOne({ _id: providerId, enabled: true, lastTestStatus: "success" });
+    if (!provider) return NextResponse.json({ message: "Every chatbot must use an enabled, successfully tested primary provider." }, { status: 409 });
+    let fallback: Awaited<ReturnType<typeof AIProvider.findOne>> = null;
+    if (fallbackProviderId || fallbackModelName) {
+      if (!mongoose.isValidObjectId(fallbackProviderId) || !fallbackModelName || !/^[a-zA-Z0-9._:-]+$/.test(fallbackModelName) || fallbackModelName.length > 120 || fallbackProviderId === providerId) {
+        return NextResponse.json({ message: "Choose a different verified fallback provider and a model from its catalogue, or clear both fallback fields." }, { status: 400 });
+      }
+      fallback = await AIProvider.findOne({ _id: fallbackProviderId, enabled: true, lastTestStatus: "success" });
+      if (!fallback) return NextResponse.json({ message: "The fallback provider must be enabled and connection-verified." }, { status: 409 });
+    }
+    const update: Record<string, unknown> = {
+      $set: { scope, providerId: provider._id, modelName, enabled: item.enabled === true, welcomeMessage, updatedBy: auth.session.user._id },
+      ...(fallback ? { $setOnInsert: {} } : { $unset: { fallbackProviderId: 1, fallbackModelName: 1 } }),
+    };
+    if (fallback) {
+      (update.$set as Record<string, unknown>).fallbackProviderId = fallback._id;
+      (update.$set as Record<string, unknown>).fallbackModelName = fallbackModelName;
+    }
+    const saved = await AIChatbotConfig.findOneAndUpdate({ scope }, update, { upsert: true, new: true, runValidators: true });
+    if (!saved) throw new Error("Chatbot configuration could not be saved.");
+    results.push({ scope: saved.scope, providerId: String(saved.providerId), modelName: saved.modelName, fallbackProviderId: saved.fallbackProviderId ? String(saved.fallbackProviderId) : "", fallbackModelName: saved.fallbackModelName || "", enabled: saved.enabled, welcomeMessage: saved.welcomeMessage });
+  }
+  await writePlatformAuditEvent({
+    actorType: "human", actorId: String(auth.session.user._id), actorLabel: auth.session.user.name,
+    action: "ai.chatbots.configuration_updated", module: "ai-chatbots", targetType: "AIChatbotConfig", outcome: "success",
+    metadata: { scopes: results.map(x => x.scope), enabled: results.filter(x => x.enabled).map(x => x.scope), fallbacksConfigured: results.filter(x => x.fallbackProviderId).map(x => x.scope) },
+  });
+  return NextResponse.json({ configs: results, message: "Chatbot settings saved. Each assistant uses its own policy, account scope and optional provider fallback." });
+}

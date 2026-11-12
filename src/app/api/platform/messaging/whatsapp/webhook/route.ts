@@ -163,8 +163,8 @@ export async function POST(request: NextRequest) {
             const task = await AITask.create({ agentId: agent._id, title: "WhatsApp conversation with " + contactName, input: text, requestedBy: String(recipient.userId), status: "running", startedAt: new Date(), executionAttempts: 1, operationPayload: { source: "whatsapp_ai_conversation", conversationId: String(conversation._id) } });
             try {
               const history = await UnifiedMessage.find({ conversationId: conversation._id, deletedAt: { $exists: false } }).sort({ createdAt: -1 }).limit(24).lean();
-              const prompt = history.reverse().map((item) => (item.senderLabel || "Participant") + ": " + item.body).join("\\n\\n");
-              const completion = await runProviderCompletion(String(agent.providerId), agent.modelName, agent.systemInstructions + "\\n\\nYou are responding as " + agent.name + " in the owner's private TGO conversation. Do not claim actions you did not perform.", prompt);
+              const prompt = history.reverse().map((item) => (item.senderLabel || "Participant") + ": " + item.body).join("\n\n");
+              const completion = await runProviderCompletion(String(agent.providerId), agent.modelName, agent.systemInstructions + "\n\nYou are responding as " + agent.name + " in the owner's private TGO conversation. Do not claim actions you did not perform.", prompt);
               task.status = "completed"; task.result = completion.text.slice(0, 50000); task.inputTokens = completion.inputTokens; task.outputTokens = completion.outputTokens; task.providerRequestId = completion.providerRequestId; task.completedAt = new Date(); await task.save();
               const reply = await UnifiedMessage.create({ conversationId: conversation._id, senderType: "ai", senderLabel: agent.name, body: completion.text.slice(0, 12000), status: "sent" });
               conversation.lastMessageAt = new Date(); await conversation.save();

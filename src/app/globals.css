@@ -1282,3 +1282,23 @@ main form input[type="checkbox"], main form input[type="radio"] { accent-color: 
 @media (prefers-reduced-motion: reduce) {
   .home-product-window, .surface-card, .home-visual-orbit { transform: none !important; }
 }
+
+/* Keep the homepage hero's art direction consistent while scrolling. */
+.home-hero.ambient-glow::before { display: none; }
+.home-hero { background-attachment: scroll; }
+.home-hero-cms-background { background-attachment: scroll; }
+.home-window-chart { min-height: 0; }
+.home-chart-bars { align-items: end; height: clamp(76px, 13vw, 145px); }
+.home-chart-bars i { display: block; flex: 1 1 0; min-width: 0; border-radius: 7px 7px 2px 2px; background: linear-gradient(180deg,#2ec5f0 0%,#5b2ee8 100%); }
+.home-window-metrics { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); }
+.home-window-footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
+.public-skeleton { animation-duration: .78s; }
+@media (max-width: 380px) {
+  .home-window-top > span:nth-child(2) { display: none; }
+  .home-window-greeting strong { font-size: 1.2rem; }
+  .home-window-footer { font-size: 9px; }
+  .home-float-card { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .public-skeleton { animation: none; }
+}

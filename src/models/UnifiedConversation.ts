@@ -62,7 +62,7 @@ const MessageSchema = new Schema<IUnifiedMessage>({
   messageType: { type: String, enum: ["text", "audio", "file", "system"], default: "text" },
   mediaUrl: { type: String, maxlength: 2048 },
   mimeType: { type: String, maxlength: 120 },
-  externalMessageId: { type: String, maxlength: 180, sparse: true },
+  externalMessageId: { type: String, maxlength: 180 },
   status: { type: String, enum: ["sent", "delivered", "read", "failed"], default: "sent" },
   threadRootId: { type: Schema.Types.ObjectId, ref: "UnifiedMessage" },
   editedAt: Date,

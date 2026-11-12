@@ -1308,3 +1308,14 @@ main form input[type="checkbox"], main form input[type="radio"] { accent-color: 
   .home-float-card { display: none !important; }
   .home-visual-caption { font-size: 9px; letter-spacing: .12em; }
 }
+
+/* Branded recovery and image-fallback artwork. */
+.tgo-image-fallback { position:relative; display:grid; place-items:center; isolation:isolate; overflow:hidden; min-width:0; min-height:180px; background:#090d19; color:#f5f7ff; }
+.tgo-image-fallback-art { position:absolute; inset:0; z-index:-1; width:100%; height:100%; object-fit:cover; opacity:.82; }
+.tgo-image-fallback-grid { position:absolute; inset:0; z-index:-1; background-image:linear-gradient(rgba(145,165,210,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(145,165,210,.08) 1px,transparent 1px); background-size:32px 32px; mask-image:linear-gradient(transparent,#000 30%,#000 75%,transparent); }
+.tgo-image-fallback-mark { display:grid; place-items:center; width:52px; height:52px; margin-bottom:12px; border:1px solid rgba(46,197,240,.35); border-radius:16px; background:rgba(8,13,27,.76); color:#8de8fa; box-shadow:0 0 35px rgba(46,197,240,.16); }
+.tgo-image-fallback strong { max-width:90%; overflow-wrap:anywhere; text-align:center; font-size:clamp(1rem,2vw,1.35rem); letter-spacing:-.035em; }
+.tgo-image-fallback small { margin-top:7px; color:#9eacc8; font:700 9px/1.4 var(--font-jetbrains-mono),monospace; letter-spacing:.2em; }
+.tgo-image-fallback-icon { position:absolute; right:12px; bottom:12px; color:#71809d; }
+.not-found-illustration,.public-error-illustration { display:block; width:min(100%,440px); height:auto; margin:0 auto 1.8rem; border:1px solid rgba(137,157,202,.16); border-radius:24px; box-shadow:0 25px 75px rgba(0,0,0,.25); }
+@media(max-width:640px){.not-found-illustration,.public-error-illustration{width:min(100%,340px);margin-bottom:1.25rem;border-radius:18px}.tgo-image-fallback{min-height:145px}}

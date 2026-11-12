@@ -29,7 +29,7 @@ self.addEventListener("activate", (event) => {
 });
 
 function isPrivatePath(pathname) {
-  return /^\/(admin|api|auth|login|logout|register|account|member|members|portal|dashboard|checkout|payment|billing|settings)(\/|$)/i.test(pathname);
+  return /^\/(admin|api|auth|login|logout|register|account|member|members|client|portal|dashboard|checkout|payment|billing|settings|workspaces|workforce)(\/|$)/i.test(pathname);
 }
 
 async function trimCache(cacheName, maxEntries) {

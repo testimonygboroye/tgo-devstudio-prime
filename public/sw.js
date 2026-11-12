@@ -1,8 +1,8 @@
-const SW_VERSION = "tgo-offline-v8";
+const SW_VERSION = "tgo-offline-v9";
 const APP_CACHE = `${SW_VERSION}-app`;
 const ASSET_CACHE = `${SW_VERSION}-public-assets`;
 const OFFLINE_URL = "/offline.html";
-const PRECACHE_URLS = [OFFLINE_URL, "/manifest.json", "/favicon.png", "/logo.png", "/icons/icon-192x192.png"];
+const PRECACHE_URLS = [OFFLINE_URL, "/manifest.json", "/favicon.png", "/logo.png", "/icons/icon-192x192.png", "/images/illustrations/offline-signal.svg", "/images/illustrations/error-recovery.svg", "/images/illustrations/not-found.svg", "/images/illustrations/brand-fallback.svg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil((async () => {
@@ -16,6 +16,13 @@ self.addEventListener("activate", (event) => {
   event.waitUntil((async () => {
     const keep = new Set([APP_CACHE, ASSET_CACHE]);
     const names = await caches.keys();
+    // Preserve the last-known-good offline homepage when rotating cache versions.
+    const previousApp = names.filter((name) => /^tgo-offline-v[0-9]+-app$/.test(name) && name !== APP_CACHE).sort().reverse()[0];
+    if (previousApp) {
+      const previous = await caches.open(previousApp);
+      const cachedHome = await previous.match("/");
+      if (cachedHome) { const current = await caches.open(APP_CACHE); await current.put("/", cachedHome); }
+    }
     await Promise.all(names.filter((name) => name.startsWith("tgo-offline-") && !keep.has(name)).map((name) => caches.delete(name)));
     await self.clients.claim();
   })());

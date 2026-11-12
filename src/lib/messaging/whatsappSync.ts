@@ -54,7 +54,7 @@ export async function mirrorMessageToPersonalWhatsApp(
       const mime = String(attachment.mimeType || "").toLowerCase();
       let type = "document";
       let mediaKey = "document";
-      if (mime.startsWith("image/") && mime !== "image/gif") { type = "image"; mediaKey = "image"; }
+      if (["image/jpeg", "image/png"].includes(mime)) { type = "image"; mediaKey = "image"; }
       else if (mime === "video/mp4") { type = "video"; mediaKey = "video"; }
       else if (["audio/mpeg", "audio/mp4", "audio/ogg"].includes(mime)) { type = "audio"; mediaKey = "audio"; }
       const media: Record<string, unknown> = { link: attachment.url };

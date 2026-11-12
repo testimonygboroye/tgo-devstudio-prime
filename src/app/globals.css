@@ -1,6 +1,6 @@
 @import "tailwindcss";
-@plugin "@tailwindcss/typography";
 @import "./public-experience-fixes.css";
+@plugin "@tailwindcss/typography";
 
 @theme {
   --color-brand-violet-600: #5B2EE8;

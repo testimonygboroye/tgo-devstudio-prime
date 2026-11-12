@@ -40,7 +40,7 @@ main{width:min(100%,650px);padding:clamp(25px,6vw,48px);border:1px solid rgba(13
  if(target!=="/"){requested.textContent="Page requested: "+target;requested.style.display="block";}
  // Keep homepage navigation as a native link so the browser and service worker can handle offline recovery.
  const list=document.getElementById("saved-list"),section=document.getElementById("saved");
- if("caches" in window)caches.open("tgo-offline-v9-app").then(cache=>cache.keys()).then(keys=>{
+ if("caches" in window)caches.open("tgo-offline-v10-app").then(cache=>cache.keys()).then(keys=>{
   const urls=keys.map(req=>new URL(req.url)).filter(url=>url.origin===location.origin&&url.pathname!=="/offline.html"&&!/\.(js|css|png|jpe?g|webp|svg|ico|json|woff2?)$/i.test(url.pathname)&&!/^\/(admin|api|auth|login|register|account|member|client|portal|dashboard|checkout|billing|workspaces|workforce)(\/|$)/i.test(url.pathname));
   const unique=[...new Map(urls.map(url=>[url.pathname,url])).values()].slice(0,12);
   unique.forEach(url=>{const li=document.createElement("li"),a=document.createElement("a");a.href=url.pathname+url.search;a.textContent=url.pathname==="/"?"Home":url.pathname.split("/").filter(Boolean).pop().replace(/[-_]/g," ");li.appendChild(a);list.appendChild(li);});

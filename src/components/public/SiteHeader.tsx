@@ -58,9 +58,13 @@ export default function SiteHeader({ settings }: { settings?: PublicSiteChromeSe
       { label: "Accessibility", href: "/accessibility", icon: FileText },
     ]},
   ];
-  const NAV_GROUPS = settings
-    ? settings.navigationGroups.map((group) => ({ title: group.title, links: group.links.map((link) => ({ label: link.label, href: link.href, icon: getNavigationIcon(link.icon) })) }))
-    : DRAWER_NAV_GROUPS;
+  const configuredGroups = settings
+    ? settings.navigationGroups.map((group) => ({ title: group.title, links: group.links.filter((link) => link.href !== "/").map((link) => ({ label: link.label, href: link.href, icon: getNavigationIcon(link.icon) })) }))
+    : DRAWER_NAV_GROUPS.filter((group) => group.title !== "Company");
+  const NAV_GROUPS = [
+    { title: "Company", links: [{ label: t("nav.home"), href: "/", icon: Layers }] },
+    ...configuredGroups,
+  ];
 
   return (
     <header className="tgo-public-header sticky top-0 z-50">

@@ -38,7 +38,6 @@ export async function POST(request: NextRequest) {
   if (!response?.ok) return fail("Meta could not verify this WhatsApp Business phone number. Check the token and phone number ID.", 502);
   const meta = await response.json().catch(() => ({})) as { display_phone_number?: string; verified_name?: string };
   await connectToDatabase();
-  const existing = await UserWhatsAppConnection.findOne({ userId: session.user._id });
   const conflict = await UserWhatsAppConnection.findOne({ phoneNumberId, userId: { $ne: session.user._id } });
   if (conflict) return fail("This WhatsApp Business phone number is already connected to another platform account.", 409);
   const credentialsCiphertext = encryptCredentials({ accessToken, appSecret, webhookVerifyToken, displayPhone: meta.display_phone_number || "" });

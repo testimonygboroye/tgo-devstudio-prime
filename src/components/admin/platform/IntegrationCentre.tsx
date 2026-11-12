@@ -1,10 +1,10 @@
 "use client";
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
-import { Activity, AlertCircle, CheckCircle2, Cloud, Code2, CreditCard, Mail, PlugZap, RefreshCw, Search, ShieldCheck, Smartphone, X } from "lucide-react";
+import { Activity, AlertCircle, CheckCircle2, Cloud, Code2, CreditCard, Mail, MessageCircle, PlugZap, RefreshCw, Search, ShieldCheck, Smartphone, X } from "lucide-react";
 type Provider = { id:string; name:string; category:string; description:string; fields:{key:string;label:string;hint:string}[]; testable:boolean; testLabel:string; connection:null|{id:string;status:string;credentialNames:string[];lastVerifiedAt?:string|null;lastError?:string} };
 type Payload = {providers:Provider[];encryptionReady:boolean};
-const icons:Record<string,typeof PlugZap>={email:Mail,payments:CreditCard,analytics:Activity,search:Search,development:Code2,sms:Smartphone};
-const categoryNames:Record<string,string>={email:"Email",payments:"Payments",analytics:"Analytics",search:"Search",development:"Development & deployment",sms:"SMS"};
+const icons:Record<string,typeof PlugZap>={email:Mail,payments:CreditCard,analytics:Activity,search:Search,development:Code2,sms:Smartphone,messaging:MessageCircle};
+const categoryNames:Record<string,string>={email:"Email",payments:"Payments",analytics:"Analytics",search:"Search",development:"Development & deployment",sms:"SMS",messaging:"Messaging"};
 export default function IntegrationCentre(){
  const [data,setData]=useState<Payload>({providers:[],encryptionReady:false}),[loading,setLoading]=useState(true),[busy,setBusy]=useState(""),[error,setError]=useState(""),[notice,setNotice]=useState(""),[selected,setSelected]=useState<Provider|null>(null),[credentials,setCredentials]=useState<Record<string,string>>({}),[query,setQuery]=useState("");
  const load=useCallback(async()=>{setLoading(true);try{const r=await fetch("/api/platform/integrations",{cache:"no-store"});const j=await r.json();if(!r.ok)throw new Error(j.error||"Could not load integrations.");setData(j);}catch(e){setError(e instanceof Error?e.message:"Could not load integrations.");}finally{setLoading(false);}},[]);

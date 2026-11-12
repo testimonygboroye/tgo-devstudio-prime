@@ -44,6 +44,7 @@ export default function SiteFooter({ settings }: { settings?: PublicSiteChromeSe
       { label: "Consumer Terms", href: "/terms-of-service" },
       { label: "Usage Policy", href: "/usage-policy" },
       { label: "Accessibility Statement", href: "/accessibility" },
+      { label: "Data Deletion Requests", href: "/data-deletion" },
       { label: t("common.settings"), href: "/settings" },
     ] },
   ];

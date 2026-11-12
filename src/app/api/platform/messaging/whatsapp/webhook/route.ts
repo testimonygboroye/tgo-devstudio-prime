@@ -62,6 +62,7 @@ export async function POST(request: NextRequest) {
       if (!incoming.id || !incoming.from || await UnifiedMessage.exists({ externalMessageId: incoming.id })) continue;
       // A connection only accepts messages from the owner's explicitly configured personal number.
       if (incoming.from.replace(/[^0-9]/g, "") !== connection.row.personalPhoneNumber) continue;
+      connection.row.lastInboundAt = new Date(); await connection.row.save();
       let conversationId = incoming.context?.id
         ? (await UserWhatsAppDelivery.findOne({ externalMessageId: incoming.context.id, userId: connection.row.userId }).select("messageId"))?.messageId
         : undefined;

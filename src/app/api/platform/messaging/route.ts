@@ -8,7 +8,7 @@ import User from "@/models/User";
 import { AIAgent, AITask } from "@/models/AIWorkforce";
 import { runProviderCompletion } from "@/lib/ai/provider-runtime";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
-import { getVerifiedIntegrationCredentials } from "@/lib/integrations/credentials";
+import { mirrorMessageToPersonalWhatsApp } from "@/lib/messaging/whatsappSync";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -92,13 +92,6 @@ export async function POST(request: NextRequest) {
       if (!root) return fail("Thread root message does not belong to this conversation.");
       threadRootId = root.threadRootId || root._id;
     }
-    if (conversation.kind === "whatsapp" && attachments.length) return fail("WhatsApp media sending is not enabled yet; send text within the customer service window.", 409);
-    let whatsappCredentials: Record<string, string> | null = null;
-    if (conversation.kind === "whatsapp") {
-      if (!conversation.externalContactId || !conversation.externalLastInboundAt || Date.now() - conversation.externalLastInboundAt.getTime() > 24 * 60 * 60 * 1000) return fail("WhatsApp free-form replies are available only within 24 hours of the contact’s latest inbound message. Outside that window, an approved WhatsApp template is required.", 409);
-      whatsappCredentials = await getVerifiedIntegrationCredentials("whatsapp_cloud");
-      if (!whatsappCredentials?.accessToken || !whatsappCredentials.phoneNumberId) return fail("WhatsApp Cloud API credentials are not configured and verified.", 503);
-    }
     const message = await UnifiedMessage.create({ conversationId, senderType: "human", senderId: actorId, senderLabel: actorName, body: content, status: "sent", readBy: [actorId], threadRootId, attachments, messageType: attachments.some((item) => item.mimeType.startsWith("audio/")) ? "audio" : attachments.length ? "file" : "text" });
     conversation.lastMessageAt = new Date();
     await conversation.save();
@@ -136,24 +129,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (conversation.kind === "whatsapp" && whatsappCredentials) {
-      const token = whatsappCredentials.accessToken;
-      const phoneNumberId = whatsappCredentials.phoneNumberId;
-      try {
-        const response = await fetch(`https://graph.facebook.com/v22.0/${phoneNumberId}/messages`, {
-          method: "POST", headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
-          body: JSON.stringify({ messaging_product: "whatsapp", recipient_type: "individual", to: conversation.externalContactId, type: "text", text: { preview_url: false, body: content } }),
-          signal: AbortSignal.timeout(15000), cache: "no-store",
-        });
-        const result = await response.json().catch(() => ({})) as { messages?: { id?: string }[]; error?: { message?: string } };
-        if (!response.ok) throw new Error(result.error?.message || "WhatsApp delivery failed.");
-        message.externalMessageId = result.messages?.[0]?.id;
-        await message.save();
-      } catch (error) {
-        message.status = "failed"; await message.save();
-        return NextResponse.json({ status: "error", message: error instanceof Error ? error.message : "WhatsApp delivery failed.", messageId: String(message._id) }, { status: 502 });
-      }
-    }
     return NextResponse.json({ status: "ok", message: { id: String(message._id), body: message.body, createdAt: message.createdAt, senderLabel: actorName, senderType: "human" } }, { status: 201 });
   }
 

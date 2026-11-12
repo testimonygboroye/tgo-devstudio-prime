@@ -68,7 +68,7 @@ async function privateContext(scope:Scope,session:NonNullable<ChatSession>){
   return {data:{public:pub.data,authenticatedClientAccount:account},sources};
  }
  const employee=await EmployeeProfile.findOne({userId:session.user._id}).populate("departmentId","name").populate("positionId","title").select("employeeCode departmentId positionId employmentStatus employmentType startDate timezone workLocation").lean();
- let ownCompensation=null;
+ let ownCompensation:unknown=null;
  let ownPayrollHistory:unknown[]=[];
  if(employee){
   ownCompensation=await PayrollCompensation.findOne({employeeId:employee._id}).select("baseSalaryMinor currency frequency allowances deductions effectiveFrom notes").lean();

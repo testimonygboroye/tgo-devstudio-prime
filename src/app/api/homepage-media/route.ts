@@ -11,7 +11,7 @@ export async function GET() {
   const settings = await LaunchSettings.findOne().lean();
   return NextResponse.json({ status: "ok", settings: settings || {
     enabled: false, countdownEnabled: true, countdownVisible: true, launchDate: null, title: "Something exceptional is coming",
-    description: "A new chapter in intelligent digital experiences is almost here.",
+    description: "A new chapter in intelligent digital experiences is almost here.", countdownLabel: "COUNTDOWN", countdownStatusLabel: "LIVE TIMER",
     videoUrl: "", flyerUrl: "", afterLaunchVideoUrl: "", afterLaunchFlyerUrl: "", videoAudioEnabled: false, flyerDurationMinutes: 0, flyerDurationSeconds: 8,
     videoSeconds: 0, flyerSeconds: 8, videoDurationHours: 0, videoDurationMinutes: 0, videoDurationSeconds: 0, useVideoDurationOverride: false
   }}, { headers: { "Cache-Control": "no-store, max-age=0" } });
@@ -32,6 +32,8 @@ export async function PUT(request: NextRequest) {
     launchDate: body.launchDate ? new Date(body.launchDate) : null,
     title: String(body.title || "").trim().slice(0, 140),
     description: String(body.description || "").trim().slice(0, 400),
+    countdownLabel: String(body.countdownLabel || "COUNTDOWN").trim().slice(0, 80),
+    countdownStatusLabel: String(body.countdownStatusLabel || "LIVE TIMER").trim().slice(0, 40),
     videoUrl: String(body.videoUrl || "").trim().slice(0, 1000),
     videoAudioEnabled: body.videoAudioEnabled === true,
     flyerDurationMinutes: Math.floor(flyerTotalSeconds / 60),

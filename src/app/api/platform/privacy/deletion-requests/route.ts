@@ -21,7 +21,8 @@ export async function PATCH(request:NextRequest){
  const verificationNote=String(body.verificationNote||"").trim();
  const resolutionNote=String(body.resolutionNote||"").trim();
  if(!statuses.includes(status)||verificationNote.length>2000||resolutionNote.length>3000)return NextResponse.json({message:"Invalid status or notes."},{status:400});
- if(["verified","in_progress","completed","partially_retained"].includes(status)&&verificationNote.length<10)return NextResponse.json({message:"Record how the requester was verified before processing or completing the request."},{status:400});\n if(["completed","partially_retained","rejected"].includes(status)&&resolutionNote.length<10)return NextResponse.json({message:"A meaningful resolution note is required for a final status."},{status:400});
+ if(["verified","in_progress","completed","partially_retained"].includes(status)&&verificationNote.length<10)return NextResponse.json({message:"Record how the requester was verified before processing or completing the request."},{status:400});
+ if(["completed","partially_retained","rejected"].includes(status)&&resolutionNote.length<10)return NextResponse.json({message:"A meaningful resolution note is required for a final status."},{status:400});
  await connectToDatabase();
  const item=await DataDeletionRequest.findById(body.id);
  if(!item)return NextResponse.json({message:"Privacy request not found."},{status:404});

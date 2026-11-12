@@ -73,6 +73,7 @@ Repeat these steps independently for every team member who wants WhatsApp mirror
 ### How conversation synchronization works
 
 - When a member sends a message in a platform conversation, the message is delivered to the personal WhatsApp destinations connected by the conversation's participants.
+- To start a WhatsApp-synced AI or team chat, open that conversation in TGO and send the first message there. This binds your WhatsApp connection to that conversation; then send a first message from your personal WhatsApp to the business number to open Meta's 24-hour service window. Continue replying in either place. If you message the business number before selecting a platform conversation, TGO creates a separate private **My WhatsApp** conversation.
 - A reply sent from WhatsApp is added to the same platform conversation. Other connected participants receive their own WhatsApp copy; the sender does not receive a duplicate echo.
 - AI replies in a private AI conversation are mirrored to the connected user's WhatsApp. Replies from WhatsApp continue that same AI conversation, subject to the AI employee's approval and daily token budget.
 - Conversation visibility is membership-based. Founder status does not grant access to another employee's private conversations.

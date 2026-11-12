@@ -7,6 +7,7 @@ import TeamMember from "@/models/TeamMember";
 import Review from "@/models/Review";
 import HelpArticle from "@/models/HelpArticle";
 import Service from "@/models/Service";
+import FaqItem from "@/models/FaqItem";
 import { getSiteUrl } from "@/lib/siteUrl";
 import { slugify } from "@/lib/utils/slugify";
 
@@ -62,6 +63,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       reviews,
       helpArticles,
       services,
+      faqItems,
     ] = await Promise.all([
       Project.find({
         publishStatus: "published",
@@ -157,6 +159,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         changeFrequency: "monthly" as const,
         priority: 0.5,
       })),
+      ...faqItems.map((faq) => ({ url: `${siteUrl}/faq/${slugify(faq.question)}`, lastModified: faq.updatedAt || now, changeFrequency: "monthly" as const, priority: 0.55 })),
     ];
   } catch (error) {
     console.error(
@@ -167,3 +170,4 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     return staticEntries;
   }
 }
+      FaqItem.find({ publishStatus: "published" }).select("question updatedAt").lean(),

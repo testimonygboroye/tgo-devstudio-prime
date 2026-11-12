@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
     lastError: "",
   };
   if (legacyMode) set.credentialsCiphertext = encryptCredentials({ accessToken, appSecret, webhookVerifyToken, displayPhone: meta.display_phone_number || "" });
-  const update = await UserWhatsAppConnection.findOneAndUpdate(
+  await UserWhatsAppConnection.findOneAndUpdate(
     { userId: auth.session.user._id },
     { $set: set, $setOnInsert: { userId: auth.session.user._id }, ...(legacyMode ? {} : { $unset: { credentialsCiphertext: 1 } }) },
     { upsert: true, new: true, runValidators: true },

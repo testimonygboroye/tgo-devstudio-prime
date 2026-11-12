@@ -1302,3 +1302,9 @@ main form input[type="checkbox"], main form input[type="radio"] { accent-color: 
 @media (prefers-reduced-motion: reduce) {
   .public-skeleton { animation: none; }
 }
+
+@media (max-width: 640px) {
+  /* Floating labels collide with the product mockup on narrow screens. */
+  .home-float-card { display: none !important; }
+  .home-visual-caption { font-size: 9px; letter-spacing: .12em; }
+}

@@ -9,6 +9,7 @@ export default function SmartImage({ src, alt, label, className = "" }: {
   const [failed, setFailed] = useState(false);
   if (!src || failed) return (
     <div className={"tgo-image-fallback "+className} role="img" aria-label={alt}>
+      <img src="/images/illustrations/brand-fallback.svg" alt="" aria-hidden="true" className="tgo-image-fallback-art" />
       <div className="tgo-image-fallback-grid" />
       <span className="tgo-image-fallback-mark"><Sparkles size={20}/></span>
       <strong>{label || "TGO DevStudio"}</strong>

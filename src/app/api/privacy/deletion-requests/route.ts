@@ -24,8 +24,8 @@ export async function GET(request: NextRequest) {
     item.lookupWindowStartedAt = now;
     item.lookupCount = 0;
   }
-  if (item.lookupCount >= 5) return NextResponse.json({ status: "error", message: "Too many status checks. Please wait ten minutes before trying again." }, { status: 429 });
-  item.lookupCount += 1;
+  if ((item.lookupCount || 0) >= 5) return NextResponse.json({ status: "error", message: "Too many status checks. Please wait ten minutes before trying again." }, { status: 429 });
+  item.lookupCount = (item.lookupCount || 0) + 1;
   await item.save();
   return NextResponse.json({ status: "ok", request: { reference: item.reference, status: item.status, submittedAt: item.createdAt, lastUpdatedAt: item.updatedAt }, message: "This is the latest recorded status. For clarification, contact TGO DevStudio and quote your reference." }, { headers: { "Cache-Control": "no-store" } });
 }

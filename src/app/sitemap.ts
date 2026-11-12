@@ -106,6 +106,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       })
         .select("title updatedAt")
         .lean(),
+      FaqItem.find({ publishStatus: "published" }).select("question updatedAt").lean(),
     ]);
 
     return [
@@ -170,4 +171,3 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     return staticEntries;
   }
 }
-      FaqItem.find({ publishStatus: "published" }).select("question updatedAt").lean(),

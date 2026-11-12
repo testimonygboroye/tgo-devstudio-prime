@@ -29,7 +29,6 @@ const schema = new Schema<IUserWhatsAppConnection>({
   consentSource: { type: String, enum: ["client_settings", "staff_settings", "founder_settings", "legacy"] },
   lastError: { type: String, maxlength: 300, default: "" },
 }, { timestamps: true });
-schema.index({ phoneNumberId: 1, personalPhoneNumber: 1, status: 1 });
 schema.index({ personalPhoneNumber: 1 }, { unique: true, partialFilterExpression: { status: "connected" }, name: "active_personal_phone_unique" });
 const UserWhatsAppConnection: Model<IUserWhatsAppConnection> = models.UserWhatsAppConnection || model<IUserWhatsAppConnection>("UserWhatsAppConnection", schema);
 export default UserWhatsAppConnection;

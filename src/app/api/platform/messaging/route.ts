@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     const conversation = await UnifiedConversation.findById(conversationId).populate("memberIds", "name email").populate("aiAgentId", "name role department").lean();
     if (!conversation) return fail("Conversation not found.", 404);
     const isMember = conversation.memberIds.some((member: unknown) => String((member as {_id?: unknown})._id || member) === String(session.user._id));
-    if (!isMember && !session.role.isFounderRole) return forbiddenResponse("You are not a member of this conversation.");
+    if (!isMember) return forbiddenResponse("You are not a member of this private conversation.");
     await UnifiedMessage.updateMany({ conversationId, senderId: { $ne: session.user._id }, readBy: { $ne: session.user._id } }, { $addToSet: { readBy: session.user._id }, $set: { status: "read" } });
     const query = searchParams.get("q")?.trim().slice(0, 100) || "";
     const messageFilter: Record<string, unknown> = { conversationId };
@@ -38,10 +38,10 @@ export async function GET(request: NextRequest) {
     const messages = await UnifiedMessage.find(messageFilter).sort({ createdAt: 1 }).limit(300).lean();
     return NextResponse.json({ status: "ok", conversation, messages, isFounder: session.role.isFounderRole }, { headers: { "Cache-Control": "private, no-store" } });
   }
-  const filter = session.role.isFounderRole ? { archivedAt: { $exists: false } } : { memberIds: session.user._id, archivedAt: { $exists: false } };
+  const filter = { memberIds: session.user._id, archivedAt: { $exists: false } };
   const conversations = await UnifiedConversation.find(filter).populate("memberIds", "name email").populate("aiAgentId", "name role department").sort({ lastMessageAt: -1, updatedAt: -1 }).limit(150).lean();
   const people = await User.find({ accountType: "staff", isBanned: { $ne: true } }).select("name email role").sort({ name: 1 }).limit(300).lean();
-  const agents = session.role.isFounderRole ? await AIAgent.find({ enabled: true }).select("name role department").sort({ name: 1 }).lean() : [];
+  const agents = await AIAgent.find({ enabled: true }).select("name role department").sort({ name: 1 }).lean();
   return NextResponse.json({ status: "ok", conversations, people, agents }, { headers: { "Cache-Control": "private, no-store" } });
 }
 
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     const requestedKind = String(body.kind || "direct");
     if (!validKinds.includes(requestedKind as typeof validKinds[number])) return fail("Unsupported conversation type.");
     const kind = requestedKind as typeof validKinds[number];
-    if (kind === "ai" && !session.role.isFounderRole) return forbiddenResponse("Founder access is required to create AI conversations.");
+    
     const ids = Array.isArray(body.memberIds) ? body.memberIds.filter((id): id is string => typeof id === "string" && Types.ObjectId.isValid(id)).slice(0, 100) : [];
     if (kind === "direct" && ids.length !== 1) return fail("A direct conversation requires exactly one other team member.");
     if (kind === "ai" && (!body.aiAgentId || !Types.ObjectId.isValid(String(body.aiAgentId)))) return fail("Select a valid AI employee.");
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
     if (!Types.ObjectId.isValid(conversationId) || (!content && !attachments.length) || content.length > 12000) return fail("A valid conversation and text or attachment are required.");
     const conversation = await UnifiedConversation.findById(conversationId);
     if (!conversation) return fail("Conversation not found.", 404);
-    if (!conversation.memberIds.some((id) => String(id) === String(actorId)) && !session.role.isFounderRole) return forbiddenResponse("You are not a member of this conversation.");
+    if (!conversation.memberIds.some((id) => String(id) === String(actorId))) return forbiddenResponse("You are not a member of this private conversation.");
     let threadRootId: Types.ObjectId | undefined;
     if (typeof body.threadRootId === "string" && Types.ObjectId.isValid(body.threadRootId)) {
       const root = await UnifiedMessage.findOne({ _id: body.threadRootId, conversationId });
@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
     const message = await UnifiedMessage.findById(messageId);
     if (!message) return fail("Message not found.", 404);
     const conversation = await UnifiedConversation.findById(message.conversationId);
-    if (!conversation || (!conversation.memberIds.some((id) => String(id) === String(actorId)) && !session.role.isFounderRole)) return forbiddenResponse("You cannot modify this conversation.");
+    if (!conversation || !conversation.memberIds.some((id) => String(id) === String(actorId))) return forbiddenResponse("You cannot modify this private conversation.");
     if (body.action === "react") {
       const emoji = String(body.emoji || "").slice(0, 12);
       if (!emoji) return fail("Choose a reaction.");
@@ -187,7 +187,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (body.action === "ai.task") {
-    if (!session.role.isFounderRole) return forbiddenResponse("Founder access is required to assign AI work.");
+    
     const agentId = String(body.agentId || ""), input = String(body.input || "").trim();
     if (!Types.ObjectId.isValid(agentId) || input.length < 5 || input.length > 20000) return fail("Select an AI employee and provide a task description.");
     const agent = await AIAgent.findOne({ _id: agentId, enabled: true });
@@ -197,7 +197,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ status: "ok", taskId: String(task._id), taskStatus: task.status, message: "Task recorded in the AI workforce queue." }, { status: 201 });
   }
   if (body.action === "translate") {
-    if (!session.role.isFounderRole) return forbiddenResponse("Founder access is required to use AI translation.");
+    
     const agentId = String(body.agentId || "");
     const input = String(body.input || "").trim();
     const targetLanguage = String(body.targetLanguage || "").trim().slice(0, 80);

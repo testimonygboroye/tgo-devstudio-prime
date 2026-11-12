@@ -107,8 +107,6 @@ export default async function HomePage() {
 
   return (
     <main className="home-page">
-      <HomepageMediaExperience settings={launchSettings || { enabled: false }} />
-
       <section className="home-hero ambient-glow">{safeHeroBackground && <div className="home-hero-cms-background" style={{ backgroundImage: 'url("' + safeHeroBackground + '")' }} aria-hidden="true" />}
         <HeroMoment />
         <div className="home-hero-grid">
@@ -162,6 +160,8 @@ export default async function HomePage() {
         </div>
         <div className="home-hero-bottom"><span>SCROLL TO EXPLORE</span><i /></div>
       </section>
+
+      <HomepageMediaExperience settings={launchSettings || { enabled: false }} />
 
       <section className="home-proof-strip">
         <div className="home-proof-inner">

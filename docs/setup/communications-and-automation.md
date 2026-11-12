@@ -82,7 +82,7 @@ Repeat these steps independently for every team member who wants WhatsApp mirror
 ### Messaging safeguards and limitations
 
 - Meta verifies webhook payload signatures before messages are accepted. Each business phone number is mapped to one platform user and only messages from that user's configured personal destination number are accepted.
-- Free-form WhatsApp messaging is subject to Meta's customer-service window, opt-in requirements, templates, and other policy rules. This implementation currently supports free-form text mirroring and does not yet expose approved template selection/delivery outside the service window.
+- Free-form WhatsApp messaging is subject to Meta's customer-service window, opt-in requirements, templates, and other policy rules. This implementation mirrors text and supported outbound media links during the open service window. Approved template selection/delivery outside the service window is not yet exposed.
 - WhatsApp media received through the webhook currently appears as a message placeholder; inbound media download/storage is not enabled yet. Platform voice notes and attachments are available in the platform itself.
 - An inbound message is not treated as blanket marketing consent. WhatsApp provider charges, template fees, and Meta policy limits are controlled by Meta and may apply. Do not assume all WhatsApp messaging is free.
 - Never paste access tokens, app secrets, or webhook tokens into ChatGPT or commit them to Git. Enter them only into the encrypted per-user connection form. Rotate them if exposed.

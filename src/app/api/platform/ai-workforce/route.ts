@@ -163,15 +163,62 @@ export async function POST(request: NextRequest) {
         });
         createdCount += 1;
       }
+
+      // Create one private, permission-minimal AI counterpart for each real active employee.
+      // No placeholder human records or compensation details are created or read.
+      let counterpartCount = 0;
+      let counterpartExistingCount = 0;
+      const activeEmployees = await EmployeeProfile.find({
+        employmentStatus: "active",
+        accessSuspendedByWorkforce: { $ne: true },
+      }).populate("userId", "name").populate("departmentId", "name").populate("positionId", "title").lean();
+      for (const employee of activeEmployees) {
+        const person = employee.userId as unknown as { _id?: mongoose.Types.ObjectId; name?: string } | null;
+        const personId = person?._id || (employee.userId as unknown as mongoose.Types.ObjectId);
+        if (!personId || !mongoose.isValidObjectId(String(personId))) continue;
+        const existing = await AIAgent.findOne({ assignedUserId: personId });
+        if (existing) { counterpartExistingCount += 1; continue; }
+        const department = String((employee.departmentId as unknown as { name?: string })?.name || "General Operations");
+        const position = String((employee.positionId as unknown as { title?: string })?.title || "Team Member");
+        let workspaceId = workspaceIds.get(department);
+        if (!workspaceId) {
+          const workspace = await AIWorkspace.findOneAndUpdate(
+            { name: department + " Workspace", department, createdBy: actorId },
+            { $setOnInsert: { name: department + " Workspace", department, description: "Private AI collaboration workspace for the " + department + " department.", active: true, createdBy: actorId } },
+            { upsert: true, new: true, setDefaultsOnInsert: true },
+          ).orFail();
+          workspaceId = workspace._id as mongoose.Types.ObjectId;
+          workspaceIds.set(department, workspaceId);
+        }
+        const employeeName = String(person?.name || employee.employeeCode || "Employee").trim();
+        await AIAgent.create({
+          name: (employeeName + " — AI Counterpart").slice(0, 100),
+          role: (position + " AI Counterpart").slice(0, 100),
+          department,
+          description: "Private AI counterpart assigned to one active employee. No business tools are granted by default.",
+          workspaceId,
+          assignedUserId: personId,
+          providerId: provider._id,
+          modelName,
+          systemInstructions: "You are the private AI counterpart for " + employeeName + ", a TGO DevStudio " + position + " in " + department + ". Support their authorised work, planning, drafting and analysis. Do not disclose another employee's information. You have no business-operation permissions unless the founder grants them separately. Never invent facts, credentials, financial data or completed actions. Escalate requests outside the employee's scope to the founder.",
+          permissions: [],
+          requiresApproval: true,
+          maxDailyTokens: 50000,
+          enabled: false,
+          createdBy: actorId,
+        });
+        counterpartCount += 1;
+      }
+
       await writePlatformAuditEvent({
         actorType: "human", actorId, actorLabel: session.user.name,
         action: "ai.workforce.provisioned", module: "ai-workforce",
         targetType: "AIWorkforce", targetId: String(provider._id), outcome: "success",
-        metadata: { createdCount, existingCount, departments: workspaceIds.size, provider: provider.name, modelName },
+        metadata: { createdCount, existingCount, counterpartCount, counterpartExistingCount, departments: workspaceIds.size, provider: provider.name, modelName },
       });
       return NextResponse.json({
-        status: "ok", createdCount, existingCount, departmentCount: workspaceIds.size,
-        message: createdCount + " AI employees provisioned across " + workspaceIds.size + " departments. They remain disabled until individually reviewed and enabled.",
+        status: "ok", createdCount, existingCount, counterpartCount, counterpartExistingCount, departmentCount: workspaceIds.size,
+        message: createdCount + " AI department employees and " + counterpartCount + " private employee counterparts provisioned. All remain disabled until individually reviewed and enabled.",
       });
     }
     if (body.action === "workspace.create") {

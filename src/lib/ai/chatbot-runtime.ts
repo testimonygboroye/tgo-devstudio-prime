@@ -53,7 +53,7 @@ async function privateContext(scope:Scope,session:NonNullable<ChatSession>){
    DeliveryTask.find({projectId:{$in:ids}}).select("projectId milestoneId title description status priority dueDate completedAt").sort({dueDate:1}).limit(200).lean(),
    ProjectDeliverable.find({projectId:{$in:ids}}).select("projectId milestoneId title description version status clientApprovedAt releasedAt").sort({createdAt:-1}).limit(100).lean(),
   ]);
-  const account={profile,projects,orders,milestones,tasks,deliverables,supportTickets:tickets.map(t=>({...t,messages:(t.messages||[]).slice(-8)}))};
+  const account={profile,projects,orders,milestones,tasks,deliverables,supportTickets:tickets.map(t=>({...t,messages:(t.messages||[]).slice(-8).map(m=>({senderType:m.senderType,body:m.body,createdAt:m.createdAt}))}))};
   const sources=[...pub.sources,...projects.map(p=>"Your project: "+p.reference+" · "+p.name),...orders.map(o=>"Your order: "+o.reference),...tickets.map(t=>"Your support request: "+t.reference)];
   return {data:{public:pub.data,authenticatedClientAccount:account},sources};
  }
@@ -121,11 +121,13 @@ export async function handleAIChat(request:NextRequest,scope:Scope,method:"GET"|
  const prompt=(history?"Recent conversation:\n"+history+"\n\n":"")+"New user question:\n"+question;
  const userMessage={messageId:randomUUID(),role:"user" as const,content:question,inputTokens:0,outputTokens:0,createdAt:new Date()};
  row.messages.push(userMessage);
+ row.dailyRequests+=1;
+ await row.save();
  try{
   const completion=await runProviderCompletion(String(config.providerId),config.modelName,system,prompt);
   if(!completion.text.trim())throw new Error("The AI provider returned an empty response.");
   const assistantMessage={messageId:randomUUID(),role:"assistant" as const,content:completion.text.slice(0,8000),inputTokens:completion.inputTokens,outputTokens:completion.outputTokens,sources:context.sources.slice(0,20),createdAt:new Date()};
-  row.messages.push(assistantMessage);row.dailyRequests+=1;row.dailyTokens+=completion.inputTokens+completion.outputTokens;
+  row.messages.push(assistantMessage);row.dailyTokens+=completion.inputTokens+completion.outputTokens;
   if(row.messages.length>80)row.messages=row.messages.slice(-80);
   await row.save();
   return attachPublicCookie(json({message:assistantMessage,sources:context.sources.slice(0,20),usage:{inputTokens:completion.inputTokens,outputTokens:completion.outputTokens}}),scope,token);

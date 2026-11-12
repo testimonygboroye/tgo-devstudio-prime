@@ -15,8 +15,6 @@ import DeliveryProject from "@/models/DeliveryProject";
 import DeliveryMilestone from "@/models/DeliveryMilestone";
 import DeliveryTask from "@/models/DeliveryTask";
 import ProjectDeliverable from "@/models/ProjectDeliverable";
-import PaymentTransaction from "@/models/PaymentTransaction";
-import ClientCreditAccount from "@/models/ClientCreditAccount";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -277,21 +275,20 @@ export async function POST(request: NextRequest) {
           if (!/^[a-f0-9]{24}$/i.test(clientId)) throw new Error("A valid client ID is required for this operation.");
           const client = await User.findOne({ _id: clientId, accountType: "client" }).select("name email createdAt isEmailVerified").lean();
           if (!client) throw new Error("Client account not found.");
-          const [profile, projects, payments, credits] = await Promise.all([
+          const [profile, projects] = await Promise.all([
             ClientProfile.findOne({ userId: clientId }).select("jobTitle country lifecycle onboardingStatus").lean(),
             DeliveryProject.find({ clientId }).select("name status reference updatedAt").sort({ updatedAt: -1 }).limit(20).lean(),
-            PaymentTransaction.aggregate([{ $match: { clientId: new mongoose.Types.ObjectId(clientId), status: "paid" } }, { $group: { _id: "$currency", totalMinor: { $sum: "$amountMinor" }, count: { $sum: 1 } } }]),
-            ClientCreditAccount.find({ clientId }).select("currency balanceMinor").lean(),
           ]);
-          operationResult = { client: { id: String(client._id), name: client.name, email: client.email, createdAt: client.createdAt, emailVerified: client.isEmailVerified }, profile, projects, verifiedPayments: payments, accountCredits: credits };
+          // AI client summaries deliberately exclude payments, credits, salaries, bank data and other financial records.
+          operationResult = { client: { id: String(client._id), name: client.name, email: client.email, createdAt: client.createdAt, emailVerified: client.isEmailVerified }, profile, projects };
         } else if (task.operation === "projects.read_summary") {
           if (!agent.permissions.includes("projects.read_summary")) throw new Error("Agent lacks projects.read_summary permission.");
           const projectId = String(payload.projectId || "");
           if (!/^[a-f0-9]{24}$/i.test(projectId)) throw new Error("A valid project ID is required for this operation.");
-          const project = await DeliveryProject.findById(projectId).select("reference name summary status priority clientId targetDate completedAt").lean();
+          const project = await DeliveryProject.findById(projectId).select("reference name summary status priority targetDate completedAt").lean();
           if (!project) throw new Error("Project not found.");
           const [milestones, tasks, deliverables] = await Promise.all([
-            DeliveryMilestone.find({ projectId }).select("title status paymentStatus qaStatus clientApprovalStatus").sort({ sequence: 1 }).lean(),
+            DeliveryMilestone.find({ projectId }).select("title status qaStatus clientApprovalStatus").sort({ sequence: 1 }).lean(),
             DeliveryTask.find({ projectId }).select("title status priority dueDate").sort({ dueDate: 1 }).limit(100).lean(),
             ProjectDeliverable.find({ projectId }).select("title status clientApprovedAt releasedAt").sort({ createdAt: -1 }).limit(50).lean(),
           ]);

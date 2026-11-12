@@ -101,7 +101,6 @@ export async function POST(request: NextRequest) {
     personalPhoneNumber,
     status: "connected",
     lastVerifiedAt: new Date(),
-    lastInboundAt: undefined,
     optInAt: new Date(),
     consentSource: auth.session.user.accountType === "client" ? "client_settings" : auth.session.role.isFounderRole ? "founder_settings" : "staff_settings",
     lastError: "",
@@ -110,7 +109,7 @@ export async function POST(request: NextRequest) {
   else if (keepLegacyCredentials && existing?.credentialsCiphertext) set.credentialsCiphertext = existing.credentialsCiphertext;
   await UserWhatsAppConnection.findOneAndUpdate(
     { userId: auth.session.user._id },
-    { $set: set, $setOnInsert: { userId: auth.session.user._id }, ...(legacyMode || keepLegacyCredentials ? {} : { $unset: { credentialsCiphertext: 1 } }) },
+    { $set: set, $setOnInsert: { userId: auth.session.user._id }, $unset: { lastInboundAt: 1, currentConversationId: 1, ...(!legacyMode && !keepLegacyCredentials ? { credentialsCiphertext: 1 } : {}) } },
     { upsert: true, new: true, runValidators: true },
   );
   return NextResponse.json({

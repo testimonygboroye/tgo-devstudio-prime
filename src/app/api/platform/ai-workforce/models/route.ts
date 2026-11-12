@@ -56,6 +56,9 @@ export async function GET(request: NextRequest) {
     }
 
     models = models.filter((item) => item.id && /^[a-zA-Z0-9._:-]+$/.test(item.id));
+    if (provider.provider === "openai") models = models.filter((item) => /^gpt-/i.test(item.id));
+    if (provider.provider === "anthropic") models = models.filter((item) => /^claude-/i.test(item.id));
+    if (provider.provider === "google") models = models.filter((item) => /^gemini-/i.test(item.id));
     models.sort((a, b) => a.displayName.localeCompare(b.displayName));
     return NextResponse.json({ models }, { headers: { "Cache-Control": "private, no-store" } });
   } catch {

@@ -129,6 +129,8 @@ export async function POST(request: NextRequest) {
         { name: "Public Experience QA Specialist", role: "Public Website QA Specialist", department: "Public Experience", permissions: ["site.routes.health_check"] },
         { name: "Client Portal QA Specialist", role: "Client Portal QA Specialist", department: "Client Experience", permissions: ["site.routes.health_check"] },
         { name: "Admin Platform QA Specialist", role: "Admin Platform QA Specialist", department: "Platform Operations", permissions: ["site.routes.health_check"] },
+        { name: "People Operations Specialist", role: "People Operations Specialist", department: "People & Culture", permissions: [] },
+        { name: "Legal & Governance Analyst", role: "Legal & Governance Analyst", department: "Legal & Governance", permissions: [] },
       ] as const;
 
       const workspaceIds = new Map<string, mongoose.Types.ObjectId>();

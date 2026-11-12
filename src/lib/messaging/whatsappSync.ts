@@ -11,6 +11,7 @@ export async function mirrorMessageToPersonalWhatsApp(conversation: IUnifiedConv
   await Promise.allSettled(connections.map(async connection => {
     const credentials = decryptCredentials(connection.credentialsCiphertext);
     if (!credentials.accessToken || !connection.phoneNumberId || !connection.personalPhoneNumber) return;
+    // Meta permits free-form replies only during the 24-hour customer-service window opened by this recipient.\n    if (!connection.lastInboundAt || Date.now() - connection.lastInboundAt.getTime() > 24 * 60 * 60 * 1000) return;
     connection.currentConversationId = conversation._id as Types.ObjectId; await connection.save();
     const label = String(message.senderLabel || "TGO").slice(0, 80), title = String(conversation.title || "TGO conversation").slice(0, 80);
     const body = "[" + title + " · " + label + "]\n" + String(message.body || "").slice(0, 3500);

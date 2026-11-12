@@ -2,7 +2,7 @@ import { Schema, model, models, type Document, type Model, Types } from "mongoos
 export interface IUserWhatsAppConnection extends Document {
   userId: Types.ObjectId; phoneNumberId: string; personalPhoneNumber: string; businessAccountId: string;
   credentialsCiphertext: string; status: "connected" | "error" | "disconnected"; currentConversationId?: Types.ObjectId;
-  lastVerifiedAt?: Date; lastError?: string; createdAt: Date; updatedAt: Date;
+  lastVerifiedAt?: Date; lastInboundAt?: Date; lastError?: string; createdAt: Date; updatedAt: Date;
 }
 const schema = new Schema<IUserWhatsAppConnection>({
   userId: { type: Schema.Types.ObjectId, ref: "User", required: true, unique: true, index: true },
@@ -11,7 +11,7 @@ const schema = new Schema<IUserWhatsAppConnection>({
   businessAccountId: { type: String, required: true, trim: true, maxlength: 80 },
   credentialsCiphertext: { type: String, required: true, select: false },
   status: { type: String, enum: ["connected", "error", "disconnected"], default: "connected", index: true },
-  currentConversationId: { type: Schema.Types.ObjectId, ref: "UnifiedConversation" }, lastVerifiedAt: Date,
+  currentConversationId: { type: Schema.Types.ObjectId, ref: "UnifiedConversation" }, lastVerifiedAt: Date, lastInboundAt: Date,
   lastError: { type: String, maxlength: 300, default: "" },
 }, { timestamps: true });
 const UserWhatsAppConnection: Model<IUserWhatsAppConnection> = models.UserWhatsAppConnection || model<IUserWhatsAppConnection>("UserWhatsAppConnection", schema);

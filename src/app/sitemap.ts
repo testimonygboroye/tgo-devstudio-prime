@@ -33,6 +33,7 @@ const STATIC_ROUTES = [
   "/privacy-policy",
   "/terms-of-service",
   "/usage-policy",
+  "/data-deletion",
 ] as const;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

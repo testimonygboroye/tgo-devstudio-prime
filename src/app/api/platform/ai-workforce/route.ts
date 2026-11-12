@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
         const workspace = await AIWorkspace.findOneAndUpdate(
           { name: department + " Workspace", department, createdBy: actorId },
           { $setOnInsert: { name: department + " Workspace", department, description: "Founder-governed AI collaboration workspace for " + department + ".", active: true, createdBy: actorId } },
-          { upsert: true, new: true, setDefaultsOnInsert: true },
+          { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
         );
         workspaceIds.set(department, workspace._id as mongoose.Types.ObjectId);
       }
@@ -186,7 +186,7 @@ export async function POST(request: NextRequest) {
           const workspace = await AIWorkspace.findOneAndUpdate(
             { name: department + " Workspace", department, createdBy: actorId },
             { $setOnInsert: { name: department + " Workspace", department, description: "Private AI collaboration workspace for the " + department + " department.", active: true, createdBy: actorId } },
-            { upsert: true, new: true, setDefaultsOnInsert: true },
+            { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
           ).orFail();
           workspaceId = workspace._id as mongoose.Types.ObjectId;
           workspaceIds.set(department, workspaceId);
@@ -239,7 +239,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ status: "ok", memoryId: memory._id, message: "Knowledge memory saved." }, { status: 201 });
     }
     if (body.action === "memory.delete") {
-      const memory = await AIMemory.findOneAndUpdate({ _id: body.memoryId, active: true }, { $set: { active: false } }, { new: true });
+      const memory = await AIMemory.findOneAndUpdate({ _id: body.memoryId, active: true }, { $set: { active: false } }, { returnDocument: "after" });
       if (!memory) return NextResponse.json({ status: "error", message: "Memory not found." }, { status: 404 });
       await writePlatformAuditEvent({ actorType: "human", actorId, action: "ai.memory.archived", module: "ai-workforce", targetType: "AIMemory", targetId: String(memory._id), outcome: "success" });
       return NextResponse.json({ status: "ok", message: "Knowledge memory archived." });
@@ -344,7 +344,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ status: "ok", taskId: task._id, message: "Task queued for human approval. No agent execution occurs before approval." }, { status: 201 });
     }
     if (body.action === "task.approve" || body.action === "task.reject") {
-      const task = await AITask.findOneAndUpdate({ _id: body.taskId, status: "awaiting_approval" }, { $set: { status: body.action === "task.approve" ? "queued" : "cancelled", approvedBy: actorId } }, { new: true });
+      const task = await AITask.findOneAndUpdate({ _id: body.taskId, status: "awaiting_approval" }, { $set: { status: body.action === "task.approve" ? "queued" : "cancelled", approvedBy: actorId } }, { returnDocument: "after" });
       if (!task) return NextResponse.json({ status: "error", message: "Task not found or already reviewed." }, { status: 409 });
       await writePlatformAuditEvent({ actorType: "human", actorId, action: body.action === "task.approve" ? "ai.task.approved" : "ai.task.rejected", module: "ai-workforce", targetType: "AITask", targetId: String(task._id), outcome: "success" });
       return NextResponse.json({ status: "ok", taskId: task._id, statusValue: task.status, message: "Approval recorded. The task can now be run by its assigned agent within its granted tool permissions." });
@@ -359,7 +359,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ status: "ok", taskId: task._id, message: "Delegated task created and placed in human approval queue." }, { status: 201 });
     }
     if (body.action === "task.execute") {
-      const task = await AITask.findOneAndUpdate({ _id: body.taskId, status: "queued" }, { $set: { status: "running", startedAt: new Date(), error: "" }, $inc: { executionAttempts: 1 } }, { new: true });
+      const task = await AITask.findOneAndUpdate({ _id: body.taskId, status: "queued" }, { $set: { status: "running", startedAt: new Date(), error: "" }, $inc: { executionAttempts: 1 } }, { returnDocument: "after" });
       if (!task) return NextResponse.json({ status: "error", message: "Task is not queued, was not approved, or is already running." }, { status: 409 });
       try {
         const agent = await AIAgent.findOne({ _id: task.agentId, enabled: true });
@@ -480,7 +480,7 @@ export async function POST(request: NextRequest) {
       }
     }
     if (body.action === "task.retry") {
-      const task = await AITask.findOneAndUpdate({ _id: body.taskId, status: "failed", executionAttempts: { $lt: 5 } }, { $set: { status: "awaiting_approval", error: "", completedAt: null } }, { new: true });
+      const task = await AITask.findOneAndUpdate({ _id: body.taskId, status: "failed", executionAttempts: { $lt: 5 } }, { $set: { status: "awaiting_approval", error: "", completedAt: null } }, { returnDocument: "after" });
       if (!task) return NextResponse.json({ status: "error", message: "Task cannot be retried or has reached its five-attempt limit." }, { status: 409 });
       await writePlatformAuditEvent({ actorType: "human", actorId, action: "ai.task.retry_requested", module: "ai-workforce", targetType: "AITask", targetId: String(task._id), outcome: "success" });
       return NextResponse.json({ status: "ok", message: "Task returned to human approval before another attempt." });
@@ -488,7 +488,7 @@ export async function POST(request: NextRequest) {
     if (body.action === "task.handover") {
       const note = String(body.note || "").trim();
       if (!note) return NextResponse.json({ status: "error", message: "A handover note is required." }, { status: 400 });
-      const task = await AITask.findOneAndUpdate({ _id: body.taskId, status: { $in: ["queued", "failed", "completed"] } }, { $set: { status: "cancelled", handedOverAt: new Date(), handedOverBy: actorId, handoverNote: note.slice(0, 2000) } }, { new: true });
+      const task = await AITask.findOneAndUpdate({ _id: body.taskId, status: { $in: ["queued", "failed", "completed"] } }, { $set: { status: "cancelled", handedOverAt: new Date(), handedOverBy: actorId, handoverNote: note.slice(0, 2000) } }, { returnDocument: "after" });
       if (!task) return NextResponse.json({ status: "error", message: "Task cannot be handed over in its current state." }, { status: 409 });
       await writePlatformAuditEvent({ actorType: "human", actorId, action: "ai.task.handed_over", module: "ai-workforce", targetType: "AITask", targetId: String(task._id), outcome: "success", metadata: { note: note.slice(0, 500) } });
       return NextResponse.json({ status: "ok", message: "Task handed over to a human. The handover note is recorded." });

@@ -8,7 +8,7 @@ import User from "@/models/User";
 import { AIAgent, AITask } from "@/models/AIWorkforce";
 import { runProviderCompletion } from "@/lib/ai/provider-runtime";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
-import { getVerifiedIntegrationCredentials } from "@/lib/integrations/credentials";
+import { mirrorMessageToPersonalWhatsApp } from "@/lib/messaging/whatsappSync";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     const conversation = await UnifiedConversation.findById(conversationId).populate("memberIds", "name email").populate("aiAgentId", "name role department").lean();
     if (!conversation) return fail("Conversation not found.", 404);
     const isMember = conversation.memberIds.some((member: unknown) => String((member as {_id?: unknown})._id || member) === String(session.user._id));
-    if (!isMember && !session.role.isFounderRole) return forbiddenResponse("You are not a member of this conversation.");
+    if (!isMember) return forbiddenResponse("You are not a member of this private conversation.");
     await UnifiedMessage.updateMany({ conversationId, senderId: { $ne: session.user._id }, readBy: { $ne: session.user._id } }, { $addToSet: { readBy: session.user._id }, $set: { status: "read" } });
     const query = searchParams.get("q")?.trim().slice(0, 100) || "";
     const messageFilter: Record<string, unknown> = { conversationId };
@@ -38,10 +38,10 @@ export async function GET(request: NextRequest) {
     const messages = await UnifiedMessage.find(messageFilter).sort({ createdAt: 1 }).limit(300).lean();
     return NextResponse.json({ status: "ok", conversation, messages, isFounder: session.role.isFounderRole }, { headers: { "Cache-Control": "private, no-store" } });
   }
-  const filter = session.role.isFounderRole ? { archivedAt: { $exists: false } } : { memberIds: session.user._id, archivedAt: { $exists: false } };
+  const filter = { memberIds: session.user._id, archivedAt: { $exists: false } };
   const conversations = await UnifiedConversation.find(filter).populate("memberIds", "name email").populate("aiAgentId", "name role department").sort({ lastMessageAt: -1, updatedAt: -1 }).limit(150).lean();
   const people = await User.find({ accountType: "staff", isBanned: { $ne: true } }).select("name email role").sort({ name: 1 }).limit(300).lean();
-  const agents = session.role.isFounderRole ? await AIAgent.find({ enabled: true }).select("name role department").sort({ name: 1 }).lean() : [];
+  const agents = await AIAgent.find({ enabled: true }).select("name role department").sort({ name: 1 }).lean();
   return NextResponse.json({ status: "ok", conversations, people, agents }, { headers: { "Cache-Control": "private, no-store" } });
 }
 
@@ -58,7 +58,6 @@ export async function POST(request: NextRequest) {
     const requestedKind = String(body.kind || "direct");
     if (!validKinds.includes(requestedKind as typeof validKinds[number])) return fail("Unsupported conversation type.");
     const kind = requestedKind as typeof validKinds[number];
-    if (kind === "ai" && !session.role.isFounderRole) return forbiddenResponse("Founder access is required to create AI conversations.");
     const ids = Array.isArray(body.memberIds) ? body.memberIds.filter((id): id is string => typeof id === "string" && Types.ObjectId.isValid(id)).slice(0, 100) : [];
     if (kind === "direct" && ids.length !== 1) return fail("A direct conversation requires exactly one other team member.");
     if (kind === "ai" && (!body.aiAgentId || !Types.ObjectId.isValid(String(body.aiAgentId)))) return fail("Select a valid AI employee.");
@@ -85,23 +84,17 @@ export async function POST(request: NextRequest) {
     if (!Types.ObjectId.isValid(conversationId) || (!content && !attachments.length) || content.length > 12000) return fail("A valid conversation and text or attachment are required.");
     const conversation = await UnifiedConversation.findById(conversationId);
     if (!conversation) return fail("Conversation not found.", 404);
-    if (!conversation.memberIds.some((id) => String(id) === String(actorId)) && !session.role.isFounderRole) return forbiddenResponse("You are not a member of this conversation.");
+    if (!conversation.memberIds.some((id) => String(id) === String(actorId))) return forbiddenResponse("You are not a member of this private conversation.");
     let threadRootId: Types.ObjectId | undefined;
     if (typeof body.threadRootId === "string" && Types.ObjectId.isValid(body.threadRootId)) {
       const root = await UnifiedMessage.findOne({ _id: body.threadRootId, conversationId });
       if (!root) return fail("Thread root message does not belong to this conversation.");
       threadRootId = root.threadRootId || root._id;
     }
-    if (conversation.kind === "whatsapp" && attachments.length) return fail("WhatsApp media sending is not enabled yet; send text within the customer service window.", 409);
-    let whatsappCredentials: Record<string, string> | null = null;
-    if (conversation.kind === "whatsapp") {
-      if (!conversation.externalContactId || !conversation.externalLastInboundAt || Date.now() - conversation.externalLastInboundAt.getTime() > 24 * 60 * 60 * 1000) return fail("WhatsApp free-form replies are available only within 24 hours of the contact’s latest inbound message. Outside that window, an approved WhatsApp template is required.", 409);
-      whatsappCredentials = await getVerifiedIntegrationCredentials("whatsapp_cloud");
-      if (!whatsappCredentials?.accessToken || !whatsappCredentials.phoneNumberId) return fail("WhatsApp Cloud API credentials are not configured and verified.", 503);
-    }
     const message = await UnifiedMessage.create({ conversationId, senderType: "human", senderId: actorId, senderLabel: actorName, body: content, status: "sent", readBy: [actorId], threadRootId, attachments, messageType: attachments.some((item) => item.mimeType.startsWith("audio/")) ? "audio" : attachments.length ? "file" : "text" });
     conversation.lastMessageAt = new Date();
     await conversation.save();
+    await mirrorMessageToPersonalWhatsApp(conversation, message);
 
     if (conversation.kind === "ai" && conversation.aiAgentId) {
       const agent = await AIAgent.findOne({ _id: conversation.aiAgentId, enabled: true });
@@ -126,6 +119,7 @@ export async function POST(request: NextRequest) {
         task.status = "completed"; task.result = completion.text.slice(0, 50000); task.inputTokens = completion.inputTokens; task.outputTokens = completion.outputTokens; task.providerRequestId = completion.providerRequestId; task.completedAt = new Date(); await task.save();
         const reply = await UnifiedMessage.create({ conversationId, senderType: "ai", senderLabel: agent.name, body: completion.text.slice(0, 12000), status: "sent" });
         conversation.lastMessageAt = new Date(); await conversation.save();
+        await mirrorMessageToPersonalWhatsApp(conversation, reply);
         await writePlatformAuditEvent({ actorType: "ai", actorId: String(agent._id), actorLabel: agent.name, action: "ai.conversation.replied", module: "communications", targetType: "AITask", targetId: String(task._id), outcome: "success", metadata: { conversationId, inputTokens: completion.inputTokens, outputTokens: completion.outputTokens } });
         return NextResponse.json({ status: "ok", message: { id: String(reply._id), body: reply.body, createdAt: reply.createdAt, senderLabel: agent.name, senderType: "ai" }, taskStatus: "completed" }, { status: 201 });
       } catch (error) {
@@ -136,24 +130,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (conversation.kind === "whatsapp" && whatsappCredentials) {
-      const token = whatsappCredentials.accessToken;
-      const phoneNumberId = whatsappCredentials.phoneNumberId;
-      try {
-        const response = await fetch(`https://graph.facebook.com/v22.0/${phoneNumberId}/messages`, {
-          method: "POST", headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
-          body: JSON.stringify({ messaging_product: "whatsapp", recipient_type: "individual", to: conversation.externalContactId, type: "text", text: { preview_url: false, body: content } }),
-          signal: AbortSignal.timeout(15000), cache: "no-store",
-        });
-        const result = await response.json().catch(() => ({})) as { messages?: { id?: string }[]; error?: { message?: string } };
-        if (!response.ok) throw new Error(result.error?.message || "WhatsApp delivery failed.");
-        message.externalMessageId = result.messages?.[0]?.id;
-        await message.save();
-      } catch (error) {
-        message.status = "failed"; await message.save();
-        return NextResponse.json({ status: "error", message: error instanceof Error ? error.message : "WhatsApp delivery failed.", messageId: String(message._id) }, { status: 502 });
-      }
-    }
     return NextResponse.json({ status: "ok", message: { id: String(message._id), body: message.body, createdAt: message.createdAt, senderLabel: actorName, senderType: "human" } }, { status: 201 });
   }
 
@@ -163,7 +139,7 @@ export async function POST(request: NextRequest) {
     const message = await UnifiedMessage.findById(messageId);
     if (!message) return fail("Message not found.", 404);
     const conversation = await UnifiedConversation.findById(message.conversationId);
-    if (!conversation || (!conversation.memberIds.some((id) => String(id) === String(actorId)) && !session.role.isFounderRole)) return forbiddenResponse("You cannot modify this conversation.");
+    if (!conversation || !conversation.memberIds.some((id) => String(id) === String(actorId))) return forbiddenResponse("You cannot modify this private conversation.");
     if (body.action === "react") {
       const emoji = String(body.emoji || "").slice(0, 12);
       if (!emoji) return fail("Choose a reaction.");

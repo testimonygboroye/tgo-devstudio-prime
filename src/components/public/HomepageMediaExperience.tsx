@@ -45,8 +45,6 @@ export default function HomepageMediaExperience({ settings }: Props) {
     return () => window.clearInterval(id);
   }, [settings.enabled, countdownEnabled, hasTarget, afterTarget]);
 
-  useEffect(() => { setMediaIndex(0); }, [video, image]);
-
   useEffect(() => {
     if (!settings.videoAudioEnabled) return;
     const resume = () => { const element = videoRef.current; if (element?.paused) void element.play().catch(() => undefined); };

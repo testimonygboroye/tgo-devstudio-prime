@@ -18,7 +18,7 @@ export interface IUserWhatsAppConnection extends Document {
 const schema = new Schema<IUserWhatsAppConnection>({
   userId: { type: Schema.Types.ObjectId, ref: "User", required: true, unique: true, index: true },
   phoneNumberId: { type: String, trim: true, maxlength: 80, index: true },
-  personalPhoneNumber: { type: String, required: true, trim: true, maxlength: 30, index: true },
+  personalPhoneNumber: { type: String, required: true, trim: true, maxlength: 30 },
   businessAccountId: { type: String, trim: true, maxlength: 80 },
   credentialsCiphertext: { type: String, select: false },
   status: { type: String, enum: ["connected", "error", "disconnected"], default: "connected", index: true },
@@ -30,5 +30,6 @@ const schema = new Schema<IUserWhatsAppConnection>({
   lastError: { type: String, maxlength: 300, default: "" },
 }, { timestamps: true });
 schema.index({ phoneNumberId: 1, personalPhoneNumber: 1, status: 1 });
+schema.index({ personalPhoneNumber: 1 }, { unique: true, partialFilterExpression: { status: "connected" }, name: "active_personal_phone_unique" });
 const UserWhatsAppConnection: Model<IUserWhatsAppConnection> = models.UserWhatsAppConnection || model<IUserWhatsAppConnection>("UserWhatsAppConnection", schema);
 export default UserWhatsAppConnection;

@@ -27,6 +27,6 @@ export default async function LegalDocumentPage() {
   const updatedNotice = "The Services include the public website, authenticated client portal, project and support workspaces, payment and invoice features, connected communication channels and AI-assisted help features where enabled. Internal workforce and administration tools are used by authorised personnel.";
   const outdatedNotice = "New products, a client portal, account workspace or payment service may require an additional notice before launch.";
   let content = page.content.replace(outdatedNotice, updatedNotice);
-  if (!content.includes("<h2>AI assistants and automated support</h2>")) content += "\\n" + AI_PRIVACY_SECTION;
+  if (!content.includes("<h2>AI assistants and automated support</h2>")) content += "\n" + AI_PRIVACY_SECTION;
   return <LegalPageShell title={page.title} eyebrow="TGO DevStudio · Legal" description="Understand what information TGO DevStudio collects, why it is used, how it is protected and the choices available to you." content={content} currentPath="/privacy-policy" />;
 }

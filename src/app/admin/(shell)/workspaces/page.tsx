@@ -1,4 +1,4 @@
-import WorkspacesPage from "@/app/workspaces/page";
+import WorkspacesClient from "@/components/workspaces/WorkspacesClient";
 
 export const metadata = {
   title: "Universal Workspaces | TGO Admin",
@@ -13,5 +13,5 @@ export const dynamic = "force-dynamic";
  * The public /workspaces route remains available to clients and employees.
  */
 export default function AdminWorkspacesPage() {
-  return <WorkspacesPage />;
+  return <WorkspacesClient />;
 }

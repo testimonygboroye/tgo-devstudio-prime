@@ -19,6 +19,10 @@ export async function ensureWhatsAppRecipientIndexes() {
         { phoneNumberId: 1, personalPhoneNumber: 1, status: 1 },
         { name: "phoneNumberId_personalPhoneNumber_status" },
       );
+      await UserWhatsAppConnection.collection.createIndex(
+        { personalPhoneNumber: 1 },
+        { unique: true, partialFilterExpression: { status: "connected" }, name: "active_personal_phone_unique" },
+      );
     })().catch((error) => {
       migration = null;
       throw error;

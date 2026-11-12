@@ -27,6 +27,7 @@ export interface IAIChatMessage {
   inputTokens: number;
   outputTokens: number;
   feedback?: "helpful" | "unhelpful";
+  sources?: string[];
   createdAt: Date;
 }
 const MessageSchema = new Schema<IAIChatMessage>({
@@ -36,6 +37,7 @@ const MessageSchema = new Schema<IAIChatMessage>({
   inputTokens: { type: Number, default: 0, min: 0 },
   outputTokens: { type: Number, default: 0, min: 0 },
   feedback: { type: String, enum: ["helpful","unhelpful"] },
+  sources: { type: [String], default: [], validate: [(v: string[]) => v.length <= 20, "Maximum 20 source references"] },
   createdAt: { type: Date, default: Date.now, required: true },
 }, { _id: false });
 export interface IAIChatSession extends Document {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { getServerSession } from "@/lib/auth/serverSession";
 import { connectToDatabase } from "@/lib/db";
+import { getSiteUrl } from "@/lib/siteUrl";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import { AIProvider, AIAgent, AITask } from "@/models/AIWorkforce";
 import { UnifiedConversation, UnifiedMessage } from "@/models/UnifiedConversation";
@@ -112,7 +113,7 @@ export async function POST(request: NextRequest) {
         { name: "Business Strategy Director", role: "Business Strategy Director", department: "Strategy & Research", permissions: ["projects.read_summary"] },
         { name: "CTO", role: "Chief Technology Officer", department: "Engineering & Technology", permissions: ["projects.read_summary"] },
         { name: "Project Operations Manager", role: "Project Operations Manager", department: "Project Delivery", permissions: ["projects.read_summary", "projects.status.update"] },
-        { name: "QA Lead", role: "Quality Assurance Lead", department: "Quality Assurance", permissions: ["projects.read_summary"] },
+        { name: "QA Lead", role: "Quality Assurance Lead", department: "Quality Assurance", permissions: ["projects.read_summary", "site.routes.health_check"] },
         { name: "DevOps Architect", role: "DevOps Architect", department: "DevOps & Infrastructure", permissions: [] },
         { name: "Client Success Director", role: "Client Success Director", department: "Client Relations", permissions: ["clients.read_summary", "projects.read_summary"] },
         { name: "Client Onboarding Specialist", role: "Client Onboarding Specialist", department: "Client Onboarding", permissions: ["clients.read_summary"] },
@@ -124,10 +125,10 @@ export async function POST(request: NextRequest) {
         { name: "Finance Analyst", role: "Finance Analyst", department: "Finance & Administration", permissions: [] },
         { name: "Research Analyst", role: "Research Analyst", department: "Research & Intelligence", permissions: [] },
         { name: "Security & Compliance Officer", role: "Security & Compliance Officer", department: "Security & Compliance", permissions: [] },
-        { name: "AI Site Operations Lead", role: "AI Site Operations Lead", department: "Website Operations", permissions: ["projects.read_summary"] },
-        { name: "Public Experience QA Specialist", role: "Public Website QA Specialist", department: "Public Experience", permissions: [] },
-        { name: "Client Portal QA Specialist", role: "Client Portal QA Specialist", department: "Client Experience", permissions: [] },
-        { name: "Admin Platform QA Specialist", role: "Admin Platform QA Specialist", department: "Platform Operations", permissions: [] },
+        { name: "AI Site Operations Lead", role: "AI Site Operations Lead", department: "Website Operations", permissions: ["projects.read_summary", "site.routes.health_check"] },
+        { name: "Public Experience QA Specialist", role: "Public Website QA Specialist", department: "Public Experience", permissions: ["site.routes.health_check"] },
+        { name: "Client Portal QA Specialist", role: "Client Portal QA Specialist", department: "Client Experience", permissions: ["site.routes.health_check"] },
+        { name: "Admin Platform QA Specialist", role: "Admin Platform QA Specialist", department: "Platform Operations", permissions: ["site.routes.health_check"] },
       ] as const;
 
       const workspaceIds = new Map<string, mongoose.Types.ObjectId>();
@@ -302,7 +303,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ status: "ok", agentId: agent._id, message: "Agent created disabled and with no operational permissions. Enablement requires a separate reviewed workflow." }, { status: 201 });
     }
     if (body.action === "agent.permissions.save") {
-      const allowed = ["clients.read_summary", "projects.read_summary", "projects.status.update"];
+      const allowed = ["clients.read_summary", "projects.read_summary", "projects.status.update", "site.routes.health_check"];
       if (!Array.isArray(body.permissions) || body.permissions.some((p: unknown) => typeof p !== "string" || !allowed.includes(p))) return NextResponse.json({ status: "error", message: "One or more requested permissions are not in the approved tool registry." }, { status: 400 });
       const agent = await AIAgent.findById(body.agentId);
       if (!agent) return NextResponse.json({ status: "error", message: "Agent not found." }, { status: 404 });
@@ -333,7 +334,7 @@ export async function POST(request: NextRequest) {
       if (!title || !input) return NextResponse.json({ status: "error", message: "Task title and instructions are required." }, { status: 400 });
       const operation = body.operation ? String(body.operation) : "";
       const operationPayload = body.operationPayload && typeof body.operationPayload === "object" && !Array.isArray(body.operationPayload) ? body.operationPayload as Record<string, unknown> : {};
-      if (operation && (!["clients.read_summary", "projects.read_summary", "projects.status.update"].includes(operation) || !agent.permissions.includes(operation))) return NextResponse.json({ status: "error", message: "This agent has not been granted the selected business-operation permission." }, { status: 403 });
+      if (operation && (!["clients.read_summary", "projects.read_summary", "projects.status.update", "site.routes.health_check"].includes(operation) || !agent.permissions.includes(operation))) return NextResponse.json({ status: "error", message: "This agent has not been granted the selected business-operation permission." }, { status: 403 });
       if (operation && JSON.stringify(operationPayload).length > 4000) return NextResponse.json({ status: "error", message: "Business-operation parameters are too large." }, { status: 400 });
       if (operation === "clients.read_summary" && !mongoose.isValidObjectId(String(operationPayload.clientId || ""))) return NextResponse.json({ status: "error", message: "A valid client ID is required for this tool." }, { status: 400 });
       if (["projects.read_summary", "projects.status.update"].includes(operation) && !mongoose.isValidObjectId(String(operationPayload.projectId || ""))) return NextResponse.json({ status: "error", message: "A valid project ID is required for this tool." }, { status: 400 });
@@ -403,6 +404,34 @@ export async function POST(request: NextRequest) {
           const projectId = String(payload.projectId || ""), nextStatus = String(payload.status || "");
           if (!/^[a-f0-9]{24}$/i.test(projectId) || !["active", "on_hold", "in_qa", "awaiting_client"].includes(nextStatus)) throw new Error("Project status operation requires a valid project ID and a permitted non-terminal status.");
           operationResult = { requestedOperation: "project status update", projectId, requestedStatus: nextStatus, approvalRecordedBy: task.approvedBy };
+        } else if (task.operation === "site.routes.health_check") {
+          if (!agent.permissions.includes("site.routes.health_check")) throw new Error("Agent lacks site.routes.health_check permission.");
+          const siteUrl = getSiteUrl();
+          const routes = ["/", "/about", "/services", "/industries", "/engagement-models", "/services/catalogue", "/process", "/portfolio", "/stack", "/blog", "/team", "/testimonials", "/faq", "/contact", "/book-a-call", "/help", "/privacy-policy", "/terms-of-service", "/usage-policy", "/accessibility", "/client/login", "/admin/login", "/workforce", "/workspaces", "/admin/dashboard"];
+          const checks = await Promise.all(routes.map(async (route) => {
+            try {
+              const response = await fetch(new URL(route, siteUrl), {
+                method: "GET",
+                redirect: "manual",
+                cache: "no-store",
+                headers: { "User-Agent": "TGO-DevStudio-ReadOnly-HealthCheck/1.0" },
+                signal: AbortSignal.timeout(10000),
+              });
+              const location = response.headers.get("location");
+              const healthy = response.status >= 200 && response.status < 400;
+              return { route, status: response.status, healthy, redirect: location ? location.slice(0, 500) : undefined };
+            } catch (error) {
+              return { route, status: 0, healthy: false, error: error instanceof Error ? error.message.slice(0, 240) : "Request failed." };
+            }
+          }));
+          operationResult = {
+            checkedAt: new Date().toISOString(),
+            site: siteUrl,
+            totalRoutes: checks.length,
+            healthyRoutes: checks.filter((item) => item.healthy).length,
+            failedRoutes: checks.filter((item) => !item.healthy).length,
+            checks,
+          };
         }
         const prompt = operationResult ? task.input + "\n\nApproved business-operation result (JSON reference data):\n" + JSON.stringify(operationResult) : task.input;
         const completion = await runProviderCompletion(String(agent.providerId), agent.modelName, agent.systemInstructions + memoryContext, prompt);

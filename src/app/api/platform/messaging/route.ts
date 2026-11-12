@@ -163,7 +163,6 @@ export async function POST(request: NextRequest) {
   }
 
   if (body.action === "ai.task") {
-    if (!session.role.isFounderRole) return forbiddenResponse("Founder access is required to assign AI work.");
     const agentId = String(body.agentId || ""), input = String(body.input || "").trim();
     if (!Types.ObjectId.isValid(agentId) || input.length < 5 || input.length > 20000) return fail("Select an AI employee and provide a task description.");
     const agent = await AIAgent.findOne({ _id: agentId, enabled: true });
@@ -173,7 +172,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ status: "ok", taskId: String(task._id), taskStatus: task.status, message: "Task recorded in the AI workforce queue." }, { status: 201 });
   }
   if (body.action === "translate") {
-    if (!session.role.isFounderRole) return forbiddenResponse("Founder access is required to use AI translation.");
     const agentId = String(body.agentId || "");
     const input = String(body.input || "").trim();
     const targetLanguage = String(body.targetLanguage || "").trim().slice(0, 80);

@@ -12,12 +12,34 @@ type Props = { settings: {
   videoDurationSeconds?: number; useVideoDurationOverride?: boolean;
 } };
 
+function addMonths(date: Date, months: number) {
+  const next = new Date(date);
+  const day = next.getDate();
+  next.setDate(1);
+  next.setMonth(next.getMonth() + months);
+  const lastDay = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
+  next.setDate(Math.min(day, lastDay));
+  return next;
+}
+
 function remainingTime(target: number, now: number) {
-  let total = Math.max(0, Math.floor((target - now) / 1000));
+  const end = new Date(target);
+  let cursor = new Date(now);
+  let years = 0;
+  while (years < 100 && new Date(cursor.getFullYear() + 1, cursor.getMonth(), cursor.getDate(), cursor.getHours(), cursor.getMinutes(), cursor.getSeconds()).getTime() <= target) {
+    cursor.setFullYear(cursor.getFullYear() + 1);
+    years++;
+  }
+  let months = 0;
+  while (months < 12 && addMonths(cursor, 1).getTime() <= target) {
+    cursor = addMonths(cursor, 1);
+    months++;
+  }
+  let total = Math.max(0, Math.floor((target - cursor.getTime()) / 1000));
   const days = Math.floor(total / 86400); total %= 86400;
   const hours = Math.floor(total / 3600); total %= 3600;
   const minutes = Math.floor(total / 60); total %= 60;
-  return { days, hours, minutes, seconds: total };
+  return { years, months, days, hours, minutes, seconds: total };
 }
 
 export default function HomepageMediaExperience({ settings }: Props) {
@@ -41,7 +63,7 @@ export default function HomepageMediaExperience({ settings }: Props) {
 
   useEffect(() => {
     if (!settings.enabled || !countdownEnabled || !hasTarget || afterTarget) return;
-    const id = window.setInterval(() => { window.requestAnimationFrame(() => setNow(Date.now())); }, 1000);
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(id);
   }, [settings.enabled, countdownEnabled, hasTarget, afterTarget]);
 
@@ -65,10 +87,13 @@ export default function HomepageMediaExperience({ settings }: Props) {
 
   if (!settings.enabled) return null;
   const countdown = countdownEnabled && hasTarget && !afterTarget ? remainingTime(target, now) : null;
-  const units = countdown ? [["Days", countdown.days], ["Hours", countdown.hours], ["Minutes", countdown.minutes], ["Seconds", countdown.seconds]] as const : [];
+  const units = countdown ? [
+    ["Years", countdown.years], ["Months", countdown.months], ["Days", countdown.days],
+    ["Hours", countdown.hours], ["Minutes", countdown.minutes], ["Seconds", countdown.seconds],
+  ] as const : [];
 
   return (
-    <section className="homepage-launch relative overflow-hidden border-y border-white/10 px-4 py-12 sm:px-8 sm:py-16" aria-label="Launch announcement">
+    <section className="homepage-launch relative overflow-hidden border-y border-white/10 px-4 py-12 sm:px-8 sm:py-16" aria-label="Featured announcement">
       <div className="homepage-launch-glow" aria-hidden="true" />
       <div className="relative mx-auto max-w-6xl">
         {(settings.title || settings.description) && (
@@ -80,19 +105,19 @@ export default function HomepageMediaExperience({ settings }: Props) {
         )}
         {current && (
           <div className="homepage-media-frame mx-auto mt-9">
-            <div className="homepage-media-topline"><span>THE NEXT CHAPTER</span><span><i /> TGO DEVSTUDIO</span></div>
+            <div className="homepage-media-topline"><span>FEATURED MEDIA</span><span><i /> TGO DEVSTUDIO</span></div>
             {current.kind === "video" ? (
-              <video ref={videoRef} key={current.url} src={current.url} autoPlay muted={!settings.videoAudioEnabled} playsInline controls={false} disablePictureInPicture controlsList="nodownload noplaybackrate noremoteplayback" loop={false} onContextMenu={event => event.preventDefault()} onEnded={advance} className="homepage-media-content homepage-media-video" />
+              <video ref={videoRef} key={current.url} src={current.url} autoPlay muted={!settings.videoAudioEnabled} playsInline preload="auto" controls={false} disablePictureInPicture controlsList="nodownload noplaybackrate noremoteplayback" loop={false} onContextMenu={event => event.preventDefault()} onEnded={advance} className="homepage-media-content homepage-media-video" />
             ) : (
-              <div className="homepage-media-image-wrap"><SmartImage src={current.url} alt={settings.title || "TGO DevStudio launch media"} label={settings.title || "TGO DevStudio"} className="homepage-media-content homepage-media-image" /></div>
+              <div className="homepage-media-image-wrap"><SmartImage priority src={current.url} alt={settings.title || "TGO DevStudio featured media"} label={settings.title || "TGO DevStudio"} className="homepage-media-content homepage-media-image" /></div>
             )}
             {media.length > 1 && <div className="homepage-media-pagination" aria-label={`Media ${mediaIndex + 1} of ${media.length}`}>{media.map((item, index) => <button key={item.url} type="button" aria-label={`Show media ${index + 1}`} aria-current={index === mediaIndex ? "true" : undefined} onClick={() => setMediaIndex(index)} />)}</div>}
           </div>
         )}
         {countdown && settings.countdownVisible !== false && (
           <div className="homepage-countdown mx-auto mt-8 max-w-5xl">
-            <div className="homepage-countdown-heading"><span>COUNTING DOWN TO LAUNCH</span><span>LIVE TIMER</span></div>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{units.map(([label, value]) => (
+            <div className="homepage-countdown-heading"><span>COUNTDOWN</span><span>LIVE TIMER</span></div>
+            <div className="homepage-countdown-grid">{units.map(([label, value]) => (
               <div key={label} className="homepage-countdown-unit"><strong>{String(value).padStart(2, "0")}</strong><span>{label}</span></div>
             ))}</div>
           </div>

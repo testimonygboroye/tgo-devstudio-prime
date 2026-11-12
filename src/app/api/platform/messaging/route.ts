@@ -167,7 +167,9 @@ export async function POST(request: NextRequest) {
     if (!Types.ObjectId.isValid(agentId) || input.length < 5 || input.length > 20000) return fail("Select an AI employee and provide a task description.");
     const agent = await AIAgent.findOne({ _id: agentId, enabled: true });
     if (!agent) return fail("AI employee is unavailable.", 404);
-    const task = await AITask.create({ agentId, title: String(body.title || input.slice(0, 120)).slice(0, 180), input, status: agent.requiresApproval ? "awaiting_approval" : "queued", requestedBy: String(actorId), operationPayload: { source: "communications", conversationId: typeof body.conversationId === "string" ? body.conversationId : undefined } });
+    const conversationId = typeof body.conversationId === "string" ? body.conversationId : "";
+    if (conversationId && (!Types.ObjectId.isValid(conversationId) || !await UnifiedConversation.exists({ _id: conversationId, memberIds: actorId }))) return forbiddenResponse("You can only assign AI work from a conversation you belong to.");
+    const task = await AITask.create({ agentId, title: String(body.title || input.slice(0, 120)).slice(0, 180), input, status: agent.requiresApproval ? "awaiting_approval" : "queued", requestedBy: String(actorId), operationPayload: { source: "communications", conversationId: conversationId || undefined } });
     await writePlatformAuditEvent({ actorType: "human", actorId: String(actorId), actorLabel: actorName, action: "ai.task.assigned_from_communications", module: "communications", targetType: "AITask", targetId: String(task._id), outcome: "success", metadata: { agentId, status: task.status } });
     return NextResponse.json({ status: "ok", taskId: String(task._id), taskStatus: task.status, message: "Task recorded in the AI workforce queue." }, { status: 201 });
   }

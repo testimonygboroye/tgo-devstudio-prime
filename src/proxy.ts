@@ -18,7 +18,8 @@ const PUBLIC_SUBMISSION_PATTERNS = [
   /^\/api\/auth\/reset-password$/,
   /^\/api\/analytics\/track$/,
   /^\/api\/analytics\/events$/,
-  /^\/api\/privacy\/deletion-requests$/,\n  /^\/api\/(public|client|admin)\/ai-chat$/,
+  /^\/api\/privacy\/deletion-requests$/,
+  /^\/api\/(public|client|admin)\/ai-chat$/,
 ];
 
 export function proxy(request: NextRequest) {

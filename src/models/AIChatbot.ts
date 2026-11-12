@@ -5,6 +5,8 @@ export interface IAIChatbotConfig extends Document {
   scope: AIChatbotScope;
   providerId: Types.ObjectId;
   modelName: string;
+  fallbackProviderId?: Types.ObjectId;
+  fallbackModelName?: string;
   enabled: boolean;
   welcomeMessage: string;
   updatedBy: Types.ObjectId;
@@ -15,6 +17,8 @@ const ConfigSchema = new Schema<IAIChatbotConfig>({
   scope: { type: String, enum: ["public","client","admin"], required: true, unique: true },
   providerId: { type: Schema.Types.ObjectId, ref: "AIProvider", required: true },
   modelName: { type: String, required: true, maxlength: 120 },
+  fallbackProviderId: { type: Schema.Types.ObjectId, ref: "AIProvider" },
+  fallbackModelName: { type: String, maxlength: 120 },
   enabled: { type: Boolean, default: false },
   welcomeMessage: { type: String, default: "Hello. How can I help?", maxlength: 300 },
   updatedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },

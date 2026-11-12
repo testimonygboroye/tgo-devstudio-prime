@@ -1,8 +1,8 @@
-const SW_VERSION = "tgo-offline-v7";
+const SW_VERSION = "tgo-offline-v9";
 const APP_CACHE = `${SW_VERSION}-app`;
 const ASSET_CACHE = `${SW_VERSION}-public-assets`;
 const OFFLINE_URL = "/offline.html";
-const PRECACHE_URLS = [OFFLINE_URL, "/manifest.json", "/favicon.png", "/logo.png", "/icons/icon-192x192.png"];
+const PRECACHE_URLS = [OFFLINE_URL, "/manifest.json", "/favicon.png", "/logo.png", "/icons/icon-192x192.png", "/images/illustrations/offline-signal.svg", "/images/illustrations/error-recovery.svg", "/images/illustrations/not-found.svg", "/images/illustrations/brand-fallback.svg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil((async () => {
@@ -16,13 +16,20 @@ self.addEventListener("activate", (event) => {
   event.waitUntil((async () => {
     const keep = new Set([APP_CACHE, ASSET_CACHE]);
     const names = await caches.keys();
+    // Preserve the last-known-good offline homepage when rotating cache versions.
+    const previousApp = names.filter((name) => /^tgo-offline-v[0-9]+-app$/.test(name) && name !== APP_CACHE).sort().reverse()[0];
+    if (previousApp) {
+      const previous = await caches.open(previousApp);
+      const cachedHome = await previous.match("/");
+      if (cachedHome) { const current = await caches.open(APP_CACHE); await current.put("/", cachedHome); }
+    }
     await Promise.all(names.filter((name) => name.startsWith("tgo-offline-") && !keep.has(name)).map((name) => caches.delete(name)));
     await self.clients.claim();
   })());
 });
 
 function isPrivatePath(pathname) {
-  return /^\/(admin|api|auth|login|logout|register|account|member|members|portal|dashboard|checkout|payment|billing|settings)(\/|$)/i.test(pathname);
+  return /^\/(admin|api|auth|login|logout|register|account|member|members|client|portal|dashboard|checkout|payment|billing|settings|workspaces|workforce)(\/|$)/i.test(pathname);
 }
 
 async function trimCache(cacheName, maxEntries) {
@@ -33,11 +40,26 @@ async function trimCache(cacheName, maxEntries) {
 }
 
 async function handleNavigation(request) {
+  const url = new URL(request.url);
   try {
-    return await fetch(request);
+    const response = await fetch(request);
+    // Keep a last-known-good copy of the public homepage only.
+    if (response.ok && url.pathname === "/" && !url.search) {
+      const cache = await caches.open(APP_CACHE);
+      await cache.put("/", response.clone());
+    }
+    return response;
   } catch {
-    // Do not replay cached HTML: it can reference deployment-specific chunks
-    // that are no longer available, leaving users with an unstyled page.
+    // The public homepage is intentionally available offline once visited.
+    if (url.pathname === "/" && !url.search) {
+      const cachedHome = await caches.match("/", { cacheName: APP_CACHE });
+      if (cachedHome) {
+        const headers = new Headers(cachedHome.headers);
+        headers.set("X-TGO-Offline", "1");
+        headers.set("Cache-Control", "no-store");
+        return new Response(cachedHome.body, { status: 200, headers });
+      }
+    }
     const offline = await caches.match(OFFLINE_URL, { cacheName: APP_CACHE });
     if (offline) {
       const headers = new Headers(offline.headers);

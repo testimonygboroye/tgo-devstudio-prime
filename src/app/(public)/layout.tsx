@@ -6,6 +6,7 @@ import CookieConsentBanner from "@/components/public/CookieConsentBanner";
 import HelpDiscoveryPrompt from "@/components/shared/HelpDiscoveryPrompt";
 import AnalyticsTracker from "@/components/public/AnalyticsTracker";
 import ShareCurrentPage from "@/components/public/ShareCurrentPage";
+import PublicRouteScrollReset from "@/components/public/PublicRouteScrollReset";
 import { getPublicSiteSettings } from "@/lib/publicSite/getPublicSiteSettings";
 
 export default async function PublicLayout({
@@ -17,6 +18,7 @@ export default async function PublicLayout({
 
   return (
     <>
+      <PublicRouteScrollReset />
       <SiteHeader settings={siteSettings} />
 
       {children}

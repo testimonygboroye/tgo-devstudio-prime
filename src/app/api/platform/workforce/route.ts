@@ -29,7 +29,7 @@ export async function POST(request:NextRequest){
  let body:Record<string,unknown>;try{body=await request.json()}catch{return fail("Invalid request body.");}await connectToDatabase();const action=String(body.action||"");
  try{
  if(action==="org.provision_default_structure"){
-  const structure=[
+  const structure: Array<{name:string;description:string;team:string;positions:Array<[string,number]>}> = [
    {name:"Executive Office",description:"Company leadership, governance, strategy execution and executive coordination.",team:"Executive Leadership",positions:[["Chief Executive Officer",10],["Chief of Staff",20],["Business Operations Manager",50]]},
    {name:"Strategy & Research",description:"Corporate strategy, market intelligence, planning and research.",team:"Strategy & Research",positions:[["Business Strategy Director",20],["Research Analyst",100]]},
    {name:"Engineering & Technology",description:"Software engineering, application architecture and technical delivery.",team:"Engineering",positions:[["Chief Technology Officer",20],["Software Engineer",100],["Frontend Engineer",110],["Backend Engineer",110],["Mobile Engineer",110]]},

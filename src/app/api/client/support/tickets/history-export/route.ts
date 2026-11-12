@@ -3,6 +3,7 @@ import { Types } from "mongoose";
 import { getServerSession } from "@/lib/auth/serverSession";
 import { connectToDatabase } from "@/lib/db";
 import SupportTicket from "@/models/SupportTicket";
+import { writePlatformAuditEvent } from "@/lib/platform/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +34,7 @@ export async function GET(request: NextRequest) {
     const createdAt = new Date(message.createdAt).getTime();
     return (!from || createdAt >= from.getTime()) && (!to || createdAt <= to.getTime() + 24 * 60 * 60 * 1000 - 1);
   });
+  await writePlatformAuditEvent({ actorType: "human", actorId: String(session.user._id), actorLabel: session.user.name, action: "support.client_history_exported", module: "support", targetType: "support_ticket", targetId: String(ticket._id), outcome: "success", metadata: { reference: ticket.reference, messageCount: messages.length, allTime, from: from?.toISOString() || "", to: to?.toISOString() || "" } });
   const archive = {
     format: "tgo-client-support-archive",
     version: 1,

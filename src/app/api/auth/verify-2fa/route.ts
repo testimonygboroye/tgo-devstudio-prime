@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     ]);
   }
   // 2FA completion is the point at which this account is fully signed in.
-  response.cookies.set("tgo_last_google_account", String(user.email || "").trim().toLowerCase(), {
+  response.cookies.set(user.accountType === "client" ? "tgo_last_client_account" : "tgo_last_admin_account", String(user.email || "").trim().toLowerCase(), {
     path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax",
     secure: process.env.NODE_ENV === "production", httpOnly: false,
   });

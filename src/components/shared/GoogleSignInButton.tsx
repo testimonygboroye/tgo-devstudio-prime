@@ -35,7 +35,7 @@ export default function GoogleSignInButton({endpoint,payload={},onResult,onError
   setReady(true);setLoadError("");return true;
  },[clientId,completeLogin,onError]);
  useEffect(()=>{
-  try{const email=readRememberedEmail();setLastEmail(email);setLastName(localStorage.getItem(NAME_KEY)||"");setLastPicture(localStorage.getItem(PHOTO_KEY)||"");}catch{setLastEmail(readRememberedEmail());}
+  try{const email=readRememberedEmail();const stored=localStorage.getItem(LAST_KEY)||"";if(email&&stored.toLowerCase()!==email){localStorage.setItem(LAST_KEY,email);localStorage.removeItem(NAME_KEY);localStorage.removeItem(PHOTO_KEY);}setLastEmail(email);setLastName(localStorage.getItem(NAME_KEY)||"");setLastPicture(localStorage.getItem(PHOTO_KEY)||"");}catch{setLastEmail(readRememberedEmail());}
   if(!clientId){setLoadError("Google sign-in is not configured on this deployment.");return;}
   let disposed=false,attempts=0;
   const init=()=>{if(!disposed)initialize();};

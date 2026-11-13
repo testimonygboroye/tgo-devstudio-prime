@@ -150,7 +150,7 @@ function LoginForm() {
           </button>
         </form>
         <div className="my-5 flex items-center gap-3 text-xs text-neutral-500"><span className="h-px flex-1 bg-base-800"/><span>OR</span><span className="h-px flex-1 bg-base-800"/></div>
-        <GoogleSignInButton endpoint="/api/auth/google-login" onResult={(data) => { if (data.status === "2fa_required") { setTempToken(data.tempToken); setStep("twoFactor"); } else { goToDestination(); } }} onError={setError} />
+        <GoogleSignInButton endpoint="/api/auth/google-login" rememberedAccountScope="admin" onResult={(data) => { if (data.status === "2fa_required") { setTempToken(data.tempToken); setStep("twoFactor"); } else { goToDestination(); } }} onError={setError} />
         </>
       )}
 

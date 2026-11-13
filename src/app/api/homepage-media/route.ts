@@ -11,7 +11,7 @@ export async function GET() {
   const settings = await LaunchSettings.findOne().lean();
   return NextResponse.json({ status: "ok", settings: settings || {
     enabled: false, countdownEnabled: true, countdownVisible: true, launchDate: null, title: "Something exceptional is coming",
-    description: "A new chapter in intelligent digital experiences is almost here.", countdownLabel: "COUNTDOWN", countdownStatusLabel: "LIVE TIMER",
+    description: "A new chapter in intelligent digital experiences is almost here.", countdownLabel: "COUNTDOWN", countdownStatusLabel: "LIVE TIMER", countdownYearsLabel:"YEARS",countdownMonthsLabel:"MONTHS",countdownDaysLabel:"DAYS",countdownHoursLabel:"HOURS",countdownMinutesLabel:"MINUTES",countdownSecondsLabel:"SECONDS",
     videoUrl: "", flyerUrl: "", afterLaunchVideoUrl: "", afterLaunchFlyerUrl: "", videoAudioEnabled: false, flyerDurationMinutes: 0, flyerDurationSeconds: 8,
     videoSeconds: 0, flyerSeconds: 8, videoDurationHours: 0, videoDurationMinutes: 0, videoDurationSeconds: 0, useVideoDurationOverride: false
   }}, { headers: { "Cache-Control": "no-store, max-age=0" } });
@@ -34,6 +34,7 @@ export async function PUT(request: NextRequest) {
     description: String(body.description || "").trim().slice(0, 400),
     countdownLabel: String(body.countdownLabel || "COUNTDOWN").trim().slice(0, 80),
     countdownStatusLabel: String(body.countdownStatusLabel || "LIVE TIMER").trim().slice(0, 40),
+    countdownYearsLabel:String(body.countdownYearsLabel||"YEARS").trim().slice(0,24),countdownMonthsLabel:String(body.countdownMonthsLabel||"MONTHS").trim().slice(0,24),countdownDaysLabel:String(body.countdownDaysLabel||"DAYS").trim().slice(0,24),countdownHoursLabel:String(body.countdownHoursLabel||"HOURS").trim().slice(0,24),countdownMinutesLabel:String(body.countdownMinutesLabel||"MINUTES").trim().slice(0,24),countdownSecondsLabel:String(body.countdownSecondsLabel||"SECONDS").trim().slice(0,24),
     videoUrl: String(body.videoUrl || "").trim().slice(0, 1000),
     videoAudioEnabled: body.videoAudioEnabled === true,
     flyerDurationMinutes: Math.floor(flyerTotalSeconds / 60),

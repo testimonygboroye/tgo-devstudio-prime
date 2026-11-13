@@ -46,6 +46,6 @@ export async function POST(request:NextRequest) {
     user.failedLoginAttempts=0;user.lockUntil=undefined;await user.save();
     const access=signAccessToken({userId:user._id.toString(),roleId:user.role.toString(),tokenVersion:user.refreshTokenVersion});
     const refresh=signRefreshToken({userId:user._id.toString(),tokenVersion:user.refreshTokenVersion});
-    const response=await apiSuccess({googleAccount:{email:google.email,name:google.name,picture:google.picture}},"loggedIn","Logged in successfully.",200);setAuthCookies(response,access,refresh);return response;
+    const response=await apiSuccess({googleAccount:{email:google.email,name:google.name,picture:google.picture}},"loggedIn","Logged in successfully.",200);setAuthCookies(response,access,refresh);response.cookies.set("tgo_last_admin_account",google.email,{path:"/",maxAge:60*60*24*365,sameSite:"lax",secure:process.env.NODE_ENV==="production",httpOnly:false});return response;
   } catch(error) { return apiError("googleSignInFailed",error instanceof Error?error.message:"Google sign-in failed.",401); }
 }

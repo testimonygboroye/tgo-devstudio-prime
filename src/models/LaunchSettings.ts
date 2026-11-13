@@ -1,7 +1,7 @@
 import { Schema, model, models, type Model, type Document } from "mongoose";
 export interface ILaunchSettings extends Document {
  enabled:boolean; countdownEnabled:boolean; countdownVisible:boolean; launchDate?:Date; title:string; description:string;
- countdownLabel:string; countdownStatusLabel:string;
+ countdownLabel:string; countdownStatusLabel:string; countdownYearsLabel:string; countdownMonthsLabel:string; countdownDaysLabel:string; countdownHoursLabel:string; countdownMinutesLabel:string; countdownSecondsLabel:string;
  videoUrl:string; flyerUrl:string; afterLaunchVideoUrl:string; afterLaunchFlyerUrl:string; videoAudioEnabled:boolean; flyerDurationMinutes:number; flyerDurationSeconds:number;
  videoSeconds:number; flyerSeconds:number; videoDurationHours:number; videoDurationMinutes:number; videoDurationSeconds:number; useVideoDurationOverride:boolean; updatedAt:Date;
 }
@@ -11,6 +11,7 @@ const SchemaDefinition=new Schema<ILaunchSettings>({
  description:{type:String,default:"Explore what's next from TGO DevStudio.",maxlength:400},
  countdownLabel:{type:String,default:"COUNTDOWN",trim:true,maxlength:80},
  countdownStatusLabel:{type:String,default:"LIVE TIMER",trim:true,maxlength:40},
+ countdownYearsLabel:{type:String,default:"YEARS",trim:true,maxlength:24},countdownMonthsLabel:{type:String,default:"MONTHS",trim:true,maxlength:24},countdownDaysLabel:{type:String,default:"DAYS",trim:true,maxlength:24},countdownHoursLabel:{type:String,default:"HOURS",trim:true,maxlength:24},countdownMinutesLabel:{type:String,default:"MINUTES",trim:true,maxlength:24},countdownSecondsLabel:{type:String,default:"SECONDS",trim:true,maxlength:24},
  videoUrl:{type:String,default:""},flyerUrl:{type:String,default:""},videoAudioEnabled:{type:Boolean,default:false},flyerDurationMinutes:{type:Number,default:0,min:0,max:1440},flyerDurationSeconds:{type:Number,default:8,min:0,max:59},
  afterLaunchVideoUrl:{type:String,default:""},afterLaunchFlyerUrl:{type:String,default:""},
  videoSeconds:{type:Number,default:0,min:0,max:86400},flyerSeconds:{type:Number,default:8,min:1,max:86400},

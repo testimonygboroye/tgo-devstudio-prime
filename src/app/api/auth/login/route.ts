@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
       writePlatformAuditEvent({ actorType: "human", actorId: String(user._id), actorLabel: user.name, action: "client.password_signed_in", module: "clients", targetType: "client", targetId: String(user._id), outcome: "success" }),
     ]);
   }
-  response.cookies.set("tgo_last_google_account", user.email.toLowerCase(), {
+  response.cookies.set(user.accountType === "client" ? "tgo_last_client_account" : "tgo_last_admin_account", user.email.toLowerCase(), {
     path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax",
     secure: process.env.NODE_ENV === "production", httpOnly: false,
   });

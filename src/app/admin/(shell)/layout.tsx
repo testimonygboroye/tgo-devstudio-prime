@@ -29,7 +29,7 @@ export default async function AdminShellLayout({children}:{children:React.ReactN
   }
   return <div className="flex h-dvh overflow-hidden bg-[var(--bg-page)]">
     <AdminSidebar userName={session.user.name} userEmail={session.user.email} roleName={session.role.name} basePath={basePath} isFounder={session.role.isFounderRole===true}/>
-    <div id="admin-scroll-area" className="ml-16 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-6 sm:px-10 sm:py-8 md:ml-0">
+    <div id="admin-scroll-area" className="ml-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-6 sm:px-6 md:px-10 md:py-8">
       <AdminTopBar/>
       {children}
       <BackToTopButton scrollContainerId="admin-scroll-area" position="right"/>

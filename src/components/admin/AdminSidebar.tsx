@@ -187,6 +187,15 @@ export default function AdminSidebar({
   }, []);
 
   useEffect(() => {
+    const toggle = () => {
+      if (window.matchMedia("(max-width: 767px)").matches) setIsMobileOpen(open => !open);
+      else setIsCollapsed(value => !value);
+    };
+    window.addEventListener("tgo:admin-sidebar-toggle", toggle);
+    return () => window.removeEventListener("tgo:admin-sidebar-toggle", toggle);
+  }, []);
+
+  useEffect(() => {
     const initialLoad = setTimeout(() => { void loadCounts(); }, 0);
     const interval = setInterval(() => { void loadCounts(); }, 30000);
     return () => {

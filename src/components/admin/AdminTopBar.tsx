@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import HelpSearchPopup from "@/components/shared/HelpSearchPopup";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Menu } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 const SECTION_LABELS: Record<string, string> = {

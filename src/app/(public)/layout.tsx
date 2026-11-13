@@ -6,21 +6,36 @@ import CookieConsentBanner from "@/components/public/CookieConsentBanner";
 import HelpDiscoveryPrompt from "@/components/shared/HelpDiscoveryPrompt";
 import AnalyticsTracker from "@/components/public/AnalyticsTracker";
 import ShareCurrentPage from "@/components/public/ShareCurrentPage";
-import PublicRouteScrollReset from "@/components/public/PublicRouteScrollReset";
 import { getPublicSiteSettings } from "@/lib/publicSite/getPublicSiteSettings";
+import PublicSiteSettingsCache from "@/components/public/PublicSiteSettingsCache";
 
-export default async function PublicLayout({ children }: { children: React.ReactNode }) {
+export default async function PublicLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const siteSettings = await getPublicSiteSettings();
-  return <>
-    <PublicRouteScrollReset />
-    <SiteHeader settings={siteSettings} />
-    {children}
-    <ShareCurrentPage />
-    <SiteFooter settings={siteSettings} />
-    <SocialFloatingButton />
-    <BackToTopButton position="left" />
-    <CookieConsentBanner />
-    <HelpDiscoveryPrompt />
-    <AnalyticsTracker />
-  </>;
+
+  return (
+    <>
+      <PublicSiteSettingsCache settings={siteSettings} />
+      <SiteHeader settings={siteSettings} />
+
+      {children}
+
+      <ShareCurrentPage />
+
+      <SiteFooter settings={siteSettings} />
+
+      <SocialFloatingButton />
+
+      <BackToTopButton position="left" />
+
+      <CookieConsentBanner />
+
+      <HelpDiscoveryPrompt />
+
+      <AnalyticsTracker />
+    </>
+  );
 }

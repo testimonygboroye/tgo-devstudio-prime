@@ -5,7 +5,7 @@ import SmartImage from "@/components/public/SmartImage";
 
 type Props = { settings: {
   enabled?: boolean; countdownEnabled?: boolean; countdownVisible?: boolean;
-  launchDate?: string | Date | null; title?: string; description?: string; countdownLabel?: string; countdownStatusLabel?: string;
+  launchDate?: string | Date | null; title?: string; description?: string; countdownLabel?: string; countdownStatusLabel?: string; countdownYearsLabel?:string; countdownMonthsLabel?:string; countdownDaysLabel?:string; countdownHoursLabel?:string; countdownMinutesLabel?:string; countdownSecondsLabel?:string;
   videoUrl?: string; flyerUrl?: string; afterLaunchVideoUrl?: string; afterLaunchFlyerUrl?: string;
   flyerSeconds?: number; flyerDurationMinutes?: number; flyerDurationSeconds?: number;
   videoAudioEnabled?: boolean; videoDurationHours?: number; videoDurationMinutes?: number;
@@ -87,8 +87,8 @@ export default function HomepageMediaExperience({ settings }: Props) {
   if (!settings.enabled) return null;
   const countdown = countdownEnabled && hasTarget && !afterTarget ? remainingTime(target, now) : null;
   const units = countdown ? [
-    ["Years", countdown.years], ["Months", countdown.months], ["Days", countdown.days],
-    ["Hours", countdown.hours], ["Minutes", countdown.minutes], ["Seconds", countdown.seconds],
+    [(settings.countdownYearsLabel||"YEARS"), countdown.years], [(settings.countdownMonthsLabel||"MONTHS"), countdown.months], [(settings.countdownDaysLabel||"DAYS"), countdown.days],
+    [(settings.countdownHoursLabel||"HOURS"), countdown.hours], [(settings.countdownMinutesLabel||"MINUTES"), countdown.minutes], [(settings.countdownSecondsLabel||"SECONDS"), countdown.seconds],
   ] as const : [];
 
   return (

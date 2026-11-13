@@ -85,7 +85,9 @@ export default function AdminTopBar() {
 
   return (
     <div className="mb-8 flex flex-col gap-4 border-b border-[var(--border-subtle)] pb-5 sm:flex-row sm:items-center sm:justify-between">
-      <div>
+      <div className="flex min-w-0 items-start gap-3">
+        <button type="button" aria-label="Toggle admin navigation" onClick={() => window.dispatchEvent(new Event("tgo:admin-sidebar-toggle"))} className="mt-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:border-brand-cyan-400 hover:text-brand-cyan-300 md:hidden"><Menu size={19}/></button>
+        <div className="min-w-0">
         <p className="font-mono text-xs uppercase tracking-widest text-[var(--text-muted)]">
           {breadcrumb}
         </p>
@@ -93,6 +95,7 @@ export default function AdminTopBar() {
         <h1 className="mt-1 text-2xl font-bold font-display text-[var(--text-primary)]">
           {heading}
         </h1>
+        </div>
       </div>
 
       <div className="flex items-center gap-3">

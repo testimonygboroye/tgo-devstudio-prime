@@ -9,7 +9,8 @@ function readRememberedEmail(storageKey:string,cookieName:string){try{const matc
 function saveRememberedAccount(profile:any,keys:typeof ACCOUNT_KEYS[keyof typeof ACCOUNT_KEYS]){const email=String(profile?.email||"").trim().toLowerCase();if(!email)return;const name=String(profile?.name||"").trim(),picture=String(profile?.picture||"");try{localStorage.setItem(keys.email,email);localStorage.setItem(keys.name,name);if(picture)localStorage.setItem(keys.photo,picture);else localStorage.removeItem(keys.photo);}catch{}try{document.cookie=keys.cookie+"="+encodeURIComponent(email)+"; Path=/; Max-Age=31536000; SameSite=Lax"+(location.protocol==="https:"?"; Secure":"");}catch{}return {email,name,picture};}
 export default function GoogleSignInButton({endpoint,payload={},onResult,onError,showRememberedAccount=true,rememberedAccountScope="admin"}:Props){
  const [lastEmail,setLastEmail]=useState(""),[lastName,setLastName]=useState(""),[lastPicture,setLastPicture]=useState(""),[ready,setReady]=useState(false),[loadError,setLoadError]=useState("");
- const chooserRef=useRef<TokenClient|null>(null);\n const accountKeys=ACCOUNT_KEYS[rememberedAccountScope];
+ const chooserRef=useRef<TokenClient|null>(null);
+ const accountKeys=ACCOUNT_KEYS[rememberedAccountScope];
  const clientId=process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,payloadKey=JSON.stringify(payload);
  const persistAccount=useCallback((profile:any)=>{
   const saved=saveRememberedAccount(profile,accountKeys);if(!saved)return;

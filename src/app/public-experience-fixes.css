@@ -60,20 +60,20 @@
 .stack-page .surface-card-inner { min-width: 0; }
 .stack-page .surface-card-inner h2 { overflow-wrap: anywhere; }
 @media (max-width: 640px) {
-  .stack-page > div { width: calc(100% - 36px); }
+  .stack-page { padding-inline: 18px; }\n  .stack-page > div { width: 100%; }
   .stack-page { padding-top: 46px; }
   .stack-page section { margin-top: 32px; }
   .stack-page .surface-card-inner { padding: 20px !important; }
 }
 
-.team-member-photo { aspect-ratio: 1 / 1.12; }
+.team-member-photo { aspect-ratio: 4 / 5; overflow: hidden; }
 .team-member-photo img:not(.tgo-image-fallback-art) {
   object-fit: cover;
-  object-position: 50% 16%;
+  object-position: 50% 7%;
 }
 .team-member-photo .tgo-image-fallback { object-fit: cover; }
 @media (max-width: 600px) {
-  .team-member-photo { aspect-ratio: 1 / 1.18; }
+  .team-member-photo { aspect-ratio: 4 / 5; }
 }
 
 .homepage-media-image-wrap {
@@ -117,7 +117,7 @@
   .homepage-countdown-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .homepage-countdown-heading { align-items: center; font-size: 9px; letter-spacing: .1em; }
   .homepage-media-topline { padding: 11px 13px; font-size: 9px; }
-  .homepage-media-image { height: clamp(250px, 72vw, 520px); }
+  .homepage-media-image { height: clamp(250px, 72vw, 520px); }\n  .homepage-media-video { height: clamp(300px, 85vw, 560px); }
 }
 @media (max-width: 380px) {
   .homepage-countdown-grid { gap: 7px; }

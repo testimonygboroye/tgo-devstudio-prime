@@ -121,7 +121,6 @@
   .homepage-media-topline { padding: 11px 13px; font-size: 9px; }
   .homepage-media-image { height: clamp(250px, 72vw, 520px); }
   .homepage-media-video { height: clamp(300px, 85vw, 560px); }
-  .homepage-media-video { height: clamp(300px, 85vw, 560px); }
 }
 @media (max-width: 380px) {
   .homepage-countdown-grid { gap: 7px; }

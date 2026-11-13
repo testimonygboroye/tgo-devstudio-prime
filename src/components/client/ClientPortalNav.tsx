@@ -9,17 +9,17 @@ import { LayoutDashboard, UserRound, MessageSquareText, Bell, Activity, Briefcas
 import ClientSignOutButton from "@/components/client/ClientSignOutButton";
 
 const groups = [
-  { title: "Workspace", links: [
+  { title: "Workspace", icon: LayoutDashboard, links: [
     { href: "/client/dashboard", label: "Overview", icon: LayoutDashboard },
     { href: "/client/services", label: "Services & projects", icon: Package },
     { href: "/workspaces", label: "Collaboration", icon: BriefcaseBusiness },
   ]},
-  { title: "Communication", links: [
+  { title: "Communication", icon: MessageSquareText, links: [
     { href: "/client/enquiries", label: "Enquiries", icon: MessageSquareText },
     { href: "/client/notifications", label: "Notifications", icon: Bell },
     { href: "/client/support", label: "Support centre", icon: LifeBuoy },
   ]},
-  { title: "Your account", links: [
+  { title: "Your account", icon: UserRound, links: [
     { href: "/client/activity", label: "Activity history", icon: Activity },
     { href: "/client/rewards", label: "Rewards & referrals", icon: Gift },
     { href: "/client/settings", label: "Account settings", icon: UserRound },
@@ -35,9 +35,9 @@ export default function ClientPortalNav({ name, email }: { name: string; email: 
   const backdropRef = useRef<HTMLDivElement>(null);
   useSwipeSidebar(mobileOpen, setMobileOpenSafe, "left", drawerRef, backdropRef, { maxWidth: 320, railWidth: 64, mobileBreakpoint: 1024 });
   const navigation = (mobile = false) => <nav className="space-y-6">
-    {groups.map(group => <section key={group.title}>
-      <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[.18em] text-slate-500">{group.title}</p>
-      <div className="space-y-1">{group.links.map(({ href, label, icon: Icon }) => {
+    {groups.map(({ title, links, icon: GroupIcon }) => <section key={title}>
+      <p title={title} className={`mb-2 px-3 text-[10px] font-bold uppercase tracking-[.18em] text-slate-500 ${collapsed && !mobile ? "flex justify-center px-0" : ""}`}>{collapsed && !mobile ? <GroupIcon size={15} className="text-cyan-300"/> : title}</p>
+      <div className="space-y-1">{links.map(({ href, label, icon: Icon }) => {
         const active = pathname === href || (href !== "/client/dashboard" && pathname.startsWith(href + "/"));
         return <Link key={href} href={href} onClick={() => mobile && setMobileOpen(false)} aria-current={active ? "page" : undefined}
           className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${active ? "border border-violet-400/25 bg-violet-500/15 text-white shadow-[inset_3px_0_0_#8b5cf6]" : "border border-transparent text-slate-400 hover:bg-white/[.06] hover:text-white"}`}>

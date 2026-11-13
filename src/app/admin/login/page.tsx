@@ -117,6 +117,7 @@ function LoginForm() {
             <input
               id="email"
               type="email"
+              autoComplete="username"
               required
               value={email}
               onChange={(event) => setEmail(event.target.value)}
@@ -205,14 +206,17 @@ function LoginForm() {
 
 export default function AdminLoginPage() {
   return (
-    <div className="flex min-h-screen flex-col">
-      <main className="flex flex-1 items-center justify-center px-6">
-        <Suspense fallback={<div className="text-neutral-400">Loading...</div>}>
+    <div className="relative flex min-h-screen flex-col overflow-hidden bg-[#080b18] text-white">
+      <div aria-hidden="true" className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_12%_15%,rgba(91,46,232,.24),transparent_34%),radial-gradient(circle_at_88%_82%,rgba(46,197,240,.14),transparent_36%)]"/>
+      <main className="relative z-10 flex flex-1 items-center justify-center px-5 py-12">
+        <div className="w-full max-w-md rounded-[28px] border border-white/10 bg-[#10172b]/85 p-6 shadow-[0_30px_100px_rgba(0,0,0,.48)] backdrop-blur-2xl sm:p-9">
+        <Suspense fallback={<div className="text-center text-neutral-400">Loading secure sign-in...</div>}>
           <LoginForm />
         </Suspense>
+        </div>
       </main>
 
-      <footer className="border-t border-base-800 px-6 py-6 text-center">
+      <footer className="relative z-10 border-t border-white/10 bg-black/10 px-6 py-6 text-center">
         <Link href="/" className="text-xs text-neutral-400 hover:text-brand-cyan-300">
           ← Back to site
         </Link>

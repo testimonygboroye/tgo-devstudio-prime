@@ -245,11 +245,12 @@ export default function AdminSidebar({
       <nav aria-label="Admin navigation" className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4 space-y-1">
         {!collapsed && <label className="mb-3 flex items-center gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-page)] px-3 py-2.5 text-[var(--text-muted)] focus-within:border-brand-cyan-400"><Search size={16} className="shrink-0"/><input type="search" value={navQuery} onChange={(event) => setNavQuery(event.target.value)} placeholder="Find an admin page..." aria-label="Find an admin page" className="min-w-0 w-full bg-transparent text-xs text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)]"/>{navQuery && <button type="button" onClick={() => setNavQuery("")} aria-label="Clear navigation search" className="text-xs text-brand-cyan-300">Clear</button>}</label>}
         {visibleGroups.map((group) => {
+          const GroupIcon = group.items[0]?.icon ?? Layers;
           const groupActive = group.items.some((item) => pathname.startsWith(`${basePathSegment}${item.hrefSuffix}`));
           return (
             <details key={group.title} open={groupActive || undefined} className="group/nav mb-2">
               <summary title={group.title} className={`flex cursor-pointer list-none items-center justify-between rounded-lg px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)] hover:bg-[var(--surface-hover)] ${collapsed ? "justify-center" : ""}`}>
-                {!collapsed ? <><span>{group.title}</span><ChevronRight size={14} className="transition-transform group-open/nav:rotate-90"/></> : <span>{group.title.slice(0,1)}</span>}
+                {!collapsed ? <><span>{group.title}</span><ChevronRight size={14} className="transition-transform group-open/nav:rotate-90"/></> : <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-white/[.04] text-brand-cyan-300"><GroupIcon size={16}/></span>}
               </summary>
               <div className="mt-1 space-y-1">
                 {group.items.map((item) => {

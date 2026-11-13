@@ -29,6 +29,31 @@ export interface IPublicSiteSettings extends Document {
   footerSections: IPublicFooterSection[];
   socialLinks: IPublicSocialLink[];
   copyrightText: string;
+  notFoundEyebrow: string;
+  notFoundHeadline: string;
+  notFoundAccent: string;
+  notFoundDescription: string;
+  notFoundPrimaryLabel: string;
+  notFoundPrimaryHref: string;
+  notFoundSecondaryLabel: string;
+  notFoundSecondaryHref: string;
+  errorEyebrow: string;
+  errorHeadline: string;
+  errorAccent: string;
+  errorDescription: string;
+  errorRetryLabel: string;
+  errorHomeLabel: string;
+  errorHomeHref: string;
+  errorContactLabel: string;
+  errorContactHref: string;
+  offlineEyebrow: string;
+  offlineHeadline: string;
+  offlineDescription: string;
+  offlineRetryLabel: string;
+  offlineHomeLabel: string;
+  offlineHomeHref: string;
+  loadingBrandLabel: string;
+  loadingMessage: string;
   lastUpdatedBy?: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -80,6 +105,31 @@ const PublicSiteSettingsSchema = new Schema<IPublicSiteSettings>({
   footerSections: { type: [FooterSectionSchema], default: [] },
   socialLinks: { type: [SocialLinkSchema], default: [] },
   copyrightText: { type: String, default: "© {year} TGO DevStudio. All rights reserved.", maxlength: 200 },
+  notFoundEyebrow: { type: String, default: "A little off course", maxlength: 120 },
+  notFoundHeadline: { type: String, default: "This page", maxlength: 160 },
+  notFoundAccent: { type: String, default: "isn’t here.", maxlength: 120 },
+  notFoundDescription: { type: String, default: "The address may have changed, the page may have moved, or the link may have taken a wrong turn. Let’s get you somewhere useful.", maxlength: 500 },
+  notFoundPrimaryLabel: { type: String, default: "Back to homepage", maxlength: 80 },
+  notFoundPrimaryHref: { type: String, default: "/", maxlength: 500 },
+  notFoundSecondaryLabel: { type: String, default: "Contact the studio", maxlength: 80 },
+  notFoundSecondaryHref: { type: String, default: "/contact", maxlength: 500 },
+  errorEyebrow: { type: String, default: "A temporary interruption", maxlength: 120 },
+  errorHeadline: { type: String, default: "We hit a small", maxlength: 160 },
+  errorAccent: { type: String, default: "technical pause.", maxlength: 120 },
+  errorDescription: { type: String, default: "The page could not finish loading this time. Your work has not been changed. You can safely try again or return to another part of the site.", maxlength: 500 },
+  errorRetryLabel: { type: String, default: "Try again", maxlength: 80 },
+  errorHomeLabel: { type: String, default: "Back home", maxlength: 80 },
+  errorHomeHref: { type: String, default: "/", maxlength: 500 },
+  errorContactLabel: { type: String, default: "Still having trouble? Contact the studio", maxlength: 120 },
+  errorContactHref: { type: String, default: "/contact", maxlength: 500 },
+  offlineEyebrow: { type: String, default: "Connection interrupted", maxlength: 120 },
+  offlineHeadline: { type: String, default: "You’re offline.", maxlength: 160 },
+  offlineDescription: { type: String, default: "The internet connection is unavailable right now. Your saved work remains safe. Reconnect and try again when you’re ready.", maxlength: 500 },
+  offlineRetryLabel: { type: String, default: "Try again", maxlength: 80 },
+  offlineHomeLabel: { type: String, default: "Go to homepage", maxlength: 80 },
+  offlineHomeHref: { type: String, default: "/", maxlength: 500 },
+  loadingBrandLabel: { type: String, default: "TGO DEVSTUDIO PRIME", maxlength: 120 },
+  loadingMessage: { type: String, default: "Preparing your experience", maxlength: 180 },
   lastUpdatedBy: { type: Schema.Types.ObjectId, ref: "User" },
 }, { timestamps: true });
 

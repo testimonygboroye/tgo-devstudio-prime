@@ -207,7 +207,7 @@ export default function AdminSidebar({
     <>
       <button ref={backdropRef} type="button" aria-label="Close admin navigation" onClick={() => setIsMobileOpen(false)} className={`fixed inset-0 z-[60] bg-black/60 transition-opacity duration-150 md:hidden ${isMobileOpen ? "opacity-100" : "pointer-events-none opacity-0"}`} />
       <aside ref={drawerRef}
-        className={`fixed inset-y-0 left-0 z-[70] flex h-dvh flex-col border-r border-[var(--border-subtle)] bg-[var(--bg-surface)] shadow-2xl transition-[width] duration-150 ease-out md:static md:z-auto md:h-full md:shrink-0 md:shadow-none ${isMobileOpen ? "w-[min(19rem,86vw)]" : "w-16"} ${collapsed ? "md:w-20" : "md:w-68"}`}
+        className={`fixed inset-y-0 left-0 z-[70] flex h-dvh w-[min(19rem,86vw)] flex-col border-r border-[var(--border-subtle)] bg-[var(--bg-surface)] shadow-2xl transition-[transform,width] duration-200 ease-out md:static md:z-auto md:h-full md:w-auto md:shrink-0 md:translate-x-0 md:shadow-none ${isMobileOpen ? "translate-x-0" : "-translate-x-full"} ${collapsed ? "md:w-20" : "md:w-68"}`}
       >
       <div className="flex flex-shrink-0 items-center justify-between px-5 py-5 border-b border-[var(--border-subtle)]">
         {!collapsed && (

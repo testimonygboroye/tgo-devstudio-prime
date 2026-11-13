@@ -31,12 +31,18 @@ export default function InvitesClient() {
 
   const load = useCallback(async () => {
     setIsLoading(true);
-    const [rolesRes, invitesRes] = await Promise.all([fetch("/api/roles"), fetch("/api/invites")]);
-    const rolesData = await rolesRes.json();
-    const invitesData = await invitesRes.json();
-    if (rolesData.status === "ok") setRoles(rolesData.roles);
-    if (invitesData.status === "ok") setInvites(invitesData.invites);
-    setIsLoading(false);
+    try {
+      const [rolesRes, invitesRes] = await Promise.all([fetch("/api/roles", { cache: "no-store" }), fetch("/api/invites", { cache: "no-store" })]);
+      const rolesData = await rolesRes.json();
+      const invitesData = await invitesRes.json();
+      if (!rolesRes.ok || rolesData.status !== "ok") throw new Error(rolesData.message || "Could not load available roles.");
+      if (!invitesRes.ok || invitesData.status !== "ok") throw new Error(invitesData.message || "Could not load invitations.");
+      setRoles(rolesData.roles || []);
+      setInvites(invitesData.invites || []);
+      setError("");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not load invitations. Please retry.");
+    } finally { setIsLoading(false); }
   }, []);
 
   useEffect(() => {
@@ -49,37 +55,27 @@ export default function InvitesClient() {
     setSuccessMessage("");
     setIsSending(true);
 
-    const res = await fetch("/api/invites", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, roleId }),
-    });
-    const data = await res.json();
-
-    if (!res.ok) {
-      setError(data.message || "Failed to send invite.");
-      setIsSending(false);
-      return;
-    }
-
-    setSuccessMessage(data.message || `Invite submitted for ${email}.`);
-    setEmail("");
-    setRoleId("");
-    setIsSending(false);
-    load();
+    try {
+      const res = await fetch("/api/invites", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: email.trim().toLowerCase(), roleId }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to send invite.");
+      setSuccessMessage(data.message || `Invite submitted for ${email}.`);
+      setEmail(""); setRoleId("");
+      await load();
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not submit the invitation."); }
+    finally { setIsSending(false); }
   }
 
   async function handleDecision(inviteId: string, decision: "approve" | "reject") {
     setDecidingId(inviteId);
-    const res = await fetch(`/api/invites/${inviteId}/decision`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ decision }),
-    });
-    if (res.ok) {
-      load();
-    }
-    setDecidingId(null);
+    setError("");
+    try {
+      const res = await fetch(`/api/invites/${inviteId}/decision`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ decision }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || `Could not ${decision} this invitation.`);
+      await load();
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not update invitation."); }
+    finally { setDecidingId(null); }
   }
 
   const STATUS_STYLES: Record<string, string> = {
@@ -89,8 +85,8 @@ export default function InvitesClient() {
   };
 
   return (
-    <div className="max-w-xl">
-      <form onSubmit={handleSendInvite} className="space-y-4 rounded-lg border border-base-800 bg-base-900 p-4">
+    <div className="max-w-4xl space-y-7">
+      <form onSubmit={handleSendInvite} className="space-y-5 rounded-2xl border border-white/10 bg-gradient-to-br from-[#141b30] to-[#0c1120] p-5 shadow-[0_20px_60px_rgba(0,0,0,.25)] sm:p-6">
         <div>
           <label className="block text-sm text-neutral-400">Email</label>
           <input
@@ -98,7 +94,7 @@ export default function InvitesClient() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full rounded-md border border-base-800 bg-base-950 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
+            className="mt-2 w-full rounded-xl border border-white/10 bg-black/25 px-4 py-3 text-neutral-100 outline-none transition focus:border-cyan-300/60 focus:ring-2 focus:ring-cyan-300/10"
           />
         </div>
         <div>
@@ -126,14 +122,14 @@ export default function InvitesClient() {
         <button
           type="submit"
           disabled={isSending}
-          className="rounded-md brand-gradient-bg px-4 py-2 text-sm font-semibold text-base-950 disabled:opacity-60"
+          className="rounded-xl brand-gradient-bg px-5 py-3 text-sm font-semibold text-base-950 shadow-lg shadow-violet-950/30 transition hover:brightness-110 disabled:opacity-60"
         >
           {isSending ? "Submitting..." : "Submit Invite for Approval"}
         </button>
       </form>
 
-      <div className="mt-8">
-        <h2 className="text-sm font-semibold uppercase tracking-widest text-neutral-500">Invites</h2>
+      <div className="mt-8 space-y-4">
+        <div className="flex flex-wrap items-end justify-between gap-3"><div><p className="font-mono text-[10px] uppercase tracking-[.2em] text-cyan-300">Team access</p><h2 className="mt-1 text-xl font-semibold text-white">Invitation activity</h2></div><span className="rounded-full border border-white/10 bg-white/[.04] px-3 py-1 text-xs text-slate-300">{invites.length} total</span></div>
         {isLoading && <p className="mt-2 text-sm text-neutral-400">Loading...</p>}
         {!isLoading && invites.length === 0 && <p className="mt-2 text-sm text-neutral-400">No invites yet.</p>}
         <div className="mt-3 space-y-2">
@@ -141,7 +137,7 @@ export default function InvitesClient() {
             const roleName = typeof invite.role === "string" ? invite.role : invite.role.name;
             const inviterName = typeof invite.invitedBy === "string" ? invite.invitedBy : invite.invitedBy.name;
             return (
-              <div key={invite._id} className="rounded-md border border-base-800 bg-base-900 p-3 text-sm">
+              <div key={invite._id} className="rounded-2xl border border-white/10 bg-[#11182a]/85 p-4 text-sm shadow-[0_12px_35px_rgba(0,0,0,.16)]">
                 <div className="flex items-center justify-between">
                   <span className="text-neutral-100">{invite.email}</span>
                   <span className={`rounded-full px-2 py-0.5 text-xs ${STATUS_STYLES[invite.approvalStatus]}`}>

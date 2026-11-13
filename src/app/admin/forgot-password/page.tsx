@@ -41,9 +41,10 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <main className="flex flex-1 items-center justify-center px-6">
-        <div className="w-full max-w-sm">
+    <div className="relative flex min-h-screen flex-col overflow-hidden bg-[#080b18] text-white">
+      <div aria-hidden="true" className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_12%_15%,rgba(91,46,232,.24),transparent_34%),radial-gradient(circle_at_88%_82%,rgba(46,197,240,.14),transparent_36%)]"/>
+      <main className="relative z-10 flex flex-1 items-center justify-center px-5 py-12">
+        <div className="w-full max-w-md rounded-[28px] border border-white/10 bg-[#10172b]/85 p-6 shadow-[0_30px_100px_rgba(0,0,0,.48)] backdrop-blur-2xl sm:p-9">
           <div className="flex justify-center">
             <Image src="/logo.png" alt="TGO DevStudio logo" width={64} height={64} priority />
           </div>
@@ -67,14 +68,14 @@ export default function ForgotPasswordPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
+                  className="mt-2 w-full rounded-xl border border-white/10 bg-white/[.06] px-4 py-3 text-white outline-none transition focus:border-cyan-300/60 focus:ring-2 focus:ring-cyan-300/10"
                 />
               </div>
               {error && <p className="text-sm text-red-400">{error}</p>}
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full rounded-md brand-gradient-bg px-4 py-2 font-semibold text-base-950 disabled:opacity-60"
+                className="w-full rounded-xl brand-gradient-bg px-4 py-3 font-semibold text-base-950 shadow-lg shadow-violet-950/30 transition hover:brightness-110 disabled:opacity-60"
               >
                 {isSubmitting ? "Sending..." : "Send Reset Link"}
               </button>

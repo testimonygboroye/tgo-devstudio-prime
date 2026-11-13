@@ -3,6 +3,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import SmartImage from "@/components/public/SmartImage";
 
+function getHomepageVideoPoster(url: string) {
+  try {
+    const parsed = new URL(url);
+    if (!parsed.hostname.endsWith("cloudinary.com") || !parsed.pathname.includes("/video/upload/")) return undefined;
+    const posterPath = parsed.pathname
+      .replace("/video/upload/", "/video/upload/so_0,f_jpg,q_auto,w_1280/")
+      .replace(/\.(mp4|webm|mov|m4v)$/i, ".jpg");
+    return parsed.origin + posterPath;
+  } catch { return undefined; }
+}
+
 type Props = { settings: {
   enabled?: boolean; countdownEnabled?: boolean; countdownVisible?: boolean;
   launchDate?: string | Date | null; title?: string; description?: string; countdownLabel?: string; countdownStatusLabel?: string; countdownYearsLabel?:string; countdownMonthsLabel?:string; countdownDaysLabel?:string; countdownHoursLabel?:string; countdownMinutesLabel?:string; countdownSecondsLabel?:string;
@@ -106,7 +117,7 @@ export default function HomepageMediaExperience({ settings }: Props) {
           <div className="homepage-media-frame mx-auto mt-9">
             <div className="homepage-media-topline"><span>FEATURED MEDIA</span><span><i /> TGO DEVSTUDIO</span></div>
             {current.kind === "video" ? (
-              <video ref={videoRef} key={current.url} src={current.url} autoPlay muted={!settings.videoAudioEnabled} playsInline preload="auto" controls={false} disablePictureInPicture controlsList="nodownload noplaybackrate noremoteplayback" loop={false} onContextMenu={event => event.preventDefault()} onEnded={advance} className="homepage-media-content homepage-media-video" />
+              <video ref={videoRef} key={current.url} src={current.url} poster={getHomepageVideoPoster(current.url)} autoPlay muted={!settings.videoAudioEnabled} playsInline preload="metadata" controls={false} disablePictureInPicture controlsList="nodownload noplaybackrate noremoteplayback" loop={false} onContextMenu={event => event.preventDefault()} onEnded={advance} className="homepage-media-content homepage-media-video" />
             ) : (
               <div className="homepage-media-image-wrap"><SmartImage priority src={current.url} alt={settings.title || "TGO DevStudio featured media"} label={settings.title || "TGO DevStudio"} className="homepage-media-content homepage-media-image" /></div>
             )}

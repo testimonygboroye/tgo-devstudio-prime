@@ -19,29 +19,45 @@ main{width:min(100%,650px);padding:clamp(25px,6vw,48px);border:1px solid rgba(13
 </head>
 <body>
 <main>
- <div class="brand"><div class="mark"><img src="/logo.png" alt="TGO DevStudio" width="64" height="64" onerror="this.parentElement.style.display=\'none\'"></div><div><strong>TGO DevStudio Prime</strong><small>Engineering beyond limits</small></div></div>
- <img src="/images/illustrations/offline-signal.svg" alt="" aria-hidden="true" style="display:block;width:min(100%,520px);height:auto;margin:0 auto 24px;border-radius:18px"><div class="visual" aria-hidden="true"><div class="orbit"><div class="signal"></div></div></div>
- <div class="eyebrow">Network connection unavailable</div>
- <h1>You're offline right now.</h1>
- <p>TGO DevStudio is temporarily unreachable. Check your connection and retry. This offline screen is stored on your device; once your connection returns, you can continue where you left off.</p>
+ <div class="brand"><div class="mark"><img id="offline-logo" src="/logo.png" alt="TGO DevStudio" width="64" height="64" onerror="this.parentElement.style.display=\'none\'"></div><div><strong id="offline-brand">TGO DevStudio Prime</strong><small>Engineering beyond limits</small></div></div>
+ <div class="visual" aria-hidden="true"><div class="orbit"><div class="signal"></div></div></div>
+ <div class="eyebrow" id="offline-eyebrow">Connection interrupted</div>
+ <h1 id="offline-headline">You’re offline.</h1>
+ <p id="offline-description">The internet connection is unavailable right now. Your saved work remains safe. Reconnect and try again when you’re ready.</p>
  <div class="requested" id="requested"></div>
- <div class="actions"><button class="button primary" id="retry" type="button">Try again <span aria-hidden="true">&nbsp;↗</span></button><a class="button secondary" id="home-link" href="/">Back to homepage</a></div>
+ <div class="actions"><button class="button primary" id="retry" type="button"><span id="offline-retry-label">Try again</span> <span aria-hidden="true">&nbsp;↗</span></button><a class="button secondary" id="home-link" href="/"><span id="offline-home-label">Go to homepage</span></a></div>
  <section class="saved" id="saved"><h2>Pages available on this device</h2><ul id="saved-list"></ul></section>
  <p class="hint">Your current browsing session is safe. Private account and administrator areas are never stored for offline use.</p>
- <div class="footer">TGO DEVSTUDIO PRIME · BUILT TO KEEP YOU MOVING</div>
+ <div class="footer" id="offline-footer">TGO DEVSTUDIO PRIME · BUILT TO KEEP YOU MOVING</div>
 </main>
 <script>
 (function(){
+ try {
+  const settings=JSON.parse(localStorage.getItem("tgo-public-site-settings")||"{}");
+  const setText=(id,value)=>{const node=document.getElementById(id);if(node&&typeof value==="string"&&value.trim())node.textContent=value;};
+  setText("offline-brand",settings.brandName);
+  setText("offline-eyebrow",settings.offlineEyebrow);
+  setText("offline-headline",settings.offlineHeadline);
+  setText("offline-description",settings.offlineDescription);
+  setText("offline-retry-label",settings.offlineRetryLabel);
+  setText("offline-home-label",settings.offlineHomeLabel);
+  setText("offline-footer",settings.brandName?settings.brandName.toUpperCase()+" · OFFLINE SUPPORT":"TGO DEVSTUDIO PRIME · BUILT TO KEEP YOU MOVING");
+  const logo=document.getElementById("offline-logo");
+  if(logo&&typeof settings.logoUrl==="string"&&settings.logoUrl.trim())logo.src=settings.logoUrl;
+  if(logo&&typeof settings.logoAlt==="string")logo.alt=settings.logoAlt;
+  const home=document.getElementById("home-link");
+  if(home&&typeof settings.offlineHomeHref==="string"&&settings.offlineHomeHref.startsWith("/")&&!settings.offlineHomeHref.startsWith("//"))home.href=settings.offlineHomeHref;
+ } catch {}
  const params=new URLSearchParams(location.search);
  const requestedPath=params.get("requested");
  const currentPath=location.pathname+location.search+location.hash;
  const target=requestedPath&&requestedPath.startsWith("/")&&!requestedPath.startsWith("//")?requestedPath:(location.pathname!=="/offline.html"?currentPath:"/");
  const requested=document.getElementById("requested");
  if(target!=="/"){requested.textContent="Page requested: "+target;requested.style.display="block";}
- // Keep homepage navigation as a native link so the browser and service worker can handle offline recovery.
+ document.getElementById("home-link").addEventListener("click",function(event){event.preventDefault();location.assign(this.getAttribute("href")||"/");});
  const list=document.getElementById("saved-list"),section=document.getElementById("saved");
- if("caches" in window)caches.open("tgo-offline-v10-app").then(cache=>cache.keys()).then(keys=>{
-  const urls=keys.map(req=>new URL(req.url)).filter(url=>url.origin===location.origin&&url.pathname!=="/offline.html"&&!/\.(js|css|png|jpe?g|webp|svg|ico|json|woff2?)$/i.test(url.pathname)&&!/^\/(admin|api|auth|login|register|account|member|client|portal|dashboard|checkout|billing|workspaces|workforce)(\/|$)/i.test(url.pathname));
+ if("caches" in window)caches.keys().then(names=>{const cacheName=names.filter(name=>name.startsWith("tgo-offline-")&&name.endsWith("-public-assets")).sort().pop();return cacheName?caches.open(cacheName):null;}).then(cache=>cache?cache.keys():[]).then(keys=>{
+  const urls=keys.map(req=>new URL(req.url)).filter(url=>url.origin===location.origin&&!/^\/(admin|api|auth|login|register|account|member|portal|dashboard)(\/|$)/i.test(url.pathname));
   const unique=[...new Map(urls.map(url=>[url.pathname,url])).values()].slice(0,12);
   unique.forEach(url=>{const li=document.createElement("li"),a=document.createElement("a");a.href=url.pathname+url.search;a.textContent=url.pathname==="/"?"Home":url.pathname.split("/").filter(Boolean).pop().replace(/[-_]/g," ");li.appendChild(a);list.appendChild(li);});
   if(unique.length)section.style.display="block";
@@ -62,18 +78,6 @@ main{width:min(100%,650px);padding:clamp(25px,6vw,48px);border:1px solid rgba(13
    timer=setTimeout(()=>location.replace(target),2200);
   }catch(error){checking=false;}
  }
- const retryButton=document.getElementById("retry");
- retryButton.addEventListener("click",async()=>{
-  retryButton.disabled=true;
-  retryButton.textContent="Checking connection…";
-  await verify();
-  if(!restored){
-   retryButton.disabled=false;
-   retryButton.textContent="Try again ↗";
-   const hint=document.querySelector(".hint");
-   if(hint)hint.textContent="Still offline. Your cached homepage remains available; reconnect and try again to return to the requested page.";
-  }
- });
  window.addEventListener("online",verify);
  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")verify();});
  const poll=setInterval(verify,2500);

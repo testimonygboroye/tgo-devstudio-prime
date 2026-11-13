@@ -8,6 +8,14 @@ import { PUBLIC_SITE_SETTINGS_DEFAULTS } from "@/lib/constants/publicSiteDefault
 
 export const dynamic = "force-dynamic";
 
+function serializePublicSettings(record: Record<string, unknown> | null) {
+  const settings: Record<string, unknown> = { ...PUBLIC_SITE_SETTINGS_DEFAULTS };
+  for (const key of Object.keys(PUBLIC_SITE_SETTINGS_DEFAULTS)) {
+    if (record && record[key] !== undefined) settings[key] = record[key];
+  }
+  return settings;
+}
+
 function safeHref(value: unknown): value is string {
   if (typeof value !== "string" || !value.trim() || value.length > 500) return false;
   const href = value.trim();
@@ -45,7 +53,7 @@ export async function GET() {
   const saved = await PublicSiteSettings.findOne().lean();
   return NextResponse.json({
     status: "ok",
-    settings: { ...PUBLIC_SITE_SETTINGS_DEFAULTS, ...(saved || {}) },
+    settings: serializePublicSettings(saved as unknown as Record<string, unknown> | null),
     isDefault: !saved,
   }, { headers: { "Cache-Control": "no-store, max-age=0" } });
 }
@@ -64,7 +72,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ status: "error", message: "The settings payload is not valid JSON." }, { status: 400 });
   }
 
-  const stringFields = ["brandName", "brandDescriptor", "siteTitle", "siteDescription", "faviconUrl", "openGraphImageUrl", "logoUrl", "logoAlt", "announcementText", "headerCtaLabel", "headerCtaHref", "clientPortalLabel", "clientPortalHref", "footerTagline", "footerAddress", "contactEmail", "contactPhone", "copyrightText"] as const;
+  const stringFields = ["brandName", "brandDescriptor", "siteTitle", "siteDescription", "faviconUrl", "openGraphImageUrl", "logoUrl", "logoAlt", "announcementText", "headerCtaLabel", "headerCtaHref", "clientPortalLabel", "clientPortalHref", "footerTagline", "footerAddress", "contactEmail", "contactPhone", "copyrightText", "notFoundEyebrow", "notFoundHeadline", "notFoundAccent", "notFoundDescription", "notFoundPrimaryLabel", "notFoundPrimaryHref", "notFoundSecondaryLabel", "notFoundSecondaryHref", "errorEyebrow", "errorHeadline", "errorAccent", "errorDescription", "errorRetryLabel", "errorHomeLabel", "errorHomeHref", "errorContactLabel", "errorContactHref", "offlineEyebrow", "offlineHeadline", "offlineDescription", "offlineRetryLabel", "offlineHomeLabel", "offlineHomeHref", "loadingBrandLabel", "loadingMessage"] as const;
   const update: Record<string, unknown> = {};
   for (const field of stringFields) {
     if (typeof body[field] !== "string") {
@@ -76,7 +84,7 @@ export async function PUT(request: NextRequest) {
   if (!update.brandName || !update.logoAlt || !update.headerCtaLabel || !update.clientPortalLabel) {
     return NextResponse.json({ status: "error", message: "Brand name, logo description, and header action labels are required." }, { status: 400 });
   }
-  if (!safeHref(update.logoUrl) || !safeHref(update.faviconUrl) || !safeHref(update.openGraphImageUrl) || !safeHref(update.headerCtaHref) || !safeHref(update.clientPortalHref)) {
+  if (!safeHref(update.logoUrl) || !safeHref(update.faviconUrl) || !safeHref(update.openGraphImageUrl) || !safeHref(update.headerCtaHref) || !safeHref(update.clientPortalHref) || !safeHref(update.notFoundPrimaryHref) || !safeHref(update.notFoundSecondaryHref) || !safeHref(update.errorHomeHref) || !safeHref(update.errorContactHref) || !safeHref(update.offlineHomeHref)) {
     return NextResponse.json({ status: "error", message: "Logo and navigation destinations must use a safe internal path or HTTPS URL." }, { status: 400 });
   }
   if (update.contactEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(update.contactEmail))) {
@@ -105,5 +113,5 @@ export async function PUT(request: NextRequest) {
 
   revalidateTag("public-site-settings", "max");
   revalidatePath("/", "layout");
-  return NextResponse.json({ status: "ok", settings }, { headers: { "Cache-Control": "no-store, max-age=0" } });
+  return NextResponse.json({ status: "ok", settings: serializePublicSettings(settings as unknown as Record<string, unknown> | null) }, { headers: { "Cache-Control": "no-store, max-age=0" } });
 }

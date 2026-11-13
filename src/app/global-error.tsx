@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { PUBLIC_SITE_SETTINGS_DEFAULTS } from "@/lib/constants/publicSiteDefaults";
 
 export default function GlobalError({
   error,
@@ -9,8 +10,16 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const [copy,setCopy] = useState(PUBLIC_SITE_SETTINGS_DEFAULTS);
   useEffect(() => {
     console.error("[TGO GlobalError]", { message: error.message, digest: error.digest });
+    const controller=new AbortController();
+    fetch("/api/public-site-settings",{cache:"no-store",signal:controller.signal}).then(async response=>{
+      if(!response.ok)return;
+      const data=await response.json();
+      if(data.settings&&!controller.signal.aborted){setCopy(current=>({...current,...data.settings}));try{localStorage.setItem("tgo-public-site-settings",JSON.stringify(data.settings));}catch{}}
+    }).catch(()=>{});
+    return()=>controller.abort();
   }, [error]);
 
   const buttonStyle = {
@@ -30,19 +39,19 @@ export default function GlobalError({
     <html lang="en">
       <body style={{ margin: 0, minHeight: "100vh", background: "radial-gradient(ellipse at 50% 0%, rgba(91,46,232,.22), transparent 55%), #0B0E14", color: "#F1F3F8", fontFamily: "Arial, Helvetica, sans-serif" }}>
         <main style={{ boxSizing: "border-box", display: "flex", minHeight: "100vh", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 22, padding: "48px 24px", textAlign: "center" }}>
-          <img src="/images/illustrations/error-recovery.svg" alt="" aria-hidden="true" style={{ display: "block", width: "min(100%, 390px)", height: "auto", borderRadius: 22, border: "1px solid rgba(139,157,198,.2)" }} />
+          <img src="/images/illustrations/error-recovery.svg" alt="" aria-hidden="true" style={{ display: "block", width: "min(100%,390px)", height: "auto", borderRadius: 22, border: "1px solid rgba(139,157,198,.2)" }} />
           <div style={{ display: "inline-flex", alignItems: "center", gap: 9, border: "1px solid rgba(46,197,240,.25)", background: "rgba(46,197,240,.08)", borderRadius: 999, padding: "8px 14px", color: "#8DE8FA", fontSize: 11, fontWeight: 700, letterSpacing: ".16em", textTransform: "uppercase" }}>
-            <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#2EC5F0" }} /> TGO DevStudio · Recovery
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#2EC5F0" }} /> {copy.brandName} · Recovery
           </div>
           <div style={{ maxWidth: 680 }}>
-            <p style={{ margin: "0 0 14px", color: "#8B93A7", fontSize: 13, letterSpacing: ".18em", textTransform: "uppercase" }}>Unexpected application error</p>
-            <h1 style={{ margin: 0, fontSize: "clamp(38px, 7vw, 68px)", lineHeight: 1.05, letterSpacing: "-.045em", fontWeight: 800, background: "linear-gradient(135deg,#9B82FF 0%,#2EC5F0 85%)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>We’re restoring this page.</h1>
-            <p style={{ margin: "20px auto 0", maxWidth: 480, color: "#A8B0C3", fontSize: 16, lineHeight: 1.75 }}>The page encountered an unexpected error. Your account and saved information have not been changed by this screen. Try loading the page again.</p>
+            <p style={{ margin: "0 0 14px", color: "#8B93A7", fontSize: 13, letterSpacing: ".18em", textTransform: "uppercase" }}>{copy.errorEyebrow}</p>
+            <h1 style={{ margin: 0, fontSize: "clamp(38px, 7vw, 68px)", lineHeight: 1.05, letterSpacing: "-.045em", fontWeight: 800, background: "linear-gradient(135deg,#9B82FF 0%,#2EC5F0 85%)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>{copy.errorHeadline} {copy.errorAccent}</h1>
+            <p style={{ margin: "20px auto 0", maxWidth: 480, color: "#A8B0C3", fontSize: 16, lineHeight: 1.75 }}>{copy.errorDescription}</p>
           </div>
           {error.digest && <p style={{ margin: 0, color: "#697386", fontFamily: "monospace", fontSize: 11 }}>Reference: {error.digest}</p>}
           <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 12, marginTop: 8 }}>
-            <button onClick={() => reset()} style={{ ...buttonStyle, border: 0, color: "#07111D", background: "linear-gradient(135deg,#8A6BFF,#2EC5F0)" }}>Try again</button>
-            <button onClick={() => window.location.assign(new URL("/", window.location.origin).href)} style={{ ...buttonStyle, border: "1px solid #343B50", color: "#E7EAF2", background: "rgba(255,255,255,.04)" }}>Return home</button>
+            <button onClick={() => reset()} style={{ ...buttonStyle, border: 0, color: "#07111D", background: "linear-gradient(135deg,#8A6BFF,#2EC5F0)" }}>{copy.errorRetryLabel}</button>
+            <button onClick={() => window.location.assign(new URL(copy.errorHomeHref, window.location.origin).href)} style={{ ...buttonStyle, border: "1px solid #343B50", color: "#E7EAF2", background: "rgba(255,255,255,.04)" }}>{copy.errorHomeLabel}</button>
           </div>
         </main>
       </body>

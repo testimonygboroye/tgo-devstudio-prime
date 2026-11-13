@@ -1,6 +1,6 @@
 import { Schema, model, models, type Document, type Model, type Types } from "mongoose";
 
-export type PublicPageKey = "industries" | "engagement-models";
+export type PublicPageKey = "industries" | "engagement-models" | "about" | "contact" | "process" | "services" | "portfolio" | "blog" | "team" | "careers" | "testimonials" | "stack" | "help" | "book-a-call" | "services-catalogue" | "faq";
 export interface IPublicPageCard {
   icon: string;
   eyebrow: string;
@@ -46,7 +46,7 @@ const CardSchema = new Schema<IPublicPageCard>({
 }, { _id: false });
 
 const PublicPageContentSchema = new Schema<IPublicPageContent>({
-  pageKey: { type: String, enum: ["industries", "engagement-models"], required: true, unique: true },
+  pageKey: { type: String, enum: ["industries", "engagement-models", "about", "contact", "process", "services", "portfolio", "blog", "team", "careers", "testimonials", "stack", "help", "book-a-call", "services-catalogue", "faq"], required: true, unique: true },
   metaTitle: { type: String, default: "", trim: true, maxlength: 160 },
   metaDescription: { type: String, default: "", trim: true, maxlength: 320 },
   heroEyebrow: { type: String, default: "", trim: true, maxlength: 120 },

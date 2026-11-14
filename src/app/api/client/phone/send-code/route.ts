@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
   if (channel === "sms" && (!sid || !authToken || (!from && !messagingService))) {
     return NextResponse.json({ error: "SMS verification is not ready. Verify Twilio in Integration Centre and provide a verified sender number or Messaging Service SID." }, { status: 503 });
   }
-  if (channel === "whatsapp" && (!whatsappCredentials?.accessToken || !whatsappCredentials.phoneNumberId || !whatsappTemplateName)) {
+  if (channel === "whatsapp" && (!whatsappCredentials?.accessToken || !whatsappCredentials?.phoneNumberId || !whatsappTemplateName)) {
     return NextResponse.json({ error: "WhatsApp verification requires a verified TGO WhatsApp Cloud API sender and an approved AUTHENTICATION template. Set its template name in Integration Centre or WHATSAPP_VERIFICATION_TEMPLATE_NAME." }, { status: 503 });
   }
 

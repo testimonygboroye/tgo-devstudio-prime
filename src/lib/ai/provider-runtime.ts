@@ -59,7 +59,7 @@ export async function runProviderCompletionWithFallback(
   const visited = new Set<string>();
   const failures: string[] = [];
   for (const attempt of attempts) {
-    const key = attempt.providerId + ":" + attempt.modelName;
+    const key = attempt.providerId;
     if (!attempt.providerId || !attempt.modelName || visited.has(key)) continue;
     visited.add(key);
     try {

@@ -9,7 +9,8 @@ import UserWhatsAppConnection from "@/models/UserWhatsAppConnection";
 import UserWhatsAppDelivery from "@/models/UserWhatsAppDelivery";
 import IntegrationConnection from "@/models/IntegrationConnection";
 import { AIAgent, AITask } from "@/models/AIWorkforce";
-import { runProviderCompletion } from "@/lib/ai/provider-runtime";
+import { runProviderCompletionWithFallback } from "@/lib/ai/provider-runtime";
+import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import { mirrorMessageToPersonalWhatsApp } from "@/lib/messaging/whatsappSync";
 import { decryptCredentials } from "@/lib/integrations/crypto";
 import { ensureWhatsAppRecipientIndexes } from "@/lib/messaging/whatsappIndexes";
@@ -181,13 +182,13 @@ export async function POST(request: NextRequest) {
             try {
               const history = await UnifiedMessage.find({ conversationId: conversation._id, deletedAt: { $exists: false } }).sort({ createdAt: -1 }).limit(24).lean();
               const prompt = history.reverse().map((item) => (item.senderLabel || "Participant") + ": " + item.body).join("\n\n");
-              const completion = await runProviderCompletion(String(agent.providerId), agent.modelName, agent.systemInstructions + "\n\nYou are responding as " + agent.name + " in the owner's private TGO conversation. Do not claim actions you did not perform.", prompt);
+              const completion = await runProviderCompletionWithFallback(String(agent.providerId), agent.modelName, agent.systemInstructions + "\n\nYou are responding as " + agent.name + " in the owner's private TGO conversation. Do not claim actions you did not perform.", prompt, "admin");
               task.status = "completed"; task.result = completion.text.slice(0, 50000); task.inputTokens = completion.inputTokens; task.outputTokens = completion.outputTokens; task.providerRequestId = completion.providerRequestId; task.completedAt = new Date(); await task.save();
               const reply = await UnifiedMessage.create({ conversationId: conversation._id, senderType: "ai", senderLabel: agent.name, body: completion.text.slice(0, 12000), status: "sent" });
               conversation.lastMessageAt = new Date(); await conversation.save();
               await mirrorMessageToPersonalWhatsApp(conversation, reply);
             } catch (error) {
-              task.status = "failed"; task.error = (error instanceof Error ? error.message : "AI response failed.").slice(0, 2000); task.completedAt = new Date(); await task.save();
+              task.status = "failed"; const diagnostic = (error instanceof Error ? error.message : "AI response failed.").slice(0, 1500); task.error = "The AI service is temporarily unavailable. Please retry later."; task.completedAt = new Date(); await task.save(); try { await writePlatformAuditEvent({ actorType: "system", actorId: "whatsapp-ai-gateway", actorLabel: "TGO WhatsApp AI Gateway", action: "ai.whatsapp.provider_failure", module: "ai-workforce", targetType: "AITask", targetId: String(task._id), outcome: "failure", metadata: { requestedBy: String(recipient.userId), error: diagnostic } }); } catch { /* diagnostics must not interrupt webhook processing */ }
             }
           }
         }

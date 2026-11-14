@@ -147,7 +147,7 @@ export default function AdminSidebar({
   basePath,
   isFounder,
 }: AdminSidebarProps) {
-  const [isCollapsed, setIsCollapsed] = useState(true);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const setMobileOpen = useCallback((open: boolean) => setIsMobileOpen(open), []);
   const drawerRef = useRef<HTMLElement>(null);
@@ -254,8 +254,8 @@ export default function AdminSidebar({
           const GroupIcon = group.items[0]?.icon ?? Layers;
           const groupActive = group.items.some((item) => resolveNavHref(item) === activeHref);
           return (
-            <details key={group.title} open={groupActive || undefined} className="group/nav mb-2">
-              <summary title={group.title} className={`flex cursor-pointer list-none items-center justify-between rounded-lg px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)] hover:bg-[var(--surface-hover)] ${collapsed ? "justify-center" : ""}`}>
+            <details key={group.title} open={collapsed || groupActive || undefined} className="group/nav mb-2">
+              <summary title={group.title} className={`flex cursor-pointer list-none items-center justify-between rounded-lg px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)] hover:bg-[var(--surface-hover)] ${collapsed ? "hidden" : ""}`}>
                 {!collapsed ? <><span>{group.title}</span><ChevronRight size={14} className="transition-transform group-open/nav:rotate-90"/></> : <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-white/[.04] text-brand-cyan-300"><GroupIcon size={16}/></span>}
               </summary>
               <div className="mt-1 space-y-1">

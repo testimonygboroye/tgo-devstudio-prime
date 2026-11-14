@@ -51,7 +51,21 @@ async function verify(providerId: string, credentials: Record<string, string>): 
       }
       return;
     }
-    else if (providerId === "twilio") response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(credentials.accountSid)}.json`, { headers: { Authorization: `Basic ${Buffer.from(`${credentials.accountSid}:${credentials.authToken}`).toString("base64")}` }, signal: controller.signal, cache: "no-store" });
+    else if (providerId === "twilio") {
+      const authorization = "Basic " + Buffer.from(credentials.accountSid + ":" + credentials.authToken).toString("base64");
+      const accountResponse = await fetch("https://api.twilio.com/2010-04-01/Accounts/" + encodeURIComponent(credentials.accountSid) + ".json", { headers: { Authorization: authorization }, signal: controller.signal, cache: "no-store" });
+      if (!accountResponse.ok) {
+        if (accountResponse.status === 401 || accountResponse.status === 403) throw new Error("Twilio rejected the account SID or auth token.");
+        throw new Error("Twilio account verification returned HTTP " + accountResponse.status + ".");
+      }
+      if (credentials.messagingServiceSid) {
+        response = await fetch("https://messaging.twilio.com/v1/Services/" + encodeURIComponent(credentials.messagingServiceSid), { headers: { Authorization: authorization }, signal: controller.signal, cache: "no-store" });
+      } else if (credentials.fromNumber) {
+        response = await fetch("https://api.twilio.com/2010-04-01/Accounts/" + encodeURIComponent(credentials.accountSid) + "/IncomingPhoneNumbers.json?PhoneNumber=" + encodeURIComponent(credentials.fromNumber), { headers: { Authorization: authorization }, signal: controller.signal, cache: "no-store" });
+      } else {
+        throw new Error("Twilio account access is valid, but no verified SMS sender number or Messaging Service SID is configured.");
+      }
+    }
     else throw new Error("A dedicated OAuth flow is required for this provider.");
     if (!response.ok) {
       if (response.status === 401 || response.status === 403) throw new Error("The provider rejected these credentials or their permissions.");

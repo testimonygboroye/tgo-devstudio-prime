@@ -93,10 +93,11 @@ export default function SocialFloatingButton() {
   }
   if (!position) return null;
   const popupAboveButton = position.y > window.innerHeight / 2;
+  const popupOnLeft = position.x < window.innerWidth / 2;
 
   return (
     <div ref={containerRef} className="fixed z-[120]" style={{ left: position.x, top: position.y, touchAction: "none" }}>
-      {isOpen && <div className={`absolute w-72 max-w-[calc(100vw-32px)] overflow-hidden rounded-2xl border border-base-800 bg-base-900 shadow-2xl ${popupAboveButton ? "bottom-[64px] right-0" : "top-[64px] right-0"}`}>
+      {isOpen && <div className={`absolute w-72 max-w-[calc(100vw-32px)] overflow-hidden rounded-2xl border border-base-800 bg-base-900 shadow-2xl ${popupAboveButton ? "bottom-[64px]" : "top-[64px]"} ${popupOnLeft ? "left-0" : "right-0"}`}>
         <div className="border-b border-base-800 px-4 py-3"><p className="font-mono text-xs uppercase tracking-widest text-neutral-400">Connect with TGO</p></div>
         <div className="flex max-h-[min(70dvh,480px)] flex-col divide-y divide-base-800 overflow-y-auto">
           {SOCIAL_LINKS.map((social) => {

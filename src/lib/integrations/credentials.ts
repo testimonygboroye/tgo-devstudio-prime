@@ -19,7 +19,12 @@ export async function getVerifiedIntegrationCredentials(providerId: string): Pro
     if (credentials.refreshToken && (!Number.isFinite(expiresAt) || expiresAt <= Date.now() + 60_000)) {
       const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
       const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
-      if (!clientId || !clientSecret) return null;
+      if (!clientId || !clientSecret) {
+        row.status = "error";
+        row.lastError = "Google OAuth refresh requires GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET.";
+        await row.save();
+        return null;
+      }
       const response = await fetch("https://oauth2.googleapis.com/token", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },

@@ -71,6 +71,12 @@ async function verify(providerId: string, credentials: Record<string, string>): 
       if (response.status === 401 || response.status === 403) throw new Error("The provider rejected these credentials or their permissions.");
       throw new Error(`Provider verification returned HTTP ${response.status}.`);
     }
+    if (providerId === "twilio" && credentials.fromNumber && !credentials.messagingServiceSid) {
+      const senderPayload = await response.json().catch(() => ({}));
+      const normalized = credentials.fromNumber.replace(/[^0-9]/g, "");
+      const senderExists = (Array.isArray(senderPayload.incoming_phone_numbers) ? senderPayload.incoming_phone_numbers : []).some((item: { phone_number?: string }) => String(item.phone_number || "").replace(/[^0-9]/g, "") === normalized);
+      if (!senderExists) throw new Error("Twilio account access is valid, but the configured sender number is not an active phone number on this account.");
+    }
   } finally { clearTimeout(timeout); }
 }
 export async function POST(request: NextRequest) {

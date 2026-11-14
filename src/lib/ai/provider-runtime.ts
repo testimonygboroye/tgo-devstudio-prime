@@ -55,7 +55,7 @@ export async function runProviderCompletionWithFallback(
       ? [{ providerId: String(config.fallbackProviderId), modelName: config.fallbackModelName }]
       : [])),
   ];
-  const attempts = [{ providerId, modelName: model }, ...configured];
+  const attempts = configured.length ? [...configured, { providerId, modelName: model }] : [{ providerId, modelName: model }];
   const visited = new Set<string>();
   const failures: string[] = [];
   for (const attempt of attempts) {

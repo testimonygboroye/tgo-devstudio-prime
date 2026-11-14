@@ -8,7 +8,7 @@ import { AIProvider, AIAgent, AITask } from "@/models/AIWorkforce";
 import { UnifiedConversation, UnifiedMessage } from "@/models/UnifiedConversation";
 import { mirrorMessageToPersonalWhatsApp } from "@/lib/messaging/whatsappSync";
 import { decryptProviderSecret, encryptProviderSecret } from "@/lib/ai/provider-secrets";
-import { runProviderCompletion } from "@/lib/ai/provider-runtime";
+import { runProviderCompletionWithFallback } from "@/lib/ai/provider-runtime";
 import { AIWorkspace, AIMemory } from "@/models/AIKnowledge";
 import User from "@/models/User";
 import EmployeeProfile from "@/models/EmployeeProfile";
@@ -436,7 +436,7 @@ export async function POST(request: NextRequest) {
           };
         }
         const prompt = operationResult ? task.input + "\n\nApproved business-operation result (JSON reference data):\n" + JSON.stringify(operationResult) : task.input;
-        const completion = await runProviderCompletion(String(agent.providerId), agent.modelName, agent.systemInstructions + memoryContext, prompt);
+        const completion = await runProviderCompletionWithFallback(String(agent.providerId), agent.modelName, agent.systemInstructions + memoryContext, prompt, "admin");
         if (!completion.text.trim()) throw new Error("The provider returned an empty response.");
         if (task.operation === "projects.status.update") {
           const projectId = String(payload.projectId || ""), nextStatus = String(payload.status || "");
@@ -469,7 +469,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ status: "ok", message: "AI task completed.", taskId: task._id, result: task.result, usage: { inputTokens: completion.inputTokens, outputTokens: completion.outputTokens } });
       } catch (error) {
         task.status = "failed";
-        task.error = (error instanceof Error ? error.message : "AI execution failed.").slice(0, 2000);
+        const technicalError = (error instanceof Error ? error.message : "AI execution failed.").slice(0, 2000);
+        task.error = isFounder ? technicalError : "The AI service is temporarily unavailable. Please retry later or contact the founder.";
         task.completedAt = new Date();
         await task.save();
         const failedPayload = (task.operationPayload || {}) as Record<string, unknown>;
@@ -477,8 +478,8 @@ export async function POST(request: NextRequest) {
           const conversation = await UnifiedConversation.findById(String(failedPayload.conversationId));
           if (conversation) await UnifiedMessage.create({ conversationId: conversation._id, senderType: "system", senderLabel: "TGO system", body: "The assigned AI task failed. Review its execution record in AI Workforce." });
         }
-        await writePlatformAuditEvent({ actorType: "system", actorId: "ai-workforce-runtime", action: "ai.task.failed", module: "ai-workforce", targetType: "AITask", targetId: String(task._id), outcome: "failure", metadata: { error: task.error, attempt: task.executionAttempts } });
-        return NextResponse.json({ status: "error", message: "AI task failed. Review the recorded error before retrying.", taskId: task._id, error: task.error }, { status: 502 });
+        await writePlatformAuditEvent({ actorType: "system", actorId: "ai-workforce-runtime", action: "ai.task.failed", module: "ai-workforce", targetType: "AITask", targetId: String(task._id), outcome: "failure", metadata: { error: technicalError, attempt: task.executionAttempts } });
+        return NextResponse.json({ status: "error", message: "AI task failed. Review the recorded error before retrying.", taskId: task._id, ...(isFounder ? { error: technicalError } : {}) }, { status: 502 });
       }
     }
     if (body.action === "task.retry") {

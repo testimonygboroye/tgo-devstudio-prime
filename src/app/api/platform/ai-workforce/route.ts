@@ -282,17 +282,79 @@ export async function POST(request: NextRequest) {
       const provider = await AIProvider.findById(body.providerId).select("+encryptedApiKey");
       if (!provider) return NextResponse.json({ status: "error", message: "Provider not found." }, { status: 404 });
       const key = decryptProviderSecret(provider.encryptedApiKey);
-      let endpoint = "";
-      let headers: Record<string, string> = {};
-      if (provider.provider === "google") { endpoint = "https://generativelanguage.googleapis.com/v1beta/models"; headers = { "x-goog-api-key": key }; }
-      else if (provider.provider === "anthropic") { endpoint = "https://api.anthropic.com/v1/models"; headers = { "x-api-key": key, "anthropic-version": "2023-06-01" }; }
-      else { endpoint = (provider.baseUrl || "https://api.openai.com/v1").replace(/\/$/, "") + "/models"; headers = { Authorization: "Bearer " + key }; }
-      const response = await fetch(endpoint, { headers, signal: AbortSignal.timeout(12000), cache: "no-store" });
-      provider.lastTestedAt = new Date();
-      provider.lastTestStatus = response.ok ? "success" : "failed";
-      await provider.save();
-      await writePlatformAuditEvent({ actorType: "human", actorId, action: "ai.provider.tested", module: "ai-workforce", targetType: "AIProvider", targetId: String(provider._id), outcome: response.ok ? "success" : "failure", metadata: { statusCode: response.status } });
-      return NextResponse.json({ status: response.ok ? "ok" : "error", httpStatus: response.status, message: response.ok ? "Provider connection verified." : "Provider rejected the connection. Check the credential and provider configuration." }, { status: response.ok ? 200 : 502 });
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 20000);
+      let testedModel = "";
+      let statusCode = 0;
+      try {
+        const catalogueUrl = provider.provider === "google"
+          ? "https://generativelanguage.googleapis.com/v1beta/models"
+          : provider.provider === "anthropic"
+            ? "https://api.anthropic.com/v1/models?limit=100"
+            : (provider.provider === "openai" ? "https://api.openai.com/v1" : String(provider.baseUrl || "").replace(/\/$/, "")) + "/models";
+        const catalogueHeaders: Record<string, string> = provider.provider === "google"
+          ? { "x-goog-api-key": key }
+          : provider.provider === "anthropic"
+            ? { "x-api-key": key, "anthropic-version": "2023-06-01" }
+            : { Authorization: "Bearer " + key };
+        const catalogueResponse = await fetch(catalogueUrl, { headers: catalogueHeaders, signal: controller.signal, cache: "no-store" });
+        statusCode = catalogueResponse.status;
+        const catalogue = await catalogueResponse.json().catch(() => ({}));
+        if (!catalogueResponse.ok) throw new Error("Provider model catalogue rejected the credential (HTTP " + catalogueResponse.status + ").");
+        if (provider.provider === "google") {
+          const models = Array.isArray(catalogue.models) ? catalogue.models : [];
+          const eligible = models.filter((item: any) => Array.isArray(item.supportedGenerationMethods) && item.supportedGenerationMethods.includes("generateContent"));
+          const preferred = eligible.find((item: any) => String(item.name || "").endsWith("gemini-3.8-flash")) || eligible.find((item: any) => String(item.name || "").endsWith("gemini-2.5-flash"));
+          testedModel = String((preferred || eligible[0])?.name || "").replace(/^models\//, "");
+        } else {
+          const models = Array.isArray(catalogue.data) ? catalogue.data : [];
+          const eligible = models.map((item: any) => String(item.id || "")).filter((id: string) => provider.provider === "anthropic" ? /^claude-/i.test(id) : provider.provider === "openai" ? /^gpt-/i.test(id) : Boolean(id));
+          testedModel = eligible.find((id: string) => /(?:sonnet|4\.1-mini|4o-mini|flash)/i.test(id)) || eligible[0] || "";
+        }
+        if (!testedModel) throw new Error("The provider account returned no supported text-generation model.");
+        let generationResponse: Response;
+        let generatedText = "";
+        if (provider.provider === "google") {
+          generationResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(testedModel) + ":generateContent", {
+            method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, signal: controller.signal, cache: "no-store",
+            body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "Reply with exactly: TGO live generation test successful." }] }], generationConfig: { maxOutputTokens: 24, temperature: 0 } }),
+          });
+          const result = await generationResponse.json().catch(() => ({}));
+          generatedText = (result.candidates?.[0]?.content?.parts || []).map((part: { text?: string }) => part.text || "").join("").trim();
+        } else if (provider.provider === "anthropic") {
+          generationResponse = await fetch("https://api.anthropic.com/v1/messages", {
+            method: "POST", headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" }, signal: controller.signal, cache: "no-store",
+            body: JSON.stringify({ model: testedModel, max_tokens: 24, temperature: 0, messages: [{ role: "user", content: "Reply with exactly: TGO live generation test successful." }] }),
+          });
+          const result = await generationResponse.json().catch(() => ({}));
+          generatedText = (result.content || []).filter((part: { type?: string }) => part.type === "text").map((part: { text?: string }) => part.text || "").join("").trim();
+        } else {
+          const base = provider.provider === "openai" ? "https://api.openai.com/v1" : String(provider.baseUrl || "").replace(/\/$/, "");
+          generationResponse = await fetch(base + "/chat/completions", {
+            method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + key }, signal: controller.signal, cache: "no-store",
+            body: JSON.stringify({ model: testedModel, max_tokens: 24, temperature: 0, messages: [{ role: "user", content: "Reply with exactly: TGO live generation test successful." }] }),
+          });
+          const result = await generationResponse.json().catch(() => ({}));
+          generatedText = String(result.choices?.[0]?.message?.content || "").trim();
+        }
+        statusCode = generationResponse.status;
+        if (!generationResponse.ok) throw new Error("Provider model generation request failed (HTTP " + generationResponse.status + ").");
+        if (!generatedText) throw new Error("The provider accepted the request but returned no text completion.");
+        provider.lastTestedAt = new Date();
+        provider.lastTestStatus = "success";
+        await provider.save();
+        await writePlatformAuditEvent({ actorType: "human", actorId, actorLabel: session.user.name, action: "ai.provider.tested", module: "ai-workforce", targetType: "AIProvider", targetId: String(provider._id), outcome: "success", metadata: { model: testedModel, statusCode, liveGeneration: true } });
+        return NextResponse.json({ status: "ok", httpStatus: statusCode, model: testedModel, message: "Live generation test succeeded with " + testedModel + ". This provider can generate a real response." });
+      } catch (error) {
+        provider.lastTestedAt = new Date();
+        provider.lastTestStatus = "failed";
+        await provider.save();
+        const diagnostic = (error instanceof Error ? error.message : "Provider generation test failed.").slice(0, 500);
+        await writePlatformAuditEvent({ actorType: "human", actorId, actorLabel: session.user.name, action: "ai.provider.tested", module: "ai-workforce", targetType: "AIProvider", targetId: String(provider._id), outcome: "failure", metadata: { model: testedModel, statusCode, error: diagnostic, liveGeneration: true } });
+        return NextResponse.json({ status: "error", message: "Live generation test failed. Check the provider API key, model access, billing/quota and model availability. Founder diagnostics have been recorded.", ...(isFounder ? { diagnostic } : {}) }, { status: 502 });
+      } finally {
+        clearTimeout(timeout);
+      }
     }
     if (body.action === "agent.create") {
       const provider = await AIProvider.findOne({ _id: body.providerId, enabled: true });

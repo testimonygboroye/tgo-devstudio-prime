@@ -4,6 +4,7 @@ import { connectToDatabase } from "@/lib/db";
 import IntegrationConnection from "@/models/IntegrationConnection";
 import { getIntegrationProvider } from "@/lib/integrations/registry";
 import { decryptCredentials } from "@/lib/integrations/crypto";
+import { getVerifiedIntegrationCredentials } from "@/lib/integrations/credentials";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
 export const dynamic = "force-dynamic";
 const fail = (message: string, status = 400) => NextResponse.json({ error: message }, { status });
@@ -27,6 +28,8 @@ async function verify(providerId: string, credentials: Record<string, string>): 
       }
       return;
     }
+    else if (providerId === "google_search_console") response = await fetch("https://searchconsole.googleapis.com/webmasters/v3/sites", { headers: { Authorization: "Bearer " + credentials.accessToken, accept: "application/json" }, signal: controller.signal, cache: "no-store" });
+    else if (providerId === "google_analytics") response = await fetch("https://analyticsadmin.googleapis.com/v1beta/accountSummaries?pageSize=1", { headers: { Authorization: "Bearer " + credentials.accessToken, accept: "application/json" }, signal: controller.signal, cache: "no-store" });
     else if (providerId === "paystack") response = await fetch("https://api.paystack.co/balance", { headers: { Authorization: `Bearer ${credentials.secretKey}`, accept: "application/json" }, signal: controller.signal, cache: "no-store" });
     else if (providerId === "github") response = await fetch("https://api.github.com/user", { headers: { Authorization: `Bearer ${credentials.token}`, accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" }, signal: controller.signal, cache: "no-store" });
     else if (providerId === "vercel") response = await fetch("https://api.vercel.com/v2/user", { headers: { Authorization: `Bearer ${credentials.token}`, accept: "application/json" }, signal: controller.signal, cache: "no-store" });
@@ -69,7 +72,8 @@ export async function POST(request: NextRequest) {
   if (!row || row.status === "disconnected") return fail("Save active credentials before testing this connection.", 409);
   let errorMessage = "";
   try {
-    const credentials = decryptCredentials(row.credentialsCiphertext);
+    const credentials = providerId === "google_search_console" || providerId === "google_analytics" ? await getVerifiedIntegrationCredentials(providerId) : decryptCredentials(row.credentialsCiphertext);
+    if (!credentials) throw new Error("Google OAuth authorization has expired or could not be refreshed. Reconnect the Google account.");
     await verify(providerId, credentials);
     row.status = "connected"; row.lastVerifiedAt = new Date(); row.lastError = "";
   } catch (error) {

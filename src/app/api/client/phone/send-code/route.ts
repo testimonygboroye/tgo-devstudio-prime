@@ -23,10 +23,10 @@ export async function POST(request: NextRequest) {
   if (!/^\+[1-9]\d{7,14}$/.test(phone)) return NextResponse.json({ error: "Use an international phone number in E.164 format, including the country calling code." }, { status: 400 });
 
   const savedTwilio = await getVerifiedIntegrationCredentials("twilio").catch(() => null);
-  const sid = process.env.TWILIO_ACCOUNT_SID || savedTwilio?.accountSid;
-  const authToken = process.env.TWILIO_AUTH_TOKEN || savedTwilio?.authToken;
-  const from = process.env.TWILIO_SMS_FROM || savedTwilio?.fromNumber;
-  const messagingService = process.env.TWILIO_MESSAGING_SERVICE_SID || savedTwilio?.messagingServiceSid;
+  const sid = savedTwilio?.accountSid || process.env.TWILIO_ACCOUNT_SID;
+  const authToken = savedTwilio?.authToken || process.env.TWILIO_AUTH_TOKEN;
+  const from = savedTwilio?.fromNumber || process.env.TWILIO_SMS_FROM;
+  const messagingService = savedTwilio?.messagingServiceSid || process.env.TWILIO_MESSAGING_SERVICE_SID;
   if (!sid || !authToken || (!from && !messagingService) || !process.env.JWT_TEMP_2FA_SECRET) {
     return NextResponse.json({ error: "SMS verification is not ready. Verify Twilio in Integration Centre and provide a verified sender number or Messaging Service SID. JWT_TEMP_2FA_SECRET must also be configured." }, { status: 503 });
   }

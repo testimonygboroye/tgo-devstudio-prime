@@ -465,7 +465,7 @@ export async function POST(request: NextRequest) {
           }
         }
         if (task.operation) await writePlatformAuditEvent({ actorType: "ai", actorId: String(agent._id), actorLabel: agent.name, action: "ai.business_tool_executed", module: "ai-workforce", targetType: task.operation, targetId: String(payload.clientId || payload.projectId || task._id), outcome: "success", metadata: { taskId: String(task._id), approvedBy: task.approvedBy } });
-        await writePlatformAuditEvent({ actorType: "ai", actorId: String(agent._id), actorLabel: agent.name, action: "ai.task.completed", module: "ai-workforce", targetType: "AITask", targetId: String(task._id), outcome: "success", metadata: { model: agent.modelName, inputTokens: completion.inputTokens, outputTokens: completion.outputTokens, providerRequestId: completion.providerRequestId } });
+        await writePlatformAuditEvent({ actorType: "ai", actorId: String(agent._id), actorLabel: agent.name, action: "ai.task.completed", module: "ai-workforce", targetType: "AITask", targetId: String(task._id), outcome: "success", metadata: { providerId: completion.providerId || String(agent.providerId), model: completion.model || agent.modelName, fallbackUsed: Boolean(completion.fallbackUsed), inputTokens: completion.inputTokens, outputTokens: completion.outputTokens, providerRequestId: completion.providerRequestId } });
         return NextResponse.json({ status: "ok", message: "AI task completed.", taskId: task._id, result: task.result, usage: { inputTokens: completion.inputTokens, outputTokens: completion.outputTokens } });
       } catch (error) {
         task.status = "failed";

@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
   const credentials: Record<string, string> = {};
   for (const field of provider.fields) {
     const value = (raw as Record<string, unknown>)[field.key];
+    if ((value === undefined || value === null || value === "") && field.required === false) continue;
     if (typeof value !== "string" || !value.trim() || value.length > 4000) return fail(`A valid ${field.label.toLowerCase()} is required.`);
     credentials[field.key] = value.trim();
   }

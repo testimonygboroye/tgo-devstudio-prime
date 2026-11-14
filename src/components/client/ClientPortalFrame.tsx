@@ -13,9 +13,7 @@ export default function ClientPortalFrame({ children }: { children: React.ReactN
     {authPage && <SiteHeader />}
     {children}
     <SiteFooter />
-    {!authPage && <>
-      <SocialFloatingButton />
-      <AIChatWidget scope="client" showLauncher={false} />
-    </>}
+    <SocialFloatingButton />
+    <AIChatWidget scope="client" showLauncher={false} />
   </>;
 }

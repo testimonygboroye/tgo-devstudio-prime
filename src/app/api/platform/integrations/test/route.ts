@@ -30,7 +30,24 @@ async function verify(providerId: string, credentials: Record<string, string>): 
     else if (providerId === "paystack") response = await fetch("https://api.paystack.co/balance", { headers: { Authorization: `Bearer ${credentials.secretKey}`, accept: "application/json" }, signal: controller.signal, cache: "no-store" });
     else if (providerId === "github") response = await fetch("https://api.github.com/user", { headers: { Authorization: `Bearer ${credentials.token}`, accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" }, signal: controller.signal, cache: "no-store" });
     else if (providerId === "vercel") response = await fetch("https://api.vercel.com/v2/user", { headers: { Authorization: `Bearer ${credentials.token}`, accept: "application/json" }, signal: controller.signal, cache: "no-store" });
-    else if (providerId === "whatsapp_cloud_api") response = await fetch("https://graph.facebook.com/v22.0/" + encodeURIComponent(credentials.phoneNumberId) + "?fields=display_phone_number,verified_name", { headers: { Authorization: "Bearer " + credentials.accessToken, accept: "application/json" }, signal: controller.signal, cache: "no-store" });
+    else if (providerId === "whatsapp_cloud_api") {
+      const senderResponse = await fetch("https://graph.facebook.com/v22.0/" + encodeURIComponent(credentials.phoneNumberId) + "?fields=display_phone_number,verified_name", { headers: { Authorization: "Bearer " + credentials.accessToken, accept: "application/json" }, signal: controller.signal, cache: "no-store" });
+      if (!senderResponse.ok) {
+        if (senderResponse.status === 401 || senderResponse.status === 403) throw new Error("Meta rejected the WhatsApp sender token or permissions.");
+        throw new Error("Meta sender verification returned HTTP " + senderResponse.status + ".");
+      }
+      if (credentials.verificationTemplateName) {
+        const templateUrl = new URL("https://graph.facebook.com/v22.0/" + encodeURIComponent(credentials.businessAccountId) + "/message_templates");
+        templateUrl.searchParams.set("name", credentials.verificationTemplateName);
+        templateUrl.searchParams.set("status", "APPROVED");
+        const templateResponse = await fetch(templateUrl, { headers: { Authorization: "Bearer " + credentials.accessToken, accept: "application/json" }, signal: controller.signal, cache: "no-store" });
+        const templatePayload = await templateResponse.json().catch(() => ({}));
+        if (!templateResponse.ok) throw new Error("Meta sender access works, but authentication-template verification failed (HTTP " + templateResponse.status + ").");
+        const approved = (Array.isArray(templatePayload.data) ? templatePayload.data : []).find((item: { name?: string; status?: string; category?: string; language?: string }) => item.name === credentials.verificationTemplateName && item.status === "APPROVED" && item.category === "AUTHENTICATION" && (!credentials.verificationTemplateLanguage || item.language === credentials.verificationTemplateLanguage));
+        if (!approved) throw new Error("The configured WhatsApp verification template is not approved as AUTHENTICATION in the selected language.");
+      }
+      return;
+    }
     else if (providerId === "twilio") response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(credentials.accountSid)}.json`, { headers: { Authorization: `Basic ${Buffer.from(`${credentials.accountSid}:${credentials.authToken}`).toString("base64")}` }, signal: controller.signal, cache: "no-store" });
     else throw new Error("A dedicated OAuth flow is required for this provider.");
     if (!response.ok) {

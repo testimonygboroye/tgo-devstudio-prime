@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { Activity, AlertCircle, CheckCircle2, Cloud, Code2, CreditCard, Mail, MessageCircle, PlugZap, RefreshCw, Search, ShieldCheck, Smartphone, X } from "lucide-react";
-type Provider = { id:string; name:string; category:string; description:string; fields:{key:string;label:string;hint:string}[]; testable:boolean; testLabel:string; connection:null|{id:string;status:string;credentialNames:string[];lastVerifiedAt?:string|null;lastError?:string} };
+type Provider = { id:string; name:string; category:string; description:string; fields:{key:string;label:string;hint:string;required?:boolean}[]; testable:boolean; testLabel:string; connection:null|{id:string;status:string;credentialNames:string[];lastVerifiedAt?:string|null;lastError?:string} };
 type Payload = {providers:Provider[];encryptionReady:boolean;googleOAuthReady?:boolean;googleOAuthMissing?:string[]};
 const icons:Record<string,typeof PlugZap>={email:Mail,payments:CreditCard,analytics:Activity,search:Search,development:Code2,sms:Smartphone,messaging:MessageCircle};
 const categoryNames:Record<string,string>={email:"Email",payments:"Payments",analytics:"Analytics",search:"Search",development:"Development & deployment",sms:"SMS",messaging:"Messaging"};

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight, Globe2, LayoutDashboard, Building2, Users, LockKeyhole, Sparkles } from "lucide-react";
+import { ArrowUpRight, Globe2, LayoutDashboard, Building2, Users, LockKeyhole, Sparkles, Bot, Workflow, LifeBuoy } from "lucide-react";
 
 type LauncherItem = {
   title: string; description: string; href?: string; status: "available" | "planned";
@@ -13,7 +13,7 @@ const items: LauncherItem[] = [
   { title: "Website Administration", description: "Manage website content, users, analytics and existing CMS operations.", href: "/admin/dashboard", status: "available", icon: LayoutDashboard, eyebrow: "Existing administration" },
   { title: "Business Ecosystem", description: "Manage the shared directory of internal units, clients, partners and vendors.", href: "/admin/businesses", status: "available", icon: Building2, eyebrow: "Business administration" },
   { title: "Client Portal", description: "Client accounts, profile settings, enquiries, notifications and relationship updates.", href: "/client/login", status: "available", icon: Users, eyebrow: "Live client environment" },
-  { title: "Workforce Portal", description: "Employee responsibilities, team workspaces, tasks and schedules.", status: "planned", icon: LockKeyhole, eyebrow: "Roadmap" },
+  { title: "Workforce Portal", description: "Employee profile, assigned work, schedules, requests, reviews and team workspace.", href: "/workforce", status: "available", icon: Workflow, eyebrow: "Live workforce environment" },\n  { title: "AI Command Centre", description: "Manage AI employees, assistant workflows, chatbot behaviour and execution oversight.", href: "/admin/ai-workforce", status: "available", icon: Bot, eyebrow: "Founder AI operations" },\n  { title: "Customer Support", description: "Open the support operations workspace to manage tickets, service levels and customer responses.", href: "/admin/support", status: "available", icon: LifeBuoy, eyebrow: "Support operations" },
 ];
 
 export default function FounderApplicationLauncher({ adminBasePath }: { adminBasePath: string }) {

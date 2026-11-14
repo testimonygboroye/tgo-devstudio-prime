@@ -47,7 +47,7 @@ export async function runProviderCompletionWithFallback(
   prompt: string,
   scope: AIChatbotScope = "admin",
 ): Promise<AICompletion> {
-  const config = await AIChatbotConfig.findOne({ scope, enabled: true }).lean();
+  const config = await AIChatbotConfig.findOne({ scope }).lean();
   const configured = [
     ...(config?.providerId && config?.modelName ? [{ providerId: String(config.providerId), modelName: config.modelName }] : []),
     ...((config?.fallbacks || []).map((item) => ({ providerId: String(item.providerId), modelName: item.modelName }))),

@@ -18,7 +18,7 @@ export default function PhoneNumberInput({value,onChange}:{value:string;onChange
   const [open,setOpen]=useState(false);
   const selected=countries.find(c=>c.cca2===country)||countries.find(c=>c.cca2==="NG")!;
   const filtered=useMemo(()=>countries.filter(c=>!query||c.name.toLowerCase().includes(query.toLowerCase())||c.cca2.toLowerCase().includes(query.toLowerCase())||c.calling_code.includes(query)),[query]);
-  function update(nextCountry:string,nextDigits:string){const item=countries.find(c=>c.cca2===nextCountry);if(!item)return;const normalized=nextDigits.replace(/^0+/,"");setCountry(nextCountry);setDigits(normalized);onChange(item.calling_code+normalized);}
+  function update(nextCountry:string,nextDigits:string){const item=countries.find(c=>c.cca2===nextCountry);if(!item)return;const maxDigits=Math.max(1,15-item.calling_code.replace(/\D/g,"").length);const normalized=nextDigits.replace(/^0+/,"").slice(0,maxDigits);setCountry(nextCountry);setDigits(normalized);onChange(item.calling_code+normalized);}
   return <div className="mt-2 space-y-2">
     <div className="flex gap-2">
       <div className="relative w-[44%] min-w-0 sm:w-[38%]">

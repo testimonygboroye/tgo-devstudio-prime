@@ -66,7 +66,7 @@ export async function mirrorMessageToPersonalWhatsApp(
         if (mediaKey === "document") media.filename = String(attachment.name || "attachment").slice(0, 180);
         media.caption = prefix;
       }
-      await saveDelivery(await sendWhatsAppPayload(phoneNumberId, credentials.accessToken, connection.personalPhoneNumber, {
+      await saveDelivery(await sendWhatsAppPayload(phoneNumberId, sharedCredentials.accessToken, connection.personalPhoneNumber, {
         type, [mediaKey]: media,
       }));
     }

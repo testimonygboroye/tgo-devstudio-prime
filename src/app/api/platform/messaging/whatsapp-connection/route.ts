@@ -39,19 +39,21 @@ export async function GET(request: NextRequest) {
   const auth = await authorize(request); if ("response" in auth) return auth.response;
   await connectToDatabase();
   await ensureWhatsAppRecipientIndexes();
-  const row = await UserWhatsAppConnection.findOne({ userId: auth.session.user._id }).select("+credentialsCiphertext").lean();
-  if (!row) return NextResponse.json({ status: "ok", connected: false, sharedSenderConfigured: Boolean(await getSharedSender()) });
+  const [row, shared] = await Promise.all([
+    UserWhatsAppConnection.findOne({ userId: auth.session.user._id }).select("+credentialsCiphertext").lean(),
+    getSharedSender(),
+  ]);
+  if (!row) return NextResponse.json({ status: "ok", connected: false, sharedSenderConfigured: Boolean(shared?.accessToken && shared?.phoneNumberId) });
   let credentials: Record<string, string> = {};
   try { if (row.credentialsCiphertext) credentials = decryptCredentials(row.credentialsCiphertext); } catch {}
-  const shared = credentials.accessToken ? null : await getSharedSender();
   return NextResponse.json({
     status: "ok",
     connected: row.status === "connected",
     personalPhoneNumber: row.personalPhoneNumber,
-    displayPhone: credentials.displayPhone || shared?.displayPhone || "",
+    displayPhone: shared?.displayPhone || credentials.displayPhone || "",
     lastVerifiedAt: row.lastVerifiedAt || null,
     optedIn: Boolean(row.optInAt),
-    sharedSenderConfigured: Boolean(shared || credentials.accessToken),
+    sharedSenderConfigured: Boolean(shared?.accessToken && shared?.phoneNumberId),
   }, { headers: { "Cache-Control": "private, no-store" } });
 }
 

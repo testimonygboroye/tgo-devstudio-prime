@@ -11,6 +11,7 @@ import CommercialOrder from "@/models/CommercialOrder";
 import FinanceInvoice from "@/models/FinanceInvoice";
 
 import {connectToDatabase} from "@/lib/db";
+import {getVerifiedIntegrationCredentials} from "@/lib/integrations/credentials";
 import {awardEngagementPoints} from "@/lib/engagement/award";
 import {EngagementRedemption} from "@/models/Engagement";
 export const runtime="nodejs";
@@ -18,10 +19,12 @@ export const dynamic="force-dynamic";
 
 export async function POST(request:NextRequest){
  const rawBody=Buffer.from(await request.arrayBuffer());
+ const integrationCredentials=process.env.PAYSTACK_SECRET_KEY?null:await getVerifiedIntegrationCredentials("paystack").catch(()=>null);
  const verified=verifyPaystackWebhookSignature({
   rawBody,signatureHeader:request.headers.get("paystack-signature"),
   legacySignatureHeader:request.headers.get("x-paystack-signature"),
-  webhookSecret:process.env.PAYSTACK_WEBHOOK_SECRET,secretKey:process.env.PAYSTACK_SECRET_KEY,
+  webhookSecret:process.env.PAYSTACK_WEBHOOK_SECRET,
+  secretKey:process.env.PAYSTACK_SECRET_KEY||integrationCredentials?.secretKey,
  });
  if(!verified)return NextResponse.json({error:"Invalid or expired Paystack webhook signature."},{status:401});
  let event:unknown;try{event=JSON.parse(rawBody.toString("utf8"));}catch{return NextResponse.json({error:"Invalid webhook payload."},{status:400});}

@@ -1,6 +1,7 @@
 import SiteHeader from "@/components/public/SiteHeader";
 import SiteFooter from "@/components/public/SiteFooter";
 import SocialFloatingButton from "@/components/public/SocialFloatingButton";
+import AIChatWidget from "@/components/shared/AIChatWidget";
 import BackToTopButton from "@/components/shared/BackToTopButton";
 import CookieConsentBanner from "@/components/public/CookieConsentBanner";
 import HelpDiscoveryPrompt from "@/components/shared/HelpDiscoveryPrompt";
@@ -9,33 +10,19 @@ import ShareCurrentPage from "@/components/public/ShareCurrentPage";
 import { getPublicSiteSettings } from "@/lib/publicSite/getPublicSiteSettings";
 import PublicSiteSettingsCache from "@/components/public/PublicSiteSettingsCache";
 
-export default async function PublicLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default async function PublicLayout({ children }: { children: React.ReactNode }) {
   const siteSettings = await getPublicSiteSettings();
-
-  return (
-    <>
-      <PublicSiteSettingsCache settings={siteSettings} />
-      <SiteHeader settings={siteSettings} />
-
-      {children}
-
-      <ShareCurrentPage />
-
-      <SiteFooter settings={siteSettings} />
-
-      <SocialFloatingButton />
-
-      <BackToTopButton position="left" />
-
-      <CookieConsentBanner />
-
-      <HelpDiscoveryPrompt />
-
-      <AnalyticsTracker />
-    </>
-  );
+  return <>
+    <PublicSiteSettingsCache settings={siteSettings} />
+    <SiteHeader settings={siteSettings} />
+    {children}
+    <ShareCurrentPage />
+    <SiteFooter settings={siteSettings} />
+    <SocialFloatingButton />
+    <AIChatWidget scope="public" showLauncher={false} />
+    <BackToTopButton position="left" />
+    <CookieConsentBanner />
+    <HelpDiscoveryPrompt />
+    <AnalyticsTracker />
+  </>;
 }

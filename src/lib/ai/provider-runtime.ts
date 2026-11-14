@@ -1,11 +1,15 @@
 import { decryptProviderSecret } from "@/lib/ai/provider-secrets";
 import { AIProvider } from "@/models/AIWorkforce";
+import { AIChatbotConfig, type AIChatbotScope } from "@/models/AIChatbot";
 
 export interface AICompletion {
   text: string;
   inputTokens: number;
   outputTokens: number;
   providerRequestId?: string;
+  providerId?: string;
+  model?: string;
+  fallbackUsed?: boolean;
 }
 
 export async function runProviderCompletion(providerId: string, model: string, system: string, prompt: string): Promise<AICompletion> {
@@ -31,4 +35,43 @@ export async function runProviderCompletion(providerId: string, model: string, s
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error("OpenAI-compatible completion failed (" + response.status + "): " + String(data?.error?.message || "Provider error").slice(0, 500));
   return { text: String(data.choices?.[0]?.message?.content || ""), inputTokens: Number(data.usage?.prompt_tokens || 0), outputTokens: Number(data.usage?.completion_tokens || 0), providerRequestId: data.id };
+}
+
+/**
+ * Runs an internal AI workflow through the founder-governed admin assistant
+ * fallback chain. The agent's own provider/model always gets the first attempt;
+ * the admin assistant's configured primary and ordered fallbacks are then used
+ * as eligible alternatives, without duplicating the same provider.
+ */
+export async function runProviderCompletionWithFallback(
+  providerId: string,
+  model: string,
+  system: string,
+  prompt: string,
+  scope: AIChatbotScope = "admin",
+): Promise<AICompletion> {
+  const config = await AIChatbotConfig.findOne({ scope }).lean();
+  const configured = [
+    ...(config?.providerId && config?.modelName ? [{ providerId: String(config.providerId), modelName: config.modelName }] : []),
+    ...((config?.fallbacks || []).map((item) => ({ providerId: String(item.providerId), modelName: item.modelName }))),
+    ...(config?.fallbacks?.length ? [] : (config?.fallbackProviderId && config?.fallbackModelName
+      ? [{ providerId: String(config.fallbackProviderId), modelName: config.fallbackModelName }]
+      : [])),
+  ];
+  const attempts = configured.length ? [...configured, { providerId, modelName: model }] : [{ providerId, modelName: model }];
+  const visited = new Set<string>();
+  const failures: string[] = [];
+  for (const attempt of attempts) {
+    const key = attempt.providerId;
+    if (!attempt.providerId || !attempt.modelName || visited.has(key)) continue;
+    visited.add(key);
+    try {
+      const result = await runProviderCompletion(attempt.providerId, attempt.modelName, system, prompt);
+      if (!result.text.trim()) throw new Error("Provider returned an empty response.");
+      return { ...result, providerId: attempt.providerId, model: attempt.modelName, fallbackUsed: visited.size > 1 };
+    } catch (error) {
+      failures.push(attempt.providerId + "/" + attempt.modelName + ": " + (error instanceof Error ? error.message : "Provider request failed."));
+    }
+  }
+  throw new Error("All configured AI providers failed. " + failures.join(" | ").slice(0, 1800));
 }

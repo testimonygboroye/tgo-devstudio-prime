@@ -21,7 +21,9 @@ export async function GET() {
   await connectToDatabase();
   const rows = await IntegrationConnection.find({}).sort({ category: 1, displayName: 1 }).lean();
   const connected = new Map(rows.map((row) => [row.providerId, serialize(row as unknown as Record<string, unknown>)]));
-  return NextResponse.json({ providers: INTEGRATION_REGISTRY.map((provider) => ({ ...provider, connection: connected.get(provider.id) || null })), encryptionReady: Boolean(process.env.INTEGRATION_CREDENTIALS_KEY && (() => { try { const value = process.env.INTEGRATION_CREDENTIALS_KEY!; return /^[a-f0-9]{64}$/i.test(value) || Buffer.from(value, "base64").length === 32; } catch { return false; } })()) }, { headers: { "Cache-Control": "private, no-store" } });
+  const googleOAuthMissing = ["GOOGLE_OAUTH_CLIENT_ID", "GOOGLE_OAUTH_CLIENT_SECRET", "JWT_ACCESS_SECRET"].filter((name) => !process.env[name]);
+  if (!process.env.SITE_URL && !process.env.NEXT_PUBLIC_SITE_URL) googleOAuthMissing.push("SITE_URL");
+  return NextResponse.json({ providers: INTEGRATION_REGISTRY.map((provider) => ({ ...provider, connection: connected.get(provider.id) || null })), encryptionReady: Boolean(process.env.INTEGRATION_CREDENTIALS_KEY && (() => { try { const value = process.env.INTEGRATION_CREDENTIALS_KEY!; return /^[a-f0-9]{64}$/i.test(value) || Buffer.from(value, "base64").length === 32; } catch { return false; } })()), googleOAuthReady: googleOAuthMissing.length === 0, googleOAuthMissing }, { headers: { "Cache-Control": "private, no-store" } });
 }
 export async function POST(request: NextRequest) {
   const auth = await founder(); if ("response" in auth) return auth.response;
@@ -35,6 +37,7 @@ export async function POST(request: NextRequest) {
   const credentials: Record<string, string> = {};
   for (const field of provider.fields) {
     const value = (raw as Record<string, unknown>)[field.key];
+    if ((value === undefined || value === null || value === "") && field.required === false) continue;
     if (typeof value !== "string" || !value.trim() || value.length > 4000) return fail(`A valid ${field.label.toLowerCase()} is required.`);
     credentials[field.key] = value.trim();
   }

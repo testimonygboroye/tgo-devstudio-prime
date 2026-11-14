@@ -159,12 +159,18 @@ export default function AdminSidebar({
   const collapsed = isCollapsed && !isMobileOpen;
 
   const basePathSegment = basePath;
+  const resolveNavHref = (item: { hrefSuffix: string }) =>
+    item.hrefSuffix === "/workforce" && !isFounder ? "/workforce" : `${basePathSegment}${item.hrefSuffix}`;
   const [navQuery, setNavQuery] = useState("");
   const normalizedQuery = navQuery.trim().toLowerCase();
   const visibleGroups = NAV_GROUPS
     .filter((group) => (group.title !== "Founder" && group.title !== "Commercial & Delivery" && group.title !== "AI Workforce" && group.title !== "Growth & Engagement") || isFounder)
     .map((group) => ({ ...group, items: group.items.filter((item) => !normalizedQuery || group.title.toLowerCase().includes(normalizedQuery) || item.label.toLowerCase().includes(normalizedQuery)) }))
     .filter((group) => group.items.length > 0);
+  const activeHref = visibleGroups
+    .flatMap((group) => group.items.map(resolveNavHref))
+    .filter((href) => pathname === href || pathname.startsWith(`${href}/`))
+    .sort((a, b) => b.length - a.length)[0] || "";
 
   const loadCounts = useCallback(async () => {
     try {
@@ -246,7 +252,7 @@ export default function AdminSidebar({
         {!collapsed && <label className="mb-3 flex items-center gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-page)] px-3 py-2.5 text-[var(--text-muted)] focus-within:border-brand-cyan-400"><Search size={16} className="shrink-0"/><input type="search" value={navQuery} onChange={(event) => setNavQuery(event.target.value)} placeholder="Find an admin page..." aria-label="Find an admin page" className="min-w-0 w-full bg-transparent text-xs text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)]"/>{navQuery && <button type="button" onClick={() => setNavQuery("")} aria-label="Clear navigation search" className="text-xs text-brand-cyan-300">Clear</button>}</label>}
         {visibleGroups.map((group) => {
           const GroupIcon = group.items[0]?.icon ?? Layers;
-          const groupActive = group.items.some((item) => pathname.startsWith(`${basePathSegment}${item.hrefSuffix}`));
+          const groupActive = group.items.some((item) => resolveNavHref(item) === activeHref);
           return (
             <details key={group.title} open={groupActive || undefined} className="group/nav mb-2">
               <summary title={group.title} className={`flex cursor-pointer list-none items-center justify-between rounded-lg px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)] hover:bg-[var(--surface-hover)] ${collapsed ? "justify-center" : ""}`}>
@@ -254,8 +260,8 @@ export default function AdminSidebar({
               </summary>
               <div className="mt-1 space-y-1">
                 {group.items.map((item) => {
-                  const href = item.hrefSuffix === "/workforce" && !isFounder ? "/workforce" : `${basePathSegment}${item.hrefSuffix}`;
-                  const isActive = item.hrefSuffix === "/dashboard" || item.hrefSuffix === "/help" ? pathname === href : pathname.startsWith(href);
+                  const href = resolveNavHref(item);
+                  const isActive = href === activeHref;
                   const Icon = item.icon;
                   const count = item.badgeKey ? counts[item.badgeKey] || 0 : 0;
                   return (

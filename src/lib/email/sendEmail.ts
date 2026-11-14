@@ -14,17 +14,14 @@ export async function sendNotificationEmail({
   subject,
   htmlContent,
 }: SendEmailParams): Promise<{ success: boolean; error?: string }> {
-  let apiKey = process.env.BREVO_API_KEY;
-  let senderEmail = process.env.BREVO_SENDER_EMAIL;
-  if (!apiKey || !senderEmail) {
-    try {
-      const credentials = await getVerifiedIntegrationCredentials("brevo");
-      apiKey = apiKey || credentials?.apiKey;
-      senderEmail = senderEmail || credentials?.senderEmail;
-    } catch (error) {
-      console.error("Brevo integration credential lookup failed:", error instanceof Error ? error.message : "unknown error");
-    }
+  let credentials: Record<string, string> | null = null;
+  try {
+    credentials = await getVerifiedIntegrationCredentials("brevo");
+  } catch (error) {
+    console.error("Brevo integration credential lookup failed:", error instanceof Error ? error.message : "unknown error");
   }
+  const apiKey = credentials?.apiKey || process.env.BREVO_API_KEY;
+  const senderEmail = credentials?.senderEmail || process.env.BREVO_SENDER_EMAIL;
 
   if (!apiKey || !senderEmail) {
     console.error("Brevo email skipped: BREVO_API_KEY or BREVO_SENDER_EMAIL not configured.");

@@ -1,10 +1,20 @@
 import { Schema, model, models, Document, Model, Types } from "mongoose";
 
 export type AIChatbotScope = "public" | "client" | "admin";
+export interface IAIChatbotFallback {
+  providerId: Types.ObjectId;
+  modelName: string;
+}
+const FallbackSchema = new Schema<IAIChatbotFallback>({
+  providerId: { type: Schema.Types.ObjectId, ref: "AIProvider", required: true },
+  modelName: { type: String, required: true, maxlength: 120 },
+}, { _id: false });
 export interface IAIChatbotConfig extends Document {
   scope: AIChatbotScope;
   providerId: Types.ObjectId;
   modelName: string;
+  fallbacks: IAIChatbotFallback[];
+  /** Legacy fields retained for existing database documents during migration. */
   fallbackProviderId?: Types.ObjectId;
   fallbackModelName?: string;
   enabled: boolean;
@@ -17,6 +27,7 @@ const ConfigSchema = new Schema<IAIChatbotConfig>({
   scope: { type: String, enum: ["public","client","admin"], required: true, unique: true },
   providerId: { type: Schema.Types.ObjectId, ref: "AIProvider", required: true },
   modelName: { type: String, required: true, maxlength: 120 },
+  fallbacks: { type: [FallbackSchema], default: [] },
   fallbackProviderId: { type: Schema.Types.ObjectId, ref: "AIProvider" },
   fallbackModelName: { type: String, maxlength: 120 },
   enabled: { type: Boolean, default: false },

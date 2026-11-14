@@ -24,7 +24,6 @@ export async function POST(request:NextRequest){
  const session=await getServerSession();
  if(!session||session.user.accountType!=="client"||!session.user.isEmailVerified)return fail("Verified client sign-in required.",401);
  let body:Record<string,unknown>;try{body=await request.json();}catch{return fail("Invalid payment request.");}
- const secret=process.env.PAYSTACK_SECRET_KEY;if(!secret)return fail("Online payments are not configured yet. Contact TGO DevStudio to arrange a payment method.",503);
  let siteUrl:string;try{siteUrl=getPublicSiteUrl(request);}catch{return fail("The public payment return URL is not configured. Please contact TGO DevStudio.",503);}
  if(typeof body.orderId!=="string"||!Types.ObjectId.isValid(body.orderId))return fail("A valid order id is required.");
  await connectToDatabase();

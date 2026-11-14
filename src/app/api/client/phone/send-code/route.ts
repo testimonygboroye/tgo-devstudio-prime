@@ -6,6 +6,7 @@ import ClientProfile from "@/models/ClientProfile";
 import ClientPhoneVerification from "@/models/ClientPhoneVerification";
 import ClientActivity from "@/models/ClientActivity";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
+import { getVerifiedIntegrationCredentials } from "@/lib/integrations/credentials";
 
 export const dynamic = "force-dynamic";
 function hashCode(userId: string, phone: string, code: string) {
@@ -21,12 +22,13 @@ export async function POST(request: NextRequest) {
   catch { return NextResponse.json({ error: "Enter a valid phone number." }, { status: 400 }); }
   if (!/^\+[1-9]\d{7,14}$/.test(phone)) return NextResponse.json({ error: "Use an international phone number in E.164 format, including the country calling code." }, { status: 400 });
 
-  const sid = process.env.TWILIO_ACCOUNT_SID;
-  const authToken = process.env.TWILIO_AUTH_TOKEN;
-  const from = process.env.TWILIO_SMS_FROM;
-  const messagingService = process.env.TWILIO_MESSAGING_SERVICE_SID;
+  const savedTwilio = await getVerifiedIntegrationCredentials("twilio").catch(() => null);
+  const sid = process.env.TWILIO_ACCOUNT_SID || savedTwilio?.accountSid;
+  const authToken = process.env.TWILIO_AUTH_TOKEN || savedTwilio?.authToken;
+  const from = process.env.TWILIO_SMS_FROM || savedTwilio?.fromNumber;
+  const messagingService = process.env.TWILIO_MESSAGING_SERVICE_SID || savedTwilio?.messagingServiceSid;
   if (!sid || !authToken || (!from && !messagingService) || !process.env.JWT_TEMP_2FA_SECRET) {
-    return NextResponse.json({ error: "SMS verification is not configured yet. Configure Twilio SMS credentials in Vercel." }, { status: 503 });
+    return NextResponse.json({ error: "SMS verification is not ready. Verify Twilio in Integration Centre and provide a verified sender number or Messaging Service SID. JWT_TEMP_2FA_SECRET must also be configured." }, { status: 503 });
   }
 
   await connectToDatabase();

@@ -7,6 +7,9 @@ export interface AICompletion {
   inputTokens: number;
   outputTokens: number;
   providerRequestId?: string;
+  providerId?: string;
+  model?: string;
+  fallbackUsed?: boolean;
 }
 
 export async function runProviderCompletion(providerId: string, model: string, system: string, prompt: string): Promise<AICompletion> {
@@ -65,7 +68,7 @@ export async function runProviderCompletionWithFallback(
     try {
       const result = await runProviderCompletion(attempt.providerId, attempt.modelName, system, prompt);
       if (!result.text.trim()) throw new Error("Provider returned an empty response.");
-      return result;
+      return { ...result, providerId: attempt.providerId, model: attempt.modelName, fallbackUsed: visited.size > 1 };
     } catch (error) {
       failures.push(attempt.providerId + "/" + attempt.modelName + ": " + (error instanceof Error ? error.message : "Provider request failed."));
     }

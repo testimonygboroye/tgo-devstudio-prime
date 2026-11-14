@@ -8,9 +8,15 @@ export async function getVerifiedIntegrationCredentials(providerId: string): Pro
   if (!row || typeof row.credentialsCiphertext !== "string") return null;
   let credentials = decryptCredentials(row.credentialsCiphertext);
 
-  if ((providerId === "google_search_console" || providerId === "google_analytics") && credentials.refreshToken) {
+  if (providerId === "google_search_console" || providerId === "google_analytics") {
     const expiresAt = Number(credentials.expiresAt || 0);
-    if (!Number.isFinite(expiresAt) || expiresAt <= Date.now() + 60_000) {
+    if ((!credentials.refreshToken && (!Number.isFinite(expiresAt) || expiresAt <= Date.now() + 60_000))) {
+      row.status = "error";
+      row.lastError = "Google OAuth access token expired and no refresh token is stored. Reconnect the Google account with offline access.";
+      await row.save();
+      return null;
+    }
+    if (credentials.refreshToken && (!Number.isFinite(expiresAt) || expiresAt <= Date.now() + 60_000)) {
       const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
       const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
       if (!clientId || !clientSecret) return null;

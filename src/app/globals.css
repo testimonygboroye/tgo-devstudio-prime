@@ -227,7 +227,7 @@ body {
   position: relative;
   background: linear-gradient(160deg, color-mix(in srgb, var(--bg-surface) 100%, transparent) 0%, color-mix(in srgb, var(--bg-surface-2) 100%, transparent) 100%);
   border-radius: 1.25rem;
-  padding: 1px;
+  
   box-shadow: 0 20px 50px -20px rgba(0, 0, 0, 0.55), 0 8px 20px -10px rgba(0, 0, 0, 0.4);
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
   isolation: isolate;
@@ -316,7 +316,7 @@ body {
   position: relative;
   background: linear-gradient(160deg, color-mix(in srgb, var(--bg-surface) 100%, transparent) 0%, color-mix(in srgb, var(--bg-surface-2) 100%, transparent) 100%);
   border-radius: 1.25rem;
-  padding: 2px;
+  
   box-shadow:
     0 0 0 1px rgba(46, 197, 240, 0.08),
     0 20px 50px -20px rgba(91, 46, 232, 0.25),
@@ -1609,4 +1609,24 @@ main > section[class*="-intro"]:first-of-type p {
  .home-window-body { grid-template-columns:28px minmax(0,1fr); }
  .home-window-main { padding-inline:10px; }.home-window-metrics>div { padding:9px 7px; }
  .home-window-footer { font-size:7px; }
+}
+
+/* Admin content cards must retain the spacing supplied by their page layouts. */
+#admin-scroll-area .surface-card { padding: revert-layer; }
+#admin-scroll-area .surface-card > * { min-width: 0; }
+#admin-scroll-area .surface-card p { line-height: 1.65; }
+#admin-scroll-area table { border-collapse: separate; border-spacing: 0; }
+#admin-scroll-area th { color: var(--text-muted); font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+#admin-scroll-area td { color: var(--text-secondary); vertical-align: middle; }
+#admin-scroll-area input:not([type=checkbox]):not([type=radio]), #admin-scroll-area textarea, #admin-scroll-area select {
+ border-radius: .8rem; border-color: var(--border-subtle); background-color: var(--bg-page); color: var(--text-primary);
+}
+#admin-scroll-area input:focus, #admin-scroll-area textarea:focus, #admin-scroll-area select:focus {
+ outline: 2px solid color-mix(in srgb,var(--color-brand-cyan-400) 55%,transparent); outline-offset: 1px; border-color: var(--color-brand-cyan-400);
+}
+#admin-scroll-area button:not([aria-label]), #admin-scroll-area a[class*="rounded"] { transition: background-color .18s ease,border-color .18s ease,box-shadow .18s ease,transform .18s ease; }
+@media(max-width:767px) {
+ #admin-scroll-area .grid { min-width:0; }
+ #admin-scroll-area [class*="grid-cols-4"] { grid-template-columns:repeat(1,minmax(0,1fr)); }
+ #admin-scroll-area .overflow-x-auto { max-width:100%; }
 }

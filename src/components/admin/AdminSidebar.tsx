@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { useSwipeSidebar } from "@/hooks/useSwipeSidebar";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -148,15 +147,11 @@ export default function AdminSidebar({
   isFounder,
 }: AdminSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const setMobileOpen = useCallback((open: boolean) => setIsMobileOpen(open), []);
-  const drawerRef = useRef<HTMLElement>(null);
-  const backdropRef = useRef<HTMLButtonElement>(null);
-  useSwipeSidebar(isMobileOpen, setMobileOpen, "left", drawerRef, backdropRef, { maxWidth: 304, railWidth: 64, mobileBreakpoint: 768 });
+  useEffect(() => { setIsCollapsed(window.innerWidth < 768); }, []);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const pathname = usePathname();
   const router = useRouter();
-  const collapsed = isCollapsed && !isMobileOpen;
+  const collapsed = isCollapsed;
 
   const basePathSegment = basePath;
   const resolveNavHref = (item: { hrefSuffix: string }) =>
@@ -193,15 +188,6 @@ export default function AdminSidebar({
   }, []);
 
   useEffect(() => {
-    const toggle = () => {
-      if (window.matchMedia("(max-width: 767px)").matches) setIsMobileOpen(open => !open);
-      else setIsCollapsed(value => !value);
-    };
-    window.addEventListener("tgo:admin-sidebar-toggle", toggle);
-    return () => window.removeEventListener("tgo:admin-sidebar-toggle", toggle);
-  }, []);
-
-  useEffect(() => {
     const initialLoad = setTimeout(() => { void loadCounts(); }, 0);
     const interval = setInterval(() => { void loadCounts(); }, 30000);
     return () => {
@@ -220,10 +206,7 @@ export default function AdminSidebar({
 
   return (
     <>
-      <button ref={backdropRef} type="button" aria-label="Close admin navigation" onClick={() => setIsMobileOpen(false)} className={`fixed inset-0 z-[60] bg-black/60 transition-opacity duration-150 md:hidden ${isMobileOpen ? "opacity-100" : "pointer-events-none opacity-0"}`} />
-      <aside ref={drawerRef}
-        className={`fixed inset-y-0 left-0 z-[70] flex h-dvh w-[min(19rem,86vw)] flex-col border-r border-[var(--border-subtle)] bg-[var(--bg-surface)] shadow-2xl transition-[transform,width] duration-200 ease-out md:static md:z-auto md:h-full md:w-auto md:shrink-0 md:translate-x-0 md:shadow-none ${isMobileOpen ? "translate-x-0" : "-translate-x-full"} ${collapsed ? "md:w-20" : "md:w-68"}`}
-      >
+      <aside className={`relative z-20 flex h-full shrink-0 flex-col overflow-hidden border-r border-[var(--border-subtle)] bg-[var(--bg-surface)] shadow-[8px_0_30px_-24px_rgba(0,0,0,.7)] transition-[width] duration-200 ease-out ${collapsed ? "w-[76px]" : "w-[17rem]"}`}>
       <div className="flex flex-shrink-0 items-center justify-between px-5 py-5 border-b border-[var(--border-subtle)]">
         {!collapsed && (
           <div className="flex items-center gap-2">
@@ -238,13 +221,12 @@ export default function AdminSidebar({
 
         <button
           onClick={() => {
-            if (window.matchMedia("(max-width: 767px)").matches) setIsMobileOpen((open) => !open);
-            else setIsCollapsed((prev) => !prev);
+            setIsCollapsed((prev) => !prev);
           }}
-          aria-label={isMobileOpen ? "Close sidebar" : isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           className="rounded-lg p-1.5 text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors ml-auto"
         >
-          {isMobileOpen ? <ChevronLeft size={19} /> : isCollapsed ? <ChevronRight size={19} /> : <ChevronLeft size={19} />}
+          {isCollapsed ? <ChevronRight size={19} /> : <ChevronLeft size={19} />}
         </button>
       </div>
 
@@ -265,7 +247,7 @@ export default function AdminSidebar({
                   const Icon = item.icon;
                   const count = item.badgeKey ? counts[item.badgeKey] || 0 : 0;
                   return (
-                    <Link key={item.hrefSuffix} href={href} prefetch={false} onClick={() => setIsMobileOpen(false)} onPointerEnter={() => router.prefetch(href)} onFocus={() => router.prefetch(href)} onTouchStart={() => router.prefetch(href)} title={item.label}
+                    <Link key={item.hrefSuffix} href={href} prefetch={false} onClick={() => undefined} onPointerEnter={() => router.prefetch(href)} onFocus={() => router.prefetch(href)} onTouchStart={() => router.prefetch(href)} title={item.label}
                       className={`group relative flex items-center gap-3.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-75 ${isActive ? "brand-gradient-bg text-white shadow-md shadow-brand-violet-600/20" : "text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"}`}>
                       <span className="relative flex-shrink-0 flex items-center justify-center"><Icon size={18} className={isActive ? "text-white" : "text-brand-cyan-400 group-hover:scale-110 transition-transform"}/>
                         {count > 0 && <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white shadow-sm">{count > 9 ? "9+" : count}</span>}

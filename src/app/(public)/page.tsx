@@ -103,7 +103,9 @@ export default async function HomePage() {
   const reviews = featuredReviews.map((item) => localize(item, TRANSLATABLE_FIELDS.Review));
   const stack = rawStack.map((item) => localize(item, TRANSLATABLE_FIELDS.StackItem));
   const stackCategories = Array.from(new Set(stack.map((item) => item.category))).slice(0, 4);
-  const safeHeroBackground = typeof hero.heroBackgroundImage === "string" ? hero.heroBackgroundImage.replace(/["\'()\\\r\n]/g, "") : "";
+  const safeHeroBackground = typeof hero.heroBackgroundImage === "string" && hero.heroBackgroundImage.trim()
+    ? hero.heroBackgroundImage.replace(/["'()\\\r\n]/g, "")
+    : "/images/tgo-hero-ambient.svg";
 
   return (
     <main className="home-page">

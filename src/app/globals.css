@@ -1612,7 +1612,6 @@ main > section[class*="-intro"]:first-of-type p {
 }
 
 /* Admin content cards must retain the spacing supplied by their page layouts. */
-#admin-scroll-area .surface-card { padding: revert-layer; }
 #admin-scroll-area .surface-card > * { min-width: 0; }
 #admin-scroll-area .surface-card p { line-height: 1.65; }
 #admin-scroll-area table { border-collapse: separate; border-spacing: 0; }
@@ -1629,4 +1628,10 @@ main > section[class*="-intro"]:first-of-type p {
  #admin-scroll-area .grid { min-width:0; }
  #admin-scroll-area [class*="grid-cols-4"] { grid-template-columns:repeat(1,minmax(0,1fr)); }
  #admin-scroll-area .overflow-x-auto { max-width:100%; }
+}
+
+/* Admin icon rail keeps every navigation glyph optically centred. */
+#admin-scroll-area .surface-card { min-width:0; }
+@media(max-width:767px) {
+  aside[aria-label="Admin navigation"], aside:has(nav[aria-label="Admin navigation"]) { min-height:100%; }
 }

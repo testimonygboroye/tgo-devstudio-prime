@@ -9,7 +9,13 @@ const publicRoutes = [
   { path: "/portfolio", label: "Portfolio" },
   { path: "/contact", label: "Contact" },
   { path: "/faq", label: "FAQ" },
+  { path: "/process", label: "Process" },
+  { path: "/stack", label: "Technology stack" },
+  { path: "/industries", label: "Industries" },
+  { path: "/engagement-models", label: "Engagement models" },
+  { path: "/testimonials", label: "Testimonials" },
   { path: "/blog", label: "Blog" },
+  { path: "/blog/what-is-uptime-and-why-should-you-care", label: "Blog article detail" },
   { path: "/careers", label: "Careers" },
 ];
 
@@ -38,6 +44,12 @@ for (const route of publicRoutes) {
     }
   });
 }
+
+test("known illustrated blog article uses its own social preview image", async ({ page }) => {
+  await page.goto("/blog/what-is-uptime-and-why-should-you-care", { waitUntil: "domcontentloaded" });
+  const image = await page.locator('meta[property="og:image"]').getAttribute("content");
+  expect(image).toMatch(/^https:\/\/res\.cloudinary\.com\//);
+});
 
 test("homepage exposes a usable primary navigation", async ({ page }) => {
   await page.goto("/");

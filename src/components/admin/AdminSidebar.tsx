@@ -285,7 +285,7 @@ export default function AdminSidebar({
         <button
           onClick={handleLogout}
           title="Log out"
-          className={`flex w-full items-center gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] py-2.5 text-sm font-medium ${collapsed ? "justify-center px-0" : "px-3"}` text-[var(--text-secondary)] hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30 transition-all"
+          className={`flex w-full items-center gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] py-2.5 text-sm font-medium ${collapsed ? "justify-center px-0" : "px-3"} text-[var(--text-secondary)] hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30 transition-all`}
         >
           <LogOut size={18} className="flex-shrink-0 text-red-400" />
           {!collapsed && <span>Log out</span>}

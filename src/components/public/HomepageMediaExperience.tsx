@@ -77,14 +77,18 @@ export default function HomepageMediaExperience({ settings }: Props) {
 
   useEffect(() => {
     if (!settings.enabled || !countdownEnabled || !hasTarget) return;
+    let intervalId: number | undefined;
     const syncNow = () => {
       const currentTime = Date.now();
       setNow(currentTime);
-      if (currentTime >= target) window.clearInterval(id);
+      if (currentTime >= target && intervalId !== undefined) window.clearInterval(intervalId);
     };
-    const id = window.setInterval(syncNow, 1000);
+    intervalId = window.setInterval(syncNow, 1000);
     const immediate = window.setTimeout(syncNow, 0);
-    return () => { window.clearTimeout(immediate); window.clearInterval(id); };
+    return () => {
+      window.clearTimeout(immediate);
+      if (intervalId !== undefined) window.clearInterval(intervalId);
+    };
   }, [settings.enabled, countdownEnabled, hasTarget, target]);
 
   useEffect(() => {

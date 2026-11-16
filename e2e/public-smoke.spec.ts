@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 
+const adminLoginPath = process.env.TGO_ADMIN_LOGIN_PATH || "/command-deck/login";
+
 const publicRoutes = [
   { path: "/", label: "Homepage" },
   { path: "/about", label: "About" },
@@ -36,7 +38,7 @@ test("homepage exposes a usable primary navigation", async ({ page }) => {
 
 const portalLoginRoutes = [
   { path: "/client/login", label: "Client" },
-  { path: "/admin/login", label: "Admin" },
+  { path: adminLoginPath, label: "Admin" },
 ];
 
 for (const route of portalLoginRoutes) {
@@ -55,6 +57,8 @@ test("workforce entry redirects unauthenticated visitors to workforce sign-in", 
 
   expect(response, "/workforce should return a document response").not.toBeNull();
   expect(response!.status(), "/workforce HTTP status").toBeLessThan(400);
-  await expect(page).toHaveURL(/\/admin\/login\?redirect=/);
+  const finalUrl = new URL(page.url());
+  expect(finalUrl.pathname).toBe(adminLoginPath);
+  expect(finalUrl.searchParams.get("redirect")).toBe("/workforce");
   await expect(page.locator("body")).toContainText(/workforce sign in/i);
 });

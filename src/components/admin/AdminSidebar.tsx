@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -146,12 +146,20 @@ export default function AdminSidebar({
   basePath,
   isFounder,
 }: AdminSidebarProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  useEffect(() => { setIsCollapsed(window.innerWidth < 768); }, []);
+  const isMobileViewport = useSyncExternalStore(
+    (onStoreChange) => {
+      const media = window.matchMedia("(max-width: 767px)");
+      media.addEventListener("change", onStoreChange);
+      return () => media.removeEventListener("change", onStoreChange);
+    },
+    () => window.matchMedia("(max-width: 767px)").matches,
+    () => false,
+  );
+  const [collapsedOverride, setCollapsedOverride] = useState<boolean | null>(null);
+  const collapsed = collapsedOverride ?? isMobileViewport;
   const [counts, setCounts] = useState<Record<string, number>>({});
   const pathname = usePathname();
   const router = useRouter();
-  const collapsed = isCollapsed;
 
   const basePathSegment = basePath;
   const resolveNavHref = (item: { hrefSuffix: string }) =>
@@ -221,12 +229,12 @@ export default function AdminSidebar({
 
         <button
           onClick={() => {
-            setIsCollapsed((prev) => !prev);
+            setCollapsedOverride(!collapsed);
           }}
-          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           className="rounded-lg p-1.5 text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors ml-auto"
         >
-          {isCollapsed ? <ChevronRight size={19} /> : <ChevronLeft size={19} />}
+          {collapsed ? <ChevronRight size={19} /> : <ChevronLeft size={19} />}
         </button>
       </div>
 

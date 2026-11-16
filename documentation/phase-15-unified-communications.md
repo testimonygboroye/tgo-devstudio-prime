@@ -8,6 +8,7 @@
 - Enforce the configured daily AI token budget before automatic WhatsApp AI execution, and record an explanatory system message when the budget is exhausted.
 - Show direct-message and group-message read receipts using each message's readBy member list rather than treating one reader as a global conversation-wide read.
 - Return unread message counts per conversation and show live unread badges in the Communications Hub, refreshing them while the hub is open.
+- Add local conversation-list search across conversation titles, participant names/emails, and AI employee names while retaining in-conversation message search.
 - Add unit coverage for AI approval/budget policy and read-receipt summaries.
 
 ## Existing communication capabilities retained

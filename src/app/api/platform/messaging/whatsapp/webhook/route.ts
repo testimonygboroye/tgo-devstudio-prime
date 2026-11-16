@@ -14,6 +14,7 @@ import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import { mirrorMessageToPersonalWhatsApp } from "@/lib/messaging/whatsappSync";
 import { decryptCredentials } from "@/lib/integrations/crypto";
 import { ensureWhatsAppRecipientIndexes } from "@/lib/messaging/whatsappIndexes";
+import { resolveWhatsAppAiDisposition } from "@/lib/messaging/whatsappAiPolicy";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -171,24 +172,50 @@ export async function POST(request: NextRequest) {
 
       if (conversation.kind === "ai" && conversation.aiAgentId && incoming.type === "text" && text.trim()) {
         const agent = await AIAgent.findOne({ _id: conversation.aiAgentId, enabled: true });
-        if (agent && !agent.requiresApproval) {
+        if (!agent) {
+          const notice = await UnifiedMessage.create({ conversationId: conversation._id, senderType: "system", senderLabel: "TGO system", body: "Your message was saved, but this AI employee is currently unavailable. Contact the founder if the issue continues.", status: "sent" });
+          conversation.lastMessageAt = new Date(); await conversation.save();
+          await mirrorMessageToPersonalWhatsApp(conversation, notice);
+        } else {
           const dayStart = new Date(); dayStart.setUTCHours(0, 0, 0, 0);
           const usage = await AITask.aggregate([
-            { $match: { agentId: agent._id, status: { $in: ["completed", "running"] }, createdAt: { $gte: dayStart } } },
+            { $match: { agentId: agent._id, status: { $in: ["completed", "running", "failed"] }, createdAt: { $gte: dayStart } } },
             { $group: { _id: null, tokens: { $sum: { $add: ["$inputTokens", "$outputTokens"] } } } },
           ]);
-          if (Number(usage[0]?.tokens || 0) < agent.maxDailyTokens) {
+          const usedTokens = Number(usage[0]?.tokens || 0);
+          const disposition = resolveWhatsAppAiDisposition(agent.requiresApproval, usedTokens, agent.maxDailyTokens);
+          if (disposition === "budget_exhausted") {
+            const notice = await UnifiedMessage.create({ conversationId: conversation._id, senderType: "system", senderLabel: "TGO system", body: "Your message was saved, but this AI employee has reached its daily token budget. Please try again after the budget resets or contact the founder.", status: "sent" });
+            conversation.lastMessageAt = new Date(); await conversation.save();
+            await mirrorMessageToPersonalWhatsApp(conversation, notice);
+            await writePlatformAuditEvent({ actorType: "system", actorId: "whatsapp-ai-gateway", actorLabel: "TGO WhatsApp AI Gateway", action: "ai.whatsapp.budget_exhausted", module: "ai-workforce", targetType: "AIAgent", targetId: String(agent._id), outcome: "failure", metadata: { requestedBy: String(recipient.userId), usedTokens, maxDailyTokens: agent.maxDailyTokens } });
+          } else if (disposition === "approval_required") {
+            const task = await AITask.create({ agentId: agent._id, title: "WhatsApp conversation with " + contactName, input: text, requestedBy: String(recipient.userId), status: "awaiting_approval", operationPayload: { source: "whatsapp_ai_conversation", conversationId: String(conversation._id) } });
+            const notice = await UnifiedMessage.create({ conversationId: conversation._id, senderType: "system", senderLabel: "TGO system", body: "Your WhatsApp message was saved. " + agent.name + " requires founder approval before responding. Task " + String(task._id) + " is now in the AI Workforce approval queue.", status: "sent" });
+            conversation.lastMessageAt = new Date(); await conversation.save();
+            await mirrorMessageToPersonalWhatsApp(conversation, notice);
+            await writePlatformAuditEvent({ actorType: "system", actorId: "whatsapp-ai-gateway", actorLabel: "TGO WhatsApp AI Gateway", action: "ai.whatsapp.task.awaiting_approval", module: "ai-workforce", targetType: "AITask", targetId: String(task._id), outcome: "success", metadata: { requestedBy: String(recipient.userId), conversationId: String(conversation._id), agentId: String(agent._id) } });
+          } else {
             const task = await AITask.create({ agentId: agent._id, title: "WhatsApp conversation with " + contactName, input: text, requestedBy: String(recipient.userId), status: "running", startedAt: new Date(), executionAttempts: 1, operationPayload: { source: "whatsapp_ai_conversation", conversationId: String(conversation._id) } });
             try {
               const history = await UnifiedMessage.find({ conversationId: conversation._id, deletedAt: { $exists: false } }).sort({ createdAt: -1 }).limit(24).lean();
-              const prompt = history.reverse().map((item) => (item.senderLabel || "Participant") + ": " + item.body).join("\n\n");
-              const completion = await runProviderCompletionWithFallback(String(agent.providerId), agent.modelName, agent.systemInstructions + "\n\nYou are responding as " + agent.name + " in the owner's private TGO conversation. Do not claim actions you did not perform.", prompt, "admin");
+              const prompt = history.reverse().map((item) => (item.senderLabel || "Participant") + ": " + item.body).join("\\n\\n");
+              const completion = await runProviderCompletionWithFallback(String(agent.providerId), agent.modelName, agent.systemInstructions + "\\n\\nYou are responding as " + agent.name + " in the owner's private TGO conversation. Do not claim actions you did not perform.", prompt, "admin");
               task.status = "completed"; task.result = completion.text.slice(0, 50000); task.inputTokens = completion.inputTokens; task.outputTokens = completion.outputTokens; task.providerRequestId = completion.providerRequestId; task.completedAt = new Date(); await task.save();
               const reply = await UnifiedMessage.create({ conversationId: conversation._id, senderType: "ai", senderLabel: agent.name, body: completion.text.slice(0, 12000), status: "sent" });
               conversation.lastMessageAt = new Date(); await conversation.save();
               await mirrorMessageToPersonalWhatsApp(conversation, reply);
             } catch (error) {
-              task.status = "failed"; const diagnostic = (error instanceof Error ? error.message : "AI response failed.").slice(0, 1500); task.error = "The AI service is temporarily unavailable. Please retry later."; task.completedAt = new Date(); await task.save(); try { await writePlatformAuditEvent({ actorType: "system", actorId: "whatsapp-ai-gateway", actorLabel: "TGO WhatsApp AI Gateway", action: "ai.whatsapp.provider_failure", module: "ai-workforce", targetType: "AITask", targetId: String(task._id), outcome: "failure", metadata: { requestedBy: String(recipient.userId), error: diagnostic } }); } catch { /* diagnostics must not interrupt webhook processing */ }
+              task.status = "failed";
+              const diagnostic = (error instanceof Error ? error.message : "AI response failed.").slice(0, 1500);
+              task.error = "The AI service is temporarily unavailable. Please retry later.";
+              task.completedAt = new Date(); await task.save();
+              const notice = await UnifiedMessage.create({ conversationId: conversation._id, senderType: "system", senderLabel: "TGO system", body: "The AI employee could not complete this WhatsApp response. The failed run is recorded in AI Workforce for review.", status: "sent" });
+              conversation.lastMessageAt = new Date(); await conversation.save();
+              await mirrorMessageToPersonalWhatsApp(conversation, notice);
+              try {
+                await writePlatformAuditEvent({ actorType: "system", actorId: "whatsapp-ai-gateway", actorLabel: "TGO WhatsApp AI Gateway", action: "ai.whatsapp.provider_failure", module: "ai-workforce", targetType: "AITask", targetId: String(task._id), outcome: "failure", metadata: { requestedBy: String(recipient.userId), error: diagnostic } });
+              } catch { /* diagnostics must not interrupt webhook processing */ }
             }
           }
         }

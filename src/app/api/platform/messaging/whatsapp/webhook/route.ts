@@ -179,7 +179,7 @@ export async function POST(request: NextRequest) {
         } else {
           const dayStart = new Date(); dayStart.setUTCHours(0, 0, 0, 0);
           const usage = await AITask.aggregate([
-            { $match: { agentId: agent._id, status: { $in: ["completed", "running", "failed"] }, createdAt: { $gte: dayStart } } },
+            { $match: { agentId: agent._id, status: { $in: ["completed", "running", "failed"] }, $or: [{ startedAt: { $gte: dayStart } }, { completedAt: { $gte: dayStart } }] } },
             { $group: { _id: null, tokens: { $sum: { $add: ["$inputTokens", "$outputTokens"] } } } },
           ]);
           const usedTokens = Number(usage[0]?.tokens || 0);

@@ -37,7 +37,8 @@ export default async function AdminDashboardPage() {
               Secure CMS Control Center
             </div>
             <h1 className="text-3xl sm:text-4xl font-bold font-display text-[var(--text-primary)] tracking-tight">
-              Welcome back, <span className="brand-gradient-text">{session.user.name}</span>
+              <span className="block">Welcome back,</span>
+              <span className="brand-gradient-text mt-1 block break-words">{session.user.name}</span>
             </h1>
             <p className="mt-2 text-sm sm:text-base text-[var(--text-secondary)] max-w-xl">
               You are authenticated securely as <span className="font-semibold text-[var(--text-primary)]">{session.user.email}</span> with role <span className="text-brand-cyan-400 font-semibold">{session.role.name}</span>.

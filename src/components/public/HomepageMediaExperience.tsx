@@ -25,24 +25,28 @@ type Props = { settings: {
 
 function addMonths(date: Date, months: number) {
   const next = new Date(date);
-  const day = next.getDate();
-  next.setDate(1);
-  next.setMonth(next.getMonth() + months);
-  const lastDay = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
-  next.setDate(Math.min(day, lastDay));
+  const day = next.getUTCDate();
+  next.setUTCDate(1);
+  next.setUTCMonth(next.getUTCMonth() + months);
+  const lastDay = new Date(Date.UTC(next.getUTCFullYear(), next.getUTCMonth() + 1, 0)).getUTCDate();
+  next.setUTCDate(Math.min(day, lastDay));
   return next;
 }
 
 function remainingTime(target: number, now: number) {
   let cursor = new Date(now);
   let years = 0;
-  while (years < 100 && new Date(cursor.getFullYear() + 1, cursor.getMonth(), cursor.getDate(), cursor.getHours(), cursor.getMinutes(), cursor.getSeconds()).getTime() <= target) {
-    cursor.setFullYear(cursor.getFullYear() + 1);
+  while (years < 100) {
+    const nextYear = new Date(Date.UTC(cursor.getUTCFullYear() + 1, cursor.getUTCMonth(), cursor.getUTCDate(), cursor.getUTCHours(), cursor.getUTCMinutes(), cursor.getUTCSeconds()));
+    if (nextYear.getTime() > target) break;
+    cursor = nextYear;
     years++;
   }
   let months = 0;
-  while (months < 12 && addMonths(cursor, 1).getTime() <= target) {
-    cursor = addMonths(cursor, 1);
+  while (months < 12) {
+    const nextMonth = addMonths(cursor, 1);
+    if (nextMonth.getTime() > target) break;
+    cursor = nextMonth;
     months++;
   }
   let total = Math.max(0, Math.floor((target - cursor.getTime()) / 1000));
@@ -53,13 +57,13 @@ function remainingTime(target: number, now: number) {
 }
 
 export default function HomepageMediaExperience({ settings }: Props) {
-  const [now, setNow] = useState(() => Date.now());
+  const [now, setNow] = useState<number | null>(null);
   const [mediaIndex, setMediaIndex] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const target = useMemo(() => settings.launchDate ? new Date(settings.launchDate).getTime() : 0, [settings.launchDate]);
   const hasTarget = Boolean(target && Number.isFinite(target));
   const countdownEnabled = settings.countdownEnabled !== false;
-  const afterTarget = countdownEnabled && hasTarget && now >= target;
+  const afterTarget = countdownEnabled && hasTarget && now !== null && now >= target;
   const video = afterTarget && settings.afterLaunchVideoUrl ? settings.afterLaunchVideoUrl : settings.videoUrl;
   const image = afterTarget && settings.afterLaunchFlyerUrl ? settings.afterLaunchFlyerUrl : settings.flyerUrl;
   const media = useMemo(() => [
@@ -72,10 +76,20 @@ export default function HomepageMediaExperience({ settings }: Props) {
   const advance = useCallback(() => setMediaIndex(index => media.length ? (index + 1) % media.length : 0), [media.length]);
 
   useEffect(() => {
-    if (!settings.enabled || !countdownEnabled || !hasTarget || afterTarget) return;
-    const id = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(id);
-  }, [settings.enabled, countdownEnabled, hasTarget, afterTarget]);
+    if (!settings.enabled || !countdownEnabled || !hasTarget) return;
+    let intervalId = 0;
+    const syncNow = () => {
+      const currentTime = Date.now();
+      setNow(currentTime);
+      if (currentTime >= target && intervalId) window.clearInterval(intervalId);
+    };
+    intervalId = window.setInterval(syncNow, 1000);
+    const immediate = window.setTimeout(syncNow, 0);
+    return () => {
+      window.clearTimeout(immediate);
+      if (intervalId) window.clearInterval(intervalId);
+    };
+  }, [settings.enabled, countdownEnabled, hasTarget, target]);
 
   useEffect(() => {
     if (!settings.videoAudioEnabled) return;
@@ -96,7 +110,7 @@ export default function HomepageMediaExperience({ settings }: Props) {
   }, [current, useOverride, overrideSeconds, settings.flyerSeconds, settings.flyerDurationMinutes, settings.flyerDurationSeconds, advance]);
 
   if (!settings.enabled) return null;
-  const countdown = countdownEnabled && hasTarget && !afterTarget ? remainingTime(target, now) : null;
+  const countdown = countdownEnabled && hasTarget && now !== null && !afterTarget ? remainingTime(target, now) : null;
   const units = countdown ? [
     [(settings.countdownYearsLabel||"YEARS"), countdown.years], [(settings.countdownMonthsLabel||"MONTHS"), countdown.months], [(settings.countdownDaysLabel||"DAYS"), countdown.days],
     [(settings.countdownHoursLabel||"HOURS"), countdown.hours], [(settings.countdownMinutesLabel||"MINUTES"), countdown.minutes], [(settings.countdownSecondsLabel||"SECONDS"), countdown.seconds],

@@ -55,6 +55,6 @@ test("workforce entry redirects unauthenticated visitors to workforce sign-in", 
 
   expect(response, "/workforce should return a document response").not.toBeNull();
   expect(response!.status(), "/workforce HTTP status").toBeLessThan(400);
-  await expect(page).toHaveURL(/\\/admin\\/login\\?redirect=/);
+  await expect(page).toHaveURL(/\/admin\/login\?redirect=/);
   await expect(page.locator("body")).toContainText(/workforce sign in/i);
 });

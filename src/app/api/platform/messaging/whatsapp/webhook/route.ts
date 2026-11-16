@@ -183,7 +183,8 @@ export async function POST(request: NextRequest) {
             { $group: { _id: null, tokens: { $sum: { $add: ["$inputTokens", "$outputTokens"] } } } },
           ]);
           const usedTokens = Number(usage[0]?.tokens || 0);
-          const disposition = resolveWhatsAppAiDisposition(agent.requiresApproval, usedTokens, agent.maxDailyTokens);
+          const requestedInputTokens = Math.max(1, Math.ceil(text.length / 4));
+          const disposition = resolveWhatsAppAiDisposition(agent.requiresApproval, usedTokens + requestedInputTokens, agent.maxDailyTokens);
           if (disposition === "budget_exhausted") {
             const notice = await UnifiedMessage.create({ conversationId: conversation._id, senderType: "system", senderLabel: "TGO system", body: "Your message was saved, but this AI employee has reached its daily token budget. Please try again after the budget resets or contact the founder.", status: "sent" });
             conversation.lastMessageAt = new Date(); await conversation.save();
@@ -196,7 +197,7 @@ export async function POST(request: NextRequest) {
             await mirrorMessageToPersonalWhatsApp(conversation, notice);
             await writePlatformAuditEvent({ actorType: "system", actorId: "whatsapp-ai-gateway", actorLabel: "TGO WhatsApp AI Gateway", action: "ai.whatsapp.task.awaiting_approval", module: "ai-workforce", targetType: "AITask", targetId: String(task._id), outcome: "success", metadata: { requestedBy: String(recipient.userId), conversationId: String(conversation._id), agentId: String(agent._id) } });
           } else {
-            const task = await AITask.create({ agentId: agent._id, title: "WhatsApp conversation with " + contactName, input: text, requestedBy: String(recipient.userId), status: "running", startedAt: new Date(), executionAttempts: 1, operationPayload: { source: "whatsapp_ai_conversation", conversationId: String(conversation._id) } });
+            const task = await AITask.create({ agentId: agent._id, title: "WhatsApp conversation with " + contactName, input: text, requestedBy: String(recipient.userId), status: "running", startedAt: new Date(), executionAttempts: 1, inputTokens: requestedInputTokens, operationPayload: { source: "whatsapp_ai_conversation", conversationId: String(conversation._id) } });
             try {
               const history = await UnifiedMessage.find({ conversationId: conversation._id, deletedAt: { $exists: false } }).sort({ createdAt: -1 }).limit(24).lean();
               const prompt = history.reverse().map((item) => (item.senderLabel || "Participant") + ": " + item.body).join("\n\n");

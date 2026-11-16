@@ -41,51 +41,44 @@ Use this only if you prefer an independent scheduler outside GitHub Actions. Do 
 
 The application remains portable: change only `APP_BASE_URL` when moving between Render, Vercel, Netlify, or another compatible host. Both schedulers call the same protected application endpoints; only one scheduler should be active at a time.
 
-## 3. Connect each person's own WhatsApp
+## 3. Connect each person's own WhatsApp destination
 
-WhatsApp is **personal per platform user**, not one shared company inbox. The founder connects the founder's own WhatsApp destination; each staff member can separately connect their own. A user's messages are mirrored only to the WhatsApp destination configured on that user's account, and a WhatsApp reply is routed back into the same private conversation. Other users do not receive that person's private AI or team conversations.
+TGO uses one shared company WhatsApp Business Platform sender, configured once by the founder in **Admin → Integrations**. Each platform user registers only their own personal WhatsApp destination number and consent in **Communications / Messages → My personal WhatsApp**. TGO sends from the company business number to each participant's registered personal number. It does not sign in to, take over, or send from an employee's personal WhatsApp account. Staff members do **not** need their own Meta Business account, WhatsApp Business Account, or business phone number.
 
-Important: the official WhatsApp Cloud API sends from a **WhatsApp Business Platform phone number** to the user's personal WhatsApp number. It does not sign in to or take over an existing personal WhatsApp account. Each person who wants two-way mirroring needs access to a Meta Business account and a WhatsApp Business Platform phone number. If they only have a personal WhatsApp number and no Cloud API business number, they can still use the platform normally, but WhatsApp mirroring remains disconnected.
+### Founder setup (one-time)
 
-### Connect your own account in TGO
-
-1. Open **Admin → Communications / Messages** while signed in to your own staff account.
-2. Expand **My personal WhatsApp**.
-3. Create or select your Meta app at https://developers.facebook.com/apps/ and add the **WhatsApp** product.
-4. In WhatsApp → API Setup / WhatsApp Manager, connect your own WhatsApp Business Account and business phone number. Copy the **Phone Number ID** and **WhatsApp Business Account ID**.
-5. Create a Meta access token with the WhatsApp Business messaging permissions required for your number. Copy the **Meta App Secret** from App Settings → Basic.
-6. Choose your own long random **Webhook Verify Token**. It is not your Meta access token.
-7. Enter these six values into your own TGO Communications connection form:
-   - Meta access token
-   - Business Phone Number ID
-   - WhatsApp Business Account ID
-   - Your personal WhatsApp destination number, in international digits-only format (Nigeria example: `2348012345678`, without the leading +)
-   - Meta App Secret
-   - Webhook Verify Token
-8. Select **Verify and connect my WhatsApp**. TGO verifies the business phone number and stores the credentials encrypted. Your access token and app secret are not displayed again.
-9. In the Meta app, open **WhatsApp → Configuration → Webhooks**. Set the callback URL to:
+1. Connect TGO's company WhatsApp Business Platform number in Meta WhatsApp Manager.
+2. In **Founder Admin → Integrations → WhatsApp Cloud API**, configure the company sender's access token, Phone Number ID, WhatsApp Business Account ID, Meta App Secret, and a long random Webhook Verify Token. Verify the connection and keep the credentials in the encrypted integration record.
+3. In the Meta app, open **WhatsApp → Configuration → Webhooks**. Set the callback URL to:
    `https://YOUR_PUBLIC_APP_HOST/api/platform/messaging/whatsapp/webhook`
-10. Enter the exact Verify Token you saved in TGO, verify the callback, and subscribe to the **messages** field. Delivery/read status notifications use the same webhook.
-11. From your personal WhatsApp number, send a message to the connected WhatsApp Business phone number. It should appear in your private TGO Communications space.
+4. Enter the exact Webhook Verify Token configured in TGO, verify the callback, and subscribe to the **messages** field. Delivery/read status notifications use the same webhook.
 
-Repeat these steps independently for every team member who wants WhatsApp mirroring. A member must connect their own Cloud API business number and their own personal destination number. A connection cannot be claimed by another platform account. A member can disconnect their own connection at any time from the same Communications panel.
+### Each team member connects their own destination
+
+1. Sign in to your own TGO staff account.
+2. Open **Admin → Communications / Messages** and expand **My personal WhatsApp**.
+3. Enter your personal WhatsApp number in international digits-only format (Nigeria example: `2348012345678`, without the leading +).
+4. Tick the explicit consent checkbox and select **Register my WhatsApp destination**.
+5. From that personal WhatsApp number, send a message to TGO's company WhatsApp Business number. This opens Meta's 24-hour customer-service window for replies.
+
+Each member repeats only these five steps for their own destination. A member cannot register a number already connected to another TGO account. They can update or disconnect their own destination at any time.
 
 ### How conversation synchronization works
 
-- When a member sends a message in a platform conversation, the message is delivered to the personal WhatsApp destinations connected by the conversation's participants.
-- To start a WhatsApp-synced AI or team chat, open that conversation in TGO and send the first message there. This binds your WhatsApp connection to that conversation; then send a first message from your personal WhatsApp to the business number to open Meta's 24-hour service window. Continue replying in either place. If you message the business number before selecting a platform conversation, TGO creates a separate private **My WhatsApp** conversation.
+- Each platform user has one private WhatsApp destination record. TGO mirrors a message only to the registered destinations of members in that conversation; it never sends an employee's private conversation to the founder's WhatsApp unless the founder is actually a member of that conversation and has separately opted in.
+- To start a WhatsApp-synced AI or team chat, open that conversation in TGO and send the first message there. This associates your WhatsApp destination with the selected conversation. Then reply from your personal WhatsApp to the company business number. If you message the business number before selecting a TGO conversation, TGO creates a separate private **My WhatsApp** conversation.
 - A reply sent from WhatsApp is added to the same platform conversation. Other connected participants receive their own WhatsApp copy; the sender does not receive a duplicate echo.
-- AI replies in a private AI conversation are mirrored to the connected user's WhatsApp. Replies from WhatsApp continue that same AI conversation, subject to the AI employee's approval and daily token budget.
+- AI replies in a private AI conversation are mirrored to the connected user's WhatsApp. If the AI employee requires founder approval, the inbound message is saved and an approval task is placed in AI Workforce; after approval and execution, the AI response is posted back into the same conversation and mirrored to the user's WhatsApp.
 - Conversation visibility is membership-based. Founder status does not grant access to another employee's private conversations.
-- Without a personal WhatsApp connection, a member's messages remain available in the platform and are not sent to another person's WhatsApp.
+- Without a personal WhatsApp destination, a member's messages remain available in TGO and are not sent to another person's WhatsApp.
 
 ### Messaging safeguards and limitations
 
-- Meta verifies webhook payload signatures before messages are accepted. Each business phone number is mapped to one platform user and only messages from that user's configured personal destination number are accepted.
+- Meta verifies webhook payload signatures before messages are accepted. Each inbound sender is matched to the personal destination number registered to that TGO user.
 - Free-form WhatsApp messaging is subject to Meta's customer-service window, opt-in requirements, templates, and other policy rules. This implementation mirrors text and supported outbound media links during the open service window. Approved template selection/delivery outside the service window is not yet exposed.
 - WhatsApp media received through the webhook currently appears as a message placeholder; inbound media download/storage is not enabled yet. Platform voice notes and attachments are available in the platform itself.
 - An inbound message is not treated as blanket marketing consent. WhatsApp provider charges, template fees, and Meta policy limits are controlled by Meta and may apply. Do not assume all WhatsApp messaging is free.
-- Never paste access tokens, app secrets, or webhook tokens into ChatGPT or commit them to Git. Enter them only into the encrypted per-user connection form. Rotate them if exposed.
+- Never paste access tokens, app secrets, or webhook tokens into ChatGPT or commit them to Git. Enter them only into the encrypted founder integration form. Rotate them if exposed.
 
 ## 4. Voice notes and transcription
 

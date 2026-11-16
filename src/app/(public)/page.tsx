@@ -163,7 +163,7 @@ export default async function HomePage() {
         <div className="home-hero-bottom"><span>SCROLL TO EXPLORE</span><i /></div>
       </section>
 
-      <HomepageMediaExperience settings={launchSettings || { enabled: false }} initialNow={Date.now()} />
+      <HomepageMediaExperience settings={launchSettings || { enabled: false }} />
 
       <section className="home-proof-strip">
         <div className="home-proof-inner">

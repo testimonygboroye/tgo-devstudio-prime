@@ -62,3 +62,42 @@ test("workforce entry redirects unauthenticated visitors to workforce sign-in", 
   expect(finalUrl.searchParams.get("redirect")).toBe("/workforce");
   await expect(page.locator("body")).toContainText(/workforce sign in/i);
 });
+
+
+test("homepage remains inside a narrow mobile viewport", async ({ page }) => {
+  for (const width of [390, 360]) {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    const dimensions = await page.evaluate(() => ({
+      viewport: window.innerWidth,
+      document: document.documentElement.scrollWidth,
+      body: document.body.scrollWidth,
+    }));
+    expect(Math.max(dimensions.document, dimensions.body) - dimensions.viewport, `horizontal overflow at ${width}px`).toBeLessThanOrEqual(1);
+  }
+});
+
+test("featured homepage media loads and stays inside its card", async ({ page }) => {
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  const media = page.locator(".homepage-media-content").first();
+  if (await media.count() === 0) test.skip(true, "No featured media is configured on this deployment.");
+  await media.scrollIntoViewIfNeeded();
+  await expect.poll(() => media.evaluate((element) => {
+    if (element instanceof HTMLImageElement) return element.complete;
+    if (element instanceof HTMLVideoElement) return element.readyState >= 1;
+    return true;
+  }), { timeout: 15000 }).toBe(true);
+  const dimensions = await media.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    const frame = element.closest(".homepage-media-frame")?.getBoundingClientRect();
+    const loaded = element instanceof HTMLImageElement
+      ? element.naturalWidth > 0
+      : element instanceof HTMLVideoElement
+        ? element.readyState >= 1
+        : true;
+    return { width: rect.width, frameWidth: frame?.width || 0, loaded };
+  });
+  expect(dimensions.loaded).toBe(true);
+  expect(dimensions.width).toBeGreaterThan(0);
+  expect(dimensions.frameWidth - dimensions.width).toBeLessThanOrEqual(2);
+});

@@ -14,7 +14,7 @@ function getHomepageVideoPoster(url: string) {
   } catch { return undefined; }
 }
 
-type Props = { initialNow: number; settings: {
+type Props = { settings: {
   enabled?: boolean; countdownEnabled?: boolean; countdownVisible?: boolean;
   launchDate?: string | Date | null; title?: string; description?: string; countdownLabel?: string; countdownStatusLabel?: string; countdownYearsLabel?:string; countdownMonthsLabel?:string; countdownDaysLabel?:string; countdownHoursLabel?:string; countdownMinutesLabel?:string; countdownSecondsLabel?:string;
   videoUrl?: string; flyerUrl?: string; afterLaunchVideoUrl?: string; afterLaunchFlyerUrl?: string;
@@ -56,14 +56,14 @@ function remainingTime(target: number, now: number) {
   return { years, months, days, hours, minutes, seconds: total };
 }
 
-export default function HomepageMediaExperience({ settings, initialNow }: Props) {
-  const [now, setNow] = useState(initialNow);
+export default function HomepageMediaExperience({ settings }: Props) {
+  const [now, setNow] = useState<number | null>(null);
   const [mediaIndex, setMediaIndex] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const target = useMemo(() => settings.launchDate ? new Date(settings.launchDate).getTime() : 0, [settings.launchDate]);
   const hasTarget = Boolean(target && Number.isFinite(target));
   const countdownEnabled = settings.countdownEnabled !== false;
-  const afterTarget = countdownEnabled && hasTarget && now >= target;
+  const afterTarget = countdownEnabled && hasTarget && now !== null && now >= target;
   const video = afterTarget && settings.afterLaunchVideoUrl ? settings.afterLaunchVideoUrl : settings.videoUrl;
   const image = afterTarget && settings.afterLaunchFlyerUrl ? settings.afterLaunchFlyerUrl : settings.flyerUrl;
   const media = useMemo(() => [
@@ -106,7 +106,7 @@ export default function HomepageMediaExperience({ settings, initialNow }: Props)
   }, [current, useOverride, overrideSeconds, settings.flyerSeconds, settings.flyerDurationMinutes, settings.flyerDurationSeconds, advance]);
 
   if (!settings.enabled) return null;
-  const countdown = countdownEnabled && hasTarget && !afterTarget ? remainingTime(target, now) : null;
+  const countdown = countdownEnabled && hasTarget && now !== null && !afterTarget ? remainingTime(target, now) : null;
   const units = countdown ? [
     [(settings.countdownYearsLabel||"YEARS"), countdown.years], [(settings.countdownMonthsLabel||"MONTHS"), countdown.months], [(settings.countdownDaysLabel||"DAYS"), countdown.days],
     [(settings.countdownHoursLabel||"HOURS"), countdown.hours], [(settings.countdownMinutesLabel||"MINUTES"), countdown.minutes], [(settings.countdownSecondsLabel||"SECONDS"), countdown.seconds],

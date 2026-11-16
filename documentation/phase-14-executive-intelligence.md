@@ -10,7 +10,8 @@
 - Natural-language analytics uses an enabled AI agent and a connection-verified provider. It sends only the aggregate company snapshot, not raw client or employee records. AI_ENCRYPTION_KEY and a verified enabled provider are prerequisites.
 - Executive decisions are persisted with status, rationale, owner and outcome fields.
 - Report schedules are persisted and executed by the protected `/api/cron/executive-reports` route. Each run stores a point-in-time JSON snapshot available for download in the Founder interface. Delivery is currently in-app/report history; no email delivery is claimed.
-- The report scheduler is included in `vercel.json` as a daily invocation. Configure `CRON_SECRET` or `PLATFORM_AUTOMATION_CRON_SECRET` in the production runtime. The endpoint requires an exact Bearer token.
+- The existing GitHub Actions workflow `.github/workflows/platform-automation.yml` is the automatic scheduler. It calls the protected executive-report route every 15 minutes; the route generates only schedules whose `nextRunAt` is due. No Vercel Cron entry is configured or required.
+- Configure `APP_BASE_URL` and `PLATFORM_AUTOMATION_CRON_SECRET` as GitHub Actions repository secrets, and set the matching `PLATFORM_AUTOMATION_CRON_SECRET` on the application host. The endpoint requires an exact Bearer token; the workflow can also be started manually with `workflow_dispatch`.
 
 ## Security and governance
 - Every dashboard/API operation requires an authenticated founder session on the server.
@@ -34,5 +35,4 @@ After CI/build succeeds and before production deployment:
 ## Known external prerequisites
 - MongoDB production availability and read permissions for all source collections.
 - AI_ENCRYPTION_KEY plus a verified AI provider and enabled AI agent for LLM answers.
-- CRON_SECRET or PLATFORM_AUTOMATION_CRON_SECRET for scheduled report execution.
-- A Vercel cron-enabled deployment for automatic scheduled execution. The founder can still generate an on-demand report from the page.
+- APP_BASE_URL and PLATFORM_AUTOMATION_CRON_SECRET GitHub Actions repository secrets, plus the matching PLATFORM_AUTOMATION_CRON_SECRET on the application host for automatic report scheduling. The founder can still generate an on-demand report from the page.

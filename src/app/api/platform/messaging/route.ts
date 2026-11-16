@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     if (!conversation) return fail("Conversation not found.", 404);
     const isMember = conversation.memberIds.some((member: unknown) => String((member as {_id?: unknown})._id || member) === String(session.user._id));
     if (!isMember) return forbiddenResponse("You are not a member of this private conversation.");
-    await UnifiedMessage.updateMany({ conversationId, senderId: { $ne: session.user._id }, readBy: { $ne: session.user._id } }, { $addToSet: { readBy: session.user._id }, $set: { status: "read" } });
+    await UnifiedMessage.updateMany({ conversationId, senderId: { $ne: session.user._id }, readBy: { $ne: session.user._id } }, { $addToSet: { readBy: session.user._id } });
     const query = searchParams.get("q")?.trim().slice(0, 100) || "";
     const messageFilter: Record<string, unknown> = { conversationId };
     if (query) {
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
       messageFilter.body = { $regex: escapedQuery, $options: "i" };
     }
     const messages = await UnifiedMessage.find(messageFilter).sort({ createdAt: 1 }).limit(300).lean();
-    return NextResponse.json({ status: "ok", conversation, messages, isFounder: session.role.isFounderRole }, { headers: { "Cache-Control": "private, no-store" } });
+    return NextResponse.json({ status: "ok", conversation, messages, isFounder: session.role.isFounderRole, currentUserId: String(session.user._id) }, { headers: { "Cache-Control": "private, no-store" } });
   }
   const filter = { memberIds: session.user._id, archivedAt: { $exists: false } };
   const conversations = await UnifiedConversation.find(filter).populate("memberIds", "name email").populate("aiAgentId", "name role department").sort({ lastMessageAt: -1, updatedAt: -1 }).limit(150).lean();

@@ -14,7 +14,7 @@ function getHomepageVideoPoster(url: string) {
   } catch { return undefined; }
 }
 
-type Props = { settings: {
+type Props = { initialNow: number; settings: {
   enabled?: boolean; countdownEnabled?: boolean; countdownVisible?: boolean;
   launchDate?: string | Date | null; title?: string; description?: string; countdownLabel?: string; countdownStatusLabel?: string; countdownYearsLabel?:string; countdownMonthsLabel?:string; countdownDaysLabel?:string; countdownHoursLabel?:string; countdownMinutesLabel?:string; countdownSecondsLabel?:string;
   videoUrl?: string; flyerUrl?: string; afterLaunchVideoUrl?: string; afterLaunchFlyerUrl?: string;
@@ -25,24 +25,28 @@ type Props = { settings: {
 
 function addMonths(date: Date, months: number) {
   const next = new Date(date);
-  const day = next.getDate();
-  next.setDate(1);
-  next.setMonth(next.getMonth() + months);
-  const lastDay = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
-  next.setDate(Math.min(day, lastDay));
+  const day = next.getUTCDate();
+  next.setUTCDate(1);
+  next.setUTCMonth(next.getUTCMonth() + months);
+  const lastDay = new Date(Date.UTC(next.getUTCFullYear(), next.getUTCMonth() + 1, 0)).getUTCDate();
+  next.setUTCDate(Math.min(day, lastDay));
   return next;
 }
 
 function remainingTime(target: number, now: number) {
   let cursor = new Date(now);
   let years = 0;
-  while (years < 100 && new Date(cursor.getFullYear() + 1, cursor.getMonth(), cursor.getDate(), cursor.getHours(), cursor.getMinutes(), cursor.getSeconds()).getTime() <= target) {
-    cursor.setFullYear(cursor.getFullYear() + 1);
+  while (years < 100) {
+    const nextYear = new Date(Date.UTC(cursor.getUTCFullYear() + 1, cursor.getUTCMonth(), cursor.getUTCDate(), cursor.getUTCHours(), cursor.getUTCMinutes(), cursor.getUTCSeconds()));
+    if (nextYear.getTime() > target) break;
+    cursor = nextYear;
     years++;
   }
   let months = 0;
-  while (months < 12 && addMonths(cursor, 1).getTime() <= target) {
-    cursor = addMonths(cursor, 1);
+  while (months < 12) {
+    const nextMonth = addMonths(cursor, 1);
+    if (nextMonth.getTime() > target) break;
+    cursor = nextMonth;
     months++;
   }
   let total = Math.max(0, Math.floor((target - cursor.getTime()) / 1000));
@@ -52,8 +56,8 @@ function remainingTime(target: number, now: number) {
   return { years, months, days, hours, minutes, seconds: total };
 }
 
-export default function HomepageMediaExperience({ settings }: Props) {
-  const [now, setNow] = useState(() => Date.now());
+export default function HomepageMediaExperience({ settings, initialNow }: Props) {
+  const [now, setNow] = useState(initialNow);
   const [mediaIndex, setMediaIndex] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const target = useMemo(() => settings.launchDate ? new Date(settings.launchDate).getTime() : 0, [settings.launchDate]);
@@ -72,10 +76,12 @@ export default function HomepageMediaExperience({ settings }: Props) {
   const advance = useCallback(() => setMediaIndex(index => media.length ? (index + 1) % media.length : 0), [media.length]);
 
   useEffect(() => {
-    if (!settings.enabled || !countdownEnabled || !hasTarget || afterTarget) return;
-    const id = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(id);
-  }, [settings.enabled, countdownEnabled, hasTarget, afterTarget]);
+    if (!settings.enabled || !countdownEnabled || !hasTarget) return;
+    const syncNow = () => setNow(Date.now());
+    const immediate = window.setTimeout(syncNow, 0);
+    const id = window.setInterval(syncNow, 1000);
+    return () => { window.clearTimeout(immediate); window.clearInterval(id); };
+  }, [settings.enabled, countdownEnabled, hasTarget]);
 
   useEffect(() => {
     if (!settings.videoAudioEnabled) return;

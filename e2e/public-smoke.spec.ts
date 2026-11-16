@@ -21,7 +21,7 @@ for (const route of publicRoutes) {
     expect(response, `${route.path} should return a document response`).not.toBeNull();
     expect(response!.status(), `${route.path} HTTP status`).toBeLessThan(400);
     await expect(page.locator("body")).not.toBeEmpty();
-    await expect(page.locator("body")).toContainText(/\\S/);
+    await expect(page.locator("body")).toContainText(/\S/);
 
     expect(pageErrors, `${route.path} browser runtime errors`).toEqual([]);
   });
@@ -37,7 +37,6 @@ test("homepage exposes a usable primary navigation", async ({ page }) => {
 const portalLoginRoutes = [
   { path: "/client/login", label: "Client" },
   { path: "/admin/login", label: "Admin" },
-  { path: "/workforce/login", label: "Workforce" },
 ];
 
 for (const route of portalLoginRoutes) {
@@ -50,3 +49,12 @@ for (const route of portalLoginRoutes) {
     await expect(page.locator("body")).toContainText(/sign in|log in|login/i);
   });
 }
+
+test("workforce entry redirects unauthenticated visitors to workforce sign-in", async ({ page }) => {
+  const response = await page.goto("/workforce", { waitUntil: "domcontentloaded" });
+
+  expect(response, "/workforce should return a document response").not.toBeNull();
+  expect(response!.status(), "/workforce HTTP status").toBeLessThan(400);
+  await expect(page).toHaveURL(/\\/admin\\/login\\?redirect=/);
+  await expect(page.locator("body")).toContainText(/workforce sign in/i);
+});

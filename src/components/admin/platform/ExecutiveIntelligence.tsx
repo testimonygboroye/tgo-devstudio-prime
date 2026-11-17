@@ -58,7 +58,7 @@ export default function ExecutiveIntelligence() {
     catch (e) { setError(e instanceof Error ? e.message : "Could not load executive intelligence."); }
     finally { setLoading(false); }
   }, []);
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { const timer = window.setTimeout(() => { void load(); }, 0); return () => window.clearTimeout(timer); }, [load]);
 
   async function act(action: string, payload: Record<string, unknown> = {}): Promise<ActionResult | null> {
     setBusy(action); setError("");

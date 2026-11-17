@@ -222,6 +222,9 @@ jobs:
           'src/app/(public)/testimonials/[id]/page.tsx'
           src/components/public/HeroMoment.tsx
           src/components/public/HomepageMediaExperience.tsx
+          src/components/public/SocialFloatingButton.tsx
+          src/lib/constants/publicSiteDefaults.ts
+          'src/app/(public)/contact/page.tsx'
           src/components/admin/AdminTopBar.tsx
           src/components/admin/platform/ExecutiveIntelligence.tsx
           'src/app/admin/(shell)/messages/CommunicationsHub.tsx'

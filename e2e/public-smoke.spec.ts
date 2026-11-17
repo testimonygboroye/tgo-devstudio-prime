@@ -62,7 +62,11 @@ test("mobile navigation drawer opens, expands and navigates", async ({ page }) =
   await page.locator("summary").filter({ hasText: "Capabilities & Work" }).click();
   const services = page.getByRole("link", { name: "Services", exact: true });
   await expect(services).toBeVisible();
-  await services.click();
+  await page.getByRole("button", { name: "Close menu" }).click();
+  await expect(page.locator('nav[aria-label="Main navigation"]').last()).toHaveAttribute("aria-hidden", "true");
+  await page.getByRole("button", { name: "Open menu" }).click();
+  await page.locator("summary").filter({ hasText: "Capabilities & Work" }).click();
+  await page.getByRole("link", { name: "Services", exact: true }).click();
   await expect(page).toHaveURL(/\/services$/);
   await expect(page.getByRole("heading", { name: "Everything your next idea needs." })).toBeVisible();
 });
@@ -130,4 +134,49 @@ test("workforce route redirects unauthenticated visitors to the correct sign-in"
   const finalUrl = new URL(page.url());
   expect(finalUrl.pathname).toBe("/command-deck/login");
   expect(finalUrl.searchParams.get("redirect")).toBe("/workforce");
+});
+
+test("custom 404 page provides useful recovery links", async ({ page }) => {
+  const response = await page.goto("/this-route-does-not-exist-tgo-qa", { waitUntil: "domcontentloaded" });
+  expect(response).not.toBeNull();
+  expect(response!.status()).toBe(404);
+  await expect(page.getByRole("link", { name: /Explore services/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Browse our work/i })).toBeVisible();
+});
+
+test("public images load without broken image elements", async ({ page }) => {
+  for (const route of ["/", "/services", "/services/catalogue", "/portfolio", "/blog", "/about"]) {
+    await page.goto(route, { waitUntil: "domcontentloaded" });
+    const broken = await page.evaluate(async () => {
+      const images = [...document.images];
+      images.forEach(image => { image.loading = "eager"; });
+      await Promise.all(images.map(image => image.complete ? Promise.resolve() : new Promise(resolve => {
+        image.addEventListener("load", resolve, { once: true });
+        image.addEventListener("error", resolve, { once: true });
+        setTimeout(resolve, 10000);
+      })));
+      return images.filter(image => image.complete && image.naturalWidth === 0).map(image => image.currentSrc || image.src);
+    });
+    expect(broken, "Broken images on " + route).toEqual([]);
+  }
+});
+
+test("CMS hero background image is visible and loaded", async ({ page }) => {
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  const result = await page.locator(".home-hero-cms-background").evaluate(async element => {
+    const style = getComputedStyle(element);
+    const match = style.backgroundImage.match(/url\\(["']?(.*?)["']?\\)/);
+    if (!match) return { hasUrl: false, opacity: Number(style.opacity), zIndex: Number(style.zIndex) };
+    const loaded = await new Promise(resolve => {
+      const image = new Image();
+      image.onload = () => resolve(true);
+      image.onerror = () => resolve(false);
+      image.src = match[1];
+    });
+    return { hasUrl: true, loaded, opacity: Number(style.opacity), zIndex: Number(style.zIndex) };
+  });
+  expect(result.hasUrl).toBe(true);
+  expect(result.loaded).toBe(true);
+  expect(result.opacity).toBeGreaterThanOrEqual(0.9);
+  expect(result.zIndex).toBeGreaterThanOrEqual(0);
 });

@@ -141,14 +141,14 @@ export default async function HomePage() {
               <div className="home-window-top">
                 <div className="flex gap-1.5"><i /><i /><i /></div>
                 <span> TGO / PRODUCT SYSTEMS</span>
-                <span className="home-window-status"><b /> LIVE</span>
+                <span className="home-window-status"><b /> CONCEPT PREVIEW</span>
               </div>
               <div className="home-window-body">
                 <div className="home-window-sidebar"><span /><span /><span /><span /><span /></div>
                 <div className="home-window-main">
                   <div className="home-window-greeting"><small>YOUR NEXT BIG IDEA</small><strong>Built to move<br />your business forward.</strong></div>
-                  <div className="home-window-metrics"><div><small>Performance</small><b>98.6%</b><span>↗ Optimised</span></div><div><small>Systems online</small><b>12 / 12</b><span>● All operational</span></div></div>
-                  <div className="home-window-chart"><div className="home-chart-label"><span>Growth trajectory</span><b>+32.8%</b></div><div className="home-chart-bars">{[34,48,41,63,53,76,68,91,78,100,87,112].map((height,index)=><i key={index} style={{height:height+"%"}} />)}</div></div>
+                  <div className="home-window-metrics"><div><small>Delivery approach</small><b>End to end</b><span>Strategy → launch</span></div><div><small>Engineering focus</small><b>Production-ready</b><span>Secure · Scalable</span></div></div>
+                  <div className="home-window-chart"><div className="home-chart-label"><span>Delivery journey</span><b>Thoughtful by design</b></div><div className="home-chart-bars" aria-hidden="true">{[34,48,41,63,53,76,68,91,78,100,87,112].map((height,index)=><i key={index} style={{height:height+"%"}} />)}</div></div>
                   <div className="home-window-footer"><span><Zap size={13}/> Intelligent by design</span><span>Secure · Scalable · Ready</span></div>
                 </div>
               </div>

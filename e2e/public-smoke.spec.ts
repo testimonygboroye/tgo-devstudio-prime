@@ -190,6 +190,7 @@ test("public brand links point to TGO DevStudio accounts", async ({ page }) => {
 
 test("public AI assistant can be opened from the contact menu", async ({ page }) => {
   await page.goto("/");
+  await page.getByRole("button", { name: "Accept", exact: true }).click({ timeout: 1500 }).catch(() => {});
   await page.getByRole("button", { name: "Open contact and assistant menu" }).click();
   await page.getByRole("button", { name: /AI Chatbot/ }).click();
   await expect(page.locator('textarea[placeholder="Ask your question…"]')).toBeVisible();

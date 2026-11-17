@@ -39,8 +39,6 @@ async function audit(session:FinanceAdminSession,action:string,type:string,id:st
 
 export async function GET(){
  const auth=await requireFounder();if(auth.response)return auth.response;
- await FinanceInvoice.updateMany({status:{$in:["issued","partially_paid"]},dueAt:{$lt:new Date()},balanceMinor:{$gt:0}},{$set:{status:"overdue"}});
- await FinanceInstallmentPlan.updateMany({status:"active",installments:{$elemMatch:{status:{$in:["pending","partially_paid"]},dueAt:{$lt:new Date()}}}},{$set:{"installments.$[due].status":"overdue"}},{arrayFilters:[{"due.status":{$in:["pending","partially_paid"]},"due.dueAt":{$lt:new Date()}}]});
  const [settings,invoices,expenses,refunds,installments,approvals,reconciliations,credits,payments,ledger,orders,clients]=await Promise.all([
   FinanceSettings.findOne({key:"global"}).lean(),
   FinanceInvoice.find({}).sort({createdAt:-1}).limit(100).lean(),
@@ -55,10 +53,24 @@ export async function GET(){
   CommercialOrder.find({}).sort({createdAt:-1}).limit(100).lean(),
   User.find({accountType:"client"}).select("_id name email").sort({createdAt:-1}).limit(200).lean(),
  ]);
+ const now=new Date();
+ // GET requests remain read-only: calculate overdue labels for the response
+ // instead of writing invoice/installment status changes during dashboard reads.
+ const displayInvoices=invoices.map(invoice=>({
+  ...invoice,
+  status:["issued","partially_paid"].includes(invoice.status)&&invoice.balanceMinor>0&&invoice.dueAt&&new Date(invoice.dueAt)<now?"overdue":invoice.status,
+ }));
+ const displayInstallments=installments.map(plan=>({
+  ...plan,
+  installments:(plan.installments||[]).map(installment=>({
+   ...installment,
+   status:["pending","partially_paid"].includes(installment.status)&&installment.dueAt&&new Date(installment.dueAt)<now?"overdue":installment.status,
+  })),
+ }));
  const summary=await FinancialLedgerEntry.aggregate([
   {$group:{_id:{currency:"$currency",accountCode:"$accountCode",direction:"$direction"},total:{$sum:"$amountMinor"},entries:{$sum:1}}},
  ]);
- return NextResponse.json({ok:true,settings:settings||null,invoices,expenses,refunds,installments,approvals,reconciliations,credits,payments,ledger,orders,clients,summary},{headers:{"Cache-Control":"private, no-store"}});
+ return NextResponse.json({ok:true,settings:settings||null,invoices:displayInvoices,expenses,refunds,installments:displayInstallments,approvals,reconciliations,credits,payments,ledger,orders,clients,summary},{headers:{"Cache-Control":"private, no-store"}});
 }
 
 export async function POST(request:NextRequest){

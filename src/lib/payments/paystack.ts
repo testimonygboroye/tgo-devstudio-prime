@@ -16,7 +16,24 @@ import {enqueueWebhookDeliveries} from "@/lib/integrations/webhooks";
 export async function verifyAndRecordPaystackPayment(reference:string){
  await connectToDatabase();
  const initial=await PaymentTransaction.findOne({reference});if(!initial)throw new Error("Payment reference was not found.");
- if(initial.status==="paid")return initial;
+ if(initial.status==="paid"){
+  // A payment may have been committed successfully even if webhook enqueueing failed
+  // immediately afterwards. Re-enqueue the same idempotent event on every retry.
+  await enqueueWebhookDeliveries({
+   eventId:"payment:"+String(initial._id)+":paid",
+   eventName:"commerce.payment.succeeded",
+   payload:{
+    paymentId:String(initial._id),
+    reference:initial.reference,
+    amount:initial.amount,
+    currency:initial.currency,
+    orderId:String(initial.orderId),
+    clientId:String(initial.clientId),
+    verifiedAt:initial.verifiedAt?.toISOString()||new Date().toISOString(),
+   },
+  });
+  return initial;
+}
  const provider=getPaymentProvider("paystack");
  const data=await provider.verify(reference);
  if(data.status!=="success"||data.reference!==initial.reference||data.amountMinor!==initial.amountMinor||data.currency!==initial.currency)throw new Error("Payment verification failed: provider status, amount, currency or reference did not match the order.");

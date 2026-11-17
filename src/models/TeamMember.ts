@@ -40,7 +40,7 @@ const TeamMemberSchema = new Schema<ITeamMember>(
     name: { type: String, required: true, trim: true, maxlength: 100 },
     slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
     jobTitle: { type: String, required: true, trim: true, maxlength: 100 },
-    bio: { type: String, required: true, trim: true, maxlength: 400 },
+    bio: { type: String, required: true, trim: true, maxlength: 800 },
     photo: { type: TeamMemberPhotoSchema },
     linkedinUrl: { type: String },
     githubUrl: { type: String },
@@ -55,7 +55,7 @@ const TeamMemberSchema = new Schema<ITeamMember>(
         {
           name: { type: String, trim: true, maxlength: 100 },
           jobTitle: { type: String, trim: true, maxlength: 100 },
-          bio: { type: String, trim: true, maxlength: 400 },
+          bio: { type: String, trim: true, maxlength: 800 },
         },
         { _id: false }
       ),

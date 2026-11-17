@@ -84,11 +84,13 @@ export async function runProviderCompletionWithFallback(
   const config = await AIChatbotConfig.findOne({ scope }).lean();
   const attempts = buildProviderAttempts(providerId, model, config);
   const failures: string[] = [];
+  let attemptsTried = 0;
   for (const attempt of attempts) {
+    attemptsTried += 1;
     try {
       const result = await runProviderCompletion(attempt.providerId, attempt.modelName, system, prompt);
       if (!result.text.trim()) throw new Error("Provider returned an empty response.");
-      return { ...result, providerId: attempt.providerId, model: attempt.modelName, fallbackUsed: visited.size > 1 };
+      return { ...result, providerId: attempt.providerId, model: attempt.modelName, fallbackUsed: attemptsTried > 1 };
     } catch (error) {
       failures.push(attempt.providerId + "/" + attempt.modelName + ": " + (error instanceof Error ? error.message : "Provider request failed."));
     }

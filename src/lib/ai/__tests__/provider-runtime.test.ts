@@ -1,4 +1,4 @@
-import { buildProviderAttempts } from "@/lib/ai/provider-runtime";
+import { buildProviderAttempts } from "@/lib/ai/provider-attempts";
 
 describe("AI employee provider fallback order", () => {
   it("tries the agent's assigned provider before the admin chatbot chain", () => {

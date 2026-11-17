@@ -151,7 +151,7 @@ test("mobile navigation drawer opens, exposes links, and closes after navigation
 
   await openMenu.click();
   await drawer.getByRole("link", { name: "Services" }).click();
-  await expect(page).toHaveURL(/\\/services$/);
+  await expect(page).toHaveURL(url => new URL(url).pathname === "/services");
   await expect(drawer).toBeHidden();
 });
 

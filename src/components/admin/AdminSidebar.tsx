@@ -250,13 +250,36 @@ export default function AdminSidebar({
 
       <nav aria-label="Admin navigation" className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4 space-y-1">
         {!collapsed && <label className="mb-3 flex items-center gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-page)] px-3 py-2.5 text-[var(--text-muted)] focus-within:border-brand-cyan-400"><Search size={16} className="shrink-0"/><input type="search" value={navQuery} onChange={(event) => setNavQuery(event.target.value)} placeholder="Find an admin page..." aria-label="Find an admin page" className="min-w-0 w-full bg-transparent text-xs text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)]"/>{navQuery && <button type="button" onClick={() => setNavQuery("")} aria-label="Clear navigation search" className="text-xs text-brand-cyan-300">Clear</button>}</label>}
-        {visibleGroups.map((group) => {
-          const GroupIcon = group.items[0]?.icon ?? Layers;
+        {collapsed ? (
+          <div className="flex flex-col gap-2">
+            {visibleGroups.map((group) => (
+              <div key={group.title} className="border-b border-[var(--border-subtle)]/70 pb-2 last:border-0">
+                <div className="mb-1 flex justify-center" title={group.title}>
+                  <span className="h-px w-7 rounded-full bg-brand-cyan-400/30"/>
+                </div>
+                {group.items.map((item) => {
+                  const href = resolveNavHref(item);
+                  const isActive = href === activeHref;
+                  const Icon = item.icon;
+                  const count = item.badgeKey ? counts[item.badgeKey] || 0 : 0;
+                  return (
+                    <Link key={item.hrefSuffix} href={href} prefetch={false} onClick={() => setIsMobileOpen(false)} onPointerEnter={() => router.prefetch(href)} onFocus={() => router.prefetch(href)} title={item.label} aria-label={item.label}
+                      className={`group relative mx-auto mb-1 flex h-11 w-11 items-center justify-center rounded-xl transition-all duration-150 ${isActive ? "brand-gradient-bg text-white shadow-lg shadow-brand-violet-600/25" : "text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-brand-cyan-300"}`}>
+                      <Icon size={19}/>
+                      {count > 0 && <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white">{count > 9 ? "9+" : count}</span>}
+                      <span className="pointer-events-none absolute left-full z-[90] ml-3 hidden whitespace-nowrap rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface-2)] px-3 py-2 text-xs font-medium text-[var(--text-primary)] shadow-xl group-hover:block group-focus-visible:block">{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        ) : visibleGroups.map((group) => {
           const groupActive = group.items.some((item) => resolveNavHref(item) === activeHref);
           return (
             <details key={group.title} open={groupActive || undefined} className="group/nav mb-2">
-              <summary title={group.title} className={`flex cursor-pointer list-none items-center justify-between rounded-lg px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)] hover:bg-[var(--surface-hover)] ${collapsed ? "justify-center" : ""}`}>
-                {!collapsed ? <><span>{group.title}</span><ChevronRight size={14} className="transition-transform group-open/nav:rotate-90"/></> : <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-white/[.04] text-brand-cyan-300"><GroupIcon size={16}/></span>}
+              <summary title={group.title} className="flex cursor-pointer list-none items-center justify-between rounded-lg px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)] hover:bg-[var(--surface-hover)]">
+                <span>{group.title}</span><ChevronRight size={14} className="transition-transform group-open/nav:rotate-90"/>
               </summary>
               <div className="mt-1 space-y-1">
                 {group.items.map((item) => {
@@ -270,8 +293,7 @@ export default function AdminSidebar({
                       <span className="relative flex-shrink-0 flex items-center justify-center"><Icon size={18} className={isActive ? "text-white" : "text-brand-cyan-400 group-hover:scale-110 transition-transform"}/>
                         {count > 0 && <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white shadow-sm">{count > 9 ? "9+" : count}</span>}
                       </span>
-                      {!collapsed && <span className="truncate">{item.label}</span>}
-                      {collapsed && <div className="absolute left-full z-50 ml-2 hidden whitespace-nowrap rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface-2)] px-3 py-1.5 text-xs text-[var(--text-primary)] shadow-xl group-hover:block">{item.label}</div>}
+                      <span className="truncate">{item.label}</span>
                     </Link>
                   );
                 })}

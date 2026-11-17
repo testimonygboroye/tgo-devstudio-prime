@@ -42,7 +42,7 @@ export async function GET(){
   CommercialOrder.find({clientId:session.user._id}).sort({createdAt:-1}).lean(),
   FinanceReceipt.find({clientId:session.user._id}).sort({issuedAt:-1}).limit(100).lean(),
  ]);
- return NextResponse.json({ok:true,bankTransfer:settings?.bankTransferEnabled?{enabled:true,bankName:settings.bankName,accountName:settings.bankAccountName,accountNumber:settings.bankAccountNumber,bankCode:settings.bankCode,instructions:settings.bankTransferInstructions}: {enabled:false},invoices,credits,payments,installmentPlans,orders,receipts,paymentConfigured:Boolean(settings?.paystackEnabled&&process.env.PAYSTACK_SECRET_KEY)},{headers:{"Cache-Control":"private, no-store"}});
+ return NextResponse.json({ok:true,bankTransfer:settings?.bankTransferEnabled?{enabled:true,bankAccounts:Array.isArray(settings.bankAccounts)&&settings.bankAccounts.length?settings.bankAccounts:[{bankName:settings.bankName,accountName:settings.bankAccountName,accountNumber:settings.bankAccountNumber,bankCode:settings.bankCode}],bankName:settings.bankName,accountName:settings.bankAccountName,accountNumber:settings.bankAccountNumber,bankCode:settings.bankCode,instructions:settings.bankTransferInstructions}: {enabled:false,bankAccounts:[]},invoices,credits,payments,installmentPlans,orders,receipts,paymentConfigured:Boolean(settings?.paystackEnabled&&process.env.PAYSTACK_SECRET_KEY)},{headers:{"Cache-Control":"private, no-store"}});
 }
 
 export async function POST(request:NextRequest){

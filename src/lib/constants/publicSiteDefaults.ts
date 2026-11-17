@@ -18,7 +18,7 @@ export const PUBLIC_SITE_SETTINGS_DEFAULTS = {
   footerTagline: "A full-stack software engineering studio building premium, production-grade products from the ground up.",
   footerAddress: "Akure, Ondo State, Nigeria",
   contactEmail: "testimonygboroye.dev@gmail.com",
-  contactPhone: "",
+  contactPhone: "+2348132429504",
   newsletterEnabled: true,
   copyrightText: "© {year} TGO DevStudio. All rights reserved.",
   notFoundEyebrow: "A little off course",
@@ -106,10 +106,10 @@ export const PUBLIC_SITE_SETTINGS_DEFAULTS = {
     ] },
   ],
   socialLinks: [
-    { label: "WhatsApp", href: "https://wa.me/message/LUJ6PXE3ISDZF1", platform: "whatsapp" },
+    { label: "WhatsApp", href: "https://wa.me/2348132429504", platform: "whatsapp" },
     { label: "GitHub", href: "https://github.com/testimonygboroye", platform: "github" },
-    { label: "Facebook", href: "https://www.facebook.com/profile.php?id=61590906354276", platform: "facebook" },
-    { label: "Instagram", href: "https://www.instagram.com/testimonygboroye?igsh=MXU0dmxraXRwN2lnbw==", platform: "instagram" },
+    { label: "Facebook", href: "https://www.facebook.com/tgodevstudio", platform: "facebook" },
+    { label: "Instagram", href: "https://www.instagram.com/tgodevstudio", platform: "instagram" },
   ],
 } as const;
 

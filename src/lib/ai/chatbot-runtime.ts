@@ -184,16 +184,14 @@ export async function handleAIChat(request:NextRequest,scope:Scope,method:"GET"|
    }
   }
   if (!completion) {
-   if (auth.session?.role?.isFounderRole) {
-    try {
-     await writePlatformAuditEvent({
-      actorType: "system", actorId: String(auth.session.user._id), actorLabel: "TGO AI Gateway",
-      action: "ai.chatbot.all_providers_failed", module: "ai-chatbots", targetType: "AIChatSession",
-      targetId: String(row._id), outcome: "failure",
-      metadata: { scope, attempts: providerFailures },
-     });
-    } catch { /* diagnostics must never expose or interrupt the public response */ }
-   }
+   try {
+    await writePlatformAuditEvent({
+     actorType: "system", actorId: "tgo-ai-gateway", actorLabel: "TGO AI Gateway",
+     action: "ai.chatbot.all_providers_failed", module: "ai-chatbots", targetType: "AIChatSession",
+     targetId: String(row._id), outcome: "failure",
+     metadata: { scope, attempts: providerFailures },
+    });
+   } catch { /* diagnostics must never expose or interrupt the public response */ }
    throw new Error("All configured AI providers failed.");
   }
   const assistantMessage={messageId:randomUUID(),role:"assistant" as const,content:completion.text.slice(0,8000),inputTokens:completion.inputTokens,outputTokens:completion.outputTokens,sources:context.sources.slice(0,20),createdAt:new Date()};

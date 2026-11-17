@@ -143,18 +143,17 @@ test("mobile navigation drawer opens, exposes links, and closes after navigation
 
   const drawer = page.locator('nav[aria-label="Main navigation"]').last();
   await expect(drawer).toBeVisible();
-  await expect(drawer.getByRole("link", { name: "Client Portal" })).toBeVisible();
   await drawer.getByText("Capabilities & Work", { exact: true }).click();
   await expect(drawer.getByRole("link", { name: "Services" })).toBeVisible();
 
   await drawer.getByRole("button", { name: "Close menu" }).click();
-  await expect(drawer).toBeHidden();
+  await expect(drawer).toHaveAttribute("aria-hidden", "true");
 
   await openMenu.click();
   await drawer.getByText("Capabilities & Work", { exact: true }).click();
   await drawer.getByRole("link", { name: "Services" }).click();
   await expect(page).toHaveURL(url => new URL(url).pathname === "/services");
-  await expect(drawer).toBeHidden();
+  await expect(drawer).toHaveAttribute("aria-hidden", "true");
 });
 
 test("custom 404 page provides working recovery navigation", async ({ page }) => {

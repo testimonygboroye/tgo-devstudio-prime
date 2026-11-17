@@ -8,6 +8,7 @@ import { runProviderCompletion } from "@/lib/ai/provider-runtime";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import PageContent from "@/models/PageContent";
 import Service from "@/models/Service";
+import CommercialService from "@/models/CommercialService";
 import Project from "@/models/Project";
 import ClientProfile from "@/models/ClientProfile";
 import DeliveryProject from "@/models/DeliveryProject";
@@ -37,13 +38,35 @@ function policy(scope:Scope){
  return `You are TGO DevStudio's INTERNAL ADMIN ASSISTANT. You may explain the admin platform and its features in depth, answer public website questions in depth, and give only high-level public guidance about the client portal. Never reveal another administrator's or employee's private account data, salary, bank information, personal details, private conversations or confidential records. The private context contains only the currently authenticated user's own account/profile data. Do not claim to have access to other people's records. You have no operational tools and cannot create, edit, delete, approve, publish, send messages, change settings, alter payments or perform any business action. You may explain how an authorised person can do something in the UI, but cannot do it for them. Do not provide detailed client-only account workflows; direct client-specific questions to the authenticated client portal assistant.`;
 }
 async function publicContext(){
- const [pages,services,projects]=await Promise.all([
+ const [pages,services,commercialServices,projects]=await Promise.all([
   PageContent.find({type:{$in:["about","privacy-policy","terms-of-service","usage-policy","accessibility","data-deletion"]}}).select("type title content").limit(10).lean(),
-  Service.find({publishStatus:"published"}).select("title summary").sort({displayOrder:1}).limit(25).lean(),
+  Service.find({publishStatus:"published"}).select("title summary").sort({displayOrder:1}).limit(100).lean(),
+  CommercialService.find({status:"published"}).select("name category summary description pricingModel currency packages customRequestEnabled consultationEnabled").sort({category:1,name:1}).limit(50).lean(),
   Project.find({publishStatus:"published"}).select("title summary problemStatement approach outcome tags techStack status").sort({featured:-1,updatedAt:-1}).limit(20).lean(),
  ]);
- const sources=[...pages.map(x=>"Public page: "+x.title),...services.map(x=>"Published service: "+x.title),...projects.map(x=>"Published portfolio: "+x.title)];
- return {data:{pages:pages.map(x=>({title:x.title,content:String(x.content||"").slice(0,5000)})),services,portfolio:projects},sources};
+ const sources=[
+  ...pages.map(x=>"Public page: "+x.title),
+  ...services.map(x=>"Published engineering capability: "+x.title),
+  ...commercialServices.map(x=>"Published priced service package: "+x.name),
+  ...projects.map(x=>"Published portfolio: "+x.title),
+ ];
+ return {
+  data:{
+   pages:pages.map(x=>({title:x.title,content:String(x.content||"").slice(0,5000)})),
+   services,
+   commercialServices:commercialServices.map(service=>({
+    name:service.name,category:service.category,summary:service.summary,description:service.description,
+    pricingModel:service.pricingModel,currency:service.currency,
+    packages:(service.packages||[]).filter(pkg=>pkg.enabled).map(pkg=>({
+     name:pkg.name,summary:pkg.summary,price:pkg.price,currency:pkg.currency,
+     billingModel:pkg.billingModel,deliveryDays:pkg.deliveryDays,revisions:pkg.revisions,features:pkg.features,
+    })),
+    customRequestEnabled:service.customRequestEnabled,consultationEnabled:service.consultationEnabled,
+   })),
+   portfolio:projects,
+  },
+  sources,
+ };
 }
 async function privateContext(scope:Scope,session:NonNullable<ChatSession>){
  const pub=await publicContext();

@@ -19,7 +19,7 @@ const D=new Schema<IFinanceSettings>({
  paystackMerchantCountry:{type:String,default:"NG",enum:["NG","GH","KE","ZA","CI"]},
  paystackEnabled:{type:Boolean,default:false},
  bankTransferEnabled:{type:Boolean,default:false},
- bankAccounts:{type:[new Schema({bankName:{type:String,required:true,trim:true,maxlength:120},accountName:{type:String,required:true,trim:true,maxlength:120},accountNumber:{type:String,required:true,trim:true,match:/^\\d{10}$/},bankCode:{type:String,trim:true,maxlength:30}},{_id:false})],default:[]},
+ bankAccounts:{type:[new Schema({bankName:{type:String,required:true,trim:true,maxlength:120},accountName:{type:String,required:true,trim:true,maxlength:120},accountNumber:{type:String,required:true,trim:true,match:/^\d{10}$/},bankCode:{type:String,trim:true,maxlength:30}},{_id:false})],default:[]},
  bankName:{type:String,trim:true,maxlength:120},
  bankAccountName:{type:String,trim:true,maxlength:120},
  bankAccountNumber:{type:String,trim:true,maxlength:40},

@@ -224,7 +224,7 @@ jobs:
           src/components/public/HomepageMediaExperience.tsx
           src/components/admin/AdminTopBar.tsx
           src/components/admin/platform/ExecutiveIntelligence.tsx
-          src/components/admin/platform/CommunicationsHub.tsx
+          'src/app/admin/(shell)/messages/CommunicationsHub.tsx'
           src/models/TeamMember.ts
           src/lib/db.ts
           src/lib/ai/chatbot-runtime.ts

@@ -59,7 +59,7 @@ test("mobile navigation drawer opens, expands and navigates", async ({ page }) =
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/", { waitUntil: "domcontentloaded" });
   await page.getByRole("button", { name: "Open menu" }).click();
-  await page.getByRole("button", { name: "Capabilities & Work" }).click();
+  await page.locator("summary").filter({ hasText: "Capabilities & Work" }).click();
   const services = page.getByRole("link", { name: "Services", exact: true });
   await expect(services).toBeVisible();
   await services.click();

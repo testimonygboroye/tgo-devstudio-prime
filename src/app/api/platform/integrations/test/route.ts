@@ -3,7 +3,7 @@ import { getServerSession } from "@/lib/auth/serverSession";
 import { connectToDatabase } from "@/lib/db";
 import IntegrationConnection from "@/models/IntegrationConnection";
 import { getIntegrationProvider } from "@/lib/integrations/registry";
-import { decryptCredentials } from "@/lib/integrations/crypto";
+import { decryptCredentials, encryptCredentials } from "@/lib/integrations/crypto";
 import { getVerifiedIntegrationCredentials } from "@/lib/integrations/credentials";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
 export const dynamic = "force-dynamic";
@@ -92,9 +92,35 @@ export async function POST(request: NextRequest) {
   if (!row || row.status === "disconnected") return fail("Save active credentials before testing this connection.", 409);
   let errorMessage = "";
   try {
-    const credentials = providerId === "google_search_console" || providerId === "google_analytics" ? await getVerifiedIntegrationCredentials(providerId) : decryptCredentials(row.credentialsCiphertext);
+    const storedCredentials = decryptCredentials(row.credentialsCiphertext);
+    let credentials: Record<string, string> | null = providerId === "google_search_console" || providerId === "google_analytics"
+      ? await getVerifiedIntegrationCredentials(providerId)
+      : { ...storedCredentials };
     if (!credentials) throw new Error("Google OAuth authorization has expired or could not be refreshed. Reconnect the Google account.");
+    // Prefer the production mail/SMS environment values during verification so an older encrypted form entry cannot mask a working provider setup.
+    if (providerId === "brevo") {
+      credentials = {
+        ...credentials,
+        apiKey: process.env.BREVO_API_KEY || credentials.apiKey || "",
+        senderEmail: process.env.BREVO_SENDER_EMAIL || credentials.senderEmail || "",
+      };
+    }
+    if (providerId === "twilio") {
+      credentials = {
+        ...credentials,
+        accountSid: process.env.TWILIO_ACCOUNT_SID || credentials.accountSid || "",
+        authToken: process.env.TWILIO_AUTH_TOKEN || credentials.authToken || "",
+        fromNumber: process.env.TWILIO_SMS_FROM || credentials.fromNumber || "",
+        messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID || credentials.messagingServiceSid || "",
+      };
+    }
     await verify(providerId, credentials);
+    if (providerId === "brevo" || providerId === "twilio") {
+      row.credentialsCiphertext = encryptCredentials(credentials);
+      row.credentialNames = providerId === "brevo"
+        ? ["API key", "Verified sender email"]
+        : ["Account SID", "Auth token", ...(credentials.fromNumber ? ["Verified SMS sender number"] : []), ...(credentials.messagingServiceSid ? ["Messaging Service SID"] : [])];
+    }
     row.status = "connected"; row.lastVerifiedAt = new Date(); row.lastError = "";
   } catch (error) {
     errorMessage = error instanceof Error ? error.message : "Connection test failed.";

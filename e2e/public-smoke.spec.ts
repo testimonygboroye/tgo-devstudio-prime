@@ -165,7 +165,7 @@ test("CMS hero background image is visible and loaded", async ({ page }) => {
   await page.goto("/", { waitUntil: "domcontentloaded" });
   const result = await page.locator(".home-hero-cms-background").evaluate(async element => {
     const style = getComputedStyle(element);
-    const match = style.backgroundImage.match(/url\\(["']?(.*?)["']?\\)/);
+    const match = style.backgroundImage.match(/url\(["']?(.*?)["']?\)/);
     if (!match) return { hasUrl: false, opacity: Number(style.opacity), zIndex: Number(style.zIndex) };
     const loaded = await new Promise(resolve => {
       const image = new Image();

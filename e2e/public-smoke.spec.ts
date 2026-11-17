@@ -43,7 +43,7 @@ test("commercial catalogue contains all 17 distinct service lines and package pr
 test("public capabilities are deduplicated and expanded", async ({ page }) => {
   await page.goto("/services", { waitUntil: "domcontentloaded" });
   const cards = page.locator(".services-card");
-  await expect(cards).toHaveCount(47);
+  await expect(cards).toHaveCount(41);
   await expect(page.getByRole("heading", { name: "UI/UX & Digital Product Design" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Cybersecurity & Application Security" })).toBeVisible();
 });

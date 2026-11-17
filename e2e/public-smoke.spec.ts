@@ -174,3 +174,12 @@ test("custom 404 page provides working recovery navigation", async ({ page }) =>
   await expect(page.getByRole("link", { name: /explore services/i })).toBeVisible();
   await expect(page.getByRole("link", { name: /browse our work/i })).toBeVisible();
 });
+
+test("FAQ detail links resolve public question slugs", async ({ page }) => {
+  const response = await page.goto("/faq/who-is-behind-tgo-devstudio", { waitUntil: "domcontentloaded" });
+  expect(response).not.toBeNull();
+  expect(response!.status()).toBe(200);
+  await expect(page.getByRole("heading", { name: "Who is behind TGO DevStudio?" })).toBeVisible();
+  await expect(page.getByText(/engineering arm of TGO/i)).toBeVisible();
+  await expect(page).not.toHaveTitle(/FAQ Not Found/i);
+});

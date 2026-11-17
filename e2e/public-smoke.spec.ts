@@ -180,3 +180,18 @@ test("CMS hero background image is visible and loaded", async ({ page }) => {
   expect(result.opacity).toBeGreaterThanOrEqual(0.9);
   expect(result.zIndex).toBeGreaterThanOrEqual(0);
 });
+
+test("public brand links point to TGO DevStudio accounts", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator('footer a[aria-label="Instagram"]')).toHaveAttribute("href", "https://www.instagram.com/tgodevstudio");
+  await expect(page.locator('footer a[aria-label="Facebook"]')).toHaveAttribute("href", "https://www.facebook.com/tgodevstudio");
+  await expect(page.locator('footer a[aria-label="WhatsApp"]')).toHaveAttribute("href", "https://wa.me/2348132429504");
+});
+
+test("public AI assistant can be opened from the contact menu", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Open contact and assistant menu" }).click();
+  await page.getByRole("button", { name: /AI Chatbot/ }).click();
+  await expect(page.locator('textarea[placeholder="Ask your question…"]')).toBeVisible();
+  await expect(page.getByText(/Public website assistant/)).toBeVisible();
+});

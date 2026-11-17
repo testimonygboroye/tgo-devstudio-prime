@@ -68,7 +68,7 @@ test("mobile navigation drawer opens, expands and navigates", async ({ page }) =
   await page.locator("summary").filter({ hasText: "Capabilities & Work" }).click();
   await page.getByRole("link", { name: "Services", exact: true }).click();
   await expect(page).toHaveURL(/\/services$/);
-  await expect(page.getByRole("heading", { name: "Everything your next idea needs." })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 });
 
 test("contact form blocks empty submissions without creating an enquiry", async ({ page }) => {

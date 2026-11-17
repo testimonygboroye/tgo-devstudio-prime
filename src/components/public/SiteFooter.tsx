@@ -53,10 +53,10 @@ export default function SiteFooter({ settings }: { settings?: PublicSiteChromeSe
   const socialLinks = settings
     ? settings.socialLinks
     : [
-        { label: "WhatsApp", href: "https://wa.me/message/LUJ6PXE3ISDZF1", platform: "whatsapp" },
+        { label: "WhatsApp", href: "https://wa.me/2348132429504", platform: "whatsapp" },
         { label: "GitHub", href: "https://github.com/testimonygboroye", platform: "github" },
-        { label: "Facebook", href: "https://www.facebook.com/profile.php?id=61590906354276", platform: "facebook" },
-        { label: "Instagram", href: "https://www.instagram.com/testimonygboroye?igsh=MXU0dmxraXRwN2lnbw==", platform: "instagram" },
+        { label: "Facebook", href: "https://www.facebook.com/tgodevstudio", platform: "facebook" },
+        { label: "Instagram", href: "https://www.instagram.com/tgodevstudio", platform: "instagram" },
       ];
   const brandName = settings?.brandName || "TGO DevStudio";
   const contactEmail = settings ? settings.contactEmail : "testimonygboroye.dev@gmail.com";

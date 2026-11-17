@@ -15,10 +15,23 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-async function getFaq(id: string) {
-  if (!isValidObjectId(id)) return null;
+function faqSlug(question: string) {
+  return question
+    .normalize("NFKD")
+    .toLowerCase()
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+async function getFaq(slugOrId: string) {
   await connectToDatabase();
-  return FaqItem.findOne({ _id: id, publishStatus: "published" }).lean();
+  if (isValidObjectId(slugOrId)) {
+    const byId = await FaqItem.findOne({ _id: slugOrId, publishStatus: "published" }).lean();
+    if (byId) return byId;
+  }
+  const published = await FaqItem.find({ publishStatus: "published" }).lean();
+  return published.find((item) => faqSlug(item.question) === slugOrId) || null;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {

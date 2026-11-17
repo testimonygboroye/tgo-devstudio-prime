@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
         if (existing) {
           existing.role = definition.role;
           existing.description = definition.responsibilities;
-          existing.workspaceId = workspaceIds.get(definition.department);
+          existing.workspaceId = workspaceIds.get(definition.department)!;
           existing.providerId = provider._id;
           existing.modelName = modelName;
           existing.systemInstructions = instructions;

@@ -1553,3 +1553,42 @@ main > section[class*="-intro"]:first-of-type p {
   }
   .stack-page .surface-card-inner { min-width: 0; }
 }
+
+/* CMS hero artwork must sit above the hero surface, not behind the section background. */
+.home-hero {
+  position: relative;
+  isolation: isolate;
+}
+.home-hero-cms-background {
+  z-index: 0 !important;
+  opacity: 1 !important;
+  mix-blend-mode: normal !important;
+  filter: saturate(.9) contrast(1.04);
+  background-position: center;
+  background-size: cover;
+}
+.home-hero-cms-background::after {
+  background:
+    linear-gradient(90deg, rgba(7, 9, 16, .76) 0%, rgba(7, 9, 16, .48) 48%, rgba(7, 9, 16, .3) 100%),
+    linear-gradient(0deg, rgba(9, 12, 19, .94) 0%, rgba(9, 12, 19, 0) 62%);
+}
+.home-hero > canvas {
+  z-index: 1;
+}
+.home-hero::after {
+  z-index: 1;
+}
+.home-hero-grid {
+  position: relative;
+  z-index: 2;
+}
+@media (max-width: 640px) {
+  .home-hero-cms-background {
+    background-position: center;
+    background-size: cover;
+  }
+  .home-hero-cms-background::after {
+    background:
+      linear-gradient(180deg, rgba(7, 9, 16, .62) 0%, rgba(7, 9, 16, .42) 52%, rgba(9, 12, 19, .88) 100%);
+  }
+}

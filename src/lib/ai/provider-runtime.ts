@@ -12,6 +12,37 @@ export interface AICompletion {
   fallbackUsed?: boolean;
 }
 
+type ProviderAttempt = { providerId: string; modelName: string };
+
+/** The AI employee's assigned provider/model is always primary; admin chatbot providers are ordered fallbacks. */
+export function buildProviderAttempts(
+  agentProviderId: string,
+  agentModel: string,
+  config?: {
+    providerId?: unknown;
+    modelName?: string;
+    fallbacks?: Array<{ providerId: unknown; modelName: string }>;
+    fallbackProviderId?: unknown;
+    fallbackModelName?: string;
+  } | null,
+): ProviderAttempt[] {
+  const configured: ProviderAttempt[] = [
+    ...(config?.providerId && config?.modelName
+      ? [{ providerId: String(config.providerId), modelName: config.modelName }]
+      : []),
+    ...((config?.fallbacks || []).map((item) => ({ providerId: String(item.providerId), modelName: item.modelName }))),
+    ...(config?.fallbacks?.length ? [] : (config?.fallbackProviderId && config?.fallbackModelName
+      ? [{ providerId: String(config.fallbackProviderId), modelName: config.fallbackModelName }]
+      : [])),
+  ];
+  const visited = new Set<string>();
+  return [{ providerId: agentProviderId, modelName: agentModel }, ...configured].filter((attempt) => {
+    if (!attempt.providerId || !attempt.modelName || visited.has(attempt.providerId)) return false;
+    visited.add(attempt.providerId);
+    return true;
+  });
+}
+
 export async function runProviderCompletion(providerId: string, model: string, system: string, prompt: string): Promise<AICompletion> {
   const provider = await AIProvider.findById(providerId).select("+encryptedApiKey");
   if (!provider || !provider.enabled || provider.lastTestStatus !== "success") throw new Error("AI provider is not enabled and connection-verified.");
@@ -51,20 +82,9 @@ export async function runProviderCompletionWithFallback(
   scope: AIChatbotScope = "admin",
 ): Promise<AICompletion> {
   const config = await AIChatbotConfig.findOne({ scope }).lean();
-  const configured = [
-    ...(config?.providerId && config?.modelName ? [{ providerId: String(config.providerId), modelName: config.modelName }] : []),
-    ...((config?.fallbacks || []).map((item) => ({ providerId: String(item.providerId), modelName: item.modelName }))),
-    ...(config?.fallbacks?.length ? [] : (config?.fallbackProviderId && config?.fallbackModelName
-      ? [{ providerId: String(config.fallbackProviderId), modelName: config.fallbackModelName }]
-      : [])),
-  ];
-  const attempts = configured.length ? [...configured, { providerId, modelName: model }] : [{ providerId, modelName: model }];
-  const visited = new Set<string>();
+  const attempts = buildProviderAttempts(providerId, model, config);
   const failures: string[] = [];
   for (const attempt of attempts) {
-    const key = attempt.providerId;
-    if (!attempt.providerId || !attempt.modelName || visited.has(key)) continue;
-    visited.add(key);
     try {
       const result = await runProviderCompletion(attempt.providerId, attempt.modelName, system, prompt);
       if (!result.text.trim()) throw new Error("Provider returned an empty response.");

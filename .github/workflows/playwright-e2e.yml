@@ -19,7 +19,7 @@ jobs:
     timeout-minutes: 25
     env:
       CI: "true"
-      BASE_URL: ${{ vars.TGO_E2E_BASE_URL || 'https://tgo-devstudio-prime.vercel.app' }}
+      BASE_URL: ${{ vars.TGO_E2E_BASE_URL || 'https://tgo-devstudio-prime-git-quality-full-pl-09fd46-testimonygboroye.vercel.app' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4

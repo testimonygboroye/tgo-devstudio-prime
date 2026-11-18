@@ -56,9 +56,13 @@ export default function SiteHeader({ settings }: { settings?: PublicSiteChromeSe
       { label: t("common.settings"), href: "/settings", icon: Settings },
     ]},
   ];
-  const configuredGroups = settings
-    ? settings.navigationGroups.map((group) => ({ title: group.title, links: group.links.filter((link) => link.href !== "/" && !isPublicSidebarExcluded(link.href)).map((link) => ({ label: link.label, href: link.href, icon: getNavigationIcon(link.icon) })) })).filter((group) => group.links.length > 0)
-    : DRAWER_NAV_GROUPS.filter((group) => group.title !== "Company");
+  const configuredGroups = (settings
+    ? settings.navigationGroups.map((group) => ({ title: group.title, links: group.links.filter((link) => link.href !== "/").map((link) => ({ label: link.label, href: link.href, icon: getNavigationIcon(link.icon) })) }))
+    : DRAWER_NAV_GROUPS.filter((group) => group.title !== "Company")
+  ).map((group) => ({
+    ...group,
+    links: group.links.filter((link) => !isPublicSidebarExcluded(link.href)),
+  })).filter((group) => group.links.length > 0);
   const NAV_GROUPS = [
     { title: "Company", links: [{ label: t("nav.home"), href: "/", icon: Layers }] },
     ...configuredGroups,

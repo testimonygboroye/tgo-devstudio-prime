@@ -5,6 +5,7 @@ import { unauthorizedResponse, forbiddenResponse } from "@/lib/auth/authorize";
 import { connectToDatabase } from "@/lib/db";
 import { UnifiedConversation, UnifiedMessage } from "@/models/UnifiedConversation";
 import User from "@/models/User";
+import Role from "@/models/Role";
 import { AIAgent, AITask } from "@/models/AIWorkforce";
 import EmployeeProfile from "@/models/EmployeeProfile";
 import { buildAccessibleAIAgentFilter } from "@/lib/messaging/aiAgentAccess";
@@ -18,6 +19,20 @@ const fail = (message: string, status = 400) => NextResponse.json({ status: "err
 const validKinds = ["direct", "group", "channel", "ai"] as const;
 
 type MessagingSession = NonNullable<Awaited<ReturnType<typeof getAuthenticatedSession>>>;
+
+async function getHumanTeamMemberIds(): Promise<Set<string>> {
+  const [employeeIds, founderRole] = await Promise.all([
+    EmployeeProfile.distinct("userId", { employmentStatus: "active", accessSuspendedByWorkforce: { $ne: true } }),
+    Role.findOne({ isFounderRole: true }).select("_id").lean(),
+  ]);
+  const founder = founderRole
+    ? await User.findOne({ role: founderRole._id, accountType: "staff", isBanned: { $ne: true } }).select("_id").lean()
+    : null;
+  return new Set([
+    ...employeeIds.map((id: unknown) => String(id)),
+    ...(founder?._id ? [String(founder._id)] : []),
+  ]);
+}
 async function getAccessibleAIAgentFilter(session: MessagingSession): Promise<Record<string, unknown> | null> {
   if (session.role?.isFounderRole) return { enabled: true };
   const employee = await EmployeeProfile.findOne({
@@ -75,7 +90,8 @@ export async function GET(request: NextRequest) {
   ]) : [];
   const unreadByConversation = new Map(unreadRows.map((row) => [String(row._id), Number(row.count || 0)]));
   const conversationsWithUnread = conversations.map((conversation) => ({ ...conversation, unreadCount: unreadByConversation.get(String(conversation._id)) || 0 }));
-  const people = await User.find({ accountType: "staff", isBanned: { $ne: true } }).select("name email role").sort({ name: 1 }).limit(300).lean();
+  const humanTeamMemberIds = await getHumanTeamMemberIds();
+  const people = await User.find({ _id: { $in: [...humanTeamMemberIds] }, accountType: "staff", isBanned: { $ne: true } }).select("name email role").sort({ name: 1 }).limit(300).lean();
   const agentFilter = await getAccessibleAIAgentFilter(session);
   const agents = agentFilter ? await AIAgent.find(agentFilter).select("name role department").sort({ name: 1 }).lean() : [];
   return NextResponse.json({ status: "ok", conversations: conversationsWithUnread, people, agents }, { headers: { "Cache-Control": "private, no-store" } });
@@ -97,7 +113,7 @@ export async function POST(request: NextRequest) {
     const ids = Array.isArray(body.memberIds) ? body.memberIds.filter((id): id is string => typeof id === "string" && Types.ObjectId.isValid(id)).slice(0, 100) : [];
     if (kind === "direct" && ids.length !== 1) return fail("A direct conversation requires exactly one other team member.");
     if (kind === "ai" && (!body.aiAgentId || !Types.ObjectId.isValid(String(body.aiAgentId)))) return fail("Select a valid AI employee.");
-    if (ids.length) { const validStaff = await User.countDocuments({ _id: { $in: ids }, accountType: "staff", isBanned: { $ne: true } }); if (validStaff !== ids.length) return fail("One or more selected members are not active staff accounts."); }
+    if (ids.length) { const humanTeamMemberIds = await getHumanTeamMemberIds(); const validStaff = ids.filter((id) => humanTeamMemberIds.has(id)).length; if (validStaff !== ids.length) return fail("Only the founder and active workforce employees can be added to team conversations."); }
     const members = Array.from(new Set([String(actorId), ...ids])).map((id) => new Types.ObjectId(id));
     const aiAgentId = String(body.aiAgentId || "");
     if (kind === "ai") {

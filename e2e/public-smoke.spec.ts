@@ -350,3 +350,19 @@ test("every published URL in the XML sitemap returns a successful page", async (
   expect(failures, "Published sitemap pages that failed to load").toEqual([]);
 });
 
+
+
+test("client and founder login surfaces fit narrow mobile viewports", async ({ page }) => {
+  for (const route of ["/client/login", "/client/register", "/command-deck/login"]) {
+    for (const width of [390, 360]) {
+      await page.setViewportSize({ width, height: 844 });
+      await page.goto(route, { waitUntil: "domcontentloaded" });
+      const dimensions = await page.evaluate(() => ({
+        viewport: window.innerWidth,
+        document: document.documentElement.scrollWidth,
+        body: document.body.scrollWidth,
+      }));
+      expect(Math.max(dimensions.document, dimensions.body) - dimensions.viewport, `${route} overflow at ${width}px`).toBeLessThanOrEqual(1);
+    }
+  }
+});

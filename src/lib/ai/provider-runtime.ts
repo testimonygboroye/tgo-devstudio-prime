@@ -3,6 +3,13 @@ import { AIProvider } from "@/models/AIWorkforce";
 import { AIChatbotConfig, type AIChatbotScope } from "@/models/AIChatbot";
 import { buildProviderAttempts } from "@/lib/ai/provider-attempts";
 
+export function resolveEnvironmentGeminiKey(name: string, provider: string, encryptedApiKey: string): string {
+  const environmentKey = provider === "google" && name === "Gemini environment provider"
+    ? process.env.GEMINI_API_KEY?.trim()
+    : "";
+  return environmentKey || decryptProviderSecret(encryptedApiKey);
+}
+
 export interface AICompletion {
   text: string;
   inputTokens: number;
@@ -16,14 +23,7 @@ export interface AICompletion {
 export async function runProviderCompletion(providerId: string, model: string, system: string, prompt: string): Promise<AICompletion> {
   const provider = await AIProvider.findById(providerId).select("+encryptedApiKey");
   if (!provider || !provider.enabled || provider.lastTestStatus !== "success") throw new Error("AI provider is not enabled and connection-verified.");
-  // The environment-managed Gemini connection is sourced from Vercel's
-  // server-side secret at runtime. Prefer the current environment value over
-  // a database snapshot so key rotation cannot silently strand the public,
-  // client and admin assistants on an old encrypted copy.
-  const environmentGeminiKey = provider.provider === "google" && provider.name === "Gemini environment provider"
-    ? process.env.GEMINI_API_KEY?.trim()
-    : "";
-  const key = environmentGeminiKey || decryptProviderSecret(provider.encryptedApiKey);
+  const key = resolveEnvironmentGeminiKey(provider.name, provider.provider, provider.encryptedApiKey);
   // Keep each provider attempt below the 50-second Hobby function ceiling so fallback providers can run.
   const timeout = AbortSignal.timeout(14000);
   if (provider.provider === "google") {

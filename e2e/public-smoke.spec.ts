@@ -321,15 +321,15 @@ test("founder and client portals expose the official Google sign-in option", asy
   await expect(page.getByText(/Your name and password are collected on the next screen/i)).toBeVisible();
 });
 
-test("every published URL in the XML sitemap returns a successful page", async ({ request, baseURL }) => {
+test("every published URL in the XML sitemap returns a successful page", async ({ request }) => {
   test.setTimeout(20 * 60 * 1000);
   const sitemapResponse = await request.get("/sitemap.xml");
   expect(sitemapResponse.status()).toBe(200);
   const xml = await sitemapResponse.text();
-  const sitemapUrls = [...xml.matchAll(/<loc>(.*?)<\\/loc>/g)]
+  const sitemapUrls = [...xml.matchAll(/<loc>(.*?)<\/loc>/g)]
     .map(match => match[1].replace(/&amp;/g, "&").trim())
     .filter(Boolean);
-  const origin = new URL(baseURL || "https://tgo-devstudio-prime.vercel.app").origin;
+  const origin = new URL(String(test.info().project.use.baseURL || "https://tgo-devstudio-prime.vercel.app")).origin;
   const internalUrls = [...new Set(sitemapUrls.filter(value => {
     try { return new URL(value).origin === origin; } catch { return false; }
   }))];

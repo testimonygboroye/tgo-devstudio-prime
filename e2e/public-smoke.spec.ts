@@ -71,7 +71,15 @@ test("public navigation hides legal pages on desktop and mobile while the footer
   await page.getByRole("button", { name: "Open menu" }).click();
   const mobileNavigation = page.locator('nav[aria-label="Main navigation"]:visible').last();
   await expect(mobileNavigation.getByRole("link", { name: legalLink })).toHaveCount(0);
-  await expect(page.locator("footer").getByRole("link", { name: legalLink }).first()).toBeVisible();
+  await expect(page.locator("footer").getByRole("link", { name: legalLink })).toHaveCount(5);
+});
+
+test("CMS hero background image is applied from saved homepage settings", async ({ page }) => {
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  const background = page.locator(".home-hero-cms-background");
+  await expect(background).toHaveCount(1);
+  const image = await background.evaluate(element => getComputedStyle(element).backgroundImage);
+  expect(image).toContain("res.cloudinary.com");
 });
 
 test("homepage hero copy and product visual never overlap", async ({ page }) => {

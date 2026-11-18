@@ -554,7 +554,7 @@ export async function POST(request: NextRequest) {
         } else if (task.operation === "github.file.write") {
           if (!agent.permissions.includes("github.file.write")) throw new Error("Agent lacks github.file.write permission.");
           operationResult = await writeGitHubFile({
-            repository: payload.repository, path: payload.path, branch: payload.branch,
+            repository: payload.repository, path: payload.path, branch: String(payload.branch || ("ai/" + String(task._id).slice(-8))),
             baseBranch: payload.baseBranch, content: String(payload.content || ""),
             message: String(payload.message || task.title),
           });

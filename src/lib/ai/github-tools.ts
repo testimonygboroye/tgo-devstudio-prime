@@ -30,7 +30,7 @@ async function credentials(repositoryValue: unknown) {
   const saved = decryptCredentials(row.credentialsCiphertext);
   const allowedRepositories = String(saved.allowedRepositories || "").split(/[\s,;]+/).map(x => x.trim()).filter(Boolean);
   if (!saved.token || !allowedRepositories.includes(repository)) throw new Error("This repository is not in the founder-approved GitHub allowlist.");
-  return { repository, token: saved.token, defaultBranch: String(saved.defaultBranch || "main") } as GitHubCredentials & { repository: string };
+  return { repository, token: saved.token, allowedRepositories, defaultBranch: String(saved.defaultBranch || "main") } as GitHubCredentials & { repository: string };
 }
 
 async function githubRequest<T>(token: string, path: string, init: RequestInit = {}): Promise<T> {
@@ -82,7 +82,8 @@ export async function writeGitHubFile(input: { repository: unknown; path: unknow
   const branchRef = "/repos/" + config.repository + "/git/ref/heads/" + encodeURIComponent(branch);
   try {
     await githubRequest(config.token, branchRef);
-  } catch {
+  } catch (error) {
+    if (!(error instanceof Error) || !error.message.includes("HTTP 404")) throw error;
     const base = await githubRequest<{ object: { sha: string } }>(config.token, "/repos/" + config.repository + "/git/ref/heads/" + encodeURIComponent(baseBranch));
     await githubRequest(config.token, "/repos/" + config.repository + "/git/refs", {
       method: "POST",
@@ -93,7 +94,7 @@ export async function writeGitHubFile(input: { repository: unknown; path: unknow
   try {
     const existing = await githubRequest<{ sha: string }>(config.token, "/repos/" + config.repository + "/contents/" + path.split("/").map(encodeURIComponent).join("/") + "?ref=" + encodeURIComponent(branch));
     sha = existing.sha;
-  } catch { /* create a new file on the AI branch */ }
+  } catch (error) { if (!(error instanceof Error) || !error.message.includes("HTTP 404")) throw error; /* create a new file on the AI branch */ }
   const content = input.content;
   if (!content.trim() || content.length > 100000) throw new Error("Generated file content must contain 1–100,000 characters.");
   const result = await githubRequest<{ content?: { path?: string; sha?: string; html_url?: string }; commit?: { sha?: string; html_url?: string } }>(

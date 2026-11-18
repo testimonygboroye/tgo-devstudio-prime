@@ -130,7 +130,7 @@ export default function WorkforceEmployeeAssignments() {
         <h2 className="font-semibold text-[var(--text-primary)]">Employee reporting, permissions & AI access</h2>
       </div>
       <p className="mt-1 text-xs text-[var(--text-muted)]">
-        Manage the employee's reporting line, department/team/position placement, business roles and founder-controlled access to AI teammates.
+        Manage the employee&apos;s reporting line, department/team/position placement, business roles and founder-controlled access to AI teammates.
       </p>
       {error && <p role="alert" className="mt-3 text-xs text-rose-300">{error}</p>}
       {notice && <p role="status" className="mt-3 text-xs text-emerald-300">{notice}</p>}
@@ -228,7 +228,7 @@ export default function WorkforceEmployeeAssignments() {
                 </label>)}
                 {!aiAgents.length && <p className="text-xs text-[var(--text-muted)]">No enabled AI teammates are available.</p>}
               </div>
-              <span className="mt-1 block text-[11px] text-[var(--text-muted)]">The employee's own AI counterpart remains available automatically. Only checked AI teammates are added.</span>
+              <span className="mt-1 block text-[11px] text-[var(--text-muted)]">The employee&apos;s own AI counterpart remains available automatically. Only checked AI teammates are added.</span>
             </div>}
             {aiAccessMode === "all" && <p className="mt-3 rounded-lg border border-amber-400/20 bg-amber-400/5 p-3 text-xs text-amber-200">
               This grants access to every enabled AI employee. Use only for a trusted manager or executive and review the grant periodically.

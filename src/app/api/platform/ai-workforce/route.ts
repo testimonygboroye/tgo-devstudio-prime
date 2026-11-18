@@ -22,6 +22,7 @@ import { getAIRoleBlueprint } from "@/lib/ai/role-blueprints";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 50;
 export async function GET() {
   const session = await getServerSession();
   if (!session) return NextResponse.json({ status: "error", message: "Authentication required." }, { status: 401 });

@@ -50,6 +50,7 @@ export async function POST(request: NextRequest) {
     if (user.googleSub && user.googleSub !== google.sub) return NextResponse.json({ error: "This Google account is not linked to this client account." }, { status: 403 });
 
     if (!user.googleSub) user.googleSub = google.sub;
+    if (!user.authProviders?.includes("google")) user.authProviders = [...(user.authProviders || []), "google"];
     if (!user.isEmailVerified) {
       user.isEmailVerified = true;
       user.emailVerifiedAt = new Date();

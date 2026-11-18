@@ -555,7 +555,7 @@ export async function POST(request: NextRequest) {
         task.completedAt = new Date();
         await task.save();
         const failedPayload = (task.operationPayload || {}) as Record<string, unknown>;
-        if (["communications", "ai_conversation"].includes(String(failedPayload.source || "")) && mongoose.Types.ObjectId.isValid(String(failedPayload.conversationId || ""))) {
+        if (["communications", "ai_conversation", "whatsapp_ai_conversation"].includes(String(failedPayload.source || "")) && mongoose.Types.ObjectId.isValid(String(failedPayload.conversationId || ""))) {
           const conversation = await UnifiedConversation.findById(String(failedPayload.conversationId));
           if (conversation) await UnifiedMessage.create({ conversationId: conversation._id, senderType: "system", senderLabel: "TGO system", body: "The assigned AI task failed. Review its execution record in AI Workforce." });
         }

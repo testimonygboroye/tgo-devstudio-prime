@@ -31,7 +31,19 @@ async function verify(providerId: string, credentials: Record<string, string>): 
     else if (providerId === "google_search_console") response = await fetch("https://searchconsole.googleapis.com/webmasters/v3/sites", { headers: { Authorization: "Bearer " + credentials.accessToken, accept: "application/json" }, signal: controller.signal, cache: "no-store" });
     else if (providerId === "google_analytics") response = await fetch("https://analyticsadmin.googleapis.com/v1beta/accountSummaries?pageSize=1", { headers: { Authorization: "Bearer " + credentials.accessToken, accept: "application/json" }, signal: controller.signal, cache: "no-store" });
     else if (providerId === "paystack") response = await fetch("https://api.paystack.co/balance", { headers: { Authorization: `Bearer ${credentials.secretKey}`, accept: "application/json" }, signal: controller.signal, cache: "no-store" });
-    else if (providerId === "github") response = await fetch("https://api.github.com/user", { headers: { Authorization: `Bearer ${credentials.token}`, accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" }, signal: controller.signal, cache: "no-store" });
+    else if (providerId === "github") {
+      response = await fetch("https://api.github.com/user", { headers: { Authorization: `Bearer ${credentials.token}`, accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" }, signal: controller.signal, cache: "no-store" });
+      if (!response.ok) throw new Error("GitHub rejected the configured token.");
+      const allowedRepositories = String(credentials.allowedRepositories || "").split(/[\\s,;]+/).map((value: string) => value.trim()).filter(Boolean);
+      if (!allowedRepositories.length) throw new Error("Add at least one owner/repository to the allowed repositories field.");
+      for (const repository of allowedRepositories) {
+        if (!/^[A-Za-z0-9_.-]+\\/[A-Za-z0-9_.-]+$/.test(repository)) throw new Error("Invalid allowed repository format: " + repository);
+        const repositoryResponse = await fetch("https://api.github.com/repos/" + repository, { headers: { Authorization: `Bearer ${credentials.token}`, accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" }, signal: controller.signal, cache: "no-store" });
+        if (!repositoryResponse.ok) throw new Error("GitHub token cannot access " + repository + " (HTTP " + repositoryResponse.status + ").");
+        const repositoryData = await repositoryResponse.json();
+        if (repositoryData.permissions?.push !== true) throw new Error("GitHub token needs Contents: Read and write access to " + repository + ".");
+      }
+    }
     else if (providerId === "vercel") response = await fetch("https://api.vercel.com/v2/user", { headers: { Authorization: `Bearer ${credentials.token}`, accept: "application/json" }, signal: controller.signal, cache: "no-store" });
     else if (providerId === "whatsapp_cloud_api") {
       const senderResponse = await fetch("https://graph.facebook.com/v22.0/" + encodeURIComponent(credentials.phoneNumberId) + "?fields=display_phone_number,verified_name", { headers: { Authorization: "Bearer " + credentials.accessToken, accept: "application/json" }, signal: controller.signal, cache: "no-store" });

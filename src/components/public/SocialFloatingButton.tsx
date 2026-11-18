@@ -42,14 +42,18 @@ export default function SocialFloatingButton() {
   const dragStateRef = useRef({ startX: 0, startY: 0, startPosX: 0, startPosY: 0, moved: false });
 
   useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored) as Position;
-        if (Number.isFinite(parsed.x) && Number.isFinite(parsed.y)) { setPosition(clampPosition(parsed)); return; }
-      }
-    } catch { /* use default position */ }
-    setPosition(getDefaultPosition());
+    const frame = window.requestAnimationFrame(() => {
+      let nextPosition = getDefaultPosition();
+      try {
+        const stored = window.localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored) as Position;
+          if (Number.isFinite(parsed.x) && Number.isFinite(parsed.y)) nextPosition = clampPosition(parsed);
+        }
+      } catch { /* use the safe default position */ }
+      setPosition(nextPosition);
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   useEffect(() => {
@@ -82,10 +86,9 @@ export default function SocialFloatingButton() {
   function handlePointerUp(event: React.PointerEvent<HTMLButtonElement>) {
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
     setIsDragging(false);
-    setPosition((prev) => {
-      if (prev) { try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(prev)); } catch { /* ignore storage errors */ } }
-      return prev;
-    });
+    if (position) {
+      try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(position)); } catch { /* ignore storage errors */ }
+    }
   }
   function handleButtonClick() {
     if (dragStateRef.current.moved) { dragStateRef.current.moved = false; return; }

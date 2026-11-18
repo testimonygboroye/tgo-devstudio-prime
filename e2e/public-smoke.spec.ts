@@ -48,11 +48,13 @@ test("public capabilities are deduplicated and expanded", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Cybersecurity & Application Security" })).toBeVisible();
 });
 
-test("public navigation hides legal pages while the footer keeps them", async ({ page }) => {
+test("public navigation hides legal pages on desktop and mobile while the footer keeps them", async ({ page }) => {
   const legalLink = /Privacy Policy|Consumer Terms|Usage Policy|Accessibility Statement|Data Deletion Requests/i;
-  await page.setViewportSize({ width: 390, height: 844 });
+  await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/", { waitUntil: "domcontentloaded" });
-  await expect(page.locator("header").getByRole("link", { name: legalLink })).toHaveCount(0);
+  await page.getByRole("button", { name: "Connect & Support" }).click();
+  await expect(page.locator('nav[aria-label="Main navigation"]').getByRole("link", { name: legalLink })).toHaveCount(0);
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole("button", { name: "Open menu" }).click();
   await expect(page.locator("header").getByRole("link", { name: legalLink })).toHaveCount(0);
   await expect(page.locator("footer").getByRole("link", { name: legalLink }).first()).toBeVisible();
@@ -218,11 +220,24 @@ test("public brand links point to TGO DevStudio accounts", async ({ page }) => {
   await expect(page.locator('footer a[aria-label="WhatsApp"]')).toHaveAttribute("href", "https://wa.me/2348132429504");
 });
 
-test("public AI assistant can be opened from the contact menu", async ({ page }) => {
+test("public AI assistant answers with published commercial package prices", async ({ page }) => {
+  test.setTimeout(90000);
   await page.goto("/");
   await page.getByRole("button", { name: "Accept", exact: true }).click({ timeout: 1500 }).catch(() => {});
   await page.getByRole("button", { name: "Open contact and assistant menu" }).click();
   await page.getByRole("button", { name: /AI Chatbot/ }).click();
-  await expect(page.locator('textarea[placeholder="Ask your question…"]')).toBeVisible();
-  await expect(page.getByText(/Public website assistant/)).toBeVisible();
+  const input = page.locator('textarea[placeholder="Ask your question…"]');
+  await expect(input).toBeVisible();
+  await input.fill("Give me the exact published NGN starting package names and prices for Custom Business Website, Custom Web Application, AI Solutions & Intelligent Automation, and Software Maintenance & Managed Support. Do not guess.");
+  await page.getByRole("button", { name: "Send message" }).click();
+  await expect(page.getByText(/temporarily unavailable|couldn't reach the AI service/i)).toHaveCount(0, { timeout: 60000 });
+  const transcript = page.locator('[role="region"][aria-label="TGO Website Assistant"]');
+  await expect(transcript).toContainText("Launch", { timeout: 60000 });
+  await expect(transcript).toContainText("Application MVP");
+  await expect(transcript).toContainText("Knowledge Assistant");
+  await expect(transcript).toContainText("Essential Care");
+  await expect(transcript).toContainText(/1,500,000/);
+  await expect(transcript).toContainText(/3,500,000/);
+  await expect(transcript).toContainText(/1,200,000/);
+  await expect(transcript).toContainText(/150,000/);
 });

@@ -536,7 +536,7 @@ export async function POST(request: NextRequest) {
         task.providerRequestId = completion.providerRequestId;
         task.completedAt = new Date();
         await task.save();
-        if (["communications", "ai_conversation"].includes(String(payload.source || "")) && mongoose.Types.ObjectId.isValid(String(payload.conversationId || ""))) {
+        if (["communications", "ai_conversation", "whatsapp_ai_conversation"].includes(String(payload.source || "")) && mongoose.Types.ObjectId.isValid(String(payload.conversationId || ""))) {
           const conversation = await UnifiedConversation.findOne({ _id: String(payload.conversationId), memberIds: task.requestedBy });
           if (conversation) {
             const reply = await UnifiedMessage.create({ conversationId: conversation._id, senderType: "ai", senderLabel: agent.name, body: completion.text.slice(0, 12000), status: "sent" });

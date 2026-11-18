@@ -219,13 +219,17 @@ export default function WorkforceEmployeeAssignments() {
                 <option value="all">All enabled AI teammates</option>
               </select>
             </label>
-            {aiAccessMode === "selected" && <label className="mt-3 block text-xs text-[var(--text-secondary)]">
-              Additional AI teammates
-              <select multiple className={input + " min-h-40"} value={aiAllowedAgentIds} onChange={(event) => setAIAllowedAgentIds(Array.from(event.target.selectedOptions).map((option) => option.value))}>
-                {aiAgents.map((agent) => <option key={agent.id} value={agent.id}>{agent.name} · {agent.department}</option>)}
-              </select>
-              <span className="mt-1 block text-[11px] text-[var(--text-muted)]">Hold Ctrl or Command to select multiple teammates. The employee's own AI counterpart remains available automatically.</span>
-            </label>}
+            {aiAccessMode === "selected" && <div className="mt-3">
+              <p className="text-xs font-medium text-[var(--text-secondary)]">Additional AI teammates</p>
+              <div className="mt-2 grid max-h-72 gap-2 overflow-y-auto rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-2)] p-3 sm:grid-cols-2">
+                {aiAgents.map((agent) => <label key={agent.id} className="flex min-w-0 items-start gap-2 rounded-lg p-2 text-xs text-[var(--text-secondary)] hover:bg-[var(--bg-surface)]">
+                  <input type="checkbox" className="mt-0.5 accent-violet-500" checked={aiAllowedAgentIds.includes(agent.id)} onChange={(event) => setAIAllowedAgentIds(current => event.target.checked ? [...new Set([...current, agent.id])] : current.filter(id => id !== agent.id))}/>
+                  <span className="min-w-0"><span className="block break-words font-medium text-[var(--text-primary)]">{agent.name}</span><span className="mt-0.5 block text-[10px] text-[var(--text-muted)]">{agent.department}</span></span>
+                </label>)}
+                {!aiAgents.length && <p className="text-xs text-[var(--text-muted)]">No enabled AI teammates are available.</p>}
+              </div>
+              <span className="mt-1 block text-[11px] text-[var(--text-muted)]">The employee's own AI counterpart remains available automatically. Only checked AI teammates are added.</span>
+            </div>}
             {aiAccessMode === "all" && <p className="mt-3 rounded-lg border border-amber-400/20 bg-amber-400/5 p-3 text-xs text-amber-200">
               This grants access to every enabled AI employee. Use only for a trusted manager or executive and review the grant periodically.
             </p>}

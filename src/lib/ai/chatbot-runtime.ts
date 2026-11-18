@@ -179,6 +179,7 @@ export async function handleAIChat(request:NextRequest,scope:Scope,method:"GET"|
  row.messages.push(userMessage);
  row.dailyRequests+=1;
  await row.save();
+ const providerFailures: Array<{ providerId: string; modelName: string; error: string }> = [];
  try{
   const configuredFallbacks = Array.isArray(config.fallbacks) && config.fallbacks.length
    ? config.fallbacks
@@ -188,7 +189,6 @@ export async function handleAIChat(request:NextRequest,scope:Scope,method:"GET"|
   const attempts = [{ providerId: String(config.providerId), modelName: config.modelName }, ...configuredFallbacks.map((item) => ({ providerId: String(item.providerId), modelName: item.modelName }))];
   let completion: Awaited<ReturnType<typeof runProviderCompletion>> | null = null;
   let fallbackUsed = false;
-  const providerFailures: Array<{ providerId: string; modelName: string; error: string }> = [];
   for (let index = 0; index < attempts.length; index += 1) {
    const attempt = attempts[index];
    try {
@@ -223,7 +223,27 @@ export async function handleAIChat(request:NextRequest,scope:Scope,method:"GET"|
   if(row.messages.length>80)row.messages=row.messages.slice(-80);
   await row.save();
   return attachPublicCookie(json({message:assistantMessage,sources:context.sources.slice(0,20),usage:{inputTokens:completion.inputTokens,outputTokens:completion.outputTokens,fallbackUsed}}),scope,token);
- }catch{
+ }catch(error){
+  const failureSummary = (error instanceof Error ? error.message : "Unknown AI request failure")
+   .replace(/(?:AIza[0-9A-Za-z_-]{20,}|sk-ant-[0-9A-Za-z_-]{16,}|sk-[0-9A-Za-z_-]{16,})/g, "[redacted]")
+   .slice(0, 300);
+  try {
+   await writePlatformAuditEvent({
+    actorType: "system",
+    actorId: scope === "public" ? "anonymous-public" : String(auth.session?.user._id || "authenticated-user"),
+    actorLabel: "TGO AI Gateway",
+    action: "ai.chatbot.request_failed",
+    module: "ai-chatbots",
+    targetType: "AIChatSession",
+    targetId: String(row._id),
+    outcome: "failure",
+    metadata: {
+     scope,
+     failure: failureSummary,
+     attempts: providerFailures.map((attempt) => ({ providerId: attempt.providerId, modelName: attempt.modelName, error: attempt.error.replace(/(?:AIza[0-9A-Za-z_-]{20,}|sk-ant-[0-9A-Za-z_-]{16,}|sk-[0-9A-Za-z_-]{16,})/g, "[redacted]").slice(0, 300) })),
+    },
+   });
+  } catch { /* diagnostics must never interrupt the assistant's safe failure response */ }
   row.messages.push({messageId:randomUUID(),role:"assistant",content:"I couldn't reach the AI service just now. Your business records have not been changed. Please try again shortly or contact the TGO team.",inputTokens:0,outputTokens:0,createdAt:new Date()});
   if(row.messages.length>80)row.messages=row.messages.slice(-80);
   await row.save();

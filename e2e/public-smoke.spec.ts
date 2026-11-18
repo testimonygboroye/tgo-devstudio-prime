@@ -320,3 +320,33 @@ test("founder and client portals expose the official Google sign-in option", asy
   await page.goto("/client/register", { waitUntil: "domcontentloaded" });
   await expect(page.getByText(/Your name and password are collected on the next screen/i)).toBeVisible();
 });
+
+test("every published URL in the XML sitemap returns a successful page", async ({ request, baseURL }) => {
+  test.setTimeout(20 * 60 * 1000);
+  const sitemapResponse = await request.get("/sitemap.xml");
+  expect(sitemapResponse.status()).toBe(200);
+  const xml = await sitemapResponse.text();
+  const sitemapUrls = [...xml.matchAll(/<loc>(.*?)<\\/loc>/g)]
+    .map(match => match[1].replace(/&amp;/g, "&").trim())
+    .filter(Boolean);
+  const origin = new URL(baseURL || "https://tgo-devstudio-prime.vercel.app").origin;
+  const internalUrls = [...new Set(sitemapUrls.filter(value => {
+    try { return new URL(value).origin === origin; } catch { return false; }
+  }))];
+  expect(internalUrls.length).toBeGreaterThan(100);
+  const failures: string[] = [];
+  for (let index = 0; index < internalUrls.length; index += 8) {
+    const batch = internalUrls.slice(index, index + 8);
+    const results = await Promise.all(batch.map(async url => {
+      try {
+        const response = await request.get(url, { timeout: 20000 });
+        return response.status() < 400 ? null : url + " → HTTP " + response.status();
+      } catch (error) {
+        return url + " → " + (error instanceof Error ? error.message : "request failed");
+      }
+    }));
+    failures.push(...results.filter((value): value is string => Boolean(value)));
+  }
+  expect(failures, "Published sitemap pages that failed to load").toEqual([]);
+});
+

@@ -607,8 +607,7 @@ export async function POST(request: NextRequest) {
           generatedCodeSummary = generated.summary;
           generatedCodePullRequestUrl = pullRequest.url;
           operationResult = { repository: fileWrite.repository, path: fileWrite.path, branch: fileWrite.branch, commitSha: fileWrite.commitSha, commitUrl: fileWrite.commitUrl, pullRequestNumber: pullRequest.pullRequestNumber, pullRequestUrl: pullRequest.url, pullRequestTitle: pullRequest.title, draft: true, summary: generated.summary };
-        }
-       } else if (task.operation === "github.pull_request.create") {
+        } else if (task.operation === "github.pull_request.create") {
           if (!agent.permissions.includes("github.pull_request.create")) throw new Error("Agent lacks github.pull_request.create permission.");
           operationResult = await createGitHubPullRequest({
             repository: payload.repository, branch: payload.branch, baseBranch: payload.baseBranch,

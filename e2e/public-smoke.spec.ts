@@ -61,10 +61,14 @@ test("public navigation hides legal pages on desktop and mobile while the footer
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/", { waitUntil: "domcontentloaded" });
   await page.getByRole("button", { name: "Connect & Support" }).click();
-  await expect(page.locator('nav[aria-label="Main navigation"]').getByRole("link", { name: legalLink })).toHaveCount(0);
+  const desktopNavigation = page.locator('nav[aria-label="Main navigation"]:visible').first();
+  await expect(desktopNavigation.getByRole("link", { name: legalLink })).toHaveCount(0);
+
   await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/", { waitUntil: "domcontentloaded" });
   await page.getByRole("button", { name: "Open menu" }).click();
-  await expect(page.locator("header").getByRole("link", { name: legalLink })).toHaveCount(0);
+  const mobileNavigation = page.locator('nav[aria-label="Main navigation"]:visible').last();
+  await expect(mobileNavigation.getByRole("link", { name: legalLink })).toHaveCount(0);
   await expect(page.locator("footer").getByRole("link", { name: legalLink }).first()).toBeVisible();
 });
 
@@ -99,14 +103,15 @@ test("mobile navigation drawer opens, expands and navigates", async ({ page }) =
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/", { waitUntil: "domcontentloaded" });
   await page.getByRole("button", { name: "Open menu" }).click();
-  await page.locator("summary").filter({ hasText: "Capabilities & Work" }).click();
-  const services = page.getByRole("link", { name: "Services", exact: true });
-  await expect(services).toBeVisible();
+  let mobileNavigation = page.locator('nav[aria-label="Main navigation"]:visible').last();
+  await mobileNavigation.locator("summary").filter({ hasText: "Capabilities & Work" }).click();
+  await expect(mobileNavigation.getByRole("link", { name: "Services", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Close menu" }).click();
   await expect(page.locator('nav[aria-label="Main navigation"]').last()).toHaveAttribute("aria-hidden", "true");
   await page.getByRole("button", { name: "Open menu" }).click();
-  await page.locator("summary").filter({ hasText: "Capabilities & Work" }).click();
-  await page.getByRole("link", { name: "Services", exact: true }).click();
+  mobileNavigation = page.locator('nav[aria-label="Main navigation"]:visible').last();
+  await mobileNavigation.locator("summary").filter({ hasText: "Capabilities & Work" }).click();
+  await mobileNavigation.getByRole("link", { name: "Services", exact: true }).click();
   await expect(page).toHaveURL(/\/services$/);
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 });
@@ -120,7 +125,7 @@ test("contact form blocks empty submissions without creating an enquiry", async 
   await expect(page).toHaveURL(/\/contact$/);
 });
 
-test("homepage featured media loads and fits its frame", async ({ page }) => {
+test("homepage featured media fills its card without cropping the source aspect ratio", async ({ page }) => {
   await page.goto("/", { waitUntil: "domcontentloaded" });
   const frame = page.locator(".homepage-media-frame").first();
   if (await frame.count() === 0) test.skip(true, "No homepage media is configured.");
@@ -128,7 +133,7 @@ test("homepage featured media loads and fits its frame", async ({ page }) => {
   await page.waitForFunction(() => {
     const media = document.querySelector(".homepage-media-frame .homepage-media-content");
     if (media instanceof HTMLImageElement) return media.complete && media.naturalWidth > 0;
-    if (media instanceof HTMLVideoElement) return media.readyState >= 1;
+    if (media instanceof HTMLVideoElement) return media.readyState >= 1 && media.videoWidth > 0;
     return Boolean(media);
   }, undefined, { timeout: 15000 });
   const result = await frame.evaluate(element => {
@@ -136,11 +141,18 @@ test("homepage featured media loads and fits its frame", async ({ page }) => {
     if (!media) return null;
     const frameRect = element.getBoundingClientRect();
     const mediaRect = media.getBoundingClientRect();
-    return { frameWidth: frameRect.width, mediaWidth: mediaRect.width };
+    const naturalRatio = media instanceof HTMLImageElement
+      ? media.naturalWidth / media.naturalHeight
+      : media instanceof HTMLVideoElement
+        ? media.videoWidth / media.videoHeight
+        : 0;
+    return { frameWidth: frameRect.width, mediaWidth: mediaRect.width, renderedRatio: mediaRect.width / mediaRect.height, naturalRatio, objectFit: getComputedStyle(media).objectFit };
   });
   expect(result).not.toBeNull();
   expect(result!.mediaWidth).toBeGreaterThan(0);
   expect(result!.frameWidth - result!.mediaWidth).toBeLessThanOrEqual(2);
+  expect(result!.objectFit).toBe("contain");
+  if (result!.naturalRatio > 0) expect(Math.abs(result!.renderedRatio - result!.naturalRatio)).toBeLessThan(0.02);
 });
 
 test("mobile public routes have no horizontal overflow", async ({ page }) => {
@@ -158,7 +170,7 @@ test("mobile public routes have no horizontal overflow", async ({ page }) => {
   }
 });
 
-for (const route of ["/client/login", "/command-deck/login"]) {
+for (const route of ["/client/login", "/command-deck/login", "/admin/login", "/workforce/login"]) {
   test(`portal login route is reachable: ${route}`, async ({ page }) => {
     const response = await page.goto(route, { waitUntil: "domcontentloaded" });
     expect(response).not.toBeNull();
@@ -167,13 +179,24 @@ for (const route of ["/client/login", "/command-deck/login"]) {
   });
 }
 
-test("workforce route redirects unauthenticated visitors to the correct sign-in", async ({ page }) => {
-  const response = await page.goto("/workforce", { waitUntil: "domcontentloaded" });
-  expect(response).not.toBeNull();
-  expect(response!.status()).toBeLessThan(400);
-  const finalUrl = new URL(page.url());
-  expect(finalUrl.pathname).toBe("/command-deck/login");
-  expect(finalUrl.searchParams.get("redirect")).toBe("/workforce");
+test("workforce routes redirect unauthenticated visitors to the correct sign-in", async ({ page }) => {
+  for (const route of ["/workforce", "/workforce/login"]) {
+    const response = await page.goto(route, { waitUntil: "domcontentloaded" });
+    expect(response).not.toBeNull();
+    expect(response!.status()).toBeLessThan(400);
+    const finalUrl = new URL(page.url());
+    expect(finalUrl.pathname).toBe("/command-deck/login");
+    expect(finalUrl.searchParams.get("redirect")).toBe("/workforce");
+  }
+});
+
+test("legacy admin routes redirect to the Founder Command Deck", async ({ page }) => {
+  for (const route of ["/admin", "/admin/login"]) {
+    const response = await page.goto(route, { waitUntil: "domcontentloaded" });
+    expect(response).not.toBeNull();
+    expect(response!.status()).toBeLessThan(400);
+    expect(new URL(page.url()).pathname).toBe("/command-deck/login");
+  }
 });
 
 test("custom 404 page provides useful recovery links", async ({ page }) => {
@@ -235,12 +258,13 @@ test("homepage AI chat is usable on mobile and returns real published package pr
   await page.getByRole("button", { name: "Accept", exact: true }).click({ timeout: 1500 }).catch(() => {});
   await page.getByRole("button", { name: "Open contact and assistant menu" }).click();
   await page.getByRole("button", { name: /AI Chatbot/ }).click();
-  const transcript = page.locator('[role="region"][aria-label="TGO Website Assistant"]');
+  const transcript = page.getByRole("region", { name: "TGO Website Assistant" });
   await expect(transcript).toBeVisible();
   const bounds = await transcript.boundingBox();
   expect(bounds).not.toBeNull();
+  const viewportWidth = await page.evaluate(() => document.documentElement.clientWidth);
   expect(bounds!.x).toBeGreaterThanOrEqual(0);
-  expect(bounds!.width).toBeLessThanOrEqual(390);
+  expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(viewportWidth);
   expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(844);
   const input = page.locator('textarea[placeholder="Ask your question…"]');
   await expect(input).toBeVisible();

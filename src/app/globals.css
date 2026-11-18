@@ -1691,3 +1691,9 @@ main > section[class*="-intro"]:first-of-type p {
 @media(max-width:767px) {
   aside[aria-label="Admin navigation"], aside:has(nav[aria-label="Admin navigation"]) { min-height:100%; }
 }
+
+
+/* Uploaded homepage media keeps its native ratio; cards grow with the asset instead of cropping it. */
+.homepage-media-frame { aspect-ratio:auto !important; height:auto !important; min-height:0 !important; }
+.homepage-media-image-wrap { aspect-ratio:auto !important; height:auto !important; min-height:0 !important; padding:0 !important; overflow:hidden; }
+.homepage-media-content, .homepage-media-image, .homepage-media-video { position:relative !important; inset:auto !important; display:block !important; width:100% !important; height:auto !important; max-height:none !important; aspect-ratio:auto !important; object-fit:contain !important; object-position:center center !important; }

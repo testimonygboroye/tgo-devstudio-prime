@@ -523,7 +523,7 @@ export async function POST(request: NextRequest) {
         } else if (task.operation === "integrations.status.read") {
           if (!agent.permissions.includes("integrations.status.read")) throw new Error("Agent lacks integrations.status.read permission.");
           const [connections, providers] = await Promise.all([
-            IntegrationConnection.find({}).select("providerId displayName category status lastVerifiedAt lastError").sort({ category: 1, displayName: 1 }).lean(),
+            IntegrationConnection.find({}).select("providerId displayName category status lastVerifiedAt").sort({ category: 1, displayName: 1 }).lean(),
             AIProvider.find({}).select("name provider enabled lastTestStatus lastTestedAt").sort({ name: 1 }).lean(),
           ]);
           operationResult = {
@@ -534,7 +534,6 @@ export async function POST(request: NextRequest) {
               category: connection.category,
               status: connection.status,
               lastVerifiedAt: connection.lastVerifiedAt,
-              lastError: String(connection.lastError || "").slice(0, 240),
             })),
             aiProviders: providers.map(provider => ({
               name: provider.name,

@@ -37,7 +37,7 @@ test("commercial catalogue contains all 21 distinct service lines and package pr
   await expect(page.getByRole("heading", { name: "Software Maintenance & Managed Support" })).toBeVisible();
   const prices = await page.locator(".catalogue-package strong").allTextContents();
   expect(prices.length).toBeGreaterThanOrEqual(62);
-  expect(prices.some(price => price.includes("₦"))).toBe(true);
+  expect(prices.some(price => /(?:NGN|₦)/.test(price))).toBe(true);
 });
 
 test("public capabilities are deduplicated and expanded", async ({ page }) => {

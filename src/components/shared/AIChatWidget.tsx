@@ -26,7 +26,10 @@ export default function AIChatWidget({ scope, adminBasePath = "/admin", showLaun
 
   useEffect(() => {
     if (!showLauncher) return;
-    setLauncherPos({ x: Math.max(12, window.innerWidth - 72), y: Math.max(12, window.innerHeight - 72) });
+    const frame = window.requestAnimationFrame(() => {
+      setLauncherPos({ x: Math.max(12, window.innerWidth - 72), y: Math.max(12, window.innerHeight - 72) });
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [showLauncher]);
 
   useEffect(() => {

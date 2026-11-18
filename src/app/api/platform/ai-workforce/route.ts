@@ -188,7 +188,9 @@ export async function POST(request: NextRequest) {
         const existing = await AIAgent.findOne({ assignedUserId: personId });
         if (existing) { counterpartExistingCount += 1; continue; }
         const department = String((employee.departmentId as unknown as { name?: string })?.name || "General Operations");
-        const position = String((employee.positionId as unknown as { title?: string })?.title || "Team Member");
+        const positionDoc = employee.positionId as unknown as { _id?: mongoose.Types.ObjectId; title?: string };
+        const position = String(positionDoc?.title || "Team Member");
+        const blueprint = getAIRoleBlueprint(position, department);
         let workspaceId = workspaceIds.get(department);
         if (!workspaceId) {
           const workspace = await AIWorkspace.findOneAndUpdate(
@@ -201,15 +203,16 @@ export async function POST(request: NextRequest) {
         }
         const employeeName = String(person?.name || employee.employeeCode || "Employee").trim();
         await AIAgent.create({
-          name: (employeeName + " — AI Counterpart").slice(0, 100),
-          role: (position + " AI Counterpart").slice(0, 100),
+          name: (employeeName + " — AI " + position).slice(0, 100),
+          role: position,
           department,
-          description: "Private AI counterpart assigned to one active employee. No business tools are granted by default.",
+          description: "Private AI counterpart assigned to one active employee. " + blueprint.description,
           workspaceId,
+          positionId: positionDoc?._id || employee.positionId,
           assignedUserId: personId,
           providerId: provider._id,
           modelName,
-          systemInstructions: "You are the private AI counterpart for " + employeeName + ", a TGO DevStudio " + position + " in " + department + ". Support their authorised work, planning, drafting and analysis. Do not disclose another employee's information. You have no business-operation permissions unless the founder grants them separately. Never invent facts, credentials, financial data or completed actions. Escalate requests outside the employee's scope to the founder.",
+          systemInstructions: blueprint.systemInstructions + "\n\nPRIVATE ASSIGNMENT: You are assigned exclusively to the real employee " + employeeName + ". Do not disclose their private information to another employee. This personal counterpart remains limited to the same role scope and approved tools.",
           permissions: [],
           requiresApproval: true,
           maxDailyTokens: 50000,

@@ -17,6 +17,8 @@ import DeliveryProject from "@/models/DeliveryProject";
 import DeliveryMilestone from "@/models/DeliveryMilestone";
 import DeliveryTask from "@/models/DeliveryTask";
 import ProjectDeliverable from "@/models/ProjectDeliverable";
+import Position from "@/models/Position";
+import { getAIRoleBlueprint } from "@/lib/ai/role-blueprints";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,17 +32,19 @@ export async function GET() {
       userId: session.user._id,
       employmentStatus: "active",
       accessSuspendedByWorkforce: { $ne: true },
-    }).populate("departmentId", "name").lean();
+    }).populate("departmentId", "name").populate("positionId", "title").lean();
     if (!employee) return NextResponse.json({ status: "error", message: "Active employee access is required." }, { status: 403 });
-    const departmentName = String((employee.departmentId as unknown as { name?: string })?.name || "");
-    const scope = [
-      { assignedUserId: session.user._id },
-      ...(departmentName ? [{ department: departmentName }] : []),
-      { department: "Customer Support" },
-      { department: "Website Operations" },
-    ];
+    const positionRef = employee.positionId as unknown as { _id?: mongoose.Types.ObjectId } | mongoose.Types.ObjectId | null;
+    const positionId = String((positionRef && typeof positionRef === "object" && "_id" in positionRef ? positionRef._id : positionRef) || "");
+    const hasPrivateCounterpart = Boolean(await AIAgent.exists({ assignedUserId: session.user._id, enabled: true }));
+    const scope = hasPrivateCounterpart
+      ? [{ assignedUserId: session.user._id }]
+      : [
+          { assignedUserId: session.user._id },
+          ...(mongoose.isValidObjectId(positionId) ? [{ positionId: new mongoose.Types.ObjectId(positionId), assignedUserId: { $exists: false } }] : []),
+        ];
     const agents = await AIAgent.find({ enabled: true, $or: scope })
-      .select("name role department description workspaceId assignedUserId providerId modelName permissions requiresApproval maxDailyTokens enabled")
+      .select("name role department description workspaceId positionId assignedUserId providerId modelName permissions requiresApproval maxDailyTokens enabled")
       .populate("providerId", "name provider")
       .sort({ department: 1, name: 1 }).lean();
     const agentIds = agents.map((agent) => agent._id);
@@ -69,7 +73,7 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({}));
   const actorId = String(session.user._id);
   const isFounder = Boolean(session.role?.isFounderRole);
-  let employeeScope: { department: string; userId: string } | null = null;
+  let employeeScope: { positionId: string; privateCounterpartOnly: boolean } | null = null;
   if (!isFounder) {
     const employee = await EmployeeProfile.findOne({
       userId: session.user._id,
@@ -77,19 +81,19 @@ export async function POST(request: NextRequest) {
       accessSuspendedByWorkforce: { $ne: true },
     }).populate("departmentId", "name").lean();
     if (!employee) return NextResponse.json({ status: "error", message: "Active employee access is required." }, { status: 403 });
-    employeeScope = {
-      department: String((employee.departmentId as unknown as { name?: string })?.name || ""),
-      userId: actorId,
-    };
+    const positionRef = employee.positionId as unknown as { _id?: mongoose.Types.ObjectId } | mongoose.Types.ObjectId | null;
+    const positionId = String((positionRef && typeof positionRef === "object" && "_id" in positionRef ? positionRef._id : positionRef) || "");
+    const hasPrivateCounterpart = Boolean(await AIAgent.exists({ assignedUserId: session.user._id, enabled: true }));
+    employeeScope = { positionId, privateCounterpartOnly: hasPrivateCounterpart };
     if (!["task.enqueue", "task.delegate"].includes(String(body.action || ""))) {
       return NextResponse.json({ status: "error", message: "This action is reserved for the founder." }, { status: 403 });
     }
-    const visibleAgentScope = [
-      { assignedUserId: session.user._id },
-      ...(employeeScope.department ? [{ department: employeeScope.department }] : []),
-      { department: "Customer Support" },
-      { department: "Website Operations" },
-    ];
+    const visibleAgentScope = employeeScope.privateCounterpartOnly
+      ? [{ assignedUserId: session.user._id }]
+      : [
+          { assignedUserId: session.user._id },
+          ...(mongoose.isValidObjectId(employeeScope.positionId) ? [{ positionId: new mongoose.Types.ObjectId(employeeScope.positionId), assignedUserId: { $exists: false } }] : []),
+        ];
     if (body.action === "task.enqueue") {
       const allowedAgent = await AIAgent.exists({ _id: body.agentId, enabled: true, $or: visibleAgentScope });
       if (!allowedAgent) return NextResponse.json({ status: "error", message: "That AI employee is outside your assigned workspace." }, { status: 403 });
@@ -129,11 +133,16 @@ export async function POST(request: NextRequest) {
 
       const workspaceIds = new Map<string, mongoose.Types.ObjectId>();
       for (const department of [...new Set(definitions.map((item) => item.department))]) {
-        const workspace = await AIWorkspace.findOneAndUpdate(
-          { name: department + " Workspace", department, createdBy: actorId },
-          { $setOnInsert: { name: department + " Workspace", department, description: "Founder-governed AI collaboration workspace for " + department + ".", active: true, createdBy: actorId } },
-          { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
-        );
+        let workspace = await AIWorkspace.findOne({ name: department + " Workspace", department, createdBy: actorId });
+        if (!workspace) {
+          workspace = await AIWorkspace.create({
+            name: department + " Workspace",
+            department,
+            description: "Founder-governed AI collaboration workspace for " + department + ".",
+            active: true,
+            createdBy: actorId,
+          });
+        }
         workspaceIds.set(department, workspace._id as mongoose.Types.ObjectId);
       }
 

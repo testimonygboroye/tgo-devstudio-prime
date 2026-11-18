@@ -5,6 +5,7 @@ const MONGODB_URI = process.env.MONGODB_URI;
 interface MongooseCache {
   conn: typeof mongoose | null;
   promise: Promise<typeof mongoose> | null;
+  lastHealthCheckAt?: number;
 }
 
 declare global {
@@ -75,9 +76,25 @@ export async function connectToDatabase(): Promise<typeof mongoose> {
   const readyState = mongoose.connection.readyState;
 
   if (readyState === 1) {
-    cached.conn = mongoose;
-    await ensureIdentityIndexes();
-    return mongoose;
+    const now = Date.now();
+    if (now - Number(cached.lastHealthCheckAt || 0) > 15_000) {
+      try {
+        const database = mongoose.connection.db;
+        if (!database) throw new Error("MongoDB connection has no database handle.");
+        await database.admin().ping({ maxTimeMS: 5_000 });
+        cached.lastHealthCheckAt = now;
+      } catch {
+        cached.conn = null;
+        cached.promise = null;
+        cached.lastHealthCheckAt = 0;
+        await mongoose.disconnect().catch(() => undefined);
+      }
+    }
+    if (mongoose.connection.readyState === 1) {
+      cached.conn = mongoose;
+      await ensureIdentityIndexes();
+      return mongoose;
+    }
   }
 
   // Reuse an in-flight connection attempt, but never retain a rejected or
@@ -92,18 +109,21 @@ export async function connectToDatabase(): Promise<typeof mongoose> {
 
   cached.promise = mongoose.connect(MONGODB_URI, {
     bufferCommands: false,
-    serverSelectionTimeoutMS: 10000,
-    connectTimeoutMS: 10000,
+    serverSelectionTimeoutMS: 20000,
+    connectTimeoutMS: 20000,
+    socketTimeoutMS: 45000,
     maxPoolSize: 5,
     minPoolSize: 0,
-    maxIdleTimeMS: 20000,
+    maxIdleTimeMS: 60000,
   }).then(async () => {
     cached.conn = mongoose;
+    cached.lastHealthCheckAt = Date.now();
     await ensureIdentityIndexes();
     return mongoose;
   }).catch((error: unknown) => {
     cached.conn = null;
     cached.promise = null;
+    cached.lastHealthCheckAt = 0;
     throw error;
   });
 

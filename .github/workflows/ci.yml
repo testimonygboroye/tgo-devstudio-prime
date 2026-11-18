@@ -8,12 +8,18 @@ on:
   push:
     branches: [main, phase-1/core-platform-foundation, phase-2/founder-control-centre, phase-3/business-ecosystem-administration, platform/phase-4-client-crm-portal, platform/phase-5-workforce-management, platform/phase-6-universal-workspace, platform/client-portal-phase-7, feature/phase-14-executive-intelligence]
   workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Public, reachable deployment URL to run the browser regression suite against."
+        required: false
+        default: "https://tgo-devstudio-prime.vercel.app"
   pull_request:
     branches: [main]
 
 jobs:
   quality:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     services:
       mongodb:
         image: mongo:7.0-jammy
@@ -222,6 +228,21 @@ jobs:
           'src/app/(public)/testimonials/[id]/page.tsx'
           src/components/public/HeroMoment.tsx
           src/components/public/HomepageMediaExperience.tsx
+          src/components/public/SocialFloatingButton.tsx
+          src/lib/constants/publicSiteDefaults.ts
+          'src/app/(public)/contact/page.tsx'
+          src/components/admin/AdminTopBar.tsx
+          src/components/admin/platform/ExecutiveIntelligence.tsx
+          'src/app/admin/(shell)/messages/CommunicationsHub.tsx'
+          src/models/TeamMember.ts
+          src/lib/db.ts
+          src/lib/ai/chatbot-runtime.ts
+          src/lib/integrations/credentials.ts
+          src/app/api/platform/integrations/test/route.ts
+          src/app/api/platform/integrations/google/authorize/route.ts
+          src/app/api/platform/integrations/google/callback/route.ts
+          src/app/api/platform/messaging/route.ts
+          'src/app/(public)/faq/[slug]/page.tsx'
           src/lib/i18n/translatableFields.ts
 
       - name: Type check and production build
@@ -230,3 +251,44 @@ jobs:
           CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
           CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
           CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+
+      - name: Wait for the merged production release to become live
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          set -euo pipefail
+          BASE_URL="${{ vars.TGO_E2E_BASE_URL || 'https://tgo-devstudio-prime.vercel.app' }}"
+          for attempt in $(seq 1 60); do
+            if curl --silent --show-error --fail "$BASE_URL/faq/who-is-behind-tgo-devstudio" | grep -q "Who is behind TGO DevStudio?"; then
+              echo "The merged release is live at $BASE_URL."
+              exit 0
+            fi
+            echo "Waiting for the Vercel production deployment ($attempt/60)..."
+            sleep 10
+          done
+          echo "The merged release did not become live within ten minutes."
+          exit 1
+
+      - name: Install Playwright runner
+        if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+        run: npm install --no-save --package-lock=false @playwright/test
+
+      - name: Install Chromium
+        if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+        run: npx playwright install --with-deps chromium
+
+      - name: Run browser E2E against the explicitly selected public deployment
+        if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+        run: npx playwright test
+        env:
+          BASE_URL: ${{ inputs.base_url || vars.TGO_E2E_BASE_URL || 'https://tgo-devstudio-prime.vercel.app' }}
+
+      - name: Upload browser test evidence
+        if: always() && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main'))
+        uses: actions/upload-artifact@v4
+        with:
+          name: tgo-playwright-e2e-report
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7

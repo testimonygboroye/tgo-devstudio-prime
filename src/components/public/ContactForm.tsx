@@ -76,8 +76,11 @@ export default function ContactForm() {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label className="block text-sm text-neutral-400">Full Name</label>
+          <label htmlFor="contact-name" className="block text-sm text-neutral-400">Full Name</label>
           <input
+            id="contact-name"
+            name="name"
+            autoComplete="name"
             required
             value={name}
             onChange={(event) => setName(event.target.value)}
@@ -85,8 +88,11 @@ export default function ContactForm() {
           />
         </div>
         <div>
-          <label className="block text-sm text-neutral-400">Email</label>
+          <label htmlFor="contact-email" className="block text-sm text-neutral-400">Email</label>
           <input
+            id="contact-email"
+            name="email"
+            autoComplete="email"
             required
             type="email"
             value={email}
@@ -97,8 +103,10 @@ export default function ContactForm() {
       </div>
 
       <div>
-        <label className="block text-sm text-neutral-400">Topic</label>
+        <label htmlFor="contact-subject" className="block text-sm text-neutral-400">Topic</label>
         <select
+          id="contact-subject"
+          name="subject"
           value={subject}
           onChange={(event) => setSubject(event.target.value)}
           className="mt-1 w-full rounded-md border border-base-800 bg-base-900 px-3 py-2 text-neutral-100 outline-none focus:border-brand-cyan-400"
@@ -112,8 +120,10 @@ export default function ContactForm() {
       </div>
 
       <div>
-        <label className="block text-sm text-neutral-400">Message</label>
+        <label htmlFor="contact-message" className="block text-sm text-neutral-400">Message</label>
         <textarea
+          id="contact-message"
+          name="message"
           required
           rows={6}
           value={message}

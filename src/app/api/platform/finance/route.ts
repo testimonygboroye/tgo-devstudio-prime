@@ -39,8 +39,6 @@ async function audit(session:FinanceAdminSession,action:string,type:string,id:st
 
 export async function GET(){
  const auth=await requireFounder();if(auth.response)return auth.response;
- await FinanceInvoice.updateMany({status:{$in:["issued","partially_paid"]},dueAt:{$lt:new Date()},balanceMinor:{$gt:0}},{$set:{status:"overdue"}});
- await FinanceInstallmentPlan.updateMany({status:"active",installments:{$elemMatch:{status:{$in:["pending","partially_paid"]},dueAt:{$lt:new Date()}}}},{$set:{"installments.$[due].status":"overdue"}},{arrayFilters:[{"due.status":{$in:["pending","partially_paid"]},"due.dueAt":{$lt:new Date()}}]});
  const [settings,invoices,expenses,refunds,installments,approvals,reconciliations,credits,payments,ledger,orders,clients]=await Promise.all([
   FinanceSettings.findOne({key:"global"}).lean(),
   FinanceInvoice.find({}).sort({createdAt:-1}).limit(100).lean(),
@@ -58,7 +56,21 @@ export async function GET(){
  const summary=await FinancialLedgerEntry.aggregate([
   {$group:{_id:{currency:"$currency",accountCode:"$accountCode",direction:"$direction"},total:{$sum:"$amountMinor"},entries:{$sum:1}}},
  ]);
- return NextResponse.json({ok:true,settings:settings||null,invoices,expenses,refunds,installments,approvals,reconciliations,credits,payments,ledger,orders,clients,summary},{headers:{"Cache-Control":"private, no-store"}});
+ const now=new Date();
+ // GET requests remain read-only: calculate overdue labels for the response
+ // instead of writing invoice/installment status changes during dashboard reads.
+ const displayInvoices=invoices.map(invoice=>({
+  ...invoice,
+  status:["issued","partially_paid"].includes(invoice.status)&&invoice.balanceMinor>0&&invoice.dueAt&&new Date(invoice.dueAt)<now?"overdue":invoice.status,
+ }));
+ const displayInstallments=installments.map(plan=>({
+  ...plan,
+  installments:(plan.installments||[]).map(installment=>({
+   ...installment,
+   status:["pending","partially_paid"].includes(installment.status)&&installment.dueAt&&new Date(installment.dueAt)<now?"overdue":installment.status,
+  })),
+ }));
+ return NextResponse.json({ok:true,settings:settings||null,invoices:displayInvoices,expenses,refunds,installments:displayInstallments,approvals,reconciliations,credits,payments,ledger,orders,clients,summary},{headers:{"Cache-Control":"private, no-store"}});
 }
 
 export async function POST(request:NextRequest){
@@ -75,12 +87,24 @@ export async function POST(request:NextRequest){
    if(!/^[A-Z]{3}$/.test(baseCurrency)||enabledCurrencies.some((x:string)=>!/^[A-Z]{3}$/.test(x)))return fail("Use valid three-letter ISO currency codes.");if(!enabledCurrencies.includes(baseCurrency))return fail("The base currency must also be included in enabled currencies.");if(enabledCurrencies.some((currency:string)=>!eligibleCurrencies.includes(currency)))return fail("One or more enabled currencies are not supported for the selected Paystack merchant country.");if(!eligibleCurrencies.includes(baseCurrency))return fail("The base currency is not available for the selected Paystack merchant country.");
    const taxRateBps=Number(body.taxRateBps||0);if(!Number.isInteger(taxRateBps)||taxRateBps<0||taxRateBps>10000)return fail("Tax rate must be between 0 and 10000 basis points.");
    const bankTransferEnabled=body.bankTransferEnabled===true;
-   if(bankTransferEnabled&&(!String(body.bankName||"").trim()||!String(body.bankAccountName||"").trim()||!String(body.bankAccountNumber||"").trim()))return fail("Bank name, account name and account number are required before enabling bank transfer.");
+   const bankAccounts=Array.isArray(body.bankAccounts)?body.bankAccounts.map((account:unknown)=>{
+    const item=account&&typeof account==="object"?account as Record<string,unknown>:{};
+    return {bankName:String(item.bankName||"").trim(),accountName:String(item.accountName||"").trim(),accountNumber:String(item.accountNumber||"").trim(),bankCode:String(item.bankCode||"").trim()};
+   }).filter((account:{bankName:string;accountName:string;accountNumber:string;bankCode:string})=>account.bankName&&account.accountName&&/^\d{10}$/.test(account.accountNumber)): [];
+   const legacyBank=String(body.bankName||"").trim();
+   if(!bankAccounts.length&&legacyBank&&String(body.bankAccountName||"").trim()&&/^\d{10}$/.test(String(body.bankAccountNumber||"").trim())){
+    bankAccounts.push({bankName:legacyBank,accountName:String(body.bankAccountName).trim(),accountNumber:String(body.bankAccountNumber).trim(),bankCode:String(body.bankCode||"").trim()});
+   }
+   if(bankTransferEnabled&&bankAccounts.length===0)return fail("Add at least one bank account with a bank name, account name and valid 10-digit account number before enabling bank transfer.");
+   if(Array.isArray(body.bankAccounts)&&body.bankAccounts.length!==bankAccounts.length)return fail("Every bank account must have a bank name, account name and valid 10-digit account number.");
+   const primaryBank=bankAccounts[0];
    const settings=await FinanceSettings.findOneAndUpdate({key:"global"},{$set:{
     baseCurrency,enabledCurrencies,paystackMerchantCountry,invoicePrefix:String(body.invoicePrefix||"TGO-INV").trim().slice(0,20),allowPartialPayments:body.allowPartialPayments!==false,
     taxEnabled:body.taxEnabled===true,taxName:String(body.taxName||"VAT").trim().slice(0,40),taxRateBps,taxRegistrationNumber:String(body.taxRegistrationNumber||"").trim(),
-    paystackEnabled:body.paystackEnabled===true,bankTransferEnabled,bankName:String(body.bankName||"").trim(),bankAccountName:String(body.bankAccountName||"").trim(),
-    bankAccountNumber:String(body.bankAccountNumber||"").trim(),bankCode:String(body.bankCode||"").trim(),bankTransferInstructions:String(body.bankTransferInstructions||"").trim(),
+    paystackEnabled:body.paystackEnabled===true,bankTransferEnabled,bankAccounts,
+    bankName:primaryBank?.bankName||"",bankAccountName:primaryBank?.accountName||"",
+    bankAccountNumber:primaryBank?.accountNumber||"",bankCode:primaryBank?.bankCode||"",
+    bankTransferInstructions:String(body.bankTransferInstructions||"").trim(),
    }}, {upsert:true,new:true,setDefaultsOnInsert:true});
    if(!settings)return fail("Finance settings could not be saved.",500);
    await audit(session,"finance.settings_updated","finance_settings",String(settings._id),{baseCurrency,enabledCurrencies,paystackMerchantCountry,taxEnabled:settings.taxEnabled,paystackEnabled:settings.paystackEnabled,bankTransferEnabled});

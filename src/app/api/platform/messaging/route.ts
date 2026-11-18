@@ -5,7 +5,10 @@ import { unauthorizedResponse, forbiddenResponse } from "@/lib/auth/authorize";
 import { connectToDatabase } from "@/lib/db";
 import { UnifiedConversation, UnifiedMessage } from "@/models/UnifiedConversation";
 import User from "@/models/User";
+import Role from "@/models/Role";
 import { AIAgent, AITask } from "@/models/AIWorkforce";
+import EmployeeProfile from "@/models/EmployeeProfile";
+import { buildAccessibleAIAgentFilter } from "@/lib/messaging/aiAgentAccess";
 import { runProviderCompletion } from "@/lib/ai/provider-runtime";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import { mirrorMessageToPersonalWhatsApp } from "@/lib/messaging/whatsappSync";
@@ -14,6 +17,40 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const fail = (message: string, status = 400) => NextResponse.json({ status: "error", message }, { status });
 const validKinds = ["direct", "group", "channel", "ai"] as const;
+
+type MessagingSession = NonNullable<Awaited<ReturnType<typeof getAuthenticatedSession>>>;
+
+async function getHumanTeamMemberIds(): Promise<Set<string>> {
+  const [employeeIds, founderRole] = await Promise.all([
+    EmployeeProfile.distinct("userId", { employmentStatus: "active", accessSuspendedByWorkforce: { $ne: true } }),
+    Role.findOne({ isFounderRole: true }).select("_id").lean(),
+  ]);
+  const founder = founderRole
+    ? await User.findOne({ role: founderRole._id, accountType: "staff", isBanned: { $ne: true } }).select("_id").lean()
+    : null;
+  return new Set([
+    ...employeeIds.map((id: unknown) => String(id)),
+    ...(founder?._id ? [String(founder._id)] : []),
+  ]);
+}
+async function getAccessibleAIAgentFilter(session: MessagingSession): Promise<Record<string, unknown> | null> {
+  if (session.role?.isFounderRole) return { enabled: true };
+  const employee = await EmployeeProfile.findOne({
+    userId: session.user._id,
+    employmentStatus: "active",
+    accessSuspendedByWorkforce: { $ne: true },
+  }).select("positionId aiAccessMode aiAllowedAgentIds").lean();
+  if (!employee) return null;
+  const hasPrivateCounterpart = Boolean(await AIAgent.exists({ assignedUserId: session.user._id, enabled: true }));
+  return buildAccessibleAIAgentFilter({
+    isFounder: false,
+    userId: String(session.user._id),
+    positionId: String(employee.positionId || ""),
+    hasPrivateCounterpart,
+    accessMode: employee.aiAccessMode || "own",
+    allowedAgentIds: (employee.aiAllowedAgentIds || []).map((id: unknown) => String(id)),
+  });
+}
 
 export async function GET(request: NextRequest) {
   const session = await getAuthenticatedSession(request);
@@ -28,6 +65,13 @@ export async function GET(request: NextRequest) {
     if (!conversation) return fail("Conversation not found.", 404);
     const isMember = conversation.memberIds.some((member: unknown) => String((member as {_id?: unknown})._id || member) === String(session.user._id));
     if (!isMember) return forbiddenResponse("You are not a member of this private conversation.");
+    if (conversation.kind === "ai" && conversation.aiAgentId) {
+      const agentFilter = await getAccessibleAIAgentFilter(session);
+      const populatedAgent = conversation.aiAgentId as unknown as { _id?: unknown };
+      const aiAgentId = populatedAgent && typeof populatedAgent === "object" && "_id" in populatedAgent ? populatedAgent._id : conversation.aiAgentId;
+      const accessible = agentFilter ? await AIAgent.exists({ _id: String(aiAgentId || ""), ...agentFilter }) : null;
+      if (!accessible) return forbiddenResponse("This AI employee is outside your assigned role or private workspace.");
+    }
     await UnifiedMessage.updateMany({ conversationId, senderId: { $ne: session.user._id }, readBy: { $ne: session.user._id } }, { $addToSet: { readBy: session.user._id }, $set: { status: "read" } });
     const query = searchParams.get("q")?.trim().slice(0, 100) || "";
     const messageFilter: Record<string, unknown> = { conversationId };
@@ -36,13 +80,21 @@ export async function GET(request: NextRequest) {
       messageFilter.body = { $regex: escapedQuery, $options: "i" };
     }
     const messages = await UnifiedMessage.find(messageFilter).sort({ createdAt: 1 }).limit(300).lean();
-    return NextResponse.json({ status: "ok", conversation, messages, isFounder: session.role.isFounderRole }, { headers: { "Cache-Control": "private, no-store" } });
+    return NextResponse.json({ status: "ok", conversation, messages, isFounder: session.role.isFounderRole, currentUserId: String(session.user._id) }, { headers: { "Cache-Control": "private, no-store" } });
   }
   const filter = { memberIds: session.user._id, archivedAt: { $exists: false } };
   const conversations = await UnifiedConversation.find(filter).populate("memberIds", "name email").populate("aiAgentId", "name role department").sort({ lastMessageAt: -1, updatedAt: -1 }).limit(150).lean();
-  const people = await User.find({ accountType: "staff", isBanned: { $ne: true } }).select("name email role").sort({ name: 1 }).limit(300).lean();
-  const agents = await AIAgent.find({ enabled: true }).select("name role department").sort({ name: 1 }).lean();
-  return NextResponse.json({ status: "ok", conversations, people, agents }, { headers: { "Cache-Control": "private, no-store" } });
+  const unreadRows = conversations.length ? await UnifiedMessage.aggregate([
+    { $match: { conversationId: { $in: conversations.map((conversation) => conversation._id) }, senderId: { $ne: session.user._id }, readBy: { $ne: session.user._id }, deletedAt: { $exists: false } } },
+    { $group: { _id: "$conversationId", count: { $sum: 1 } } },
+  ]) : [];
+  const unreadByConversation = new Map(unreadRows.map((row) => [String(row._id), Number(row.count || 0)]));
+  const conversationsWithUnread = conversations.map((conversation) => ({ ...conversation, unreadCount: unreadByConversation.get(String(conversation._id)) || 0 }));
+  const humanTeamMemberIds = await getHumanTeamMemberIds();
+  const people = await User.find({ _id: { $in: [...humanTeamMemberIds] }, accountType: "staff", isBanned: { $ne: true } }).select("name email role").sort({ name: 1 }).limit(300).lean();
+  const agentFilter = await getAccessibleAIAgentFilter(session);
+  const agents = agentFilter ? await AIAgent.find(agentFilter).select("name role department").sort({ name: 1 }).lean() : [];
+  return NextResponse.json({ status: "ok", conversations: conversationsWithUnread, people, agents }, { headers: { "Cache-Control": "private, no-store" } });
 }
 
 export async function POST(request: NextRequest) {
@@ -61,12 +113,13 @@ export async function POST(request: NextRequest) {
     const ids = Array.isArray(body.memberIds) ? body.memberIds.filter((id): id is string => typeof id === "string" && Types.ObjectId.isValid(id)).slice(0, 100) : [];
     if (kind === "direct" && ids.length !== 1) return fail("A direct conversation requires exactly one other team member.");
     if (kind === "ai" && (!body.aiAgentId || !Types.ObjectId.isValid(String(body.aiAgentId)))) return fail("Select a valid AI employee.");
-    if (ids.length) { const validStaff = await User.countDocuments({ _id: { $in: ids }, accountType: "staff", isBanned: { $ne: true } }); if (validStaff !== ids.length) return fail("One or more selected members are not active staff accounts."); }
+    if (ids.length) { const humanTeamMemberIds = await getHumanTeamMemberIds(); const validStaff = ids.filter((id) => humanTeamMemberIds.has(id)).length; if (validStaff !== ids.length) return fail("Only the founder and active workforce employees can be added to team conversations."); }
     const members = Array.from(new Set([String(actorId), ...ids])).map((id) => new Types.ObjectId(id));
     const aiAgentId = String(body.aiAgentId || "");
     if (kind === "ai") {
-      const agent = await AIAgent.findOne({ _id: aiAgentId, enabled: true }).select("name");
-      if (!agent) return fail("The selected AI employee is not enabled.", 404);
+      const agentFilter = await getAccessibleAIAgentFilter(session);
+      const agent = agentFilter ? await AIAgent.findOne({ _id: aiAgentId, ...agentFilter }).select("name") : null;
+      if (!agent) return forbiddenResponse("That AI employee is outside your assigned role or private workspace.");
     }
     const conversation = await UnifiedConversation.create({
       kind, title: String(body.title || "").trim().slice(0, 160),
@@ -97,19 +150,18 @@ export async function POST(request: NextRequest) {
     await mirrorMessageToPersonalWhatsApp(conversation, message);
 
     if (conversation.kind === "ai" && conversation.aiAgentId) {
-      const agent = await AIAgent.findOne({ _id: conversation.aiAgentId, enabled: true });
-      if (!agent) return fail("The assigned AI employee is currently unavailable.", 409);
-      const task = await AITask.create({ agentId: agent._id, title: "Conversation with " + actorName, input: content, requestedBy: String(actorId), status: agent.requiresApproval ? "awaiting_approval" : "queued", operationPayload: { source: "ai_conversation", conversationId } });
-      if (agent.requiresApproval) {
-        await UnifiedMessage.create({ conversationId, senderType: "system", senderLabel: "TGO system", body: "Your message has been saved. This AI employee requires approval before responding. Task " + String(task._id) + " is awaiting approval." });
-        return NextResponse.json({ status: "ok", message: { id: String(message._id), body: message.body, createdAt: message.createdAt, senderLabel: actorName, senderType: "human" }, taskStatus: "awaiting_approval" }, { status: 201 });
-      }
+      const agentFilter = await getAccessibleAIAgentFilter(session);
+      const agent = agentFilter ? await AIAgent.findOne({ _id: conversation.aiAgentId, ...agentFilter }) : null;
+      if (!agent) return forbiddenResponse("This AI employee is outside your assigned role or private workspace.");
+      // Plain text conversation is non-operational and may receive an automatic AI reply.
+      // Business tools, project writes, finance actions and external messages remain in the separate approval queue.
+      const task = await AITask.create({ agentId: agent._id, title: "Conversation with " + actorName, input: content, requestedBy: String(actorId), status: "queued", operationPayload: { source: "ai_conversation", conversationId } });
       const dayStart = new Date(); dayStart.setUTCHours(0, 0, 0, 0);
       const usage = await AITask.aggregate([{ $match: { agentId: agent._id, status: { $in: ["completed", "running"] }, createdAt: { $gte: dayStart } } }, { $group: { _id: null, tokens: { $sum: { $add: ["$inputTokens", "$outputTokens"] } } } }]);
       if (Number(usage[0]?.tokens || 0) >= agent.maxDailyTokens) {
         task.status = "awaiting_approval"; task.error = "Daily token budget reached; founder review required."; await task.save();
         await UnifiedMessage.create({ conversationId, senderType: "system", senderLabel: "TGO system", body: "The AI employee reached its configured daily token budget. This task is waiting for founder review." });
-        return NextResponse.json({ status: "ok", taskStatus: "awaiting_approval", message: "Daily AI budget reached; task queued for review." }, { status: 201 });
+        return NextResponse.json({ status: "ok", taskId: String(task._id), taskStatus: "awaiting_approval", message: "Daily AI budget reached; task queued for review." }, { status: 201 });
       }
       task.status = "running"; task.startedAt = new Date(); task.executionAttempts += 1; await task.save();
       try {
@@ -121,12 +173,12 @@ export async function POST(request: NextRequest) {
         conversation.lastMessageAt = new Date(); await conversation.save();
         await mirrorMessageToPersonalWhatsApp(conversation, reply);
         await writePlatformAuditEvent({ actorType: "ai", actorId: String(agent._id), actorLabel: agent.name, action: "ai.conversation.replied", module: "communications", targetType: "AITask", targetId: String(task._id), outcome: "success", metadata: { conversationId, inputTokens: completion.inputTokens, outputTokens: completion.outputTokens } });
-        return NextResponse.json({ status: "ok", message: { id: String(reply._id), body: reply.body, createdAt: reply.createdAt, senderLabel: agent.name, senderType: "ai" }, taskStatus: "completed" }, { status: 201 });
+        return NextResponse.json({ status: "ok", message: { id: String(reply._id), body: reply.body, createdAt: reply.createdAt, senderLabel: agent.name, senderType: "ai" }, taskId: String(task._id), taskStatus: "completed" }, { status: 201 });
       } catch (error) {
         task.status = "failed"; task.error = (error instanceof Error ? error.message : "AI response failed.").slice(0, 2000); task.completedAt = new Date(); await task.save();
         await UnifiedMessage.create({ conversationId, senderType: "system", senderLabel: "TGO system", body: "The AI employee could not complete this response. The failed run is recorded in AI Workforce for review." });
         await writePlatformAuditEvent({ actorType: "ai", actorId: String(agent._id), actorLabel: agent.name, action: "ai.conversation.failed", module: "communications", targetType: "AITask", targetId: String(task._id), outcome: "failure", metadata: { conversationId, error: task.error } });
-        return NextResponse.json({ status: "ok", taskStatus: "failed", message: "Your message is saved. The AI response failed and is recorded for review." }, { status: 201 });
+        return NextResponse.json({ status: "ok", taskId: String(task._id), taskStatus: "failed", message: "Your message is saved. The AI response failed and is recorded for review." }, { status: 201 });
       }
     }
 
@@ -178,8 +230,9 @@ export async function POST(request: NextRequest) {
     const input = String(body.input || "").trim();
     const targetLanguage = String(body.targetLanguage || "").trim().slice(0, 80);
     if (!Types.ObjectId.isValid(agentId) || input.length < 1 || input.length > 12000 || !targetLanguage) return fail("Choose an AI employee, enter text, and specify the target language.");
-    const agent = await AIAgent.findOne({ _id: agentId, enabled: true });
-    if (!agent) return fail("The selected AI employee is unavailable.", 404);
+    const agentFilter = await getAccessibleAIAgentFilter(session);
+    const agent = agentFilter ? await AIAgent.findOne({ _id: agentId, ...agentFilter }) : null;
+    if (!agent) return forbiddenResponse("That AI employee is outside your assigned role or private workspace.");
     if (agent.requiresApproval) return fail("This AI employee requires approval. Choose an enabled translation agent configured for direct, text-only replies.", 409);
     const dayStart = new Date(); dayStart.setUTCHours(0, 0, 0, 0);
     const usage = await AITask.aggregate([{ $match: { agentId: agent._id, status: { $in: ["completed", "running"] }, createdAt: { $gte: dayStart } } }, { $group: { _id: null, tokens: { $sum: { $add: ["$inputTokens", "$outputTokens"] } } } }]);

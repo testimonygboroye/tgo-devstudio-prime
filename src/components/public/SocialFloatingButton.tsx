@@ -14,11 +14,11 @@ interface SocialLink {
 }
 
 const SOCIAL_LINKS: SocialLink[] = [
-  { label: "WhatsApp", description: "Chat with us directly", href: "https://wa.me/message/LUJ6PXE3ISDZF1", icon: WhatsAppIcon, iconBg: "bg-[#25D366]" },
+  { label: "WhatsApp", description: "Chat with us directly", href: "https://wa.me/2348132429504", icon: WhatsAppIcon, iconBg: "bg-[#25D366]" },
   { label: "Email", description: "Send us a message", href: "mailto:testimonygboroye.dev@gmail.com", icon: (props) => <Mail {...props} />, iconBg: "bg-neutral-700" },
   { label: "GitHub", description: "See our code and projects", href: "https://github.com/testimonygboroye", icon: GitHubIcon, iconBg: "bg-neutral-800" },
-  { label: "Instagram", description: "Follow us for updates", href: "https://www.instagram.com/testimonygboroye", icon: InstagramIcon, iconBg: "bg-gradient-to-br from-[#F58529] via-[#DD2A7B] to-[#8134AF]" },
-  { label: "Facebook", description: "Like and follow our page", href: "https://www.facebook.com/profile.php?id=61590906354276", icon: FacebookIcon, iconBg: "bg-[#1877F2]" },
+  { label: "Instagram", description: "Follow us for updates", href: "https://www.instagram.com/tgodevstudio", icon: InstagramIcon, iconBg: "bg-gradient-to-br from-[#F58529] via-[#DD2A7B] to-[#8134AF]" },
+  { label: "Facebook", description: "Like and follow our page", href: "https://www.facebook.com/tgodevstudio", icon: FacebookIcon, iconBg: "bg-[#1877F2]" },
   { label: "AI Chatbot", description: "Chat with the TGO assistant", action: "assistant", icon: (props) => <Bot {...props} />, iconBg: "bg-gradient-to-br from-violet-600 to-cyan-500" },
 ];
 
@@ -42,14 +42,18 @@ export default function SocialFloatingButton() {
   const dragStateRef = useRef({ startX: 0, startY: 0, startPosX: 0, startPosY: 0, moved: false });
 
   useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored) as Position;
-        if (Number.isFinite(parsed.x) && Number.isFinite(parsed.y)) { setPosition(clampPosition(parsed)); return; }
-      }
-    } catch { /* use default position */ }
-    setPosition(getDefaultPosition());
+    const frame = window.requestAnimationFrame(() => {
+      let nextPosition = getDefaultPosition();
+      try {
+        const stored = window.localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored) as Position;
+          if (Number.isFinite(parsed.x) && Number.isFinite(parsed.y)) nextPosition = clampPosition(parsed);
+        }
+      } catch { /* use the safe default position */ }
+      setPosition(nextPosition);
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   useEffect(() => {
@@ -82,10 +86,9 @@ export default function SocialFloatingButton() {
   function handlePointerUp(event: React.PointerEvent<HTMLButtonElement>) {
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
     setIsDragging(false);
-    setPosition((prev) => {
-      if (prev) { try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(prev)); } catch { /* ignore storage errors */ } }
-      return prev;
-    });
+    if (position) {
+      try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(position)); } catch { /* ignore storage errors */ }
+    }
   }
   function handleButtonClick() {
     if (dragStateRef.current.moved) { dragStateRef.current.moved = false; return; }

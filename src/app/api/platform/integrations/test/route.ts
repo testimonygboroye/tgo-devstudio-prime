@@ -3,7 +3,7 @@ import { getServerSession } from "@/lib/auth/serverSession";
 import { connectToDatabase } from "@/lib/db";
 import IntegrationConnection from "@/models/IntegrationConnection";
 import { getIntegrationProvider } from "@/lib/integrations/registry";
-import { decryptCredentials } from "@/lib/integrations/crypto";
+import { decryptCredentials, encryptCredentials } from "@/lib/integrations/crypto";
 import { getVerifiedIntegrationCredentials } from "@/lib/integrations/credentials";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
 export const dynamic = "force-dynamic";
@@ -31,7 +31,19 @@ async function verify(providerId: string, credentials: Record<string, string>): 
     else if (providerId === "google_search_console") response = await fetch("https://searchconsole.googleapis.com/webmasters/v3/sites", { headers: { Authorization: "Bearer " + credentials.accessToken, accept: "application/json" }, signal: controller.signal, cache: "no-store" });
     else if (providerId === "google_analytics") response = await fetch("https://analyticsadmin.googleapis.com/v1beta/accountSummaries?pageSize=1", { headers: { Authorization: "Bearer " + credentials.accessToken, accept: "application/json" }, signal: controller.signal, cache: "no-store" });
     else if (providerId === "paystack") response = await fetch("https://api.paystack.co/balance", { headers: { Authorization: `Bearer ${credentials.secretKey}`, accept: "application/json" }, signal: controller.signal, cache: "no-store" });
-    else if (providerId === "github") response = await fetch("https://api.github.com/user", { headers: { Authorization: `Bearer ${credentials.token}`, accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" }, signal: controller.signal, cache: "no-store" });
+    else if (providerId === "github") {
+      response = await fetch("https://api.github.com/user", { headers: { Authorization: `Bearer ${credentials.token}`, accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" }, signal: controller.signal, cache: "no-store" });
+      if (!response.ok) throw new Error("GitHub rejected the configured token.");
+      const allowedRepositories = String(credentials.allowedRepositories || "").split(/[\\s,;]+/).map((value: string) => value.trim()).filter(Boolean);
+      if (!allowedRepositories.length) throw new Error("Add at least one owner/repository to the allowed repositories field.");
+      for (const repository of allowedRepositories) {
+        if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository)) throw new Error("Invalid allowed repository format: " + repository);
+        const repositoryResponse = await fetch("https://api.github.com/repos/" + repository, { headers: { Authorization: `Bearer ${credentials.token}`, accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" }, signal: controller.signal, cache: "no-store" });
+        if (!repositoryResponse.ok) throw new Error("GitHub token cannot access " + repository + " (HTTP " + repositoryResponse.status + ").");
+        const repositoryData = await repositoryResponse.json();
+        if (repositoryData.permissions?.push !== true) throw new Error("GitHub token needs Contents: Read and write access to " + repository + ".");
+      }
+    }
     else if (providerId === "vercel") response = await fetch("https://api.vercel.com/v2/user", { headers: { Authorization: `Bearer ${credentials.token}`, accept: "application/json" }, signal: controller.signal, cache: "no-store" });
     else if (providerId === "whatsapp_cloud_api") {
       const senderResponse = await fetch("https://graph.facebook.com/v22.0/" + encodeURIComponent(credentials.phoneNumberId) + "?fields=display_phone_number,verified_name", { headers: { Authorization: "Bearer " + credentials.accessToken, accept: "application/json" }, signal: controller.signal, cache: "no-store" });
@@ -92,9 +104,35 @@ export async function POST(request: NextRequest) {
   if (!row || row.status === "disconnected") return fail("Save active credentials before testing this connection.", 409);
   let errorMessage = "";
   try {
-    const credentials = providerId === "google_search_console" || providerId === "google_analytics" ? await getVerifiedIntegrationCredentials(providerId) : decryptCredentials(row.credentialsCiphertext);
+    const storedCredentials = decryptCredentials(row.credentialsCiphertext);
+    let credentials: Record<string, string> | null = providerId === "google_search_console" || providerId === "google_analytics"
+      ? await getVerifiedIntegrationCredentials(providerId)
+      : { ...storedCredentials };
     if (!credentials) throw new Error("Google OAuth authorization has expired or could not be refreshed. Reconnect the Google account.");
+    // Prefer the production mail/SMS environment values during verification so an older encrypted form entry cannot mask a working provider setup.
+    if (providerId === "brevo") {
+      credentials = {
+        ...credentials,
+        apiKey: process.env.BREVO_API_KEY || credentials.apiKey || "",
+        senderEmail: process.env.BREVO_SENDER_EMAIL || credentials.senderEmail || "",
+      };
+    }
+    if (providerId === "twilio") {
+      credentials = {
+        ...credentials,
+        accountSid: process.env.TWILIO_ACCOUNT_SID || credentials.accountSid || "",
+        authToken: process.env.TWILIO_AUTH_TOKEN || credentials.authToken || "",
+        fromNumber: process.env.TWILIO_SMS_FROM || credentials.fromNumber || "",
+        messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID || credentials.messagingServiceSid || "",
+      };
+    }
     await verify(providerId, credentials);
+    if (providerId === "brevo" || providerId === "twilio") {
+      row.credentialsCiphertext = encryptCredentials(credentials);
+      row.credentialNames = providerId === "brevo"
+        ? ["API key", "Verified sender email"]
+        : ["Account SID", "Auth token", ...(credentials.fromNumber ? ["Verified SMS sender number"] : []), ...(credentials.messagingServiceSid ? ["Messaging Service SID"] : [])];
+    }
     row.status = "connected"; row.lastVerifiedAt = new Date(); row.lastError = "";
   } catch (error) {
     errorMessage = error instanceof Error ? error.message : "Connection test failed.";

@@ -17,11 +17,11 @@ export async function getVerifiedIntegrationCredentials(providerId: string): Pro
       return null;
     }
     if (credentials.refreshToken && (!Number.isFinite(expiresAt) || expiresAt <= Date.now() + 60_000)) {
-      const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
-      const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+      const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID || process.env.GOOGLE_CLIENT_ID;
+      const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET;
       if (!clientId || !clientSecret) {
         row.status = "error";
-        row.lastError = "Google OAuth refresh requires GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET.";
+        row.lastError = "Google OAuth refresh requires GOOGLE_CLIENT_ID (or GOOGLE_OAUTH_CLIENT_ID) and GOOGLE_CLIENT_SECRET (or GOOGLE_OAUTH_CLIENT_SECRET).";
         await row.save();
         return null;
       }

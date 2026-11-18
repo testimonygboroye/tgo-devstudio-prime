@@ -26,7 +26,10 @@ export default function AIChatWidget({ scope, adminBasePath = "/admin", showLaun
 
   useEffect(() => {
     if (!showLauncher) return;
-    setLauncherPos({ x: Math.max(12, window.innerWidth - 72), y: Math.max(12, window.innerHeight - 72) });
+    const frame = window.requestAnimationFrame(() => {
+      setLauncherPos({ x: Math.max(12, window.innerWidth - 72), y: Math.max(12, window.innerHeight - 72) });
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [showLauncher]);
 
   useEffect(() => {
@@ -109,7 +112,7 @@ export default function AIChatWidget({ scope, adminBasePath = "/admin", showLaun
   }
 
   return <div className="font-sans">
-    {open && <section className="fixed bottom-20 right-4 z-[130] mb-2 flex h-[min(680px,calc(100dvh-110px))] w-[min(410px,calc(100vw-28px))] flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#0d1428] text-white shadow-2xl shadow-black/50 sm:right-6" aria-label={title}>
+    {open && <section className="fixed bottom-20 left-4 right-4 z-[130] sm:left-auto mb-2 flex h-[min(680px,calc(100dvh-110px))] w-auto sm:w-[min(410px,calc(100vw-48px))] flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#0d1428] text-white shadow-2xl shadow-black/50 sm:right-6" aria-label={title}>
       <header className="flex items-center justify-between gap-3 border-b border-white/10 bg-[radial-gradient(circle_at_85%_0%,rgba(46,197,240,.2),transparent_40%),linear-gradient(125deg,#17112f,#101b35)] p-4">
         <div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-xl border border-cyan-300/20 bg-cyan-300/10 text-cyan-200"><Bot size={21}/></span><div><h2 className="text-sm font-bold">{title}</h2><p className="mt-0.5 text-[10px] text-slate-300">{subtitle}</p></div></div>
         <div className="flex items-center gap-1"><button onClick={() => void clearHistory()} title="Clear conversation history" aria-label="Clear conversation history" className="rounded-lg p-2 text-slate-300 hover:bg-white/10"><Trash2 size={16}/></button><button onClick={() => setOpen(false)} title="Minimise assistant" aria-label="Minimise assistant" className="rounded-lg p-2 text-slate-300 hover:bg-white/10"><ChevronDown size={18}/></button></div>

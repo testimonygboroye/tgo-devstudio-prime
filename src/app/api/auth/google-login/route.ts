@@ -37,7 +37,10 @@ export async function POST(request:NextRequest) {
     if(!user) return apiError("invalidCredentials","No existing TGO administrator account matches this verified Google email. Accept an invitation first.",403);
     if(user.isBanned) return apiError("accountSuspended","This account has been suspended. Contact the Founder.",403);
     if(user.googleSub && user.googleSub!==google.sub) return apiError("invalidCredentials","This Google account is not linked to this administrator.",403);
-    if(!user.googleSub){user.googleSub=google.sub;await user.save();}
+    let googleLinkChanged=false;
+    if(!user.googleSub){user.googleSub=google.sub;googleLinkChanged=true;}
+    if(!user.authProviders?.includes("google")){user.authProviders=[...(user.authProviders||[]),"google"];googleLinkChanged=true;}
+    if(googleLinkChanged)await user.save();
     if(user.twoFactorEnabled) {
       let skip=false;
       if(process.env.TWO_FACTOR_ENABLED==="false"){const role=await Role.findById(user.role).select("isFounderRole");skip=Boolean(role?.isFounderRole);}

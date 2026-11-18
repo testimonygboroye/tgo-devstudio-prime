@@ -5,12 +5,14 @@ import { useSwipeSidebar } from "@/hooks/useSwipeSidebar";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
-import { Menu, X, Layers, Briefcase, Newspaper, DoorOpen, Mail, Info, Workflow, Users, Star, PhoneCall, Boxes, HelpCircle, ChevronDown, MessageCircleQuestion, Settings, ArrowLeft, ShieldCheck, FileText, Package, Building2, Handshake } from "lucide-react";
+import { Menu, X, Layers, Briefcase, Newspaper, DoorOpen, Mail, Info, Workflow, Users, Star, PhoneCall, Boxes, HelpCircle, ChevronDown, MessageCircleQuestion, Settings, ArrowLeft, ShieldCheck, Package, Building2, Handshake } from "lucide-react";
 import HelpSearchPopup from "@/components/shared/HelpSearchPopup";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import type { PublicSiteChromeSettings } from "@/lib/publicSite/types";
 
-const NAV_ICON_MAP = { Layers, Briefcase, Newspaper, DoorOpen, Mail, Info, Workflow, Users, Star, PhoneCall, Boxes, HelpCircle, MessageCircleQuestion, Settings, ShieldCheck, FileText, Package, Building2, Handshake } as const;
+const NAV_ICON_MAP = { Layers, Briefcase, Newspaper, DoorOpen, Mail, Info, Workflow, Users, Star, PhoneCall, Boxes, HelpCircle, MessageCircleQuestion, Settings, ShieldCheck , Package, Building2, Handshake } as const;
+const PUBLIC_SIDEBAR_EXCLUDED_PATHS = new Set(["/privacy-policy", "/terms-of-service", "/usage-policy", "/accessibility", "/data-deletion"]);
+const isPublicSidebarExcluded = (href: string) => PUBLIC_SIDEBAR_EXCLUDED_PATHS.has(href.split(/[?#]/, 1)[0].replace(/\/$/, "") || "/");
 function getNavigationIcon(name?: string) { return NAV_ICON_MAP[name as keyof typeof NAV_ICON_MAP] || Layers; }
 
 export default function SiteHeader({ settings }: { settings?: PublicSiteChromeSettings | null }) {
@@ -52,15 +54,15 @@ export default function SiteHeader({ settings }: { settings?: PublicSiteChromeSe
       { label: t("nav.bookACall"), href: "/book-a-call", icon: PhoneCall },
       { label: t("nav.help"), href: "/help", icon: HelpCircle },
       { label: t("common.settings"), href: "/settings", icon: Settings },
-      { label: "Privacy Policy", href: "/privacy-policy", icon: ShieldCheck },
-      { label: "Consumer Terms", href: "/terms-of-service", icon: FileText },
-      { label: "Usage Policy", href: "/usage-policy", icon: ShieldCheck },
-      { label: "Accessibility", href: "/accessibility", icon: FileText },
     ]},
   ];
-  const configuredGroups = settings
+  const configuredGroups = (settings
     ? settings.navigationGroups.map((group) => ({ title: group.title, links: group.links.filter((link) => link.href !== "/").map((link) => ({ label: link.label, href: link.href, icon: getNavigationIcon(link.icon) })) }))
-    : DRAWER_NAV_GROUPS.filter((group) => group.title !== "Company");
+    : DRAWER_NAV_GROUPS.filter((group) => group.title !== "Company")
+  ).map((group) => ({
+    ...group,
+    links: group.links.filter((link) => !isPublicSidebarExcluded(link.href)),
+  })).filter((group) => group.links.length > 0);
   const NAV_GROUPS = [
     { title: "Company", links: [{ label: t("nav.home"), href: "/", icon: Layers }] },
     ...configuredGroups,

@@ -67,7 +67,7 @@ export async function GET() {
     CommercialQuote.find({clientId:session.user._id,status:{$in:["issued","accepted"]}}).sort({createdAt:-1}).lean(),
     CommercialContract.find({clientId:session.user._id,status:{$in:["issued","accepted"]}}).sort({createdAt:-1}).lean(),
   ]);
-  const bankTransfer=financeSettings?.bankTransferEnabled?{enabled:true,bankName:financeSettings.bankName,accountName:financeSettings.bankAccountName,accountNumber:financeSettings.bankAccountNumber,bankCode:financeSettings.bankCode,instructions:financeSettings.bankTransferInstructions}:{enabled:false};
+  const bankTransfer=financeSettings?.bankTransferEnabled?{enabled:true,bankAccounts:Array.isArray(financeSettings.bankAccounts)&&financeSettings.bankAccounts.length?financeSettings.bankAccounts:[{bankName:financeSettings.bankName,accountName:financeSettings.bankAccountName,accountNumber:financeSettings.bankAccountNumber,bankCode:financeSettings.bankCode}],bankName:financeSettings.bankName,accountName:financeSettings.bankAccountName,accountNumber:financeSettings.bankAccountNumber,bankCode:financeSettings.bankCode,instructions:financeSettings.bankTransferInstructions}:{enabled:false,bankAccounts:[]};
   return NextResponse.json({ok:true,services,orders,projects,milestones,tasks,deliverables,changeRequests,consultations,maintenance,payments,projectReviews,proposals,quotes,contracts,invoices,credits,installmentPlans,bankTransfer,paymentConfigured:Boolean(process.env.PAYSTACK_SECRET_KEY&&financeSettings?.paystackEnabled)},{headers:{"Cache-Control":"private, no-store"}});
 }
 

@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "@/lib/auth/serverSession";
 import { connectToDatabase } from "@/lib/db";
 import { AIChatSession, AIChatbotConfig, AIChatbotScope } from "@/models/AIChatbot";
-import { AIProvider } from "@/models/AIWorkforce";
 import { runProviderCompletion } from "@/lib/ai/provider-runtime";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import PageContent from "@/models/PageContent";
@@ -224,7 +223,7 @@ export async function handleAIChat(request:NextRequest,scope:Scope,method:"GET"|
   if(row.messages.length>80)row.messages=row.messages.slice(-80);
   await row.save();
   return attachPublicCookie(json({message:assistantMessage,sources:context.sources.slice(0,20),usage:{inputTokens:completion.inputTokens,outputTokens:completion.outputTokens,fallbackUsed}}),scope,token);
- }catch(error){
+ }catch{
   row.messages.push({messageId:randomUUID(),role:"assistant",content:"I couldn't reach the AI service just now. Your business records have not been changed. Please try again shortly or contact the TGO team.",inputTokens:0,outputTokens:0,createdAt:new Date()});
   if(row.messages.length>80)row.messages=row.messages.slice(-80);
   await row.save();

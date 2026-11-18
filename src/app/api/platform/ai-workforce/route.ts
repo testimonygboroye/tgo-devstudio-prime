@@ -29,6 +29,7 @@ import IntegrationConnection from "@/models/IntegrationConnection";
 import { readGitHubRepository, readGitHubFile, writeGitHubFile, createGitHubPullRequest } from "@/lib/ai/github-tools";
 import { getAIRoleBlueprint } from "@/lib/ai/role-blueprints";
 import { parseGitHubCodeChangeResponse } from "@/lib/ai/github-code-change";
+import { buildAccessibleAIAgentFilter } from "@/lib/messaging/aiAgentAccess";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -43,18 +44,20 @@ export async function GET() {
       userId: session.user._id,
       employmentStatus: "active",
       accessSuspendedByWorkforce: { $ne: true },
-    }).populate("departmentId", "name").populate("positionId", "title").lean();
+    }).populate("departmentId", "name").populate("positionId", "title").select("positionId aiAccessMode aiAllowedAgentIds").lean();
     if (!employee) return NextResponse.json({ status: "error", message: "Active employee access is required." }, { status: 403 });
     const positionRef = employee.positionId as unknown as { _id?: mongoose.Types.ObjectId } | mongoose.Types.ObjectId | null;
     const positionId = String((positionRef && typeof positionRef === "object" && "_id" in positionRef ? positionRef._id : positionRef) || "");
     const hasPrivateCounterpart = Boolean(await AIAgent.exists({ assignedUserId: session.user._id, enabled: true }));
-    const scope = hasPrivateCounterpart
-      ? [{ assignedUserId: session.user._id }]
-      : [
-          { assignedUserId: session.user._id },
-          ...(mongoose.isValidObjectId(positionId) ? [{ positionId: new mongoose.Types.ObjectId(positionId), assignedUserId: { $exists: false } }] : []),
-        ];
-    const agents = await AIAgent.find({ enabled: true, $or: scope })
+    const agentFilter = buildAccessibleAIAgentFilter({
+      isFounder: false,
+      userId: String(session.user._id),
+      positionId,
+      hasPrivateCounterpart,
+      accessMode: employee.aiAccessMode || "own",
+      allowedAgentIds: (employee.aiAllowedAgentIds || []).map((id: unknown) => String(id)),
+    });
+    const agents = await AIAgent.find(agentFilter || { _id: { $exists: false } })
       .select("name role department description workspaceId positionId assignedUserId providerId modelName permissions requiresApproval maxDailyTokens enabled")
       .populate("providerId", "name provider")
       .sort({ department: 1, name: 1 }).lean();
@@ -84,7 +87,7 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({}));
   const actorId = String(session.user._id);
   const isFounder = Boolean(session.role?.isFounderRole);
-  let employeeScope: { positionId: string; privateCounterpartOnly: boolean } | null = null;
+  let employeeScope: Record<string, unknown> | null = null;
   if (!isFounder) {
     const employee = await EmployeeProfile.findOne({
       userId: session.user._id,
@@ -95,23 +98,25 @@ export async function POST(request: NextRequest) {
     const positionRef = employee.positionId as unknown as { _id?: mongoose.Types.ObjectId } | mongoose.Types.ObjectId | null;
     const positionId = String((positionRef && typeof positionRef === "object" && "_id" in positionRef ? positionRef._id : positionRef) || "");
     const hasPrivateCounterpart = Boolean(await AIAgent.exists({ assignedUserId: session.user._id, enabled: true }));
-    employeeScope = { positionId, privateCounterpartOnly: hasPrivateCounterpart };
+    employeeScope = buildAccessibleAIAgentFilter({
+      isFounder: false,
+      userId: actorId,
+      positionId,
+      hasPrivateCounterpart,
+      accessMode: employee.aiAccessMode || "own",
+      allowedAgentIds: (employee.aiAllowedAgentIds || []).map((id: unknown) => String(id)),
+    });
     if (!["task.enqueue", "task.delegate"].includes(String(body.action || ""))) {
       return NextResponse.json({ status: "error", message: "This action is reserved for the founder." }, { status: 403 });
     }
-    const visibleAgentScope = employeeScope.privateCounterpartOnly
-      ? [{ assignedUserId: session.user._id }]
-      : [
-          { assignedUserId: session.user._id },
-          ...(mongoose.isValidObjectId(employeeScope.positionId) ? [{ positionId: new mongoose.Types.ObjectId(employeeScope.positionId), assignedUserId: { $exists: false } }] : []),
-        ];
+    if (!employeeScope) return NextResponse.json({ status: "error", message: "No AI employee access is configured for this account." }, { status: 403 });
     if (body.action === "task.enqueue") {
-      const allowedAgent = await AIAgent.exists({ _id: body.agentId, enabled: true, $or: visibleAgentScope });
+      const allowedAgent = await AIAgent.exists({ _id: body.agentId, ...employeeScope });
       if (!allowedAgent) return NextResponse.json({ status: "error", message: "That AI employee is outside your assigned workspace." }, { status: 403 });
     } else {
       const [parent, target] = await Promise.all([
         AITask.exists({ _id: body.taskId, requestedBy: actorId }),
-        AIAgent.exists({ _id: body.agentId, enabled: true, $or: visibleAgentScope }),
+        AIAgent.exists({ _id: body.agentId, ...employeeScope }),
       ]);
       if (!parent || !target) return NextResponse.json({ status: "error", message: "Delegation is limited to your own tasks and AI employees within your authorised scope." }, { status: 403 });
     }

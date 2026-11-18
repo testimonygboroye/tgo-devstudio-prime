@@ -39,6 +39,8 @@ test("commercial catalogue contains all 21 distinct service lines and package pr
   expect(new Set(serviceNames.map(name => name.trim())).size).toBe(21);
   const packages = page.locator(".catalogue-package");
   await expect(packages).toHaveCount(62);
+  await expect(page.locator(".catalogue-billing-label").filter({ hasText: "/ month" })).toHaveCount(5);
+  await expect(page.locator(".catalogue-billing-label").filter({ hasText: "Custom scope" })).toHaveCount(55);
   const prices = await packages.locator("strong").allTextContents();
   expect(prices).toHaveLength(62);
   expect(prices.every(price => /₦|NGN/.test(price))).toBe(true);

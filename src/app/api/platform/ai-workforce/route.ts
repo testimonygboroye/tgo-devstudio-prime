@@ -582,6 +582,25 @@ export async function POST(request: NextRequest) {
           const branchName = String(payload.branch || ("ai/" + slug + "-" + String(task._id).slice(-8)));
           githubCodeContext = { repository, path, baseBranch, branch: branchName, existingContent };
           operationResult = { repository, path, baseBranch, branch: branchName, existingFileExists: Boolean(existingContent), mode: "single-file draft implementation" };
+        } else if (task.operation === "github.repository.read") {
+          if (!agent.permissions.includes("github.repository.read")) throw new Error("Agent lacks github.repository.read permission.");
+          operationResult = await readGitHubRepository(payload.repository);
+        } else if (task.operation === "github.file.read") {
+          if (!agent.permissions.includes("github.file.read")) throw new Error("Agent lacks github.file.read permission.");
+          operationResult = await readGitHubFile(payload.repository, payload.path, payload.ref || payload.baseBranch);
+        } else if (task.operation === "github.file.write") {
+          if (!agent.permissions.includes("github.file.write")) throw new Error("Agent lacks github.file.write permission.");
+          operationResult = await writeGitHubFile({
+            repository: payload.repository, path: payload.path, branch: payload.branch,
+            baseBranch: payload.baseBranch, content: String(payload.content || ""),
+            message: String(payload.message || task.title),
+          });
+        } else if (task.operation === "github.pull_request.create") {
+          if (!agent.permissions.includes("github.pull_request.create")) throw new Error("Agent lacks github.pull_request.create permission.");
+          operationResult = await createGitHubPullRequest({
+            repository: payload.repository, branch: payload.branch, baseBranch: payload.baseBranch,
+            title: String(payload.title || task.title), body: String(payload.body || task.input),
+          });
         } else if (task.operation === "site.routes.health_check") {
           if (!agent.permissions.includes("site.routes.health_check")) throw new Error("Agent lacks site.routes.health_check permission.");
           const siteUrl = getSiteUrl();

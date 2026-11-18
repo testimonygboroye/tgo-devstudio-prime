@@ -135,11 +135,9 @@ export async function POST(request: NextRequest) {
       const agentFilter = await getAccessibleAIAgentFilter(session);
       const agent = agentFilter ? await AIAgent.findOne({ _id: conversation.aiAgentId, ...agentFilter }) : null;
       if (!agent) return forbiddenResponse("This AI employee is outside your assigned role or private workspace.");
-      const task = await AITask.create({ agentId: agent._id, title: "Conversation with " + actorName, input: content, requestedBy: String(actorId), status: agent.requiresApproval ? "awaiting_approval" : "queued", operationPayload: { source: "ai_conversation", conversationId } });
-      if (agent.requiresApproval) {
-        await UnifiedMessage.create({ conversationId, senderType: "system", senderLabel: "TGO system", body: "Your message has been saved. This AI employee requires approval before responding. Task " + String(task._id) + " is awaiting approval." });
-        return NextResponse.json({ status: "ok", message: { id: String(message._id), body: message.body, createdAt: message.createdAt, senderLabel: actorName, senderType: "human" }, taskId: String(task._id), taskStatus: "awaiting_approval" }, { status: 201 });
-      }
+      // Plain text conversation is non-operational and may receive an automatic AI reply.
+      // Business tools, project writes, finance actions and external messages remain in the separate approval queue.
+      const task = await AITask.create({ agentId: agent._id, title: "Conversation with " + actorName, input: content, requestedBy: String(actorId), status: "queued", operationPayload: { source: "ai_conversation", conversationId } });
       const dayStart = new Date(); dayStart.setUTCHours(0, 0, 0, 0);
       const usage = await AITask.aggregate([{ $match: { agentId: agent._id, status: { $in: ["completed", "running"] }, createdAt: { $gte: dayStart } } }, { $group: { _id: null, tokens: { $sum: { $add: ["$inputTokens", "$outputTokens"] } } } }]);
       if (Number(usage[0]?.tokens || 0) >= agent.maxDailyTokens) {

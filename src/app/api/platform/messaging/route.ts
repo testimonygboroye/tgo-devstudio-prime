@@ -50,7 +50,9 @@ export async function GET(request: NextRequest) {
     if (!isMember) return forbiddenResponse("You are not a member of this private conversation.");
     if (conversation.kind === "ai" && conversation.aiAgentId) {
       const agentFilter = await getAccessibleAIAgentFilter(session);
-      const accessible = agentFilter ? await AIAgent.exists({ _id: conversation.aiAgentId, ...agentFilter }) : null;
+      const populatedAgent = conversation.aiAgentId as unknown as { _id?: unknown };
+      const aiAgentId = populatedAgent && typeof populatedAgent === "object" && "_id" in populatedAgent ? populatedAgent._id : conversation.aiAgentId;
+      const accessible = agentFilter ? await AIAgent.exists({ _id: aiAgentId, ...agentFilter }) : null;
       if (!accessible) return forbiddenResponse("This AI employee is outside your assigned role or private workspace.");
     }
     await UnifiedMessage.updateMany({ conversationId, senderId: { $ne: session.user._id }, readBy: { $ne: session.user._id } }, { $addToSet: { readBy: session.user._id }, $set: { status: "read" } });

@@ -56,7 +56,21 @@ export async function GET(){
  const summary=await FinancialLedgerEntry.aggregate([
   {$group:{_id:{currency:"$currency",accountCode:"$accountCode",direction:"$direction"},total:{$sum:"$amountMinor"},entries:{$sum:1}}},
  ]);
- return NextResponse.json({ok:true,settings:settings||null,invoices,expenses,refunds,installments,approvals,reconciliations,credits,payments,ledger,orders,clients,summary},{headers:{"Cache-Control":"private, no-store"}});
+ const now=new Date();
+ // GET requests remain read-only: calculate overdue labels for the response
+ // instead of writing invoice/installment status changes during dashboard reads.
+ const displayInvoices=invoices.map(invoice=>({
+  ...invoice,
+  status:["issued","partially_paid"].includes(invoice.status)&&invoice.balanceMinor>0&&invoice.dueAt&&new Date(invoice.dueAt)<now?"overdue":invoice.status,
+ }));
+ const displayInstallments=installments.map(plan=>({
+  ...plan,
+  installments:(plan.installments||[]).map(installment=>({
+   ...installment,
+   status:["pending","partially_paid"].includes(installment.status)&&installment.dueAt&&new Date(installment.dueAt)<now?"overdue":installment.status,
+  })),
+ }));
+ return NextResponse.json({ok:true,settings:settings||null,invoices:displayInvoices,expenses,refunds,installments:displayInstallments,approvals,reconciliations,credits,payments,ledger,orders,clients,summary},{headers:{"Cache-Control":"private, no-store"}});
 }
 
 export async function POST(request:NextRequest){

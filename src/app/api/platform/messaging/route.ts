@@ -24,7 +24,7 @@ async function getAccessibleAIAgentFilter(session: MessagingSession): Promise<Re
     userId: session.user._id,
     employmentStatus: "active",
     accessSuspendedByWorkforce: { $ne: true },
-  }).select("positionId").lean();
+  }).select("positionId aiAccessMode aiAllowedAgentIds").lean();
   if (!employee) return null;
   const hasPrivateCounterpart = Boolean(await AIAgent.exists({ assignedUserId: session.user._id, enabled: true }));
   return buildAccessibleAIAgentFilter({
@@ -32,6 +32,8 @@ async function getAccessibleAIAgentFilter(session: MessagingSession): Promise<Re
     userId: String(session.user._id),
     positionId: String(employee.positionId || ""),
     hasPrivateCounterpart,
+    accessMode: employee.aiAccessMode || "own",
+    allowedAgentIds: (employee.aiAllowedAgentIds || []).map((id: unknown) => String(id)),
   });
 }
 

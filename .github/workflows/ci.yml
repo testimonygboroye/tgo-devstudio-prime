@@ -8,6 +8,11 @@ on:
   push:
     branches: [main, phase-1/core-platform-foundation, phase-2/founder-control-centre, phase-3/business-ecosystem-administration, platform/phase-4-client-crm-portal, platform/phase-5-workforce-management, platform/phase-6-universal-workspace, platform/client-portal-phase-7, feature/phase-14-executive-intelligence]
   workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Public, reachable deployment URL to run the browser regression suite against."
+        required: false
+        default: "https://tgo-devstudio-prime.vercel.app"
   pull_request:
     branches: [main]
 
@@ -247,18 +252,21 @@ jobs:
           CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
 
       - name: Install Playwright runner
+        if: github.event_name == "workflow_dispatch"
         run: npm install --no-save --package-lock=false @playwright/test
 
       - name: Install Chromium
+        if: github.event_name == "workflow_dispatch"
         run: npx playwright install --with-deps chromium
 
-      - name: Run browser E2E against Vercel branch preview
+      - name: Run browser E2E against the explicitly selected public deployment
+        if: github.event_name == "workflow_dispatch"
         run: npx playwright test
         env:
-          BASE_URL: https://tgo-devstudio-prime-git-quality-full-pl-09fd46-testimonygboroye.vercel.app
+          BASE_URL: ${{ inputs.base_url || vars.TGO_E2E_BASE_URL || "https://tgo-devstudio-prime.vercel.app" }}
 
       - name: Upload browser test evidence
-        if: always()
+        if: always() && github.event_name == "workflow_dispatch"
         uses: actions/upload-artifact@v4
         with:
           name: tgo-playwright-e2e-report

@@ -226,7 +226,7 @@ export async function handleAIChat(request:NextRequest,scope:Scope,method:"GET"|
  }catch(error){
   const failureSummary = (error instanceof Error ? error.message : "Unknown AI request failure")
    .replace(/(?:AIza[0-9A-Za-z_-]{20,}|sk-ant-[0-9A-Za-z_-]{16,}|sk-[0-9A-Za-z_-]{16,})/g, "[redacted]")
-   .replace(/(Bearer\\s+)[^\\s,;]+/gi, "$1[redacted]")
+   .replace(/(Bearer[ ]+)[^ ,;]+/gi, "$1[redacted]")
    .slice(0, 300);
   console.error("[TGO AI] Chat request failed", JSON.stringify({
    scope,
@@ -236,7 +236,7 @@ export async function handleAIChat(request:NextRequest,scope:Scope,method:"GET"|
     modelName: attempt.modelName,
     error: attempt.error
      .replace(/(?:AIza[0-9A-Za-z_-]{20,}|sk-ant-[0-9A-Za-z_-]{16,}|sk-[0-9A-Za-z_-]{16,})/g, "[redacted]")
-     .replace(/(Bearer\\s+)[^\\s,;]+/gi, "$1[redacted]")
+     .replace(/(Bearer[ ]+)[^ ,;]+/gi, "$1[redacted]")
      .slice(0, 300),
    })),
   }));

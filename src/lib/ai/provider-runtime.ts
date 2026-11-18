@@ -1,6 +1,7 @@
 import { decryptProviderSecret } from "@/lib/ai/provider-secrets";
 import { AIProvider } from "@/models/AIWorkforce";
 import { AIChatbotConfig, type AIChatbotScope } from "@/models/AIChatbot";
+import { buildProviderAttempts } from "@/lib/ai/provider-attempts";
 
 export interface AICompletion {
   text: string;
@@ -16,7 +17,7 @@ export async function runProviderCompletion(providerId: string, model: string, s
   const provider = await AIProvider.findById(providerId).select("+encryptedApiKey");
   if (!provider || !provider.enabled || provider.lastTestStatus !== "success") throw new Error("AI provider is not enabled and connection-verified.");
   const key = decryptProviderSecret(provider.encryptedApiKey);
-  const timeout = AbortSignal.timeout(20000);
+  const timeout = AbortSignal.timeout(60000);
   if (provider.provider === "google") {
     const url = "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent";
     const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, signal: timeout, cache: "no-store", body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 4096, temperature: 0.2 } }) });
@@ -51,24 +52,15 @@ export async function runProviderCompletionWithFallback(
   scope: AIChatbotScope = "admin",
 ): Promise<AICompletion> {
   const config = await AIChatbotConfig.findOne({ scope }).lean();
-  const configured = [
-    ...(config?.providerId && config?.modelName ? [{ providerId: String(config.providerId), modelName: config.modelName }] : []),
-    ...((config?.fallbacks || []).map((item) => ({ providerId: String(item.providerId), modelName: item.modelName }))),
-    ...(config?.fallbacks?.length ? [] : (config?.fallbackProviderId && config?.fallbackModelName
-      ? [{ providerId: String(config.fallbackProviderId), modelName: config.fallbackModelName }]
-      : [])),
-  ];
-  const attempts = configured.length ? [...configured, { providerId, modelName: model }] : [{ providerId, modelName: model }];
-  const visited = new Set<string>();
+  const attempts = buildProviderAttempts(providerId, model, config);
   const failures: string[] = [];
+  let attemptsTried = 0;
   for (const attempt of attempts) {
-    const key = attempt.providerId;
-    if (!attempt.providerId || !attempt.modelName || visited.has(key)) continue;
-    visited.add(key);
+    attemptsTried += 1;
     try {
       const result = await runProviderCompletion(attempt.providerId, attempt.modelName, system, prompt);
       if (!result.text.trim()) throw new Error("Provider returned an empty response.");
-      return { ...result, providerId: attempt.providerId, model: attempt.modelName, fallbackUsed: visited.size > 1 };
+      return { ...result, providerId: attempt.providerId, model: attempt.modelName, fallbackUsed: attemptsTried > 1 };
     } catch (error) {
       failures.push(attempt.providerId + "/" + attempt.modelName + ": " + (error instanceof Error ? error.message : "Provider request failed."));
     }

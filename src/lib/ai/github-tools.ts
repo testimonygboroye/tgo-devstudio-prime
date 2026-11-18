@@ -20,6 +20,9 @@ function parseBranch(value: unknown) {
 function parsePath(value: unknown) {
   const path = String(value || "").trim().replace(/^\/+/, "");
   if (!path || path.length > 400 || path.split("/").some(part => !part || part === "." || part === "..")) throw new Error("A safe repository-relative file path is required.");
+  if (/^(?:\.env(?:\..*)?|secrets?\/|credentials?\/)/i.test(path) || /\.(?:pem|key|p12|pfx|jks)$/i.test(path) || /(?:^|\/)id_rsa(?:$|\.)/i.test(path)) {
+    throw new Error("AI GitHub tools cannot read or write environment files, private keys, or credential directories.");
+  }
   return path;
 }
 
@@ -44,7 +47,7 @@ async function githubRequest<T>(token: string, path: string, init: RequestInit =
       ...(init.headers || {}),
     },
     cache: "no-store",
-    signal: init.signal || AbortSignal.timeout(15000),
+    signal: init.signal || AbortSignal.timeout(6000),
   });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {

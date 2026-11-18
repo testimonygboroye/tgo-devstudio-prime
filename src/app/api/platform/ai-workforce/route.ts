@@ -18,6 +18,14 @@ import DeliveryMilestone from "@/models/DeliveryMilestone";
 import DeliveryTask from "@/models/DeliveryTask";
 import ProjectDeliverable from "@/models/ProjectDeliverable";
 import Position from "@/models/Position";
+import FinanceSettings from "@/models/FinanceSettings";
+import FinanceInvoice from "@/models/FinanceInvoice";
+import FinanceExpense from "@/models/FinanceExpense";
+import FinanceRefund from "@/models/FinanceRefund";
+import FinanceApproval from "@/models/FinanceApproval";
+import PaymentTransaction from "@/models/PaymentTransaction";
+import FinancialLedgerEntry from "@/models/FinancialLedgerEntry";
+import IntegrationConnection from "@/models/IntegrationConnection";
 import { getAIRoleBlueprint } from "@/lib/ai/role-blueprints";
 
 export const runtime = "nodejs";
@@ -386,7 +394,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ status: "ok", agentId: agent._id, message: "Agent created disabled and with no operational permissions. Enablement requires a separate reviewed workflow." }, { status: 201 });
     }
     if (body.action === "agent.permissions.save") {
-      const allowed = ["clients.read_summary", "projects.read_summary", "projects.status.update", "site.routes.health_check"];
+      const allowed = ["clients.read_summary", "projects.read_summary", "projects.status.update", "site.routes.health_check", "finance.summary.read", "integrations.status.read"];
       if (!Array.isArray(body.permissions) || body.permissions.some((p: unknown) => typeof p !== "string" || !allowed.includes(p))) return NextResponse.json({ status: "error", message: "One or more requested permissions are not in the approved tool registry." }, { status: 400 });
       const agent = await AIAgent.findById(body.agentId);
       if (!agent) return NextResponse.json({ status: "error", message: "Agent not found." }, { status: 404 });
@@ -417,7 +425,7 @@ export async function POST(request: NextRequest) {
       if (!title || !input) return NextResponse.json({ status: "error", message: "Task title and instructions are required." }, { status: 400 });
       const operation = body.operation ? String(body.operation) : "";
       const operationPayload = body.operationPayload && typeof body.operationPayload === "object" && !Array.isArray(body.operationPayload) ? body.operationPayload as Record<string, unknown> : {};
-      if (operation && (!["clients.read_summary", "projects.read_summary", "projects.status.update", "site.routes.health_check"].includes(operation) || !agent.permissions.includes(operation))) return NextResponse.json({ status: "error", message: "This agent has not been granted the selected business-operation permission." }, { status: 403 });
+      if (operation && (!["clients.read_summary", "projects.read_summary", "projects.status.update", "site.routes.health_check", "finance.summary.read", "integrations.status.read"].includes(operation) || !agent.permissions.includes(operation))) return NextResponse.json({ status: "error", message: "This agent has not been granted the selected business-operation permission." }, { status: 403 });
       if (operation && JSON.stringify(operationPayload).length > 4000) return NextResponse.json({ status: "error", message: "Business-operation parameters are too large." }, { status: 400 });
       if (operation === "clients.read_summary" && !mongoose.isValidObjectId(String(operationPayload.clientId || ""))) return NextResponse.json({ status: "error", message: "A valid client ID is required for this tool." }, { status: 400 });
       if (["projects.read_summary", "projects.status.update"].includes(operation) && !mongoose.isValidObjectId(String(operationPayload.projectId || ""))) return NextResponse.json({ status: "error", message: "A valid project ID is required for this tool." }, { status: 400 });
@@ -487,6 +495,54 @@ export async function POST(request: NextRequest) {
           const projectId = String(payload.projectId || ""), nextStatus = String(payload.status || "");
           if (!/^[a-f0-9]{24}$/i.test(projectId) || !["active", "on_hold", "in_qa", "awaiting_client"].includes(nextStatus)) throw new Error("Project status operation requires a valid project ID and a permitted non-terminal status.");
           operationResult = { requestedOperation: "project status update", projectId, requestedStatus: nextStatus, approvalRecordedBy: task.approvedBy };
+        } else if (task.operation === "finance.summary.read") {
+          if (!agent.permissions.includes("finance.summary.read")) throw new Error("Agent lacks finance.summary.read permission.");
+          const [settings, invoiceTotals, expenseTotals, refundTotals, paymentTotals, ledgerTotals, pendingApprovals] = await Promise.all([
+            FinanceSettings.findOne({ key: "global" }).select("baseCurrency enabledCurrencies paystackEnabled bankTransferEnabled").lean(),
+            FinanceInvoice.aggregate([{ $group: { _id: { currency: "$currency", status: "$status" }, count: { $sum: 1 }, totalMinor: { $sum: "$totalMinor" }, balanceMinor: { $sum: "$balanceMinor" } } }]),
+            FinanceExpense.aggregate([{ $group: { _id: { currency: "$currency", status: "$status" }, count: { $sum: 1 }, amountMinor: { $sum: "$amountMinor" } } }]),
+            FinanceRefund.aggregate([{ $group: { _id: { currency: "$currency", status: "$status" }, count: { $sum: 1 }, amountMinor: { $sum: "$amountMinor" } } }]),
+            PaymentTransaction.aggregate([{ $group: { _id: { currency: "$currency", status: "$status", provider: "$provider" }, count: { $sum: 1 }, amountMinor: { $sum: "$amountMinor" } } }]),
+            FinancialLedgerEntry.aggregate([{ $group: { _id: { currency: "$currency", accountCode: "$accountCode", direction: "$direction" }, count: { $sum: 1 }, amountMinor: { $sum: "$amountMinor" } } }]),
+            FinanceApproval.countDocuments({ status: "pending" }),
+          ]);
+          // Deliberately excludes bank account numbers, payment credentials, client identities and raw transaction references.
+          operationResult = {
+            asOf: new Date().toISOString(),
+            baseCurrency: settings?.baseCurrency || "NGN",
+            enabledCurrencies: settings?.enabledCurrencies || ["NGN"],
+            paymentMethods: { paystackEnabled: Boolean(settings?.paystackEnabled), bankTransferEnabled: Boolean(settings?.bankTransferEnabled) },
+            invoices: invoiceTotals,
+            expenses: expenseTotals,
+            refunds: refundTotals,
+            payments: paymentTotals,
+            ledger: ledgerTotals,
+            pendingFinanceApprovals: pendingApprovals,
+          };
+        } else if (task.operation === "integrations.status.read") {
+          if (!agent.permissions.includes("integrations.status.read")) throw new Error("Agent lacks integrations.status.read permission.");
+          const [connections, providers] = await Promise.all([
+            IntegrationConnection.find({}).select("providerId displayName category status lastVerifiedAt lastError").sort({ category: 1, displayName: 1 }).lean(),
+            AIProvider.find({}).select("name provider enabled lastTestStatus lastTestedAt").sort({ name: 1 }).lean(),
+          ]);
+          operationResult = {
+            checkedAt: new Date().toISOString(),
+            integrations: connections.map(connection => ({
+              providerId: connection.providerId,
+              displayName: connection.displayName,
+              category: connection.category,
+              status: connection.status,
+              lastVerifiedAt: connection.lastVerifiedAt,
+              lastError: String(connection.lastError || "").slice(0, 240),
+            })),
+            aiProviders: providers.map(provider => ({
+              name: provider.name,
+              provider: provider.provider,
+              enabled: provider.enabled,
+              lastTestStatus: provider.lastTestStatus || "not_tested",
+              lastTestedAt: provider.lastTestedAt,
+            })),
+          };
         } else if (task.operation === "site.routes.health_check") {
           if (!agent.permissions.includes("site.routes.health_check")) throw new Error("Agent lacks site.routes.health_check permission.");
           const siteUrl = getSiteUrl();

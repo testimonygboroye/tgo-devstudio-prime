@@ -108,30 +108,24 @@ export async function POST(request: NextRequest) {
       if (!provider) return NextResponse.json({ status: "error", message: "Select an enabled, connection-verified AI provider." }, { status: 409 });
       if (!modelName || modelName.length > 120 || !/^[a-zA-Z0-9._:-]+$/.test(modelName)) return NextResponse.json({ status: "error", message: "Select a valid model from the provider catalogue." }, { status: 400 });
 
-      const definitions = [
-        { name: "Chief of Staff", role: "Chief of Staff", department: "Executive Office", permissions: ["clients.read_summary", "projects.read_summary"] },
-        { name: "Business Strategy Director", role: "Business Strategy Director", department: "Strategy & Research", permissions: ["projects.read_summary"] },
-        { name: "CTO", role: "Chief Technology Officer", department: "Engineering & Technology", permissions: ["projects.read_summary"] },
-        { name: "Project Operations Manager", role: "Project Operations Manager", department: "Project Delivery", permissions: ["projects.read_summary", "projects.status.update"] },
-        { name: "QA Lead", role: "Quality Assurance Lead", department: "Quality Assurance", permissions: ["projects.read_summary", "site.routes.health_check"] },
-        { name: "DevOps Architect", role: "DevOps Architect", department: "DevOps & Infrastructure", permissions: [] },
-        { name: "Client Success Director", role: "Client Success Director", department: "Client Relations", permissions: ["clients.read_summary", "projects.read_summary"] },
-        { name: "Client Onboarding Specialist", role: "Client Onboarding Specialist", department: "Client Onboarding", permissions: ["clients.read_summary"] },
-        { name: "Sales Director", role: "Sales Director", department: "Sales & Growth", permissions: ["clients.read_summary"] },
-        { name: "Customer Support Specialist", role: "Customer Support Specialist", department: "Customer Support", permissions: ["clients.read_summary"] },
-        { name: "Marketing Director", role: "Marketing Director", department: "Marketing & Communications", permissions: [] },
-        { name: "SEO Specialist", role: "SEO Specialist", department: "SEO & Search", permissions: [] },
-        { name: "Content Director", role: "Content Director", department: "Content & Editorial", permissions: [] },
-        { name: "Finance Analyst", role: "Finance Analyst", department: "Finance & Administration", permissions: [] },
-        { name: "Research Analyst", role: "Research Analyst", department: "Research & Intelligence", permissions: [] },
-        { name: "Security & Compliance Officer", role: "Security & Compliance Officer", department: "Security & Compliance", permissions: [] },
-        { name: "AI Site Operations Lead", role: "AI Site Operations Lead", department: "Website Operations", permissions: ["projects.read_summary", "site.routes.health_check"] },
-        { name: "Public Experience QA Specialist", role: "Public Website QA Specialist", department: "Public Experience", permissions: ["site.routes.health_check"] },
-        { name: "Client Portal QA Specialist", role: "Client Portal QA Specialist", department: "Client Experience", permissions: ["site.routes.health_check"] },
-        { name: "Admin Platform QA Specialist", role: "Admin Platform QA Specialist", department: "Platform Operations", permissions: ["site.routes.health_check"] },
-        { name: "People Operations Specialist", role: "People Operations Specialist", department: "People & Culture", permissions: [] },
-        { name: "Legal & Governance Analyst", role: "Legal & Governance Analyst", department: "Legal & Governance", permissions: [] },
-      ] as const;
+      const positions = await Position.find({ status: "active" })
+        .populate("departmentId", "name")
+        .sort({ level: 1, title: 1 })
+        .lean();
+      if (!positions.length) return NextResponse.json({ status: "error", message: "Create and activate workforce positions before provisioning AI role counterparts." }, { status: 409 });
+      const definitions = positions.map((position) => {
+        const department = String((position.departmentId as unknown as { name?: string })?.name || "General Operations");
+        const blueprint = getAIRoleBlueprint(position.title, department);
+        return {
+          positionId: position._id as mongoose.Types.ObjectId,
+          name: ("AI " + position.title).slice(0, 100),
+          role: position.title,
+          department,
+          permissions: [] as string[],
+          description: blueprint.description,
+          systemInstructions: blueprint.systemInstructions,
+        };
+      });
 
       const workspaceIds = new Map<string, mongoose.Types.ObjectId>();
       for (const department of [...new Set(definitions.map((item) => item.department))]) {
@@ -146,19 +140,31 @@ export async function POST(request: NextRequest) {
       let createdCount = 0;
       let existingCount = 0;
       for (const definition of definitions) {
-        const existing = await AIAgent.findOne({ name: definition.name, department: definition.department, createdBy: actorId });
-        if (existing) { existingCount += 1; continue; }
-        const instructions = "You are " + definition.name + ", TGO DevStudio's " + definition.role + ". Work only within your assigned responsibilities and explicitly granted tools. Treat client and company information as confidential. Never invent facts, credentials, employee identities, financial values or completed work. Business operations require a founder-approved task and must be audited. Escalate work outside your scope to the founder.";
+        let existing = await AIAgent.findOne({ positionId: definition.positionId, createdBy: actorId, assignedUserId: { $exists: false } });
+        if (!existing) existing = await AIAgent.findOne({ role: definition.role, department: definition.department, createdBy: actorId, assignedUserId: { $exists: false } });
+        if (existing) {
+          existing.positionId = definition.positionId;
+          existing.name = definition.name;
+          existing.role = definition.role;
+          existing.department = definition.department;
+          existing.description = definition.description;
+          existing.systemInstructions = definition.systemInstructions;
+          existing.workspaceId = workspaceIds.get(definition.department);
+          await existing.save();
+          existingCount += 1;
+          continue;
+        }
         await AIAgent.create({
           name: definition.name,
           role: definition.role,
           department: definition.department,
-          description: "Founder-governed AI employee. Operational permissions are limited to the approved tool registry.",
+          description: definition.description,
           workspaceId: workspaceIds.get(definition.department),
+          positionId: definition.positionId,
           providerId: provider._id,
           modelName,
-          systemInstructions: instructions,
-          permissions: [...definition.permissions],
+          systemInstructions: definition.systemInstructions,
+          permissions: [],
           requiresApproval: true,
           maxDailyTokens: 100000,
           enabled: false,

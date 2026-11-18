@@ -1,14 +1,8 @@
-import { decryptProviderSecret } from "@/lib/ai/provider-secrets";
+import { resolveProviderApiKey } from "@/lib/ai/provider-key";
 import { AIProvider } from "@/models/AIWorkforce";
 import { AIChatbotConfig, type AIChatbotScope } from "@/models/AIChatbot";
 import { buildProviderAttempts } from "@/lib/ai/provider-attempts";
 
-export function resolveEnvironmentGeminiKey(name: string, provider: string, encryptedApiKey: string): string {
-  const environmentKey = provider === "google" && name === "Gemini environment provider"
-    ? process.env.GEMINI_API_KEY?.trim()
-    : "";
-  return environmentKey || decryptProviderSecret(encryptedApiKey);
-}
 
 export interface AICompletion {
   text: string;
@@ -23,7 +17,7 @@ export interface AICompletion {
 export async function runProviderCompletion(providerId: string, model: string, system: string, prompt: string): Promise<AICompletion> {
   const provider = await AIProvider.findById(providerId).select("+encryptedApiKey");
   if (!provider || !provider.enabled || provider.lastTestStatus !== "success") throw new Error("AI provider is not enabled and connection-verified.");
-  const key = resolveEnvironmentGeminiKey(provider.name, provider.provider, provider.encryptedApiKey);
+  const key = resolveProviderApiKey(provider.name, provider.provider, provider.encryptedApiKey);
   // Keep each provider attempt below the 50-second Hobby function ceiling so fallback providers can run.
   const timeout = AbortSignal.timeout(14000);
   if (provider.provider === "google") {

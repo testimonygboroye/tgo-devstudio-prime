@@ -20,7 +20,7 @@ function parseBranch(value: unknown) {
 function parsePath(value: unknown) {
   const path = String(value || "").trim().replace(/^\/+/, "");
   if (!path || path.length > 400 || path.split("/").some(part => !part || part === "." || part === "..")) throw new Error("A safe repository-relative file path is required.");
-  if (/^(?:\.env(?:\..*)?|secrets?\/|credentials?\/)/i.test(path) || /\.(?:pem|key|p12|pfx|jks)$/i.test(path) || /(?:^|\/)id_rsa(?:$|\.)/i.test(path)) {
+  if (path.split("/").some(part => /^\.env(?:\..*)?$/i.test(part) || /^(?:secrets?|credentials?)$/i.test(part) || /^(?:id_rsa|id_ed25519)(?:\..*)?$/i.test(part)) || /\.(?:pem|key|p12|pfx|jks)$/i.test(path)) {
     throw new Error("AI GitHub tools cannot read or write environment files, private keys, or credential directories.");
   }
   return path;
@@ -82,6 +82,7 @@ export async function writeGitHubFile(input: { repository: unknown; path: unknow
   const path = parsePath(input.path);
   const branch = parseBranch(input.branch);
   const baseBranch = String(input.baseBranch || config.defaultBranch);
+  if (baseBranch !== config.defaultBranch) throw new Error("AI GitHub writes must use the configured default base branch.");
   const branchRef = "/repos/" + config.repository + "/git/ref/heads/" + encodeURIComponent(branch);
   try {
     await githubRequest(config.token, branchRef);
@@ -120,6 +121,7 @@ export async function createGitHubPullRequest(input: { repository: unknown; bran
   const config = await credentials(input.repository);
   const branch = parseBranch(input.branch);
   const base = String(input.baseBranch || config.defaultBranch);
+  if (base !== config.defaultBranch) throw new Error("AI draft pull requests must target the configured default base branch.");
   const result = await githubRequest<{ number: number; html_url: string; title: string; state: string }>(
     config.token,
     "/repos/" + config.repository + "/pulls",

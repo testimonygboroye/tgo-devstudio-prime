@@ -6,6 +6,8 @@ import { connectToDatabase } from "@/lib/db";
 import { UnifiedConversation, UnifiedMessage } from "@/models/UnifiedConversation";
 import User from "@/models/User";
 import { AIAgent, AITask } from "@/models/AIWorkforce";
+import EmployeeProfile from "@/models/EmployeeProfile";
+import { buildAccessibleAIAgentFilter } from "@/lib/messaging/aiAgentAccess";
 import { runProviderCompletion } from "@/lib/ai/provider-runtime";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import { mirrorMessageToPersonalWhatsApp } from "@/lib/messaging/whatsappSync";
@@ -14,6 +16,24 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const fail = (message: string, status = 400) => NextResponse.json({ status: "error", message }, { status });
 const validKinds = ["direct", "group", "channel", "ai"] as const;
+
+type MessagingSession = NonNullable<Awaited<ReturnType<typeof getAuthenticatedSession>>>;
+async function getAccessibleAIAgentFilter(session: MessagingSession): Promise<Record<string, unknown> | null> {
+  if (session.role?.isFounderRole) return { enabled: true };
+  const employee = await EmployeeProfile.findOne({
+    userId: session.user._id,
+    employmentStatus: "active",
+    accessSuspendedByWorkforce: { $ne: true },
+  }).select("positionId").lean();
+  if (!employee) return null;
+  const hasPrivateCounterpart = Boolean(await AIAgent.exists({ assignedUserId: session.user._id, enabled: true }));
+  return buildAccessibleAIAgentFilter({
+    isFounder: false,
+    userId: String(session.user._id),
+    positionId: String(employee.positionId || ""),
+    hasPrivateCounterpart,
+  });
+}
 
 export async function GET(request: NextRequest) {
   const session = await getAuthenticatedSession(request);
@@ -28,6 +48,11 @@ export async function GET(request: NextRequest) {
     if (!conversation) return fail("Conversation not found.", 404);
     const isMember = conversation.memberIds.some((member: unknown) => String((member as {_id?: unknown})._id || member) === String(session.user._id));
     if (!isMember) return forbiddenResponse("You are not a member of this private conversation.");
+    if (conversation.kind === "ai" && conversation.aiAgentId) {
+      const agentFilter = await getAccessibleAIAgentFilter(session);
+      const accessible = agentFilter ? await AIAgent.exists({ _id: conversation.aiAgentId, ...agentFilter }) : null;
+      if (!accessible) return forbiddenResponse("This AI employee is outside your assigned role or private workspace.");
+    }
     await UnifiedMessage.updateMany({ conversationId, senderId: { $ne: session.user._id }, readBy: { $ne: session.user._id } }, { $addToSet: { readBy: session.user._id }, $set: { status: "read" } });
     const query = searchParams.get("q")?.trim().slice(0, 100) || "";
     const messageFilter: Record<string, unknown> = { conversationId };
@@ -47,7 +72,8 @@ export async function GET(request: NextRequest) {
   const unreadByConversation = new Map(unreadRows.map((row) => [String(row._id), Number(row.count || 0)]));
   const conversationsWithUnread = conversations.map((conversation) => ({ ...conversation, unreadCount: unreadByConversation.get(String(conversation._id)) || 0 }));
   const people = await User.find({ accountType: "staff", isBanned: { $ne: true } }).select("name email role").sort({ name: 1 }).limit(300).lean();
-  const agents = await AIAgent.find({ enabled: true }).select("name role department").sort({ name: 1 }).lean();
+  const agentFilter = await getAccessibleAIAgentFilter(session);
+  const agents = agentFilter ? await AIAgent.find(agentFilter).select("name role department").sort({ name: 1 }).lean() : [];
   return NextResponse.json({ status: "ok", conversations: conversationsWithUnread, people, agents }, { headers: { "Cache-Control": "private, no-store" } });
 }
 
@@ -71,8 +97,9 @@ export async function POST(request: NextRequest) {
     const members = Array.from(new Set([String(actorId), ...ids])).map((id) => new Types.ObjectId(id));
     const aiAgentId = String(body.aiAgentId || "");
     if (kind === "ai") {
-      const agent = await AIAgent.findOne({ _id: aiAgentId, enabled: true }).select("name");
-      if (!agent) return fail("The selected AI employee is not enabled.", 404);
+      const agentFilter = await getAccessibleAIAgentFilter(session);
+      const agent = agentFilter ? await AIAgent.findOne({ _id: aiAgentId, ...agentFilter }).select("name") : null;
+      if (!agent) return forbiddenResponse("That AI employee is outside your assigned role or private workspace.");
     }
     const conversation = await UnifiedConversation.create({
       kind, title: String(body.title || "").trim().slice(0, 160),
@@ -103,8 +130,9 @@ export async function POST(request: NextRequest) {
     await mirrorMessageToPersonalWhatsApp(conversation, message);
 
     if (conversation.kind === "ai" && conversation.aiAgentId) {
-      const agent = await AIAgent.findOne({ _id: conversation.aiAgentId, enabled: true });
-      if (!agent) return fail("The assigned AI employee is currently unavailable.", 409);
+      const agentFilter = await getAccessibleAIAgentFilter(session);
+      const agent = agentFilter ? await AIAgent.findOne({ _id: conversation.aiAgentId, ...agentFilter }) : null;
+      if (!agent) return forbiddenResponse("This AI employee is outside your assigned role or private workspace.");
       const task = await AITask.create({ agentId: agent._id, title: "Conversation with " + actorName, input: content, requestedBy: String(actorId), status: agent.requiresApproval ? "awaiting_approval" : "queued", operationPayload: { source: "ai_conversation", conversationId } });
       if (agent.requiresApproval) {
         await UnifiedMessage.create({ conversationId, senderType: "system", senderLabel: "TGO system", body: "Your message has been saved. This AI employee requires approval before responding. Task " + String(task._id) + " is awaiting approval." });
@@ -184,8 +212,9 @@ export async function POST(request: NextRequest) {
     const input = String(body.input || "").trim();
     const targetLanguage = String(body.targetLanguage || "").trim().slice(0, 80);
     if (!Types.ObjectId.isValid(agentId) || input.length < 1 || input.length > 12000 || !targetLanguage) return fail("Choose an AI employee, enter text, and specify the target language.");
-    const agent = await AIAgent.findOne({ _id: agentId, enabled: true });
-    if (!agent) return fail("The selected AI employee is unavailable.", 404);
+    const agentFilter = await getAccessibleAIAgentFilter(session);
+    const agent = agentFilter ? await AIAgent.findOne({ _id: agentId, ...agentFilter }) : null;
+    if (!agent) return forbiddenResponse("That AI employee is outside your assigned role or private workspace.");
     if (agent.requiresApproval) return fail("This AI employee requires approval. Choose an enabled translation agent configured for direct, text-only replies.", 409);
     const dayStart = new Date(); dayStart.setUTCHours(0, 0, 0, 0);
     const usage = await AITask.aggregate([{ $match: { agentId: agent._id, status: { $in: ["completed", "running"] }, createdAt: { $gte: dayStart } } }, { $group: { _id: null, tokens: { $sum: { $add: ["$inputTokens", "$outputTokens"] } } } }]);

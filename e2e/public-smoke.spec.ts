@@ -316,3 +316,15 @@ test("founder finance, unified messaging and AI workforce endpoints are private"
   const ai = await page.request.get("/api/platform/ai-workforce");
   expect(ai.status()).toBe(401);
 });
+
+
+test("founder and client portals expose the official Google sign-in option", async ({ page }) => {
+  for (const route of ["/command-deck/login", "/client/login"]) {
+    await page.goto(route, { waitUntil: "domcontentloaded" });
+    const googleButton = page.getByRole("button", { name: /continue with google/i });
+    await expect(googleButton).toBeVisible();
+    await expect(googleButton.locator("svg path[fill='#4285F4']")).toHaveCount(1);
+  }
+  await page.goto("/client/register", { waitUntil: "domcontentloaded" });
+  await expect(page.getByText(/Your name and password are collected on the next screen/i)).toBeVisible();
+});

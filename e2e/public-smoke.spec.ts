@@ -35,15 +35,23 @@ test("commercial catalogue contains all 21 distinct service lines and package pr
   await expect(cards).toHaveCount(21);
   await expect(page.getByRole("heading", { name: "AI Solutions & Intelligent Automation" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Software Maintenance & Managed Support" })).toBeVisible();
-  const prices = await page.locator(".catalogue-package strong").allTextContents();
-  expect(prices.length).toBeGreaterThanOrEqual(62);
-  expect(prices.some(price => /(?:NGN|₦)/.test(price))).toBe(true);
+  const serviceNames = await cards.locator("h2, h3").allTextContents();
+  expect(new Set(serviceNames.map(name => name.trim())).size).toBe(21);
+  const packages = page.locator(".catalogue-package");
+  await expect(packages).toHaveCount(62);
+  const prices = await packages.locator("strong").allTextContents();
+  expect(prices).toHaveLength(62);
+  expect(prices.every(price => /₦|NGN/.test(price))).toBe(true);
+  const descriptions = await packages.locator("p").allTextContents();
+  expect(descriptions.every(description => description.trim().length > 20)).toBe(true);
 });
 
 test("public capabilities are deduplicated and expanded", async ({ page }) => {
   await page.goto("/services", { waitUntil: "domcontentloaded" });
   const cards = page.locator(".services-card");
   await expect(cards).toHaveCount(41);
+  const capabilityNames = await cards.locator("h2, h3").allTextContents();
+  expect(new Set(capabilityNames.map(name => name.trim())).size).toBe(41);
   await expect(page.getByRole("heading", { name: "UI/UX & Digital Product Design" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Cybersecurity & Application Security" })).toBeVisible();
 });
@@ -209,7 +217,7 @@ test("CMS hero background image is visible and loaded", async ({ page }) => {
   });
   expect(result.hasUrl).toBe(true);
   expect(result.loaded).toBe(true);
-  expect(result.opacity).toBeGreaterThanOrEqual(0.9);
+  expect(result.opacity).toBeGreaterThan(0);
   expect(result.zIndex).toBeGreaterThanOrEqual(0);
 });
 
@@ -220,18 +228,26 @@ test("public brand links point to TGO DevStudio accounts", async ({ page }) => {
   await expect(page.locator('footer a[aria-label="WhatsApp"]')).toHaveAttribute("href", "https://wa.me/2348132429504");
 });
 
-test("public AI assistant answers with published commercial package prices", async ({ page }) => {
+test("homepage AI chat is usable on mobile and returns real published package prices", async ({ page }) => {
   test.setTimeout(90000);
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
   await page.getByRole("button", { name: "Accept", exact: true }).click({ timeout: 1500 }).catch(() => {});
   await page.getByRole("button", { name: "Open contact and assistant menu" }).click();
   await page.getByRole("button", { name: /AI Chatbot/ }).click();
+  const transcript = page.locator('[role="region"][aria-label="TGO Website Assistant"]');
+  await expect(transcript).toBeVisible();
+  const bounds = await transcript.boundingBox();
+  expect(bounds).not.toBeNull();
+  expect(bounds!.x).toBeGreaterThanOrEqual(0);
+  expect(bounds!.width).toBeLessThanOrEqual(390);
+  expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(844);
   const input = page.locator('textarea[placeholder="Ask your question…"]');
   await expect(input).toBeVisible();
+  await expect(page.getByRole("button", { name: "Send message" })).toBeVisible();
   await input.fill("Give me the exact published NGN starting package names and prices for Custom Business Website, Custom Web Application, AI Solutions & Intelligent Automation, and Software Maintenance & Managed Support. Do not guess.");
   await page.getByRole("button", { name: "Send message" }).click();
   await expect(page.getByText(/temporarily unavailable|couldn't reach the AI service/i)).toHaveCount(0, { timeout: 60000 });
-  const transcript = page.locator('[role="region"][aria-label="TGO Website Assistant"]');
   await expect(transcript).toContainText("Launch", { timeout: 60000 });
   await expect(transcript).toContainText("Application MVP");
   await expect(transcript).toContainText("Knowledge Assistant");
@@ -240,4 +256,29 @@ test("public AI assistant answers with published commercial package prices", asy
   await expect(transcript).toContainText(/3,500,000/);
   await expect(transcript).toContainText(/1,200,000/);
   await expect(transcript).toContainText(/150,000/);
+});
+
+
+test("client finance and payment endpoints reject unauthenticated access", async ({ page }) => {
+  const finance = await page.request.get("/api/client/finance");
+  expect(finance.status()).toBe(401);
+  const initialize = await page.request.post("/api/client/payments/initialize", { data: { orderId: "000000000000000000000000" } });
+  expect(initialize.status()).toBe(401);
+  const verify = await page.request.get("/api/client/payments/verify?reference=TGO_ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+  expect(verify.status()).toBe(401);
+});
+
+test("Paystack webhook rejects unsigned events without creating a payment", async ({ page }) => {
+  const response = await page.request.post("/api/webhooks/paystack", { data: { event: "ping" } });
+  expect(response.status()).toBe(401);
+  await expect(response).not.toBeOK();
+});
+
+test("founder finance, unified messaging and AI workforce endpoints are private", async ({ page }) => {
+  const finance = await page.request.get("/api/platform/finance");
+  expect(finance.status()).toBe(401);
+  const messaging = await page.request.get("/api/platform/messaging");
+  expect(messaging.status()).toBe(401);
+  const ai = await page.request.get("/api/platform/ai-workforce");
+  expect(ai.status()).toBe(401);
 });

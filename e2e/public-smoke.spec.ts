@@ -29,14 +29,14 @@ for (const route of publicRoutes) {
   });
 }
 
-test("commercial catalogue contains all 17 distinct service lines and package prices", async ({ page }) => {
+test("commercial catalogue contains all 21 distinct service lines and package prices", async ({ page }) => {
   await page.goto("/services/catalogue", { waitUntil: "domcontentloaded" });
   const cards = page.locator(".catalogue-card");
-  await expect(cards).toHaveCount(17);
+  await expect(cards).toHaveCount(21);
   await expect(page.getByRole("heading", { name: "AI Solutions & Intelligent Automation" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Software Maintenance & Managed Support" })).toBeVisible();
   const prices = await page.locator(".catalogue-package strong").allTextContents();
-  expect(prices.length).toBeGreaterThanOrEqual(40);
+  expect(prices.length).toBeGreaterThanOrEqual(62);
   expect(prices.some(price => price.includes("₦"))).toBe(true);
 });
 
@@ -46,6 +46,36 @@ test("public capabilities are deduplicated and expanded", async ({ page }) => {
   await expect(cards).toHaveCount(41);
   await expect(page.getByRole("heading", { name: "UI/UX & Digital Product Design" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Cybersecurity & Application Security" })).toBeVisible();
+});
+
+test("public navigation hides legal pages while the footer keeps them", async ({ page }) => {
+  const legalLink = /Privacy Policy|Consumer Terms|Usage Policy|Accessibility Statement|Data Deletion Requests/i;
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await expect(page.locator("header").getByRole("link", { name: legalLink })).toHaveCount(0);
+  await page.getByRole("button", { name: "Open menu" }).click();
+  await expect(page.locator("header").getByRole("link", { name: legalLink })).toHaveCount(0);
+  await expect(page.locator("footer").getByRole("link", { name: legalLink }).first()).toBeVisible();
+});
+
+test("homepage hero copy and product visual never overlap", async ({ page }) => {
+  for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport);
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    const copy = page.locator(".home-hero-copy");
+    const visual = page.locator(".home-visual-wrap");
+    await expect(copy).toBeVisible();
+    await expect(visual).toBeVisible();
+    const overlaps = await page.evaluate(() => {
+      const copyElement = document.querySelector(".home-hero-copy");
+      const visualElement = document.querySelector(".home-visual-wrap");
+      if (!copyElement || !visualElement) return true;
+      const a = copyElement.getBoundingClientRect();
+      const b = visualElement.getBoundingClientRect();
+      return !(a.right <= b.left + 1 || b.right <= a.left + 1 || a.bottom <= b.top + 1 || b.bottom <= a.top + 1);
+    });
+    expect(overlaps, `Hero copy and product visual overlap at ${viewport.width}px`).toBe(false);
+  }
 });
 
 test("FAQ detail route resolves the published question slug", async ({ page }) => {

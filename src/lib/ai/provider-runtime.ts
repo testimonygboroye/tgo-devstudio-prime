@@ -17,7 +17,8 @@ export async function runProviderCompletion(providerId: string, model: string, s
   const provider = await AIProvider.findById(providerId).select("+encryptedApiKey");
   if (!provider || !provider.enabled || provider.lastTestStatus !== "success") throw new Error("AI provider is not enabled and connection-verified.");
   const key = decryptProviderSecret(provider.encryptedApiKey);
-  const timeout = AbortSignal.timeout(60000);
+  // Keep each provider attempt below the 50-second Hobby function ceiling so fallback providers can run.
+  const timeout = AbortSignal.timeout(14000);
   if (provider.provider === "google") {
     const url = "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent";
     const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, signal: timeout, cache: "no-store", body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 4096, temperature: 0.2 } }) });

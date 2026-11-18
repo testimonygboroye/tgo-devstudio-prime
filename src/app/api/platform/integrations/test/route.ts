@@ -37,7 +37,7 @@ async function verify(providerId: string, credentials: Record<string, string>): 
       const allowedRepositories = String(credentials.allowedRepositories || "").split(/[\\s,;]+/).map((value: string) => value.trim()).filter(Boolean);
       if (!allowedRepositories.length) throw new Error("Add at least one owner/repository to the allowed repositories field.");
       for (const repository of allowedRepositories) {
-        if (!/^[A-Za-z0-9_.-]+\\/[A-Za-z0-9_.-]+$/.test(repository)) throw new Error("Invalid allowed repository format: " + repository);
+        if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository)) throw new Error("Invalid allowed repository format: " + repository);
         const repositoryResponse = await fetch("https://api.github.com/repos/" + repository, { headers: { Authorization: `Bearer ${credentials.token}`, accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" }, signal: controller.signal, cache: "no-store" });
         if (!repositoryResponse.ok) throw new Error("GitHub token cannot access " + repository + " (HTTP " + repositoryResponse.status + ").");
         const repositoryData = await repositoryResponse.json();

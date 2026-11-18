@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import HelpSearchPopup from "@/components/shared/HelpSearchPopup";
-import { ArrowLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 const SECTION_LABELS: Record<string, string> = {
@@ -86,7 +86,6 @@ export default function AdminTopBar() {
   return (
     <div className="mb-8 flex flex-col gap-4 border-b border-[var(--border-subtle)] pb-5 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex min-w-0 items-start gap-3">
-        <button type="button" aria-label="Open admin navigation" onClick={() => window.dispatchEvent(new Event("tgo:admin-sidebar-toggle"))} className="mt-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:border-brand-cyan-400 hover:text-brand-cyan-300 md:hidden"><ChevronRight size={19}/></button>
         <div className="min-w-0">
         <p className="font-mono text-xs uppercase tracking-widest text-[var(--text-muted)]">
           {breadcrumb}

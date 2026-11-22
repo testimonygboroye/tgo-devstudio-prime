@@ -12,10 +12,12 @@ const allowedPlacements=["homepage-after-media","homepage-before-footer","about"
 export async function GET(req:NextRequest){
  await connectToDatabase();
  const key=req.nextUrl.searchParams.get("key");
+ const placement=req.nextUrl.searchParams.get("placement");
  const admin=req.nextUrl.searchParams.get("admin")==="1";
  if(admin){const s=await getAuthenticatedSession(req);if(!s)return unauthorizedResponse();if(!isAdmin(s))return forbiddenResponse("Founder access required.");const rows=await MediaCollection.find({}).sort({priority:-1,updatedAt:-1}).lean();return NextResponse.json({collections:rows},{headers:{"Cache-Control":"private, no-store"}});}
  const now=new Date();const filter:any={enabled:true,$and:[{$or:[{startsAt:null},{startsAt:{$exists:false}},{startsAt:{$lte:now}}]},{$or:[{endsAt:null},{endsAt:{$exists:false}},{endsAt:{$gte:now}}]}]};
  if(key&&allowedKeys.includes(key))filter.key=key;
+ if(placement&&allowedPlacements.includes(placement))filter.placement=placement;
  const rows=await MediaCollection.find(filter).sort({priority:-1,updatedAt:-1}).lean();
  return NextResponse.json({collections:rows.filter(x=>x.key!=="advertisement"&&x.key!=="partner"||x.approved)},{headers:{"Cache-Control":"public, max-age=30, stale-while-revalidate=60"}});
 }

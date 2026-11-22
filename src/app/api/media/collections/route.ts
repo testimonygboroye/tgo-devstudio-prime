@@ -23,7 +23,7 @@ async function migrateLegacyHomepageMedia(key:string){
 export async function GET(req:NextRequest){
  await connectToDatabase();
  const key=req.nextUrl.searchParams.get("key"),placement=req.nextUrl.searchParams.get("placement"),admin=req.nextUrl.searchParams.get("admin")==="1";
- if(!admin&&(key==="launch"||key==="permanent"))await migrateLegacyHomepageMedia(key);
+ if(admin){await migrateLegacyHomepageMedia("launch");await migrateLegacyHomepageMedia("permanent");}else if(key==="launch"||key==="permanent")await migrateLegacyHomepageMedia(key);
  if(admin){
   const s=await getAuthenticatedSession(req);if(!s)return unauthorizedResponse();if(!isAdmin(s))return forbiddenResponse("Founder access required.");
   const [rows,events,placements,devices]=await Promise.all([MediaCollection.find({}).sort({priority:-1,updatedAt:-1}).lean(),MediaCollectionEvent.aggregate([{$group:{_id:{collectionId:"$collectionId",eventType:"$eventType"},count:{$sum:1}}}]),MediaCollectionEvent.aggregate([{$match:{eventType:"impression"}},{$group:{_id:{collectionId:"$collectionId",placement:"$placement"},count:{$sum:1}}}]),MediaCollectionEvent.aggregate([{$match:{eventType:"impression"}},{$group:{_id:{collectionId:"$collectionId",device:"$device"},count:{$sum:1}}}])]);

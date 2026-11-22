@@ -148,9 +148,17 @@ export default async function HomePage() {
                 <div className="home-window-sidebar"><span /><span /><span /><span /><span /></div>
                 <div className="home-window-main">
                   <div className="home-window-greeting"><small>YOUR NEXT BIG IDEA</small><strong>Built to move<br />your business forward.</strong></div>
-                  <div className="home-window-metrics"><div><small>Performance</small><b>98.6%</b><span>↗ Optimised</span></div><div><small>Systems online</small><b>12 / 12</b><span>● All operational</span></div></div>
-                  <div className="home-window-chart"><div className="home-chart-label"><span>Growth trajectory</span><b>+32.8%</b></div><div className="home-chart-bars">{[34,48,41,63,53,76,68,91,78,100,87,112].map((height,index)=><i key={index} style={{height:height+"%"}} />)}</div></div>
-                  <div className="home-window-footer"><span><Zap size={13}/> Intelligent by design</span><span>Secure · Scalable · Ready</span></div>
+                  <div className="home-window-metrics home-window-capabilities"><div><small>OUR APPROACH</small><b>Built around you</b><span>Strategy before technology</span></div><div><small>OUR STANDARD</small><b>Production-ready</b><span>Quality at every stage</span></div></div>
+                  <div className="home-window-chart home-delivery-flow">
+                    <div className="home-chart-label"><span>From first idea to launch</span><b>THE TGO WAY</b></div>
+                    <div className="home-delivery-steps">
+                      <div><i>01</i><span><b>Discover</b><small>Understand the need</small></span></div>
+                      <div><i>02</i><span><b>Design</b><small>Shape the experience</small></span></div>
+                      <div><i>03</i><span><b>Build</b><small>Engineer with care</small></span></div>
+                      <div><i>04</i><span><b>Launch</b><small>Deliver and improve</small></span></div>
+                    </div>
+                  </div>
+                  <div className="home-window-footer"><span><Zap size={13}/> Thoughtful engineering, end to end</span></div>
                 </div>
               </div>
             </div>

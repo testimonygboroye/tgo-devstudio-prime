@@ -108,6 +108,7 @@ const NAV_GROUPS = [
   { title: "Website Content", items: [
     { label: "Homepage", hrefSuffix: "/home-settings", icon: Home, badgeKey: null },
     { label: "Homepage Media", hrefSuffix: "/homepage-media", icon: Video, badgeKey: null },
+    { label: "Advertising & Media Distribution", hrefSuffix: "/advertising", icon: Megaphone, badgeKey: null },
     { label: "Case Studies", hrefSuffix: "/case-studies", icon: Briefcase, badgeKey: null },
     { label: "Services", hrefSuffix: "/services", icon: Layers, badgeKey: null },
     { label: "Process", hrefSuffix: "/process", icon: Workflow, badgeKey: null },

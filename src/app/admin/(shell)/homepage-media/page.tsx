@@ -4,5 +4,5 @@ import HomepageMediaClient from "./HomepageMediaClient";
 export default async function HomepageMediaPage(){
  const session=await getServerSession();
  guardCanEdit(session!,"homeSettings");
- return <div><p className="font-mono text-xs uppercase tracking-widest text-neutral-400">Website experience</p><h1 className="mt-1 text-3xl font-bold brand-gradient-text">Homepage Media & Countdown</h1><p className="mt-2 max-w-2xl text-sm text-neutral-400">Manage the homepage media section, videos, images, optional countdown, and date-based media changes.</p><div className="mt-8"><HomepageMediaClient/></div></div>;
+ return <div><p className="font-mono text-xs uppercase tracking-widest text-neutral-400">Website experience</p><h1 className="mt-1 text-3xl font-bold brand-gradient-text">Launch Countdown Settings</h1><p className="mt-2 max-w-2xl text-sm text-neutral-400">Manage the launch message and countdown. Upload and manage all media in the unified Media & Advertising Studio.</p><div className="mt-8"><HomepageMediaClient/></div></div>;
 }

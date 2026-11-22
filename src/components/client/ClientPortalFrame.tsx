@@ -13,7 +13,7 @@ export default function ClientPortalFrame({ children }: { children: React.ReactN
   return <>
     {authPage && <SiteHeader />}
     {children}
-    {pathname === "/client/dashboard" && <PublicMediaPlacement placement="client-partners" />}
+    {pathname === "/client/dashboard" && <PublicMediaPlacement placement="client-partners" heading="Recommended Tools & Partner Benefits" description="Useful products, services and exclusive partner benefits selected to support your work." />}
     <SiteFooter />
     <SocialFloatingButton />
     <AIChatWidget scope="client" showLauncher={false} />

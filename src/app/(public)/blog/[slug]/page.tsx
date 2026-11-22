@@ -386,7 +386,7 @@ export default async function BlogDetailPage({
           }}
         />
 
-        {tags.length > 0 && (
+        <PublicMediaPlacement placement="blog-article" />\n\n        {tags.length > 0 && (
           <div className="mt-10 flex flex-wrap gap-2">
             {tags.map((tag: string) => (
               <span

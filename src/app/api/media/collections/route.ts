@@ -4,6 +4,7 @@ import {connectToDatabase} from "@/lib/db";
 import {getAuthenticatedSession} from "@/lib/auth/session";
 import {unauthorizedResponse,forbiddenResponse} from "@/lib/auth/authorize";
 import MediaCollection from "@/models/MediaCollection";
+import LaunchSettings from "@/models/LaunchSettings";
 import MediaCollectionEvent from "@/models/MediaCollectionEvent";
 import cloudinary from "@/lib/cloudinary";
 export const dynamic="force-dynamic";

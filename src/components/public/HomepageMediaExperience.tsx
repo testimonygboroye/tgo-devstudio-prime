@@ -9,7 +9,7 @@ export default function HomepageMediaExperience({settings}:Props){
  const [now,setNow]=useState<number|null>(null),[launch,setLaunch]=useState<Collection|null>(null),[permanent,setPermanent]=useState<Collection|null>(null),[index,setIndex]=useState(0),[repeat,setRepeat]=useState(0);
  const videoRef=useRef<HTMLVideoElement>(null);
  const target=useMemo(()=>settings.launchDate?new Date(settings.launchDate).getTime():0,[settings.launchDate]),hasTarget=Boolean(target&&Number.isFinite(target)),countdownEnabled=settings.countdownEnabled!==false;
- const afterTarget=countdownEnabled&&hasTarget&&now!==null&&now>=target;
+ const afterTarget=hasTarget&&now!==null&&now>=target;
  useEffect(()=>{let active=true;Promise.all(["launch","permanent"].map(key=>fetch("/api/media/collections?key="+key,{cache:"no-store"}).then(r=>r.json()).catch(()=>({collections:[]})))).then(([a,b])=>{if(active){setLaunch(a.collections?.[0]||null);setPermanent(b.collections?.[0]||null)}});return()=>{active=false}},[]);
  useEffect(()=>{if(!settings.enabled||!countdownEnabled||!hasTarget)return;const sync=()=>setNow(Date.now());sync();const id=window.setInterval(sync,1000);return()=>clearInterval(id)},[settings.enabled,countdownEnabled,hasTarget,target]);
  useEffect(()=>{const ms=(navigator as Navigator&{mediaSession?:MediaSession}).mediaSession;if(!ms)return;try{ms.metadata=null;ms.playbackState="none";for(const action of ["play","pause","seekbackward","seekforward","previoustrack","nexttrack","stop","seekto"] as MediaSessionAction[]){try{ms.setActionHandler(action,null)}catch{}}}catch{}return()=>{try{ms.metadata=null;ms.playbackState="none"}catch{}}},[]);

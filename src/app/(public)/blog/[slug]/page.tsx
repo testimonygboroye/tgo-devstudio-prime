@@ -11,6 +11,7 @@ import { sanitizeBlogHtml } from "@/lib/sanitizeHtml";
 import { calculateReadingTime } from "@/lib/utils/readingTime";
 import ImageLightbox from "@/components/shared/ImageLightbox";
 import SmartImage from "@/components/public/SmartImage";
+import PublicMediaPlacement from "@/components/public/PublicMediaPlacement";
 import { getServerLocale } from "@/lib/i18n/serverLocale";
 import {
   createTranslator,

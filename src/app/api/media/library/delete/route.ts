@@ -1,13 +1,13 @@
 import {NextRequest,NextResponse} from "next/server";
 import {connectToDatabase} from "@/lib/db";
 import {getAuthenticatedSession} from "@/lib/auth/session";
-import {unauthorizedResponse,forbiddenResponse} from "@/lib/auth/authorize";
+import {unauthorizedResponse,forbiddenResponse,requireAnyContentPermission} from "@/lib/auth/authorize";
 import MediaCollection from "@/models/MediaCollection";
 import LaunchSettings from "@/models/LaunchSettings";
 import cloudinary from "@/lib/cloudinary";
 export async function POST(request:NextRequest){
  const session=await getAuthenticatedSession(request);if(!session)return unauthorizedResponse();
- if(!session.role.isFounderRole&&!session.role.canManageUsers)return forbiddenResponse("You do not have permission to delete media.");
+ if(!session.role.isFounderRole&&!session.role.canManageUsers&&!requireAnyContentPermission(session,"homeSettings"))return forbiddenResponse("You do not have permission to delete media.");
  let body:any;try{body=await request.json()}catch{return NextResponse.json({status:"error",message:"Invalid request body."},{status:400})}
  const publicId=String(body.publicId||"");const resourceType=body.resourceType==="video"?"video":"image";
  if(!publicId.startsWith("tgo-devstudio-prime/")||publicId.length>500)return NextResponse.json({status:"error",message:"Only media owned by the TGO media library can be deleted here."},{status:400});

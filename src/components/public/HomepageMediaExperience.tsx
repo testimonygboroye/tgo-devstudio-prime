@@ -21,7 +21,7 @@ export default function HomepageMediaExperience({settings}:Props){
  useEffect(()=>{if(!current||current.kind!=="video"||!sectionRef.current)return;const video=videoRef.current;if(!video)return;const observer=new IntersectionObserver(entries=>{if(entries[0]?.intersectionRatio>=0.25){void video.play().catch(()=>{})}else video.pause()},{threshold:[0,0.25]});observer.observe(sectionRef.current);return()=>{observer.disconnect();video.pause()}},[current]);
  const advance=useCallback(()=>{setIndex(i=>(i+1)%Math.max(1,items.length));setRepeat(0)},[items.length]);
  const finishVideo=useCallback((video?:HTMLVideoElement)=>{const max=Math.max(1,current?.repeatCount||1);if(repeat+1<max){setRepeat(v=>v+1);if(video){video.currentTime=0;void video.play().catch(advance)}}else advance()},[current,repeat,advance]);
- useEffect(()=>{setIndex(0);setRepeat(0)},[afterTarget,launch,permanent]);
+
  useEffect(()=>{if(!current||current.kind!=="image")return;const t=window.setTimeout(()=>{if(repeat+1<Math.max(1,current.repeatCount||1))setRepeat(v=>v+1);else advance()},Math.max(1,current.durationSeconds||8)*1000);return()=>clearTimeout(t)},[current,advance,repeat]);
  const countdown=settings.enabled&&countdownEnabled&&hasTarget&&now!==null&&!afterTarget?remainingTime(target,now):null;
  if(!settings.enabled&&!permanent?.enabled&&!launch?.enabled)return null;

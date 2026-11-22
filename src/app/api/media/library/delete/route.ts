@@ -15,8 +15,8 @@ export async function POST(request:NextRequest){
   const result=await cloudinary.uploader.destroy(publicId,{resource_type:resourceType,invalidate:true});
   if(result.result!=="ok"&&result.result!=="not found")throw new Error("Cloudinary did not confirm deletion.");
   await connectToDatabase();
-  const refs=await MediaCollection.updateMany({},{$pull:{items:{publicId}}});;
+  const refs=await MediaCollection.updateMany({},{$pull:{items:{publicId}}});
   const legacy=await LaunchSettings.findOne();if(legacy){for(const field of ["videoUrl","flyerUrl","afterLaunchVideoUrl","afterLaunchFlyerUrl"] as const){if(typeof legacy[field]==="string"&&legacy[field].includes(publicId))legacy[field]="";}await legacy.save();}
   return NextResponse.json({status:"ok",message:"Stored file deleted and all collection references removed.",cloudinary:result.result,updatedCollections:refs.modifiedCount});
- }catch(error){console.error("[Media delete]",error);return NextResponse.json({status:"error",message:"Cloudinary deletion could not be confirmed. The collection references were not changed."},{status:502})}
+ }catch(error){console.error("[Media delete]",error);return NextResponse.json({status:"error",message:"Asset deletion or reference cleanup failed. Check the media library and Cloudinary before retrying; some cleanup may already have completed."},{status:502})}
 }

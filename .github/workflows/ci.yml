@@ -257,7 +257,7 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           set -euo pipefail
-          BASE_URL="${{ vars.TGO_E2E_BASE_URL || 'https://tgo-devstudio-prime.vercel.app' }}"
+          BASE_URL="${{ vars.TGO_E2E_BASE_URL || env.SITE_URL || 'https://tgo-devstudio-prime.onrender.com' }}"
           for attempt in $(seq 1 60); do
             if curl --silent --show-error --fail "$BASE_URL/faq/who-is-behind-tgo-devstudio" | grep -q "Who is behind TGO DevStudio?"; then
               echo "The merged release is live at $BASE_URL."
@@ -281,7 +281,7 @@ jobs:
         if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
         run: npx playwright test
         env:
-          BASE_URL: ${{ inputs.base_url || vars.TGO_E2E_BASE_URL || 'https://tgo-devstudio-prime.vercel.app' }}
+          BASE_URL: ${{ inputs.base_url || vars.TGO_E2E_BASE_URL || env.SITE_URL || 'https://tgo-devstudio-prime.onrender.com' }}
 
       - name: Upload browser test evidence
         if: always() && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main'))

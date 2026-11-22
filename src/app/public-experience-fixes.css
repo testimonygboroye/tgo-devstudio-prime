@@ -448,3 +448,78 @@
   .home-delivery-steps > div { gap: 6px; padding-inline: 7px; }
   .home-delivery-steps small { font-size: 7px; }
 }
+
+
+/* Final mobile mockup fit: let the complete delivery panel define its own height. */
+.home-product-window,
+.home-window-body,
+.home-window-main,
+.home-delivery-flow {
+  box-sizing: border-box;
+}
+.home-delivery-flow {
+  width: 100%;
+  min-width: 0;
+  padding: 17px 16px 18px;
+  margin-top: 16px;
+  margin-bottom: 0;
+}
+.home-delivery-flow .home-chart-label {
+  padding: 0;
+  margin: 0;
+}
+.home-delivery-steps {
+  padding: 0 0 2px;
+}
+.home-window-main {
+  padding-bottom: 22px !important;
+}
+.home-window-footer {
+  margin-top: 17px !important;
+  padding: 14px 0 2px !important;
+}
+@media (max-width: 767px) {
+  .home-visual-wrap {
+    aspect-ratio: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible;
+    padding: 22px 0 28px !important;
+  }
+  .home-product-window {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: hidden;
+  }
+  .home-window-body {
+    height: auto !important;
+    min-height: 0 !important;
+    align-items: stretch;
+  }
+  .home-window-main {
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 18px 13px 22px !important;
+  }
+  .home-delivery-flow {
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 15px 12px 17px !important;
+    margin-top: 14px !important;
+  }
+  .home-delivery-steps {
+    margin-bottom: 1px;
+    row-gap: 9px;
+  }
+  .home-window-footer {
+    min-height: 28px;
+    margin-top: 16px !important;
+    padding: 13px 0 3px !important;
+    line-height: 1.65;
+  }
+}
+@media (max-width: 380px) {
+  .home-window-main { padding-bottom: 20px !important; }
+  .home-delivery-flow { padding: 13px 10px 15px !important; }
+  .home-window-footer { padding-top: 12px !important; }
+}

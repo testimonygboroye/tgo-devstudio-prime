@@ -41,7 +41,8 @@ async function migrateLegacyHomepageMedia(key:string){
 }
 export async function GET(req:NextRequest){
  await connectToDatabase();
- const key=req.nextUrl.searchParams.get("key"),placement=req.nextUrl.searchParams.get("placement"),admin=req.nextUrl.searchParams.get("admin")==="1";\n if(admin||key==="launch"||key==="permanent")await ensureUniqueHomepageCollections();
+ const key=req.nextUrl.searchParams.get("key"),placement=req.nextUrl.searchParams.get("placement"),admin=req.nextUrl.searchParams.get("admin")==="1";
+ if(admin||key==="launch"||key==="permanent")await ensureUniqueHomepageCollections();
  if(!admin&&(key==="launch"||key==="permanent"))await migrateLegacyHomepageMedia(key);
  if(admin){
   const s=await getAuthenticatedSession(req);if(!s)return unauthorizedResponse();if(!isAdmin(s))return forbiddenResponse("Founder access required.");

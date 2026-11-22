@@ -19,7 +19,7 @@ export default function HomepageMediaExperience({settings}:Props){
  const current=items.length?items[index%items.length]:null;
  const advance=useCallback(()=>{setIndex(i=>(i+1)%Math.max(1,items.length));setRepeat(0)},[items.length]);
  useEffect(()=>{setIndex(0);setRepeat(0)},[afterTarget,launch,permanent]);
- useEffect(()=>{if(!current||current.kind!=="image")return;const t=window.setTimeout(advance,Math.max(1,current.durationSeconds||8)*1000);return()=>clearTimeout(t)},[current,advance]);
+ useEffect(()=>{if(!current||current.kind!=="image")return;const t=window.setTimeout(()=>{if(repeat+1<Math.max(1,current.repeatCount||1))setRepeat(v=>v+1);else advance()},Math.max(1,current.durationSeconds||8)*1000);return()=>clearTimeout(t)},[current,advance,repeat]);
  const countdown=settings.enabled&&countdownEnabled&&hasTarget&&now!==null&&!afterTarget?remainingTime(target,now):null;
  if(!settings.enabled&&!permanent?.enabled&&!launch?.enabled)return null;
  const units=countdown?[[settings.countdownYearsLabel||"YEARS",countdown.years],[settings.countdownMonthsLabel||"MONTHS",countdown.months],[settings.countdownDaysLabel||"DAYS",countdown.days],[settings.countdownHoursLabel||"HOURS",countdown.hours],[settings.countdownMinutesLabel||"MINUTES",countdown.minutes],[settings.countdownSecondsLabel||"SECONDS",countdown.seconds]] as const:[];

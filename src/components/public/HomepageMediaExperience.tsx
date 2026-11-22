@@ -11,7 +11,7 @@ export default function HomepageMediaExperience({settings}:Props){
  const target=useMemo(()=>settings.launchDate?new Date(settings.launchDate).getTime():0,[settings.launchDate]),hasTarget=Boolean(target&&Number.isFinite(target)),countdownEnabled=settings.countdownEnabled!==false;
  const afterTarget=hasTarget&&now!==null&&now>=target;
  useEffect(()=>{let active=true;Promise.all(["launch","permanent"].map(key=>fetch("/api/media/collections?key="+key,{cache:"no-store"}).then(r=>r.json()).catch(()=>({collections:[]})))).then(([a,b])=>{if(active){setLaunch(a.collections?.[0]||null);setPermanent(b.collections?.[0]||null)}});return()=>{active=false}},[]);
- useEffect(()=>{if(!settings.enabled||!countdownEnabled||!hasTarget)return;const sync=()=>setNow(Date.now());sync();const id=window.setInterval(sync,1000);return()=>clearInterval(id)},[settings.enabled,countdownEnabled,hasTarget,target]);
+ useEffect(()=>{if(!countdownEnabled||!hasTarget)return;const sync=()=>setNow(Date.now());sync();const id=window.setInterval(sync,1000);return()=>clearInterval(id)},[settings.enabled,countdownEnabled,hasTarget,target]);
  useEffect(()=>{const ms=(navigator as Navigator&{mediaSession?:MediaSession}).mediaSession;if(!ms)return;try{ms.metadata=null;ms.playbackState="none";for(const action of ["play","pause","seekbackward","seekforward","previoustrack","nexttrack","stop","seekto"] as MediaSessionAction[]){try{ms.setActionHandler(action,null)}catch{}}}catch{}return()=>{try{ms.metadata=null;ms.playbackState="none"}catch{}}},[]);
  const fallback=useMemo<MediaItem[]>(()=>{const rows:MediaItem[]=[];if(settings.videoUrl)rows.push({kind:"video",url:settings.videoUrl,durationSeconds:settings.useVideoDurationOverride?((settings.videoDurationHours||0)*3600+(settings.videoDurationMinutes||0)*60+(settings.videoDurationSeconds||0)):0});if(settings.flyerUrl)rows.push({kind:"image",url:settings.flyerUrl,durationSeconds:(settings.flyerDurationMinutes||0)*60+(settings.flyerDurationSeconds??settings.flyerSeconds??8)});return rows},[settings]);
  const afterFallback=useMemo<MediaItem[]>(()=>{const rows:MediaItem[]=[];if(settings.afterLaunchVideoUrl)rows.push({kind:"video",url:settings.afterLaunchVideoUrl});if(settings.afterLaunchFlyerUrl)rows.push({kind:"image",url:settings.afterLaunchFlyerUrl,durationSeconds:8});return rows},[settings]);
@@ -20,7 +20,7 @@ export default function HomepageMediaExperience({settings}:Props){
  const advance=useCallback(()=>{setIndex(i=>(i+1)%Math.max(1,items.length));setRepeat(0)},[items.length]);
  useEffect(()=>{setIndex(0);setRepeat(0)},[afterTarget,launch,permanent]);
  useEffect(()=>{if(!current||current.kind!=="image")return;const t=window.setTimeout(advance,Math.max(1,current.durationSeconds||8)*1000);return()=>clearTimeout(t)},[current,advance]);
- const countdown=countdownEnabled&&hasTarget&&now!==null&&!afterTarget?remainingTime(target,now):null;
+ const countdown=settings.enabled&&countdownEnabled&&hasTarget&&now!==null&&!afterTarget?remainingTime(target,now):null;
  if(!settings.enabled&&!permanent?.enabled&&!launch?.enabled)return null;
  const units=countdown?[[settings.countdownYearsLabel||"YEARS",countdown.years],[settings.countdownMonthsLabel||"MONTHS",countdown.months],[settings.countdownDaysLabel||"DAYS",countdown.days],[settings.countdownHoursLabel||"HOURS",countdown.hours],[settings.countdownMinutesLabel||"MINUTES",countdown.minutes],[settings.countdownSecondsLabel||"SECONDS",countdown.seconds]] as const:[];
  if(!current&&!countdown)return null;

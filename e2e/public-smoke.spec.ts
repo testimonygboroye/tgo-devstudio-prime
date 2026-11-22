@@ -127,7 +127,7 @@ test("contact form blocks empty submissions without creating an enquiry", async 
   await expect(page).toHaveURL(/\/contact$/);
 });
 
-test("homepage featured media fills its card without cropping the source aspect ratio", async ({ page }) => {
+test("homepage featured media fills its card using responsive cover cropping", async ({ page }) => {
   await page.goto("/", { waitUntil: "domcontentloaded" });
   const frame = page.locator(".homepage-media-frame").first();
   if (await frame.count() === 0) test.skip(true, "No homepage media is configured.");
@@ -148,13 +148,14 @@ test("homepage featured media fills its card without cropping the source aspect 
       : media instanceof HTMLVideoElement
         ? media.videoWidth / media.videoHeight
         : 0;
-    return { frameWidth: frameRect.width, mediaWidth: mediaRect.width, renderedRatio: mediaRect.width / mediaRect.height, naturalRatio, objectFit: getComputedStyle(media).objectFit };
+    return { frameWidth: frameRect.width, frameHeight: frameRect.height, mediaWidth: mediaRect.width, mediaHeight: mediaRect.height, frameRatio: frameRect.width / frameRect.height, renderedRatio: mediaRect.width / mediaRect.height, naturalRatio, objectFit: getComputedStyle(media).objectFit };
   });
   expect(result).not.toBeNull();
   expect(result!.mediaWidth).toBeGreaterThan(0);
   expect(result!.frameWidth - result!.mediaWidth).toBeLessThanOrEqual(2);
-  expect(result!.objectFit).toBe("contain");
-  if (result!.naturalRatio > 0) expect(Math.abs(result!.renderedRatio - result!.naturalRatio)).toBeLessThan(0.02);
+  expect(result!.frameHeight - result!.mediaHeight).toBeLessThanOrEqual(2);
+  expect(result!.objectFit).toBe("cover");
+  expect(Math.abs(result!.renderedRatio - result!.frameRatio)).toBeLessThan(0.02);
 });
 
 test("mobile public routes have no horizontal overflow", async ({ page }) => {

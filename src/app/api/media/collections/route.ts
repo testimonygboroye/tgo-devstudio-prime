@@ -27,7 +27,7 @@ export async function GET(req:NextRequest){
  if(admin){
   const s=await getAuthenticatedSession(req);if(!s)return unauthorizedResponse();if(!isAdmin(s))return forbiddenResponse("Founder access required.");
   const [rows,events]=await Promise.all([MediaCollection.find({}).sort({priority:-1,updatedAt:-1}).lean(),MediaCollectionEvent.aggregate([{$group:{_id:{collectionId:"$collectionId",eventType:"$eventType"},count:{$sum:1}}}])]);
-  const analytics:Record<string,Record<string,number>>={};for(const e of events){const id=String(e._id.collectionId);analytics[id]??={};analytics[id][e._id.eventType]=e.count;}
+  const analytics:Record<string,Record<string,number>>={};for(const e of events){const id=String(e._id.collectionId);analytics[id]??={};analytics[id][e._id.eventType]=e.count;}for(const row of rows){const a=analytics[String(row._id)]||{};a.ctr=a.impression?Number(((a.click||0)/a.impression*100).toFixed(2)):0;analytics[String(row._id)]=a;}
   return NextResponse.json({collections:rows.map(x=>({...x,analytics:analytics[String(x._id)]||{}}))},{headers:{"Cache-Control":"private, no-store"}});
  }
  const now=new Date();const filter:any={enabled:true,$and:[{$or:[{startsAt:null},{startsAt:{$exists:false}},{startsAt:{$lte:now}}]},{$or:[{endsAt:null},{endsAt:{$exists:false}},{endsAt:{$gte:now}}]}]};

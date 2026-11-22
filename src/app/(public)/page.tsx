@@ -25,6 +25,7 @@ import { TRANSLATABLE_FIELDS } from "@/lib/i18n/translatableFields";
 import AvailabilityBadge from "@/components/public/AvailabilityBadge";
 import HeroMoment from "@/components/public/HeroMoment";
 import HomepageMediaExperience from "@/components/public/HomepageMediaExperience";
+import AdvertisementSlot from "@/components/public/AdvertisementSlot";
 import SmartImage from "@/components/public/SmartImage";
 
 export const dynamic = "force-dynamic";
@@ -171,6 +172,7 @@ export default async function HomePage() {
       </section>
 
       <HomepageMediaExperience settings={launchSettings || { enabled: false }} />
+      <AdvertisementSlot placement="home-media-after" />
 
       <section className="home-proof-strip">
         <div className="home-proof-inner">
@@ -232,6 +234,7 @@ export default async function HomePage() {
       <section className="home-section home-careers-section"><div className="home-container"><div className="home-careers-panel"><div><span className="eyebrow-label">{hero.careersLabel || "Build with us"}</span><h2>{hero.careersHeading || "Make useful things with good people."}</h2><p>{openRolesCount>0?"We currently have "+openRolesCount+" open role"+(openRolesCount===1?"":"s")+".":hero.careersNoRolesMessage}</p></div><Link href="/careers" className="btn-premium-secondary inline-flex items-center gap-2 rounded-full px-6 py-3.5 font-semibold">Explore careers <ArrowUpRight size={17}/></Link></div></div></section>
 
       <section className="home-final-cta ambient-glow"><div className="home-final-orb"/><div className="home-container"><span className="eyebrow-label">YOUR NEXT CHAPTER STARTS HERE</span><h2>{hero.finalCtaHeading || "Have a bold idea? Let’s build what’s next."}</h2><p>{hero.finalCtaDescription || "Tell us what you are working towards. We will help turn the challenge into a clear, achievable plan."}</p><div className="flex flex-wrap justify-center gap-3"><Link href="/contact" className="btn-premium-primary inline-flex items-center gap-2 rounded-full px-8 py-4 font-bold text-white">{hero.finalCtaButtonLabel || "Start a conversation"} <ArrowUpRight size={18}/></Link><Link href="/book-a-call" className="btn-premium-secondary inline-flex items-center gap-2 rounded-full px-8 py-4 font-semibold" style={{color:"var(--text-primary)"}}>Book a discovery call <ArrowRight size={17}/></Link></div><div className="home-final-footnote"><span><CheckCircle2 size={14}/> No pressure</span><span><CheckCircle2 size={14}/> Clear next steps</span><span><CheckCircle2 size={14}/> Real people, real answers</span></div></div></section>
-    </main>
+          <AdvertisementSlot placement="home-footer-before" />
+</main>
   );
 }

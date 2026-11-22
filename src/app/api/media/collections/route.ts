@@ -27,7 +27,7 @@ async function ensureHomepageMediaUniqueness(){
    }
    const collection=MediaCollection.collection;
    const indexes=await collection.indexes().catch(()=>[]);
-   const keyIndexes=indexes.filter((index:any)=>index.key?.key===1);
+   const keyIndexes=indexes.filter((index:any)=>Object.keys(index.key||{}).length===1&&index.key?.key===1);
    const valid=keyIndexes.some((index:any)=>index.unique===true&&index.partialFilterExpression?.key?.$in?.includes("launch")&&index.partialFilterExpression?.key?.$in?.includes("permanent"));
    if(!valid){
     for(const index of keyIndexes)await collection.dropIndex(index.name).catch(()=>{});
@@ -37,7 +37,8 @@ async function ensureHomepageMediaUniqueness(){
  }
  await homepageMediaIndexReady;
 }
-\nfunction cloudinaryPublicId(url:string){try{const u=new URL(url);if(!u.hostname.endsWith("cloudinary.com"))return "";const marker="/upload/";const i=u.pathname.indexOf(marker);if(i<0)return "";let parts=u.pathname.slice(i+marker.length).split("/");if(parts[0]?.includes(","))parts=parts.slice(1);const version=parts[0]||"";if(version.startsWith("v")&&version.length>1&&Number.isFinite(Number(version.slice(1))))parts=parts.slice(1);const last=parts.pop()||"";const dot=last.lastIndexOf(".");parts.push(dot>0?last.slice(0,dot):last);return parts.join("/")}catch{return ""}}
+
+function cloudinaryPublicId(url:string){try{const u=new URL(url);if(!u.hostname.endsWith("cloudinary.com"))return "";const marker="/upload/";const i=u.pathname.indexOf(marker);if(i<0)return "";let parts=u.pathname.slice(i+marker.length).split("/");if(parts[0]?.includes(","))parts=parts.slice(1);const version=parts[0]||"";if(version.startsWith("v")&&version.length>1&&Number.isFinite(Number(version.slice(1))))parts=parts.slice(1);const last=parts.pop()||"";const dot=last.lastIndexOf(".");parts.push(dot>0?last.slice(0,dot):last);return parts.join("/")}catch{return ""}}
 async function migrateLegacyHomepageMedia(key:string){
  if(key!=="launch"&&key!=="permanent")return;
  if(await MediaCollection.exists({key}))return;

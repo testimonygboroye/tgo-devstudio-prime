@@ -8,6 +8,7 @@ import { PAGE_DEFAULTS } from "@/lib/constants/pageDefaults";
 import { sanitizeBlogHtml } from "@/lib/sanitizeHtml";
 import ImageLightbox from "@/components/shared/ImageLightbox";
 import SmartImage from "@/components/public/SmartImage";
+import PublicMediaPlacement from "@/components/public/PublicMediaPlacement";
 import { getPublicPageContent } from "@/lib/publicSite/getPublicPageContent";
 
 export const dynamic = "force-dynamic";
@@ -65,6 +66,7 @@ export default async function AboutPage() {
 
       <section className="about-principles-section"><div className="home-container"><div className="about-section-intro"><span className="eyebrow-label">{publicCopy.introEyebrow}</span><h2>{publicCopy.introHeading}</h2><p>{publicCopy.introDescription}</p></div><div className="about-principles-grid">{[...publicCopy.cards].sort((a,b)=>a.displayOrder-b.displayOrder).map((item,index)=>{const Icon=PRINCIPLE_ICONS[item.icon as keyof typeof PRINCIPLE_ICONS]||Sparkles;return <article key={item.title} className="about-principle-card"><span className="about-principle-number">{item.eyebrow||"0"+(index+1)}</span><span className="about-principle-icon"><Icon size={22}/></span><h3>{item.title}</h3><p>{item.description}</p></article>})}</div>{standFor&&<div className="about-original-values"><span className="eyebrow-label">Our full commitments</span><div className="values-grid prose" dangerouslySetInnerHTML={{__html:sanitizeBlogHtml(standFor)}}/></div>}</div></section>
 
+      <PublicMediaPlacement placement="about" />
       <section className="about-founder-section"><div className="home-container"><div className="about-founder-card"><div className="about-founder-photo"><ImageLightbox src={founder.founderPhotoUrl} alt={founder.founderName}><SmartImage src={founder.founderPhotoUrl} alt={founder.founderName} label={founder.founderName}/></ImageLightbox><span>THE PERSON BEHIND THE VISION</span></div><div className="about-founder-copy"><span className="eyebrow-label">A note from the founder</span><h2>{founder.founderName}</h2><b>{founder.founderRole}</b><p>{founder.founderDescription}</p><div className="about-founder-signoff">Built with intent. Delivered with care.</div></div></div></div></section>
 
       <section className="about-bottom-cta"><div className="home-container"><span className="eyebrow-label">{publicCopy.ctaEyebrow}</span><h2>{publicCopy.ctaHeading}</h2><p>{publicCopy.ctaDescription}</p><Link href={publicCopy.ctaPrimaryHref} className="btn-premium-primary inline-flex items-center gap-2 rounded-full px-7 py-4 font-semibold text-white">{publicCopy.ctaPrimaryLabel} <ArrowUpRight size={18}/></Link></div></section>

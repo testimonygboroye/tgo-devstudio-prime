@@ -9,6 +9,7 @@ import { TRANSLATABLE_FIELDS } from "@/lib/i18n/translatableFields";
 import { SERVICE_ICON_MAP } from "@/lib/constants/serviceIcons";
 import { Code, ArrowLeft, ArrowUpRight, Compass, ShieldCheck, Rocket } from "lucide-react";
 import SmartImage from "@/components/public/SmartImage";
+import PublicMediaPlacement from "@/components/public/PublicMediaPlacement";
 import { slugify } from "@/lib/utils/slugify";
 import { getSiteUrl } from "@/lib/siteUrl";
 
@@ -184,6 +185,7 @@ export default async function ServiceDetailPage({
             <article><span><Rocket size={21}/></span><small>03 / DELIVERY</small><h3>Make progress visible.</h3><p>Clear communication, measurable milestones and a product that is ready for real users.</p></article>
           </div>
         </section>
+        <PublicMediaPlacement placement="service-detail" />
         <section className="service-detail-cta"><div><span className="eyebrow-label">Make the next move</span><h2>Build with TGO DevStudio.</h2><p>Tell us what you are building, the problem you are solving and where you want the product to go. We can help turn the idea into a reliable, production-ready digital product.</p></div><div className="flex flex-wrap gap-3"><Link href="/contact" className="btn-premium-primary inline-flex items-center gap-2 rounded-full px-7 py-3.5 font-semibold text-white">Start a conversation <ArrowUpRight size={17}/></Link><Link href="/book-a-call" className="btn-premium-secondary inline-flex items-center gap-2 rounded-full px-7 py-3.5 font-semibold" style={{color:"var(--text-primary)"}}>Book a call <ArrowUpRight size={17}/></Link></div></section>
       </div>
     </main>

@@ -36,7 +36,8 @@ jobs:
       JWT_REFRESH_SECRET: ci-only-refresh-secret-not-for-production
       JWT_TEMP_2FA_SECRET: ci-only-2fa-secret-not-for-production
       SETUP_SECRET_KEY: ci-only-setup-secret-not-for-production
-      SITE_URL: https://example.invalid
+      SITE_URL: https://tgo-devstudio-prime.onrender.com
+      ADMIN_PATH: ci-admin
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

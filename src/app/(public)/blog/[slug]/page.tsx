@@ -11,6 +11,7 @@ import { sanitizeBlogHtml } from "@/lib/sanitizeHtml";
 import { calculateReadingTime } from "@/lib/utils/readingTime";
 import ImageLightbox from "@/components/shared/ImageLightbox";
 import SmartImage from "@/components/public/SmartImage";
+import PublicMediaPlacement from "@/components/public/PublicMediaPlacement";
 import { getServerLocale } from "@/lib/i18n/serverLocale";
 import {
   createTranslator,
@@ -384,6 +385,8 @@ export default async function BlogDetailPage({
             __html: safeHtml,
           }}
         />
+
+        <PublicMediaPlacement placement="blog-article" />
 
         {tags.length > 0 && (
           <div className="mt-10 flex flex-wrap gap-2">

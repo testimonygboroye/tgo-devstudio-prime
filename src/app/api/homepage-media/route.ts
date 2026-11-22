@@ -36,7 +36,7 @@ export async function PUT(request: NextRequest) {
     countdownStatusLabel: String(body.countdownStatusLabel || "LIVE TIMER").trim().slice(0, 40),
     countdownYearsLabel:String(body.countdownYearsLabel||"YEARS").trim().slice(0,24),countdownMonthsLabel:String(body.countdownMonthsLabel||"MONTHS").trim().slice(0,24),countdownDaysLabel:String(body.countdownDaysLabel||"DAYS").trim().slice(0,24),countdownHoursLabel:String(body.countdownHoursLabel||"HOURS").trim().slice(0,24),countdownMinutesLabel:String(body.countdownMinutesLabel||"MINUTES").trim().slice(0,24),countdownSecondsLabel:String(body.countdownSecondsLabel||"SECONDS").trim().slice(0,24),
     videoUrl: String(body.videoUrl || "").trim().slice(0, 1000),
-    videoAudioEnabled: body.videoAudioEnabled === true,
+    videoAudioEnabled: false,
     flyerDurationMinutes: Math.floor(flyerTotalSeconds / 60),
     flyerDurationSeconds: flyerTotalSeconds % 60,
     flyerUrl: String(body.flyerUrl || "").trim().slice(0, 1000),

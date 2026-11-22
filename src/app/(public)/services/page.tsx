@@ -11,6 +11,7 @@ import { slugify } from "@/lib/utils/slugify";
 import { getSiteUrl } from "@/lib/siteUrl";
 import PublicEmptyState from "@/components/public/PublicEmptyState";
 import { getPublicPageContent } from "@/lib/publicSite/getPublicPageContent";
+import PublicMediaPlacement from "@/components/public/PublicMediaPlacement";
 
 export const dynamic = "force-dynamic";
 export async function generateMetadata(): Promise<Metadata> {
@@ -34,6 +35,7 @@ export default async function ServicesPage() {
         {services.length===0?<PublicEmptyState eyebrow="Capabilities" title="Let's define the right solution for your next challenge." description="Tell us what you are trying to build. We can discuss the scope, technical approach and a practical path from idea to a production-ready product." primaryHref="/contact" primaryLabel="Discuss a project" secondaryHref="/book-a-call" secondaryLabel="Book a discovery call"/>:
         <div className="services-grid">{services.map((service,index)=>{const IconComp=SERVICE_ICON_MAP[service.icon]||Code;return <Link key={service._id.toString()} href={`/services/${slugify(service.title)}`} className="services-card"><div className="services-card-top"><span className="services-card-icon"><IconComp size={23}/></span><span className="services-card-index">CAPABILITY / {String(index+1).padStart(2,"0")}</span></div><h3>{service.title}</h3><p>{service.summary}</p><span className="services-card-link">Explore capability <ArrowUpRight size={17}/></span></Link>})}</div>}
       </div></section>
+      <PublicMediaPlacement placement="services" />
       <section className="services-delivery-band"><div className="home-container"><div><span className="eyebrow-label">How we approach the work</span><h2>Not just a service provider.<br/><em>A partner in the outcome.</em></h2></div><div className="services-delivery-points">{page.cards.length ? [...page.cards].sort((a,b)=>a.displayOrder-b.displayOrder).map((item,index)=><p key={item.title}><b>{item.eyebrow || String(index+1).padStart(2,"0")+" / "+item.title}</b><span>{item.description}</span></p>) : <p>{page.heroNote}</p>}</div></div></section>
       <section className="services-bottom-cta"><div className="home-container"><span className="eyebrow-label">{page.ctaEyebrow}</span><h2>{page.ctaHeading}</h2><p>{page.ctaDescription}</p><div className="flex flex-wrap gap-3"><Link href={page.ctaPrimaryHref} className="btn-premium-primary inline-flex items-center gap-2 rounded-full px-7 py-4 font-semibold text-white">{page.ctaPrimaryLabel} <ArrowUpRight size={18}/></Link>{page.ctaSecondaryLabel&&<Link href={page.ctaSecondaryHref} className="services-quiet-link">{page.ctaSecondaryLabel} <ArrowRight size={16}/></Link>}</div></div></section>
     </main>

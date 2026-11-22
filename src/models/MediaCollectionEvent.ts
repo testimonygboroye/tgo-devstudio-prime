@@ -1,0 +1,5 @@
+import {Schema,model,models,Types,type Model,type Document} from "mongoose";
+interface IMediaCollectionEvent extends Document {collectionId:Types.ObjectId;itemId?:Types.ObjectId|null;eventType:"impression"|"click"|"video_play"|"video_complete";visitorHash:string;placement:string;path:string;device:"mobile"|"desktop";createdAt:Date}
+const schema=new Schema<IMediaCollectionEvent>({collectionId:{type:Schema.Types.ObjectId,ref:"MediaCollection",required:true,index:true},itemId:{type:Schema.Types.ObjectId,default:null},eventType:{type:String,enum:["impression","click","video_play","video_complete"],required:true,index:true},visitorHash:{type:String,required:true,index:true},placement:{type:String,default:""},path:{type:String,default:""},device:{type:String,enum:["mobile","desktop"],default:"desktop"}},{timestamps:{createdAt:true,updatedAt:false}});
+schema.index({collectionId:1,eventType:1,createdAt:-1});
+const MediaCollectionEvent:Model<IMediaCollectionEvent>=models.MediaCollectionEvent||model<IMediaCollectionEvent>("MediaCollectionEvent",schema);export default MediaCollectionEvent;

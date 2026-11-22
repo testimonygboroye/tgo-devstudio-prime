@@ -16,7 +16,8 @@ let homepageMediaIndexReady:Promise<void>|null=null;
 async function ensureHomepageMediaUniqueness(){
  if(!homepageMediaIndexReady){
   homepageMediaIndexReady=(async()=>{
-   const homepageKeys:Array<"launch"|"permanent">=["launch","permanent"];\n    for(const key of homepageKeys){
+   const homepageKeys:Array<"launch"|"permanent">=["launch","permanent"];
+    for(const key of homepageKeys){
     const docs=await MediaCollection.find({key}).sort({createdAt:1,_id:1}).lean();
     if(docs.length>1){
      const seen=new Set<string>(),items:any[]=[];

@@ -1,0 +1,4 @@
+import {getServerSession} from "@/lib/auth/serverSession";
+import {guardCanEdit} from "@/lib/auth/pageGuards";
+import AdvertisingManager from "./AdvertisingManager";
+export default async function AdvertisingPage(){const session=await getServerSession();guardCanEdit(session!,"homeSettings");return <div><p className="font-mono text-xs uppercase tracking-widest text-neutral-400">Website growth</p><h1 className="mt-1 text-3xl font-bold brand-gradient-text">Advertising & Media Distribution</h1><p className="mt-2 max-w-3xl text-sm leading-6 text-neutral-400">Create mixed image/video campaigns, arrange media in display order, choose approved placements, schedule campaigns and control frequency. Public visitors cannot pause, mute, scrub or otherwise control media.</p><div className="mt-8"><AdvertisingManager/></div></div>}

@@ -2,7 +2,7 @@ import {NextRequest,NextResponse} from "next/server";
 import {Types} from "mongoose";
 import {connectToDatabase} from "@/lib/db";
 import {getAuthenticatedSession} from "@/lib/auth/session";
-import {unauthorizedResponse,forbiddenResponse} from "@/lib/auth/authorize";
+import {unauthorizedResponse,forbiddenResponse,requireAnyContentPermission} from "@/lib/auth/authorize";
 import MediaCollection from "@/models/MediaCollection";
 import LaunchSettings from "@/models/LaunchSettings";
 import MediaCollectionEvent from "@/models/MediaCollectionEvent";

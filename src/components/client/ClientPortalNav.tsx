@@ -5,7 +5,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useCallback, useRef, useState } from "react";
 import { useSwipeSidebar } from "@/hooks/useSwipeSidebar";
-import { LayoutDashboard, UserRound, MessageSquareText, Bell, Activity, BriefcaseBusiness, Package, LifeBuoy, Menu, X, Gift, ChevronLeft, ChevronRight } from "lucide-react";
+import { LayoutDashboard, UserRound, MessageSquareText, Bell, Activity, BriefcaseBusiness, Package, LifeBuoy, Menu, X, Gift, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import ClientSignOutButton from "@/components/client/ClientSignOutButton";
 
 const groups = [
@@ -14,7 +14,7 @@ const groups = [
     { href: "/client/services", label: "Services & projects", icon: Package },
     { href: "/workspaces", label: "Collaboration", icon: BriefcaseBusiness },
   ]},
-  { title: "Communication", icon: MessageSquareText, links: [
+  { title: "Resources", icon: Sparkles, links: [\n    { href: "/client/partners", label: "Partner benefits", icon: Sparkles },\n  ]},\n  { title: "Communication", icon: MessageSquareText, links: [
     { href: "/client/enquiries", label: "Enquiries", icon: MessageSquareText },
     { href: "/client/notifications", label: "Notifications", icon: Bell },
     { href: "/client/support", label: "Support centre", icon: LifeBuoy },

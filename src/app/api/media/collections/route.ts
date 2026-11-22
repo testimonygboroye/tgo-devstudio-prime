@@ -17,8 +17,13 @@ async function ensureUniqueHomepageCollections(){
  if(!homepageCollectionIndexPromise){
   homepageCollectionIndexPromise=(async()=>{
    for(const key of ["launch","permanent"]){
-    const existing=await MediaCollection.find({key}).sort({createdAt:1,_id:1}).select({_id:1}).lean();
-    if(existing.length>1)await MediaCollection.deleteMany({_id:{$in:existing.slice(1).map(x=>x._id)}});
+    const existing=await MediaCollection.find({key}).sort({createdAt:1,_id:1}).lean();
+    if(existing.length>1){
+     const merged=[...(existing[0].items||[])];const seen=new Set(merged.map(item=>item.publicId||item.url));
+     for(const duplicate of existing.slice(1))for(const item of duplicate.items||[]){const identity=item.publicId||item.url;if(!seen.has(identity)){seen.add(identity);merged.push(item);}}
+     await MediaCollection.updateOne({_id:existing[0]._id},{$set:{items:merged.map((item,order)=>({...item,order}))}});
+     await MediaCollection.deleteMany({_id:{$in:existing.slice(1).map(x=>x._id)}});
+    }
    }
    await MediaCollection.collection.createIndex({key:1},{unique:true,partialFilterExpression:{key:{$in:["launch","permanent"]}}});
   })().catch(error=>{homepageCollectionIndexPromise=null;throw error});

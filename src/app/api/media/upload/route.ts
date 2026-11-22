@@ -15,6 +15,7 @@ const ALLOWED_FOLDERS = [
   "job-applications",
   "launch",
   "homepage-media",
+  "advertisements",
 ] as const;
 
 export async function POST(request: NextRequest) {
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
     if (!session) {
       return unauthorizedResponse();
     }
-    const permissionType = folder === "services" ? "services" : folder === "team" ? "team" : folder === "blog" ? "blog" : folder === "about" ? "about" : (folder === "launch" || folder === "homepage-media") ? "homeSettings" : "caseStudies";
+    const permissionType = folder === "services" ? "services" : folder === "team" ? "team" : folder === "blog" ? "blog" : folder === "about" ? "about" : (folder === "launch" || folder === "homepage-media" || folder === "advertisements") ? "homeSettings" : "caseStudies";
     if (!requireAnyContentPermission(session, permissionType)) {
       return forbiddenResponse("You do not have permission to upload media.");
     }

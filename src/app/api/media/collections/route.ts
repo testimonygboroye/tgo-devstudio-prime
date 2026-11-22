@@ -33,6 +33,7 @@ export async function GET(req:NextRequest){
  const now=new Date();const filter:any={enabled:true,$and:[{$or:[{startsAt:null},{startsAt:{$exists:false}},{startsAt:{$lte:now}}]},{$or:[{endsAt:null},{endsAt:{$exists:false}},{endsAt:{$gte:now}}]}]};
  if(key&&allowedKeys.includes(key))filter.key=key;if(placement&&allowedPlacements.includes(placement))filter.placement=placement;
  const rows=await MediaCollection.find(filter).sort({priority:-1,updatedAt:-1}).lean();
+ const hasCollection=key==="launch"||key==="permanent"?Boolean(await MediaCollection.exists({key})):false;
  const publicRows=rows.filter(x=>x.key!=="advertisement"&&x.key!=="partner"||x.approved).filter(x=>placement==="client-partners"?x.key==="partner":placement?x.key==="advertisement":key==="launch"||key==="permanent"?x.key===key:true);
  return NextResponse.json({collections:publicRows,hasCollection},{headers:{"Cache-Control":"public, max-age=20, stale-while-revalidate=40"}});
 }

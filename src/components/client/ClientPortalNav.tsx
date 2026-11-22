@@ -14,7 +14,10 @@ const groups = [
     { href: "/client/services", label: "Services & projects", icon: Package },
     { href: "/workspaces", label: "Collaboration", icon: BriefcaseBusiness },
   ]},
-  { title: "Resources", icon: Sparkles, links: [\n    { href: "/client/partners", label: "Partner benefits", icon: Sparkles },\n  ]},\n  { title: "Communication", icon: MessageSquareText, links: [
+  { title: "Resources", icon: Sparkles, links: [
+    { href: "/client/partners", label: "Partner benefits", icon: Sparkles },
+  ]},
+  { title: "Communication", icon: MessageSquareText, links: [
     { href: "/client/enquiries", label: "Enquiries", icon: MessageSquareText },
     { href: "/client/notifications", label: "Notifications", icon: Bell },
     { href: "/client/support", label: "Support centre", icon: LifeBuoy },

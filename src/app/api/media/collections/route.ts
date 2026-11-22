@@ -63,6 +63,7 @@ export async function DELETE(req:NextRequest){
  if(b.deleteStoredMedia===true){
   for(const item of row.items){if(!item.publicId)continue;try{const result=await cloudinary.uploader.destroy(item.publicId,{resource_type:item.kind==="video"?"video":"image",invalidate:true});if(result.result!=="ok"&&result.result!=="not found")throw new Error("Deletion was not confirmed.");await MediaCollection.updateMany({},{$pull:{items:{publicId:item.publicId}}});}catch(error){console.error("[Collection media cleanup]",error);return NextResponse.json({error:"A stored media file could not be deleted. The collection was retained; check Cloudinary before retrying."},{status:502});}}
  }
+ const legacy=await LaunchSettings.findOne();if(legacy){for(const item of row.items){for(const field of ["videoUrl","flyerUrl","afterLaunchVideoUrl","afterLaunchFlyerUrl"] as const){if(typeof legacy[field]==="string"&&(legacy[field]===item.url||(item.publicId&&legacy[field].includes(item.publicId))))legacy[field]="";}}await legacy.save();}
  await MediaCollectionEvent.deleteMany({collectionId:row._id});await row.deleteOne();
  return NextResponse.json({status:"ok",deletedStoredMedia:b.deleteStoredMedia===true});
 }

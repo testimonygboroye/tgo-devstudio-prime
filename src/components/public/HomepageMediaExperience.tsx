@@ -18,6 +18,9 @@ export default function HomepageMediaExperience({settings}:Props){
  const afterFallback=useMemo<MediaItem[]>(()=>{const rows:MediaItem[]=[];if(settings.afterLaunchVideoUrl)rows.push({kind:"video",url:settings.afterLaunchVideoUrl});if(settings.afterLaunchFlyerUrl)rows.push({kind:"image",url:settings.afterLaunchFlyerUrl,durationSeconds:8});return rows},[settings]);
  const items=afterTarget?(permanent?(permanent.enabled?permanent.items:[]):afterFallback):(launch?(launch.enabled?launch.items:[]):fallback);
  const current=items.length?items[index%items.length]:null;
+ const mediaKey=`${afterTarget?"permanent":"launch"}:${current?.url||"empty"}:${index}`;
+ const [lastMediaKey,setLastMediaKey]=useState(mediaKey);
+ if(lastMediaKey!==mediaKey){setLastMediaKey(mediaKey);setRepeat(0)}
  useEffect(()=>{if(!current||current.kind!=="video"||!sectionRef.current)return;const video=videoRef.current;if(!video)return;const observer=new IntersectionObserver(entries=>{if(entries[0]?.intersectionRatio>=0.25){void video.play().catch(()=>{})}else video.pause()},{threshold:[0,0.25]});observer.observe(sectionRef.current);return()=>{observer.disconnect();video.pause()}},[current]);
  const advance=useCallback(()=>{setIndex(i=>(i+1)%Math.max(1,items.length));setRepeat(0)},[items.length]);
  const finishVideo=useCallback((video?:HTMLVideoElement)=>{const max=Math.max(1,current?.repeatCount||1);if(repeat+1<max){setRepeat(v=>v+1);if(video){video.currentTime=0;void video.play().catch(advance)}}else advance()},[current,repeat,advance]);

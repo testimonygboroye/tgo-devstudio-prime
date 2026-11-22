@@ -142,14 +142,16 @@ test("homepage featured media fills its card using responsive cover cropping", a
   const result = await frame.evaluate(element => {
     const media = element.querySelector("img, video");
     if (!(media instanceof HTMLImageElement) && !(media instanceof HTMLVideoElement)) return null;
-    const frameRect = element.getBoundingClientRect();
+    const stage = media.parentElement;
+    if (!stage) return null;
+    const stageRect = stage.getBoundingClientRect();
     const mediaRect = media.getBoundingClientRect();
     return {
-      frameWidth: frameRect.width,
-      frameHeight: frameRect.height,
+      frameWidth: stageRect.width,
+      frameHeight: stageRect.height,
       mediaWidth: mediaRect.width,
       mediaHeight: mediaRect.height,
-      frameRatio: frameRect.width / frameRect.height,
+      frameRatio: stageRect.width / stageRect.height,
       renderedRatio: mediaRect.width / mediaRect.height,
       objectFit: getComputedStyle(media).objectFit,
     };

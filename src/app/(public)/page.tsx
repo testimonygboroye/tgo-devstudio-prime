@@ -115,7 +115,6 @@ export default async function HomePage() {
           <div className="home-hero-copy">
             <div className="mb-7 flex flex-wrap items-center gap-3">
               <AvailabilityBadge />
-              <span className="home-kicker"><span className="home-kicker-dot" /> Independent technology studio</span>
             </div>
             <span className="eyebrow-label">TGO DEVSTUDIO PRIME · ENGINEERING THE NEXT</span>
             <h1 className="home-hero-title">{hero.heroHeadline}</h1>

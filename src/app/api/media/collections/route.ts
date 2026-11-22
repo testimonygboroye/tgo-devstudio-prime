@@ -50,9 +50,10 @@ async function migrateLegacyHomepageMedia(key:string){
 export async function GET(req:NextRequest){
  await connectToDatabase();
  const key=req.nextUrl.searchParams.get("key"),placement=req.nextUrl.searchParams.get("placement"),admin=req.nextUrl.searchParams.get("admin")==="1";
- if(!admin&&(key==="launch"||key==="permanent"))await migrateLegacyHomepageMedia(key);
+ if(!admin&&(key==="launch"||key==="permanent")){await ensureHomepageMediaUniqueness();await migrateLegacyHomepageMedia(key);}
  if(admin){
   const s=await getAuthenticatedSession(req);if(!s)return unauthorizedResponse();if(!isAdmin(s))return forbiddenResponse("Founder access required.");
+  await ensureHomepageMediaUniqueness();await migrateLegacyHomepageMedia("launch");await migrateLegacyHomepageMedia("permanent");
   const [rows,events,placements,devices]=await Promise.all([MediaCollection.find({}).sort({priority:-1,updatedAt:-1}).lean(),MediaCollectionEvent.aggregate([{$group:{_id:{collectionId:"$collectionId",eventType:"$eventType"},count:{$sum:1},visitors:{$addToSet:"$visitorHash"}}}]),MediaCollectionEvent.aggregate([{$match:{eventType:"impression"}},{$group:{_id:{collectionId:"$collectionId",placement:"$placement"},count:{$sum:1}}}]),MediaCollectionEvent.aggregate([{$match:{eventType:"impression"}},{$group:{_id:{collectionId:"$collectionId",device:"$device"},count:{$sum:1}}}])]);
   const analytics:Record<string,Record<string,number>>={};for(const e of events){const id=String(e._id.collectionId);analytics[id]??={};analytics[id][e._id.eventType]=e._id.eventType==="impression"?e.visitors.length:e.count;}for(const row of rows){const a=analytics[String(row._id)]||{};a.ctr=a.impression?Number(((a.click||0)/a.impression*100).toFixed(2)):0;analytics[String(row._id)]=a;}for(const e of placements){const id=String(e._id.collectionId);analytics[id]??={};analytics[id]["placement:"+e._id.placement]=e.count;}for(const e of devices){const id=String(e._id.collectionId);analytics[id]??={};analytics[id]["device:"+e._id.device]=e.count;}
   return NextResponse.json({collections:rows.map(x=>({...x,analytics:analytics[String(x._id)]||{}}))},{headers:{"Cache-Control":"private, no-store"}});

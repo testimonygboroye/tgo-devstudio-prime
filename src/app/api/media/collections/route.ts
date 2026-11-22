@@ -8,7 +8,7 @@ import LaunchSettings from "@/models/LaunchSettings";
 import MediaCollectionEvent from "@/models/MediaCollectionEvent";
 import cloudinary from "@/lib/cloudinary";
 export const dynamic="force-dynamic";
-const isAdmin=(s:any)=>Boolean(s?.role?.isFounderRole||s?.role?.canManageUsers);
+const isAdmin=(s:any)=>Boolean(s?.role?.isFounderRole||s?.role?.canManageUsers||requireAnyContentPermission(s,"homeSettings"));
 const allowedKeys=["launch","permanent","advertisement","partner"];
 const allowedPlacements=["homepage-after-media","homepage-before-footer","about","services","service-detail","portfolio","blog","blog-article","client-partners"];
 function cloudinaryPublicId(url:string){try{const u=new URL(url);if(!u.hostname.endsWith("cloudinary.com"))return "";const marker="/upload/";const i=u.pathname.indexOf(marker);if(i<0)return "";let parts=u.pathname.slice(i+marker.length).split("/");if(parts[0]?.includes(","))parts=parts.slice(1);const version=parts[0]||"";if(version.startsWith("v")&&version.length>1&&Number.isFinite(Number(version.slice(1))))parts=parts.slice(1);const last=parts.pop()||"";const dot=last.lastIndexOf(".");parts.push(dot>0?last.slice(0,dot):last);return parts.join("/")}catch{return ""}}

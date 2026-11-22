@@ -1,152 +1,32 @@
 "use client";
-
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import SmartImage from "@/components/public/SmartImage";
-
-function getHomepageVideoPoster(url: string) {
-  try {
-    const parsed = new URL(url);
-    if (!parsed.hostname.endsWith("cloudinary.com") || !parsed.pathname.includes("/video/upload/")) return undefined;
-    const posterPath = parsed.pathname
-      .replace("/video/upload/", "/video/upload/so_0,f_jpg,q_auto,w_1280/")
-      .replace(/\.(mp4|webm|mov|m4v)$/i, ".jpg");
-    return parsed.origin + posterPath;
-  } catch { return undefined; }
-}
-
-type Props = { settings: {
-  enabled?: boolean; countdownEnabled?: boolean; countdownVisible?: boolean;
-  launchDate?: string | Date | null; title?: string; description?: string; countdownLabel?: string; countdownStatusLabel?: string; countdownYearsLabel?:string; countdownMonthsLabel?:string; countdownDaysLabel?:string; countdownHoursLabel?:string; countdownMinutesLabel?:string; countdownSecondsLabel?:string;
-  videoUrl?: string; flyerUrl?: string; afterLaunchVideoUrl?: string; afterLaunchFlyerUrl?: string;
-  flyerSeconds?: number; flyerDurationMinutes?: number; flyerDurationSeconds?: number;
-  videoAudioEnabled?: boolean; videoDurationHours?: number; videoDurationMinutes?: number;
-  videoDurationSeconds?: number; useVideoDurationOverride?: boolean;
-} };
-
-function addMonths(date: Date, months: number) {
-  const next = new Date(date);
-  const day = next.getUTCDate();
-  next.setUTCDate(1);
-  next.setUTCMonth(next.getUTCMonth() + months);
-  const lastDay = new Date(Date.UTC(next.getUTCFullYear(), next.getUTCMonth() + 1, 0)).getUTCDate();
-  next.setUTCDate(Math.min(day, lastDay));
-  return next;
-}
-
-function remainingTime(target: number, now: number) {
-  let cursor = new Date(now);
-  let years = 0;
-  while (years < 100) {
-    const nextYear = new Date(Date.UTC(cursor.getUTCFullYear() + 1, cursor.getUTCMonth(), cursor.getUTCDate(), cursor.getUTCHours(), cursor.getUTCMinutes(), cursor.getUTCSeconds()));
-    if (nextYear.getTime() > target) break;
-    cursor = nextYear;
-    years++;
-  }
-  let months = 0;
-  while (months < 12) {
-    const nextMonth = addMonths(cursor, 1);
-    if (nextMonth.getTime() > target) break;
-    cursor = nextMonth;
-    months++;
-  }
-  let total = Math.max(0, Math.floor((target - cursor.getTime()) / 1000));
-  const days = Math.floor(total / 86400); total %= 86400;
-  const hours = Math.floor(total / 3600); total %= 3600;
-  const minutes = Math.floor(total / 60); total %= 60;
-  return { years, months, days, hours, minutes, seconds: total };
-}
-
-export default function HomepageMediaExperience({ settings }: Props) {
-  const [now, setNow] = useState<number | null>(null);
-  const [mediaIndex, setMediaIndex] = useState(0);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const target = useMemo(() => settings.launchDate ? new Date(settings.launchDate).getTime() : 0, [settings.launchDate]);
-  const hasTarget = Boolean(target && Number.isFinite(target));
-  const countdownEnabled = settings.countdownEnabled !== false;
-  const afterTarget = countdownEnabled && hasTarget && now !== null && now >= target;
-  const video = afterTarget && settings.afterLaunchVideoUrl ? settings.afterLaunchVideoUrl : settings.videoUrl;
-  const image = afterTarget && settings.afterLaunchFlyerUrl ? settings.afterLaunchFlyerUrl : settings.flyerUrl;
-  const media = useMemo(() => [
-    ...(video ? [{ kind: "video" as const, url: video }] : []),
-    ...(image ? [{ kind: "image" as const, url: image }] : []),
-  ], [video, image]);
-  const current = media.length ? media[mediaIndex % media.length] : null;
-  const overrideSeconds = (settings.videoDurationHours || 0) * 3600 + (settings.videoDurationMinutes || 0) * 60 + (settings.videoDurationSeconds || 0);
-  const useOverride = Boolean(settings.useVideoDurationOverride && overrideSeconds > 0);
-  const advance = useCallback(() => setMediaIndex(index => media.length ? (index + 1) % media.length : 0), [media.length]);
-
-  useEffect(() => {
-    if (!settings.enabled || !countdownEnabled || !hasTarget) return;
-    let intervalId = 0;
-    const syncNow = () => {
-      const currentTime = Date.now();
-      setNow(currentTime);
-      if (currentTime >= target && intervalId) window.clearInterval(intervalId);
-    };
-    intervalId = window.setInterval(syncNow, 1000);
-    const immediate = window.setTimeout(syncNow, 0);
-    return () => {
-      window.clearTimeout(immediate);
-      if (intervalId) window.clearInterval(intervalId);
-    };
-  }, [settings.enabled, countdownEnabled, hasTarget, target]);
-
-  useEffect(() => {
-    if (!settings.videoAudioEnabled) return;
-    const resume = () => { const element = videoRef.current; if (element?.paused) void element.play().catch(() => undefined); };
-    window.addEventListener("pointerdown", resume, { once: true });
-    window.addEventListener("keydown", resume, { once: true });
-    return () => { window.removeEventListener("pointerdown", resume); window.removeEventListener("keydown", resume); };
-  }, [settings.videoAudioEnabled, current?.url]);
-
-  useEffect(() => {
-    if (!current || current.kind === "video" && !useOverride) return;
-    const seconds = current.kind === "video"
-      ? overrideSeconds
-      : (settings.flyerDurationMinutes || 0) * 60 + (settings.flyerDurationSeconds ?? settings.flyerSeconds ?? 8);
-    if (seconds <= 0) return;
-    const timer = window.setTimeout(advance, seconds * 1000);
-    return () => window.clearTimeout(timer);
-  }, [current, useOverride, overrideSeconds, settings.flyerSeconds, settings.flyerDurationMinutes, settings.flyerDurationSeconds, advance]);
-
-  if (!settings.enabled) return null;
-  const countdown = countdownEnabled && hasTarget && now !== null && !afterTarget ? remainingTime(target, now) : null;
-  const units = countdown ? [
-    [(settings.countdownYearsLabel||"YEARS"), countdown.years], [(settings.countdownMonthsLabel||"MONTHS"), countdown.months], [(settings.countdownDaysLabel||"DAYS"), countdown.days],
-    [(settings.countdownHoursLabel||"HOURS"), countdown.hours], [(settings.countdownMinutesLabel||"MINUTES"), countdown.minutes], [(settings.countdownSecondsLabel||"SECONDS"), countdown.seconds],
-  ] as const : [];
-
-  return (
-    <section className="homepage-launch relative overflow-hidden border-y border-white/10 px-4 py-12 sm:px-8 sm:py-16" aria-label="Featured announcement">
-      <div className="homepage-launch-glow" aria-hidden="true" />
-      <div className="relative mx-auto max-w-6xl">
-        {(settings.title || settings.description) && (
-          <div className="mx-auto max-w-3xl text-center">
-            <span className="eyebrow-label">A TGO moment</span>
-            {settings.title && <h2 className="heading-premium mt-4 text-3xl font-bold brand-gradient-text sm:text-5xl">{settings.title}</h2>}
-            {settings.description && <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-neutral-300 sm:text-base">{settings.description}</p>}
-          </div>
-        )}
-        {current && (
-          <div className="homepage-media-frame mx-auto mt-9">
-            <div className="homepage-media-topline"><span>FEATURED MEDIA</span><span><i /> TGO DEVSTUDIO</span></div>
-            {current.kind === "video" ? (
-              <video ref={videoRef} key={current.url} src={current.url} poster={getHomepageVideoPoster(current.url)} autoPlay muted={!settings.videoAudioEnabled} playsInline preload="metadata" controls={false} disablePictureInPicture controlsList="nodownload noplaybackrate noremoteplayback" loop={false} onContextMenu={event => event.preventDefault()} onEnded={advance} className="homepage-media-content homepage-media-video" />
-            ) : (
-              <div className="homepage-media-image-wrap"><SmartImage priority src={current.url} alt={settings.title || "TGO DevStudio featured media"} label={settings.title || "TGO DevStudio"} className="homepage-media-content homepage-media-image" /></div>
-            )}
-            {media.length > 1 && <div className="homepage-media-pagination" aria-label={`Media ${mediaIndex + 1} of ${media.length}`}>{media.map((item, index) => <button key={item.url} type="button" aria-label={`Show media ${index + 1}`} aria-current={index === mediaIndex ? "true" : undefined} onClick={() => setMediaIndex(index)} />)}</div>}
-          </div>
-        )}
-        {countdown && settings.countdownVisible !== false && (
-          <div className="homepage-countdown mx-auto mt-8 max-w-5xl">
-            <div className="homepage-countdown-heading"><span>{settings.countdownLabel || "COUNTDOWN"}</span><span>{settings.countdownStatusLabel || "LIVE TIMER"}</span></div>
-            <div className="homepage-countdown-grid">{units.map(([label, value]) => (
-              <div key={label} className="homepage-countdown-unit"><strong>{String(value).padStart(2, "0")}</strong><span>{label}</span></div>
-            ))}</div>
-          </div>
-        )}
-      </div>
-    </section>
-  );
+import {useCallback,useEffect,useMemo,useRef,useState} from "react";
+type MediaItem={_id?:string;url:string;kind:"image"|"video";alt?:string;durationSeconds?:number;videoCutoffSeconds?:number;repeatCount?:number;focalX?:number;focalY?:number};
+type Collection={items:MediaItem[];enabled:boolean;name:string};
+type Props={settings:{enabled?:boolean;countdownEnabled?:boolean;countdownVisible?:boolean;launchDate?:string|Date|null;title?:string;description?:string;countdownLabel?:string;countdownStatusLabel?:string;countdownYearsLabel?:string;countdownMonthsLabel?:string;countdownDaysLabel?:string;countdownHoursLabel?:string;countdownMinutesLabel?:string;countdownSecondsLabel?:string;videoUrl?:string;flyerUrl?:string;afterLaunchVideoUrl?:string;afterLaunchFlyerUrl?:string;flyerSeconds?:number;flyerDurationMinutes?:number;flyerDurationSeconds?:number;videoAudioEnabled?:boolean;videoDurationHours?:number;videoDurationMinutes?:number;videoDurationSeconds?:number;useVideoDurationOverride?:boolean}};
+function addMonths(date:Date,months:number){const next=new Date(date),day=next.getUTCDate();next.setUTCDate(1);next.setUTCMonth(next.getUTCMonth()+months);const last=new Date(Date.UTC(next.getUTCFullYear(),next.getUTCMonth()+1,0)).getUTCDate();next.setUTCDate(Math.min(day,last));return next}
+function remainingTime(target:number,now:number){let cursor=new Date(now),years=0;while(years<100){const n=new Date(Date.UTC(cursor.getUTCFullYear()+1,cursor.getUTCMonth(),cursor.getUTCDate(),cursor.getUTCHours(),cursor.getUTCMinutes(),cursor.getUTCSeconds()));if(n.getTime()>target)break;cursor=n;years++}let months=0;while(months<12){const n=addMonths(cursor,1);if(n.getTime()>target)break;cursor=n;months++}let total=Math.max(0,Math.floor((target-cursor.getTime())/1000));const days=Math.floor(total/86400);total%=86400;const hours=Math.floor(total/3600);total%=3600;const minutes=Math.floor(total/60);total%=60;return{years,months,days,hours,minutes,seconds:total}}
+export default function HomepageMediaExperience({settings}:Props){
+ const [now,setNow]=useState<number|null>(null),[launch,setLaunch]=useState<Collection|null>(null),[permanent,setPermanent]=useState<Collection|null>(null),[index,setIndex]=useState(0),[repeat,setRepeat]=useState(0);
+ const videoRef=useRef<HTMLVideoElement>(null);
+ const target=useMemo(()=>settings.launchDate?new Date(settings.launchDate).getTime():0,[settings.launchDate]),hasTarget=Boolean(target&&Number.isFinite(target)),countdownEnabled=settings.countdownEnabled!==false;
+ const afterTarget=countdownEnabled&&hasTarget&&now!==null&&now>=target;
+ useEffect(()=>{let active=true;Promise.all(["launch","permanent"].map(key=>fetch("/api/media/collections?key="+key,{cache:"no-store"}).then(r=>r.json()).catch(()=>({collections:[]})))).then(([a,b])=>{if(active){setLaunch(a.collections?.[0]||null);setPermanent(b.collections?.[0]||null)}});return()=>{active=false}},[]);
+ useEffect(()=>{if(!settings.enabled||!countdownEnabled||!hasTarget)return;const sync=()=>setNow(Date.now());sync();const id=window.setInterval(sync,1000);return()=>clearInterval(id)},[settings.enabled,countdownEnabled,hasTarget,target]);
+ useEffect(()=>{const ms=(navigator as Navigator&{mediaSession?:MediaSession}).mediaSession;if(!ms)return;try{ms.metadata=null;ms.playbackState="none";for(const action of ["play","pause","seekbackward","seekforward","previoustrack","nexttrack","stop","seekto"] as MediaSessionAction[]){try{ms.setActionHandler(action,null)}catch{}}}catch{}return()=>{try{ms.metadata=null;ms.playbackState="none"}catch{}}},[]);
+ const fallback=useMemo<MediaItem[]>(()=>{const rows:MediaItem[]=[];if(settings.videoUrl)rows.push({kind:"video",url:settings.videoUrl,durationSeconds:settings.useVideoDurationOverride?((settings.videoDurationHours||0)*3600+(settings.videoDurationMinutes||0)*60+(settings.videoDurationSeconds||0)):0});if(settings.flyerUrl)rows.push({kind:"image",url:settings.flyerUrl,durationSeconds:(settings.flyerDurationMinutes||0)*60+(settings.flyerDurationSeconds??settings.flyerSeconds??8)});return rows},[settings]);
+ const afterFallback=useMemo<MediaItem[]>(()=>{const rows:MediaItem[]=[];if(settings.afterLaunchVideoUrl)rows.push({kind:"video",url:settings.afterLaunchVideoUrl});if(settings.afterLaunchFlyerUrl)rows.push({kind:"image",url:settings.afterLaunchFlyerUrl,durationSeconds:8});return rows},[settings]);
+ const items=afterTarget?(permanent?.items?.length?permanent.items:afterFallback):(launch?.items?.length?launch.items:fallback);
+ const current=items.length?items[index%items.length]:null;
+ const advance=useCallback(()=>{setIndex(i=>(i+1)%Math.max(1,items.length));setRepeat(0)},[items.length]);
+ useEffect(()=>{setIndex(0);setRepeat(0)},[afterTarget,launch,permanent]);
+ useEffect(()=>{if(!current||current.kind!=="image")return;const t=window.setTimeout(advance,Math.max(1,current.durationSeconds||8)*1000);return()=>clearTimeout(t)},[current,advance]);
+ const countdown=countdownEnabled&&hasTarget&&now!==null&&!afterTarget?remainingTime(target,now):null;
+ if(!settings.enabled&&!permanent?.enabled&&!launch?.enabled)return null;
+ const units=countdown?[[settings.countdownYearsLabel||"YEARS",countdown.years],[settings.countdownMonthsLabel||"MONTHS",countdown.months],[settings.countdownDaysLabel||"DAYS",countdown.days],[settings.countdownHoursLabel||"HOURS",countdown.hours],[settings.countdownMinutesLabel||"MINUTES",countdown.minutes],[settings.countdownSecondsLabel||"SECONDS",countdown.seconds]] as const:[];
+ if(!current&&!countdown)return null;
+ return <section className="homepage-launch relative overflow-hidden border-y border-white/10 px-4 py-12 sm:px-8 sm:py-16" aria-label={afterTarget?"TGO permanent media":"TGO launch media"}><div className="homepage-launch-glow" aria-hidden="true"/><div className="relative mx-auto max-w-6xl">
+ {(settings.title||settings.description)&&<div className="mx-auto max-w-3xl text-center"><span className="eyebrow-label">{afterTarget?"TGO DEVSTUDIO":"A TGO moment"}</span>{settings.title&&<h2 className="heading-premium mt-4 text-3xl font-bold brand-gradient-text sm:text-5xl">{settings.title}</h2>}{settings.description&&<p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-neutral-300 sm:text-base">{settings.description}</p>}</div>}
+ {current&&<div className="homepage-media-frame mx-auto mt-9 overflow-hidden"><div className="homepage-media-topline"><span>{afterTarget?"PERMANENT MEDIA":"LAUNCH MEDIA"}</span><span><i/> TGO DEVSTUDIO</span></div><div className="relative aspect-[16/8] w-full overflow-hidden bg-black sm:aspect-[16/7]">{current.kind==="video"?<video ref={videoRef} key={current.url} src={current.url} autoPlay muted playsInline webkit-playsinline="true" preload="auto" controls={false} disablePictureInPicture controlsList="nodownload noplaybackrate noremoteplayback" onContextMenu={e=>e.preventDefault()} onPlay={()=>{}} onTimeUpdate={e=>{const cutoff=Number(current.videoCutoffSeconds||0);if(cutoff>0&&e.currentTarget.currentTime>=cutoff){e.currentTarget.pause();advance()}}} onEnded={()=>{const max=Math.max(1,current.repeatCount||1);if(repeat+1<max){setRepeat(v=>v+1);e.currentTarget.currentTime=0;void e.currentTarget.play().catch(()=>advance())}else advance()}} className="absolute inset-0 h-full w-full object-cover" style={{objectPosition:`${current.focalX??50}% ${current.focalY??50}%`}}/>:<img src={current.url} alt={current.alt||settings.title||"TGO DevStudio media"} className="absolute inset-0 h-full w-full object-cover" style={{objectPosition:`${current.focalX??50}% ${current.focalY??50}%`}}/>}</div></div>}
+ {countdown&&settings.countdownVisible!==false&&<div className="homepage-countdown mx-auto mt-8 max-w-5xl"><div className="homepage-countdown-heading"><span>{settings.countdownLabel||"COUNTDOWN"}</span><span>{settings.countdownStatusLabel||"LIVE TIMER"}</span></div><div className="homepage-countdown-grid">{units.map(([label,value])=><div key={label} className="homepage-countdown-unit"><strong>{String(value).padStart(2,"0")}</strong><span>{label}</span></div>)}</div></div>}
+ </div></section>
 }

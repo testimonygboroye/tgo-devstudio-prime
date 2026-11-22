@@ -11,9 +11,19 @@ export const dynamic="force-dynamic";
 const isAdmin=(s:any)=>Boolean(s?.role?.isFounderRole||s?.role?.canManageUsers);
 const allowedKeys=["launch","permanent","advertisement","partner"];
 const allowedPlacements=["homepage-after-media","homepage-before-footer","about","services","service-detail","portfolio","blog","blog-article","client-partners"];
+function cloudinaryPublicId(url:string){try{const u=new URL(url);if(!u.hostname.endsWith("cloudinary.com"))return "";const marker="/upload/";const i=u.pathname.indexOf(marker);if(i<0)return "";let parts=u.pathname.slice(i+marker.length).split("/");if(parts[0]?.includes(","))parts=parts.slice(1);if(/^v\\d+$/.test(parts[0]||""))parts=parts.slice(1);const last=parts.pop()||"";parts.push(last.replace(/\\.[a-z0-9]+$/i,""));return parts.join("/")}catch{return ""}}
+async function migrateLegacyHomepageMedia(key:string){
+ if(key!=="launch"&&key!=="permanent")return;
+ if(await MediaCollection.exists({key}))return;
+ const legacy=await LaunchSettings.findOne().lean();if(!legacy)return;
+ const source=key==="launch"?[{url:legacy.videoUrl,kind:"video"},{url:legacy.flyerUrl,kind:"image"}]:[{url:legacy.afterLaunchVideoUrl,kind:"video"},{url:legacy.afterLaunchFlyerUrl,kind:"image"}];
+ const items=source.filter(x=>typeof x.url==="string"&&/^https:\\/\\//i.test(x.url)).map((x:any,index:number)=>({url:x.url,publicId:cloudinaryPublicId(x.url),kind:x.kind,alt:key==="launch"?"TGO launch media":"TGO permanent media",durationSeconds:key==="launch"?Math.max(1,Number(legacy.flyerDurationMinutes||0)*60+Number(legacy.flyerDurationSeconds??legacy.flyerSeconds??8)):8,videoCutoffSeconds:key==="launch"&&legacy.useVideoDurationOverride?Math.max(0,Number(legacy.videoDurationHours||0)*3600+Number(legacy.videoDurationMinutes||0)*60+Number(legacy.videoDurationSeconds||0)):0,repeatCount:1,order:index,focalX:50,focalY:50}));
+ if(items.length)await MediaCollection.create({key,name:key==="launch"?"Launch Media (migrated)":"Permanent Media (migrated)",enabled:legacy.enabled===true,placement:"homepage-after-media",items,approved:true,advertiser:"TGO DevStudio"});
+}
 export async function GET(req:NextRequest){
  await connectToDatabase();
  const key=req.nextUrl.searchParams.get("key"),placement=req.nextUrl.searchParams.get("placement"),admin=req.nextUrl.searchParams.get("admin")==="1";
+ if(!admin&&(key==="launch"||key==="permanent"))await migrateLegacyHomepageMedia(key);
  if(admin){
   const s=await getAuthenticatedSession(req);if(!s)return unauthorizedResponse();if(!isAdmin(s))return forbiddenResponse("Founder access required.");
   const [rows,events]=await Promise.all([MediaCollection.find({}).sort({priority:-1,updatedAt:-1}).lean(),MediaCollectionEvent.aggregate([{$group:{_id:{collectionId:"$collectionId",eventType:"$eventType"},count:{$sum:1}}}])]);

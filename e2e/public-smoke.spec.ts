@@ -130,30 +130,35 @@ test("contact form blocks empty submissions without creating an enquiry", async 
 test("homepage featured media fills its card using responsive cover cropping", async ({ page }) => {
   await page.goto("/", { waitUntil: "domcontentloaded" });
   const frame = page.locator(".homepage-media-frame").first();
-  if (await frame.count() === 0) test.skip(true, "No homepage media is configured.");
-  await frame.scrollIntoViewIfNeeded();
-  await page.waitForFunction(() => {
-    const media = document.querySelector(".homepage-media-frame .homepage-media-content");
-    if (media instanceof HTMLImageElement) return media.complete && media.naturalWidth > 0;
-    if (media instanceof HTMLVideoElement) return media.readyState >= 1 && media.videoWidth > 0;
-    return Boolean(media);
-  }, undefined, { timeout: 15000 });
+  await expect(frame).toBeVisible({ timeout: 15000 });
+  const media = frame.locator("img, video").first();
+  await expect(media).toBeVisible();
+  await media.evaluate(async element => {
+    if (element instanceof HTMLImageElement && !element.complete) await element.decode();
+    if (element instanceof HTMLVideoElement && element.readyState < 1) {
+      await new Promise<void>(resolve => element.addEventListener("loadedmetadata", () => resolve(), { once: true }));
+    }
+  });
   const result = await frame.evaluate(element => {
-    const media = element.querySelector(".homepage-media-content");
-    if (!media) return null;
+    const media = element.querySelector("img, video");
+    if (!(media instanceof HTMLImageElement) && !(media instanceof HTMLVideoElement)) return null;
     const frameRect = element.getBoundingClientRect();
     const mediaRect = media.getBoundingClientRect();
-    const naturalRatio = media instanceof HTMLImageElement
-      ? media.naturalWidth / media.naturalHeight
-      : media instanceof HTMLVideoElement
-        ? media.videoWidth / media.videoHeight
-        : 0;
-    return { frameWidth: frameRect.width, frameHeight: frameRect.height, mediaWidth: mediaRect.width, mediaHeight: mediaRect.height, frameRatio: frameRect.width / frameRect.height, renderedRatio: mediaRect.width / mediaRect.height, naturalRatio, objectFit: getComputedStyle(media).objectFit };
+    return {
+      frameWidth: frameRect.width,
+      frameHeight: frameRect.height,
+      mediaWidth: mediaRect.width,
+      mediaHeight: mediaRect.height,
+      frameRatio: frameRect.width / frameRect.height,
+      renderedRatio: mediaRect.width / mediaRect.height,
+      objectFit: getComputedStyle(media).objectFit,
+    };
   });
   expect(result).not.toBeNull();
   expect(result!.mediaWidth).toBeGreaterThan(0);
-  expect(result!.frameWidth - result!.mediaWidth).toBeLessThanOrEqual(2);
-  expect(result!.frameHeight - result!.mediaHeight).toBeLessThanOrEqual(2);
+  expect(result!.mediaHeight).toBeGreaterThan(0);
+  expect(Math.abs(result!.frameWidth - result!.mediaWidth)).toBeLessThanOrEqual(2);
+  expect(Math.abs(result!.frameHeight - result!.mediaHeight)).toBeLessThanOrEqual(2);
   expect(result!.objectFit).toBe("cover");
   expect(Math.abs(result!.renderedRatio - result!.frameRatio)).toBeLessThan(0.02);
 });

@@ -11,6 +11,34 @@ export const dynamic="force-dynamic";
 const isAdmin=(s:any)=>Boolean(s?.role?.isFounderRole||s?.role?.canManageUsers||requireAnyContentPermission(s,"homeSettings"));
 const allowedKeys=["launch","permanent","advertisement","partner"];
 const allowedPlacements=["homepage-after-media","homepage-before-footer","about","services","service-detail","portfolio","blog","blog-article","client-partners"];
+
+let homepageMediaIndexReady:Promise<void>|null=null;
+async function ensureHomepageMediaUniqueness(){
+ if(!homepageMediaIndexReady){
+  homepageMediaIndexReady=(async()=>{
+   const homepageKeys:Array<"launch"|"permanent">=["launch","permanent"];
+    for(const key of homepageKeys){
+    const docs=await MediaCollection.find({key}).sort({createdAt:1,_id:1}).lean();
+    if(docs.length>1){
+     const seen=new Set<string>(),items:any[]=[];
+     for(const doc of docs)for(const item of doc.items||[]){const identity=String(item.publicId||item.url);if(!seen.has(identity)){seen.add(identity);items.push({...item,order:items.length});}}
+     await MediaCollection.updateOne({_id:docs[0]._id},{$set:{items}});
+     await MediaCollection.deleteMany({_id:{$in:docs.slice(1).map(doc=>doc._id)}});
+    }
+   }
+   const collection=MediaCollection.collection;
+   const indexes=await collection.indexes().catch(()=>[]);
+   const keyIndexes=indexes.filter((index:any)=>Object.keys(index.key||{}).length===1&&index.key?.key===1);
+   const valid=keyIndexes.some((index:any)=>index.unique===true&&index.partialFilterExpression?.$or?.some((entry:any)=>entry.key==="launch")&&index.partialFilterExpression?.$or?.some((entry:any)=>entry.key==="permanent"));
+   if(!valid){
+    for(const index of keyIndexes)if(index.name)await collection.dropIndex(index.name).catch(()=>{});
+    await collection.createIndex({key:1},{unique:true,partialFilterExpression:{$or:[{key:"launch"},{key:"permanent"}]},name:"media_homepage_key_unique"});
+   }
+  })().catch(error=>{homepageMediaIndexReady=null;throw error;});
+ }
+ await homepageMediaIndexReady;
+}
+
 function cloudinaryPublicId(url:string){try{const u=new URL(url);if(!u.hostname.endsWith("cloudinary.com"))return "";const marker="/upload/";const i=u.pathname.indexOf(marker);if(i<0)return "";let parts=u.pathname.slice(i+marker.length).split("/");if(parts[0]?.includes(","))parts=parts.slice(1);const version=parts[0]||"";if(version.startsWith("v")&&version.length>1&&Number.isFinite(Number(version.slice(1))))parts=parts.slice(1);const last=parts.pop()||"";const dot=last.lastIndexOf(".");parts.push(dot>0?last.slice(0,dot):last);return parts.join("/")}catch{return ""}}
 async function migrateLegacyHomepageMedia(key:string){
  if(key!=="launch"&&key!=="permanent")return;
@@ -18,14 +46,15 @@ async function migrateLegacyHomepageMedia(key:string){
  const legacy=await LaunchSettings.findOne().lean();if(!legacy)return;
  const source=key==="launch"?[{url:legacy.videoUrl,kind:"video"},{url:legacy.flyerUrl,kind:"image"}]:[{url:legacy.afterLaunchVideoUrl,kind:"video"},{url:legacy.afterLaunchFlyerUrl,kind:"image"}];
  const items=source.filter(x=>typeof x.url==="string"&&x.url.startsWith("https://")).map((x:any,index:number)=>({url:x.url,publicId:cloudinaryPublicId(x.url),kind:x.kind,alt:key==="launch"?"TGO launch media":"TGO permanent media",durationSeconds:key==="launch"?Math.max(1,Number(legacy.flyerDurationMinutes||0)*60+Number(legacy.flyerDurationSeconds??legacy.flyerSeconds??8)):8,videoCutoffSeconds:key==="launch"&&legacy.useVideoDurationOverride?Math.max(0,Number(legacy.videoDurationHours||0)*3600+Number(legacy.videoDurationMinutes||0)*60+Number(legacy.videoDurationSeconds||0)):0,repeatCount:1,order:index,focalX:50,focalY:50}));
- if(items.length)await MediaCollection.create({key,name:key==="launch"?"Launch Media (migrated)":"Permanent Media (migrated)",enabled:legacy.enabled===true,placement:"homepage-after-media",items,approved:true,advertiser:"TGO DevStudio"});
+ if(items.length){try{await MediaCollection.create({key,name:key==="launch"?"Launch Media (migrated)":"Permanent Media (migrated)",enabled:legacy.enabled===true,placement:"homepage-after-media",items,approved:true,advertiser:"TGO DevStudio"});}catch(error){if((error as {code?:number})?.code!==11000)throw error;}}
 }
 export async function GET(req:NextRequest){
  await connectToDatabase();
  const key=req.nextUrl.searchParams.get("key"),placement=req.nextUrl.searchParams.get("placement"),admin=req.nextUrl.searchParams.get("admin")==="1";
- if(!admin&&(key==="launch"||key==="permanent"))await migrateLegacyHomepageMedia(key);
+ if(!admin&&(key==="launch"||key==="permanent")){await ensureHomepageMediaUniqueness();await migrateLegacyHomepageMedia(key);}
  if(admin){
   const s=await getAuthenticatedSession(req);if(!s)return unauthorizedResponse();if(!isAdmin(s))return forbiddenResponse("Founder access required.");
+  await ensureHomepageMediaUniqueness();await migrateLegacyHomepageMedia("launch");await migrateLegacyHomepageMedia("permanent");
   const [rows,events,placements,devices]=await Promise.all([MediaCollection.find({}).sort({priority:-1,updatedAt:-1}).lean(),MediaCollectionEvent.aggregate([{$group:{_id:{collectionId:"$collectionId",eventType:"$eventType"},count:{$sum:1},visitors:{$addToSet:"$visitorHash"}}}]),MediaCollectionEvent.aggregate([{$match:{eventType:"impression"}},{$group:{_id:{collectionId:"$collectionId",placement:"$placement"},count:{$sum:1}}}]),MediaCollectionEvent.aggregate([{$match:{eventType:"impression"}},{$group:{_id:{collectionId:"$collectionId",device:"$device"},count:{$sum:1}}}])]);
   const analytics:Record<string,Record<string,number>>={};for(const e of events){const id=String(e._id.collectionId);analytics[id]??={};analytics[id][e._id.eventType]=e._id.eventType==="impression"?e.visitors.length:e.count;}for(const row of rows){const a=analytics[String(row._id)]||{};a.ctr=a.impression?Number(((a.click||0)/a.impression*100).toFixed(2)):0;analytics[String(row._id)]=a;}for(const e of placements){const id=String(e._id.collectionId);analytics[id]??={};analytics[id]["placement:"+e._id.placement]=e.count;}for(const e of devices){const id=String(e._id.collectionId);analytics[id]??={};analytics[id]["device:"+e._id.device]=e.count;}
   return NextResponse.json({collections:rows.map(x=>({...x,analytics:analytics[String(x._id)]||{}}))},{headers:{"Cache-Control":"private, no-store"}});
@@ -51,7 +80,7 @@ export async function POST(req:NextRequest){
  const startsAt=b.startsAt?new Date(b.startsAt):null,endsAt=b.endsAt?new Date(b.endsAt):null;
  if(startsAt&&Number.isNaN(startsAt.getTime())||endsAt&&Number.isNaN(endsAt.getTime())||startsAt&&endsAt&&endsAt<=startsAt)return NextResponse.json({error:"Enter a valid campaign schedule; end must be after start."},{status:400});
  const campaignType:"external"|"tgo"=b.campaignType==="external"?"external":"tgo";const data={key:b.key,name:String(b.name).trim().slice(0,140),enabled:b.enabled===true,placement:b.key==="partner"?"client-partners":b.key==="launch"||b.key==="permanent"?"homepage-after-media":b.placement||"homepage-after-media",items,startsAt,endsAt,priority:Math.max(-100,Math.min(100,Number(b.priority)||0)),advertiser:String(b.advertiser||"TGO DevStudio").slice(0,140),approved:b.key==="advertisement"?(campaignType==="tgo"||b.approved===true):b.key==="partner"?b.approved===true:true,destinationUrl,campaignDescription:String(b.campaignDescription||"").trim().slice(0,400),ctaLabel:String(b.ctaLabel||"Learn more").trim().slice(0,40),campaignType,frequencyCapPerDay:Math.max(1,Math.min(20,Number(b.frequencyCapPerDay)||2)),maxPerPageView:Math.max(1,Math.min(5,Number(b.maxPerPageView)||1)),deviceTarget:["mobile","desktop"].includes(b.deviceTarget)?b.deviceTarget:"all"};
- await connectToDatabase();const row=b.id?await MediaCollection.findByIdAndUpdate(b.id,{$set:data},{new:true,runValidators:true}):(b.key==="launch"||b.key==="permanent")?await MediaCollection.findOneAndUpdate({key:b.key},{$set:data},{new:true,upsert:true,runValidators:true,setDefaultsOnInsert:true}):await MediaCollection.create(data);
+ await connectToDatabase();await ensureHomepageMediaUniqueness();const row=b.id?await MediaCollection.findByIdAndUpdate(b.id,{$set:data},{new:true,runValidators:true}):(b.key==="launch"||b.key==="permanent")?await MediaCollection.findOneAndUpdate({key:b.key},{$set:data},{new:true,upsert:true,runValidators:true,setDefaultsOnInsert:true}):await MediaCollection.create(data);
  if(!row)return NextResponse.json({error:"Collection not found."},{status:404});
  return NextResponse.json({collection:row},{status:b.id?200:201,headers:{"Cache-Control":"private, no-store"}});
 }

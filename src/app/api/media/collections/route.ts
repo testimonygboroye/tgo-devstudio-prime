@@ -28,10 +28,10 @@ async function ensureHomepageMediaUniqueness(){
    const collection=MediaCollection.collection;
    const indexes=await collection.indexes().catch(()=>[]);
    const keyIndexes=indexes.filter((index:any)=>Object.keys(index.key||{}).length===1&&index.key?.key===1);
-   const valid=keyIndexes.some((index:any)=>index.unique===true&&index.partialFilterExpression?.key?.$in?.includes("launch")&&index.partialFilterExpression?.key?.$in?.includes("permanent"));
+   const valid=keyIndexes.some((index:any)=>index.unique===true&&index.partialFilterExpression?.$or?.some((entry:any)=>entry.key==="launch")&&index.partialFilterExpression?.$or?.some((entry:any)=>entry.key==="permanent"));
    if(!valid){
     for(const index of keyIndexes)await collection.dropIndex(index.name).catch(()=>{});
-    await collection.createIndex({key:1},{unique:true,partialFilterExpression:{key:{$in:["launch","permanent"]}},name:"media_homepage_key_unique"});
+    await collection.createIndex({key:1},{unique:true,partialFilterExpression:{$or:[{key:"launch"},{key:"permanent"}]},name:"media_homepage_key_unique"});
    }
   })().catch(error=>{homepageMediaIndexReady=null;throw error;});
  }

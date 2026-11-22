@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import SmartImage from "@/components/public/SmartImage";
 
 function getHomepageVideoPoster(url: string) {
@@ -19,7 +19,7 @@ type Props = { settings: {
   launchDate?: string | Date | null; title?: string; description?: string; countdownLabel?: string; countdownStatusLabel?: string; countdownYearsLabel?:string; countdownMonthsLabel?:string; countdownDaysLabel?:string; countdownHoursLabel?:string; countdownMinutesLabel?:string; countdownSecondsLabel?:string;
   videoUrl?: string; flyerUrl?: string; afterLaunchVideoUrl?: string; afterLaunchFlyerUrl?: string;
   flyerSeconds?: number; flyerDurationMinutes?: number; flyerDurationSeconds?: number;
-  videoAudioEnabled?: boolean; videoDurationHours?: number; videoDurationMinutes?: number;
+  videoDurationHours?: number; videoDurationMinutes?: number;
   videoDurationSeconds?: number; useVideoDurationOverride?: boolean;
 } };
 
@@ -59,7 +59,6 @@ function remainingTime(target: number, now: number) {
 export default function HomepageMediaExperience({ settings }: Props) {
   const [now, setNow] = useState<number | null>(null);
   const [mediaIndex, setMediaIndex] = useState(0);
-  const videoRef = useRef<HTMLVideoElement>(null);
   const target = useMemo(() => settings.launchDate ? new Date(settings.launchDate).getTime() : 0, [settings.launchDate]);
   const hasTarget = Boolean(target && Number.isFinite(target));
   const countdownEnabled = settings.countdownEnabled !== false;
@@ -109,7 +108,7 @@ export default function HomepageMediaExperience({ settings }: Props) {
     return () => window.clearTimeout(timer);
   }, [current, useOverride, overrideSeconds, settings.flyerSeconds, settings.flyerDurationMinutes, settings.flyerDurationSeconds, advance]);
 
-  if (!settings.enabled) return null;
+  useEffect(() => {\n    if (!("mediaSession" in navigator)) return;\n    try { navigator.mediaSession.metadata = null; for (const action of ["play","pause","previoustrack","nexttrack","seekbackward","seekforward","seekto","stop"] as MediaSessionAction[]) { try { navigator.mediaSession.setActionHandler(action, null); } catch {} } } catch {}\n  }, [current?.url]);\n\n  if (!settings.enabled) return null;
   const countdown = countdownEnabled && hasTarget && now !== null && !afterTarget ? remainingTime(target, now) : null;
   const units = countdown ? [
     [(settings.countdownYearsLabel||"YEARS"), countdown.years], [(settings.countdownMonthsLabel||"MONTHS"), countdown.months], [(settings.countdownDaysLabel||"DAYS"), countdown.days],
@@ -131,7 +130,7 @@ export default function HomepageMediaExperience({ settings }: Props) {
           <div className="homepage-media-frame mx-auto mt-9">
             <div className="homepage-media-topline"><span>FEATURED MEDIA</span><span><i /> TGO DEVSTUDIO</span></div>
             {current.kind === "video" ? (
-              <video ref={videoRef} key={current.url} src={current.url} poster={getHomepageVideoPoster(current.url)} autoPlay muted={!settings.videoAudioEnabled} playsInline preload="metadata" controls={false} disablePictureInPicture controlsList="nodownload noplaybackrate noremoteplayback" loop={false} onContextMenu={event => event.preventDefault()} onEnded={advance} className="homepage-media-content homepage-media-video" />
+              <video key={current.url} src={current.url} poster={getHomepageVideoPoster(current.url)} autoPlay muted playsInline preload="metadata" controls={false} disablePictureInPicture controlsList="nodownload noplaybackrate noremoteplayback" loop={false} onContextMenu={event => event.preventDefault()} onEnded={advance} className="homepage-media-content homepage-media-video" />
             ) : (
               <div className="homepage-media-image-wrap"><SmartImage priority src={current.url} alt={settings.title || "TGO DevStudio featured media"} label={settings.title || "TGO DevStudio"} className="homepage-media-content homepage-media-image" /></div>
             )}

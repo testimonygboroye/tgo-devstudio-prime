@@ -34,7 +34,7 @@ export async function GET(req:NextRequest){
  if(key&&allowedKeys.includes(key))filter.key=key;if(placement&&allowedPlacements.includes(placement))filter.placement=placement;
  const rows=await MediaCollection.find(filter).sort({priority:-1,updatedAt:-1}).lean();
  const publicRows=rows.filter(x=>x.key!=="advertisement"&&x.key!=="partner"||x.approved).filter(x=>placement==="client-partners"?x.key==="partner":placement?x.key==="advertisement":key==="launch"||key==="permanent"?x.key===key:true);
- return NextResponse.json({collections:publicRows},{headers:{"Cache-Control":"public, max-age=20, stale-while-revalidate=40"}});
+ return NextResponse.json({collections:publicRows,hasCollection},{headers:{"Cache-Control":"public, max-age=20, stale-while-revalidate=40"}});
 }
 export async function POST(req:NextRequest){
  const s=await getAuthenticatedSession(req);if(!s)return unauthorizedResponse();if(!isAdmin(s))return forbiddenResponse("Founder access required.");

@@ -5,7 +5,6 @@ type Campaign={_id:string;name:string;key:string;placement:string;items:MediaIte
 function silentVideoUrl(url:string){return url.includes("/ac_none/")?url:url.replace("/video/upload/","/video/upload/ac_none/")}
 function suppressMediaSession(){const ms=(navigator as Navigator & {mediaSession?:MediaSession}).mediaSession;if(!ms)return;try{ms.metadata=null;ms.playbackState="none";for(const action of ["play","pause","seekbackward","seekforward","previoustrack","nexttrack","stop","seekto"] as MediaSessionAction[]){try{ms.setActionHandler(action,null)}catch{}}}catch{}}
 function safeCount(key:string){try{return Number(localStorage.getItem(key)||0)}catch{return 0}}
-function newPageViewKey(){try{return crypto.randomUUID()}catch{return "pv-"+Date.now()+"-"+Math.random().toString(36).slice(2)}}
 function visitorKey(){try{let v=localStorage.getItem("tgo-media-visitor");if(!v){v=crypto.randomUUID();localStorage.setItem("tgo-media-visitor",v)}return v}catch{return "session-"+Math.random().toString(36).slice(2)}}
 export default function PublicMediaPlacement({placement,heading,description}:{placement:string;heading?:string;description?:string}){
  const [campaign,setCampaign]=useState<Campaign|null>(null),[index,setIndex]=useState(0),[repeat,setRepeat]=useState(0),[dismissed,setDismissed]=useState(false);

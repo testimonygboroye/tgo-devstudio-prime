@@ -228,6 +228,7 @@ jobs:
           'src/app/(public)/team/[slug]/page.tsx'
           'src/app/(public)/testimonials/[id]/page.tsx'
           src/components/public/HeroMoment.tsx
+          src/app/api/media/collections/track/route.ts
           src/components/public/HomepageMediaExperience.tsx
           src/components/public/SocialFloatingButton.tsx
           src/lib/constants/publicSiteDefaults.ts
@@ -245,7 +246,6 @@ jobs:
           src/app/api/platform/messaging/route.ts
           'src/app/(public)/faq/[slug]/page.tsx'
           src/lib/i18n/translatableFields.ts
-          src/app/api/media
           'src/app/admin/(shell)/media-collections'
           'src/app/admin/(shell)/homepage-media'
           src/components/public/HomepageMediaExperience.tsx

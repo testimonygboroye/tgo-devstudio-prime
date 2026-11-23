@@ -3,7 +3,7 @@ import {useCallback,useEffect,useId,useRef,useState} from "react";
 type MediaItem={_id?:string;url:string;kind:"image"|"video";alt?:string;durationSeconds?:number;videoCutoffSeconds?:number;repeatCount?:number;focalX?:number;focalY?:number};
 type Campaign={_id:string;name:string;key:string;placement:string;items:MediaItem[];advertiser?:string;priority:number;frequencyCapPerDay?:number;maxPerPageView?:number;deviceTarget?:string;destinationUrl?:string;campaignDescription?:string;ctaLabel?:string};
 function silentVideoUrl(url:string){return url.includes("/ac_none/")?url:url.replace("/video/upload/","/video/upload/ac_none/")}
-function suppressMediaSession(){const ms=(navigator as Navigator & {mediaSession?:MediaSession}).mediaSession;if(!ms)return;try{ms.metadata=null;ms.playbackState="none";for(const action of ["play","pause","seekbackward","seekforward","previoustrack","nexttrack","stop","seekto"]){try{ms.setActionHandler(action,null)}catch{}}}catch{}}
+function suppressMediaSession(){const ms=(navigator as Navigator & {mediaSession?:MediaSession}).mediaSession;if(!ms)return;try{ms.metadata=null;ms.playbackState="none";for(const action of ["play","pause","seekbackward","seekforward","previoustrack","nexttrack","stop","seekto"] as MediaSessionAction[]){try{ms.setActionHandler(action,null)}catch{}}}catch{}}
 function safeCount(key:string){try{return Number(localStorage.getItem(key)||0)}catch{return 0}}
 function newPageViewKey(){try{return crypto.randomUUID()}catch{return "pv-"+Date.now()+"-"+Math.random().toString(36).slice(2)}}
 function visitorKey(){try{let v=localStorage.getItem("tgo-media-visitor");if(!v){v=crypto.randomUUID();localStorage.setItem("tgo-media-visitor",v)}return v}catch{return "session-"+Math.random().toString(36).slice(2)}}
@@ -11,7 +11,7 @@ export default function PublicMediaPlacement({placement,heading,description}:{pl
  const [campaign,setCampaign]=useState<Campaign|null>(null),[index,setIndex]=useState(0),[repeat,setRepeat]=useState(0),[dismissed,setDismissed]=useState(false);
  const pageViewKey=useId();
  const root=useRef<HTMLElement>(null),videoRef=useRef<HTMLVideoElement>(null),seen=useRef(false),videoFinished=useRef(false);
- useEffect(()=>{setPageViewKey(newPageViewKey())},[]);
+
  useEffect(()=>{if(!pageViewKey)return;let active=true;if(placement==="client-partners"){try{const until=Number(localStorage.getItem("tgo-partner-recommendations-dismissed-until")||0);if(until>Date.now())return()=>{active=false}}catch{}}fetch("/api/media/collections?placement="+encodeURIComponent(placement),{cache:"no-store"}).then(r=>r.json()).then(d=>{if(!active)return;const rows=(d.collections||[]) as Campaign[];const day=new Date().toISOString().slice(0,10);const mobile=/mobile|android|iphone/i.test(navigator.userAgent);const eligible=rows.filter(x=>x.items?.length&&(x.deviceTarget==="all"||!x.deviceTarget||x.deviceTarget===(mobile?"mobile":"desktop")));const chosen=eligible.find(x=>safeCount("tgo-ad-cap:"+day+":"+x._id)<Number(x.frequencyCapPerDay??2));if(chosen)setCampaign(chosen)}).catch(()=>{});return()=>{active=false}},[placement,pageViewKey]);
  useEffect(()=>{const ms=(navigator as Navigator & {mediaSession?:MediaSession}).mediaSession;if(!ms)return;try{ms.metadata=null;ms.playbackState="none";for(const action of ["play","pause","seekbackward","seekforward","previoustrack","nexttrack","stop","seekto"]){try{ms.setActionHandler(action,null)}catch{}}}catch{}},[]);
  const item=campaign?.items[index%Math.max(1,campaign.items.length)];

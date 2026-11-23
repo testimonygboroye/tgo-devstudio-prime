@@ -6,7 +6,7 @@ concurrency:
 
 on:
   push:
-    branches: [main, phase-1/core-platform-foundation, phase-2/founder-control-centre, phase-3/business-ecosystem-administration, platform/phase-4-client-crm-portal, platform/phase-5-workforce-management, platform/phase-6-universal-workspace, platform/client-portal-phase-7, feature/phase-14-executive-intelligence]
+    branches: [main, phase-1/core-platform-foundation, phase-2/founder-control-centre, phase-3/business-ecosystem-administration, platform/phase-4-client-crm-portal, platform/phase-5-workforce-management, platform/phase-6-universal-workspace, platform/client-portal-phase-7, feature/phase-14-executive-intelligence, feature/advertising-media-engine]
   workflow_dispatch:
     inputs:
       base_url:
@@ -245,6 +245,15 @@ jobs:
           src/app/api/platform/messaging/route.ts
           'src/app/(public)/faq/[slug]/page.tsx'
           src/lib/i18n/translatableFields.ts
+          src/app/api/media
+          'src/app/admin/(shell)/media-collections'
+          'src/app/admin/(shell)/homepage-media'
+          src/components/public/HomepageMediaExperience.tsx
+          src/components/public/PublicMediaPlacement.tsx
+          src/models/MediaCollection.ts
+          src/models/MediaCollectionEvent.ts
+          src/app/client/partners/page.tsx
+          src/components/client/ClientPortalNav.tsx
 
       - name: Type check and production build
         run: npm run build

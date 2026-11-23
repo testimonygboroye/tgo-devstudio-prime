@@ -1,4 +1,5 @@
 import Link from "next/link";
+import {Fragment} from "react";
 import type { Metadata } from "next";
 import { ArrowUpRight, BookOpen, Sparkles } from "lucide-react";
 import { connectToDatabase } from "@/lib/db";
@@ -30,9 +31,8 @@ export default async function BlogListPage(){
         <div className="blog-index-heading"><div><span className="eyebrow-label">{page.introEyebrow}</span><h2>{page.introHeading}</h2><p>{page.introDescription}</p></div><span>{posts.length} {posts.length===1?"ARTICLE":"ARTICLES"}</span></div>
         {allTags.length>0&&<div className="blog-tag-row">{allTags.map(tag=><span key={tag}>{tag}</span>)}</div>}
         {posts.length===0?<PublicEmptyState eyebrow="Studio insights" title="New perspectives are being prepared." description="Our articles explore software engineering, product decisions, practical technology and the craft of building dependable digital experiences. In the meantime, explore our capabilities or talk with the team." primaryHref="/services" primaryLabel="Explore services" secondaryHref="/contact" secondaryLabel="Talk to TGO"/>:
-          <div className="blog-index-grid">{posts.map((post,index)=><Link key={post._id.toString()} href={"/blog/"+post.slug} className={"blog-index-card "+(index===0?"blog-index-featured":"")}><div className="blog-index-image"><SmartImage src={post.coverImage?.url} alt={post.coverImage?.altText||post.title} label={post.title}/><span>JOURNAL / {String(index+1).padStart(2,"0")}</span></div><div className="blog-index-card-copy"><small>{post.tags?.[0]||"Studio journal"}</small><h3>{post.title}</h3><p>{post.excerpt}</p><b>{t("blog.readArticle")} <ArrowUpRight size={16}/></b></div></Link>)}</div>}
+          <div className="blog-index-grid">{posts.map((post,index)=><Fragment key={post._id.toString()}><Link href={"/blog/"+post.slug} className={"blog-index-card "+(index===0?"blog-index-featured":"")}><div className="blog-index-image"><SmartImage src={post.coverImage?.url} alt={post.coverImage?.altText||post.title} label={post.title}/><span>JOURNAL / {String(index+1).padStart(2,"0")}</span></div><div className="blog-index-card-copy"><small>{post.tags?.[0]||"Studio journal"}</small><h3>{post.title}</h3><p>{post.excerpt}</p><b>{t("blog.readArticle")} <ArrowUpRight size={16}/></b></div></Link>{index===2&&posts.length>=4&&<div className="col-span-full"><PublicMediaPlacement placement="blog"/></div>}</Fragment>)}</div>}
       </div></section>
-      <PublicMediaPlacement placement="blog" />
       <section className="services-bottom-cta"><div className="home-container"><span className="eyebrow-label">{page.ctaEyebrow}</span><h2>{page.ctaHeading}</h2><p>{page.ctaDescription}</p><Link href={page.ctaPrimaryHref} className="btn-premium-primary inline-flex items-center gap-2 rounded-full px-7 py-4 font-semibold text-white">{page.ctaPrimaryLabel} <ArrowUpRight size={17}/></Link></div></section>
     </main>
   );

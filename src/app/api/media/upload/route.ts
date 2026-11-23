@@ -10,7 +10,7 @@ export async function POST(request:NextRequest){
  const file=form.get("file"),requested=form.get("folder");const folder=typeof requested==="string"&&FOLDERS.includes(requested as typeof FOLDERS[number])?requested:"case-studies";
  if(!(file instanceof File))return NextResponse.json({status:"error",message:"No file provided."},{status:400});
  const isImage=IMAGE_TYPES.includes(file.type),isVideo=file.type.startsWith("video/");
- if(!isImage&&!isVideo)return NextResponse.json({status:"error",message:"Upload an image or a video file. Video files may contain audio; the public player will always mute it."},{status:400});
+ if(!isImage&&!isVideo)return NextResponse.json({status:"error",message:"Audio-only uploads are not supported. Embedded video audio is stripped from public playback."},{status:400});
  if(file.size<=0||file.size>MAX_FILE_SIZE_BYTES)return NextResponse.json({status:"error",message:"File must be between 1 byte and 50MB."},{status:400});
  if(folder!=="job-applications"){
   const session=await getAuthenticatedSession(request);if(!session)return unauthorizedResponse();

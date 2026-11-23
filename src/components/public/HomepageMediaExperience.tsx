@@ -11,7 +11,7 @@ export default function HomepageMediaExperience({settings}:Props){
  const [now,setNow]=useState<number|null>(null),[launch,setLaunch]=useState<Collection|null>(null),[permanent,setPermanent]=useState<Collection|null>(null),[index,setIndex]=useState(0),[repeat,setRepeat]=useState(0);
  const videoRef=useRef<HTMLVideoElement>(null),sectionRef=useRef<HTMLElement|null>(null),videoFinished=useRef(false);
  const target=useMemo(()=>settings.launchDate?new Date(settings.launchDate).getTime():0,[settings.launchDate]),hasTarget=Boolean(target&&Number.isFinite(target)),countdownEnabled=settings.countdownEnabled!==false;
- const afterTarget=countdownEnabled&&hasTarget&&now!==null&&now>=target;
+ const afterTarget=hasTarget&&now!==null&&now>=target;
  useEffect(()=>{let active=true;Promise.all(["launch","permanent"].map(key=>fetch("/api/media/collections?key="+key,{cache:"no-store"}).then(r=>r.json()).catch(()=>({collections:[]})))).then(([a,b])=>{if(active){setLaunch(a.collections?.[0]||(a.hasCollection?{enabled:false,items:[],name:"Launch Media"}:null));setPermanent(b.collections?.[0]||(b.hasCollection?{enabled:false,items:[],name:"Permanent Media"}:null))}});return()=>{active=false}},[]);
  useEffect(()=>{if(!hasTarget)return;const sync=()=>setNow(Date.now());const frame=window.requestAnimationFrame(sync);const id=window.setInterval(sync,1000);return()=>{window.cancelAnimationFrame(frame);clearInterval(id)}},[settings.enabled,countdownEnabled,hasTarget,target]);
  useEffect(()=>{suppressMediaSession();return()=>suppressMediaSession()},[]);

@@ -386,7 +386,7 @@ export default async function BlogDetailPage({
           }}
         />
 
-        <PublicMediaPlacement placement="blog-article" />
+        {readingMinutes>=5&&<PublicMediaPlacement placement="blog-article" />}
 
         {tags.length > 0 && (
           <div className="mt-10 flex flex-wrap gap-2">

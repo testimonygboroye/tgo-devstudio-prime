@@ -14,10 +14,11 @@ export async function POST(req:NextRequest){
  try{const parsed:unknown=await req.json();if(!parsed||typeof parsed!=="object"||Array.isArray(parsed))return NextResponse.json({error:"Invalid event"},{status:400});body=parsed as TrackPayload;}
  catch{return NextResponse.json({error:"Invalid payload"},{status:400});}
  const collectionId=String(body.collectionId||"");
- const eventType=String(body.eventType||"");
+ const rawEventType=body.eventType;
  const visitorKey=typeof body.visitorKey==="string"?body.visitorKey:"";
  const pageViewKey=typeof body.pageViewKey==="string"?body.pageViewKey:"";
- if(!Types.ObjectId.isValid(collectionId)||!EVENT_TYPES.includes(eventType as EventType)||!visitorKey||visitorKey.length>100||!pageViewKey||pageViewKey.length>100)return NextResponse.json({error:"Invalid event"},{status:400});
+ if(!Types.ObjectId.isValid(collectionId)||typeof rawEventType!=="string"||!EVENT_TYPES.includes(rawEventType as EventType)||!visitorKey||visitorKey.length>100||!pageViewKey||pageViewKey.length>100)return NextResponse.json({error:"Invalid event"},{status:400});
+ const eventType=rawEventType as EventType;
  await connectToDatabase();
  const now=new Date();
  const campaign=await MediaCollection.findOne({_id:collectionId,enabled:true,approved:true,$and:[{$or:[{startsAt:null},{startsAt:{$exists:false}},{startsAt:{$lte:now}}]},{$or:[{endsAt:null},{endsAt:{$exists:false}},{endsAt:{$gte:now}}]}]});
@@ -35,6 +36,6 @@ export async function POST(req:NextRequest){
   if(dailyCount>=Math.max(1,campaign.frequencyCapPerDay||2))return NextResponse.json({ok:true,deduplicated:true,frequencyCapped:true});
   if(pageCount>=Math.max(1,campaign.maxPerPageView||1))return NextResponse.json({ok:true,deduplicated:true,pageCapped:true});
  }
- await MediaCollectionEvent.create({collectionId:campaign._id,itemId:Types.ObjectId.isValid(String(body.itemId||""))?body.itemId:null,eventType,visitorHash,placement,path:pagePath,device:/mobile|android|iphone/i.test(req.headers.get("user-agent")||"")?"mobile":"desktop"});
+ await MediaCollectionEvent.create({collectionId:campaign._id,itemId:Types.ObjectId.isValid(String(body.itemId||""))?new Types.ObjectId(String(body.itemId)):null,eventType,visitorHash,placement,path:pagePath,device:/mobile|android|iphone/i.test(req.headers.get("user-agent")||"")?"mobile":"desktop"});
  return NextResponse.json({ok:true},{headers:{"Cache-Control":"no-store"}});
 }

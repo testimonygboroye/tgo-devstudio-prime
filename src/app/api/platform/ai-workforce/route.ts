@@ -315,12 +315,12 @@ export async function POST(request: NextRequest) {
     if (body.action === "provider.test") {
       const provider = await AIProvider.findById(body.providerId).select("+encryptedApiKey");
       if (!provider) return NextResponse.json({ status: "error", message: "Provider not found." }, { status: 404 });
-      const key = decryptProviderSecret(provider.encryptedApiKey);
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 20000);
       let testedModel = "";
       let statusCode = 0;
       try {
+        const key = decryptProviderSecret(provider.encryptedApiKey);
         const catalogueUrl = provider.provider === "google"
           ? "https://generativelanguage.googleapis.com/v1beta/models"
           : provider.provider === "anthropic"

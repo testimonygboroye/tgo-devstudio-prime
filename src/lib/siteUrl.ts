@@ -14,6 +14,15 @@ export function getSiteUrl(): string {
   const customDomain = customCandidates.find((value) => value?.trim() && !isPlatformUrl(value));
   if (customDomain) return normalizeUrl(customDomain);
 
+  // Accept only TGO-owned stable platform hostnames; reject per-deploy preview URLs.
+  const knownProductionHosts = new Set(["tgo-devstudio-prime.onrender.com", "tgo-devstudio-prime.vercel.app"]);
+  const configuredProductionHost = customCandidates.find((value) => {
+    if (!value?.trim()) return false;
+    try { return knownProductionHosts.has(new URL(normalizeUrl(value)).hostname.toLowerCase()); }
+    catch { return false; }
+  });
+  if (configuredProductionHost) return normalizeUrl(configuredProductionHost);
+
   const productionDomain = process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim();
   if (productionDomain && !isPlatformUrl(productionDomain)) return normalizeUrl(productionDomain);
   if (productionDomain) {
@@ -25,5 +34,5 @@ export function getSiteUrl(): string {
   }
 
   // Never use VERCEL_URL: it points to an individual deployment/preview hostname.
-  return "https://tgo-devstudio-prime.vercel.app";
+  return "https://tgo-devstudio-prime.onrender.com";
 }

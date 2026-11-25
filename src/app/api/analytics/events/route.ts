@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     const userAgent = request.headers.get("user-agent") || "";
     const requestHost = (request.headers.get("x-forwarded-host") || request.headers.get("host") || "").split(",")[0].trim().toLowerCase().split(":")[0];
     const isVercelPreview = requestHost.endsWith(".vercel.app") && !["tgo-devstudio-prime.vercel.app", "tgo-devstudio-prime-testimonygboroye.vercel.app"].includes(requestHost);
-    if (isVercelPreview || /HeadlessChrome|PhantomJS|Playwright|Puppeteer/i.test(userAgent) || /bot|crawler|spider|slurp|facebookexternalhit|TelegramBot|Twitterbot|LinkedInBot|Discordbot|Google-InspectionTool/i.test(userAgent)) {
+    if (isVercelPreview || /HeadlessChrome|PhantomJS|Playwright|Puppeteer|bot|crawler|spider|slurp|facebookexternalhit|TelegramBot|Twitterbot|LinkedInBot|Discordbot|Google-InspectionTool/i.test(userAgent) || /bot|crawler|spider|slurp|facebookexternalhit|TelegramBot|Twitterbot|LinkedInBot|Discordbot|Google-InspectionTool/i.test(userAgent)) {
       return NextResponse.json({ status: "ok", ignored: true });
     }
 
@@ -144,7 +144,7 @@ export async function GET(request: NextRequest) {
   const trustedTrafficFilter = {
     isInternal: { $ne: true },
     $nor: [
-      { userAgent: { $regex: "HeadlessChrome|PhantomJS|Playwright|Puppeteer", $options: "i" } },
+      { userAgent: { $regex: "HeadlessChrome|PhantomJS|Playwright|Puppeteer|bot|crawler|spider|slurp|facebookexternalhit|TelegramBot|Twitterbot|LinkedInBot|Discordbot|Google-InspectionTool", $options: "i" } },
       { referrer: { $regex: "tgo-devstudio-prime-[a-z0-9]+-testimonygboroye\\.vercel\\.app", $options: "i" } },
     ],
   };
@@ -168,7 +168,7 @@ export async function GET(request: NextRequest) {
     PageView.aggregate([{ $match: match }, { $group: { _id: "$path", views: { $sum: 1 }, visitors: { $addToSet: "$visitorId" } } }, { $project: { _id: 0, path: "$_id", views: 1, visitors: { $size: "$visitors" } } }, { $sort: { views: -1 } }, { $limit: 10 }]),
     PageView.aggregate([{ $match: { ...match, $or: [{ countryCode: { $exists: true, $ne: "" } }, { country: { $exists: true, $ne: "" } }] } }, { $group: { _id: { $ifNull: ["$countryCode", "$country"] }, visitors: { $addToSet: "$visitorId" }, views: { $sum: 1 } } }, { $project: { _id: 0, country: "$_id", visitors: { $size: "$visitors" }, views: 1 } }, { $sort: { visitors: -1 } }, { $limit: 10 }]),
     PageView.aggregate([{ $match: { ...match, deviceType: { $exists: true, $ne: "" } } }, { $group: { _id: "$deviceType", visitors: { $addToSet: "$visitorId" }, views: { $sum: 1 } } }, { $project: { _id: 0, device: "$_id", visitors: { $size: "$visitors" }, views: 1 } }, { $sort: { visitors: -1 } }]),
-    PageView.aggregate([{ $match: { ...match, referrer: { $exists: true, $ne: "" } } }, { $project: { host: { $arrayElemAt: [{ $split: ["$referrer", "/"] }, 2] }, visitorId: 1 } }, { $group: { _id: "$host", visitors: { $addToSet: "$visitorId" }, views: { $sum: 1 } } }, { $project: { _id: 0, source: "$_id", visitors: { $size: "$visitors" }, views: 1 } }, { $sort: { visitors: -1 } }, { $limit: 10 }]),
+    PageView.aggregate([{ $match: { ...match, referrer: { $exists: true, $ne: "" } } }, { $project: { host: { $arrayElemAt: [{ $split: ["$referrer", "/"] }, 2] }, visitorId: 1 } }, { $match: { host: { $not: /(^|\\.)tgo-devstudio-prime\\.(vercel\\.app|onrender\\.com)$/i } } }, { $group: { _id: "$host", visitors: { $addToSet: "$visitorId" }, views: { $sum: 1 } } }, { $project: { _id: 0, source: "$_id", visitors: { $size: "$visitors" }, views: 1 } }, { $sort: { visitors: -1 } }, { $limit: 10 }]),
     PageView.aggregate([{ $match: match }, { $group: { _id: { $dateToString: { format: bucketFormat, date: "$createdAt" } }, views: { $sum: 1 }, visitors: { $addToSet: "$visitorId" } } }, { $project: { _id: 0, date: "$_id", views: 1, visitors: { $size: "$visitors" } } }, { $sort: { date: 1 } }]),
     AnalyticsEvent.aggregate([{ $match: { ...eventMatch, eventName: { $ne: "web_vital" } } }, { $group: { _id: "$eventName", count: { $sum: 1 } } }, { $project: { _id: 0, eventName: "$_id", count: 1 } }, { $sort: { count: -1 } }]),
     AnalyticsEvent.aggregate([{ $match: { ...eventMatch, visitorId: { $in: trustedVisitorIds }, eventName: "web_vital", metricName: { $exists: true }, metricValue: { $exists: true } } }, { $group: { _id: { metricName: "$metricName", deviceType: "$deviceType" }, samples: { $sum: 1 }, average: { $avg: "$metricValue" }, worst: { $max: "$metricValue" } } }, { $project: { _id: 0, metricName: "$_id.metricName", deviceType: "$_id.deviceType", samples: 1, average: { $round: ["$average", 2] }, worst: { $round: ["$worst", 2] } } }, { $sort: { metricName: 1, deviceType: 1 } }]),

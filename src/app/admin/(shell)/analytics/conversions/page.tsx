@@ -102,7 +102,7 @@ export default function ConversionInsightsPage() {
   const isHourly = range === "1h" || range === "24h" || (range === "custom" && data?.daily.some((item) => (item.date || "").includes(":")));
   return <div className="min-w-0 w-full max-w-full space-y-6 overflow-x-hidden text-[var(--text-primary)]">
     <header className="flex min-w-0 flex-col justify-between gap-4 xl:flex-row xl:items-end">
-      <div className="min-w-0"><p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-cyan-400">TGO DevStudio · Command Deck</p><h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">Conversion Insights</h1><p className="mt-2 max-w-2xl text-sm text-[var(--text-secondary)]">Understand how visitors discover your pages and which actions turn attention into enquiries.</p></div>
+      <div className="min-w-0"><p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-cyan-400">TGO DevStudio · Command Deck</p><h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">Conversion Insights</h1><p className="mt-2 max-w-2xl text-sm text-[var(--text-secondary)]">Shared reporting with Visitor Analytics: the same rolling 30-day UTC window, trusted pageview filter and distinct browser-ID definition. Successful enquiries, subscriptions and confirmed/completed bookings are counted from saved records.</p></div>
       <button onClick={() => void load()} className="inline-flex w-fit shrink-0 items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2 text-sm text-[var(--text-secondary)]" aria-label="Refresh analytics"><RefreshCw size={17} className={loading ? "animate-spin" : ""}/> Refresh</button>
     </header>
 
@@ -128,16 +128,16 @@ export default function ConversionInsightsPage() {
         <MetricCard label="Page views" value={summary.pageViews.toLocaleString()} icon={Eye} hint="Recorded public page views"/>
         <MetricCard label="Sessions" value={summary.sessions.toLocaleString()} icon={BarChart3} hint="Sessions with at least one page view"/>
         <MetricCard label="Views per visitor" value={summary.pagesPerVisitor.toFixed(2)} icon={Globe2} hint="Average pages viewed by each visitor"/>
-        <MetricCard label="Contact enquiries" value={summary.contactSubmissions.toLocaleString()} icon={MessageSquare} hint="Successfully submitted contact forms tracked from this release"/>
-        <MetricCard label="Newsletter subscriptions" value={(summary.newsletterSubscriptions || 0).toLocaleString()} icon={MessageSquare} hint="New subscriptions and re-subscriptions"/>
-        <MetricCard label="Completed bookings" value={(summary.completedBookings || 0).toLocaleString()} icon={BarChart3} hint="Calendly booking confirmations"/>
+        <MetricCard label="Contact enquiries" value={summary.contactSubmissions.toLocaleString()} icon={MessageSquare} hint="Saved contact submissions in the selected period"/>
+        <MetricCard label="Newsletter subscriptions" value={(summary.newsletterSubscriptions || 0).toLocaleString()} icon={MessageSquare} hint="Persisted subscribed records created or reactivated in the selected period"/>
+        <MetricCard label="Completed bookings" value={(summary.completedBookings || 0).toLocaleString()} icon={BarChart3} hint="Saved bookings with confirmed or completed status"/>
         <MetricCard label="Tracked conversions" value={summary.conversions.toLocaleString()} icon={MousePointerClick} hint="Contact submissions, subscriptions and completed bookings"/>
       </section>
 
       <section className="grid min-w-0 gap-5 xl:grid-cols-2">
         <div className="min-w-0 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 sm:p-5">
           <h2 className="mb-4 font-semibold">Conversion and engagement events</h2>
-          {data.events.length ? <div className="min-w-0 space-y-3">{data.events.map((event) => <div key={event.eventName} className="flex min-w-0 items-start justify-between gap-4 border-b border-[var(--border-subtle)] pb-3 last:border-0"><span className="min-w-0 break-words text-sm text-[var(--text-secondary)]">{EVENT_LABELS[event.eventName || ""] || event.eventName}</span><span className="shrink-0 font-semibold">{event.count}</span></div>)}</div> : <p className="text-sm text-[var(--text-muted)]">No conversion events yet. New clicks and successful contact submissions will appear here after deployment.</p>}
+          {data.events.length ? <div className="min-w-0 space-y-3">{data.events.map((event) => <div key={event.eventName} className="flex min-w-0 items-start justify-between gap-4 border-b border-[var(--border-subtle)] pb-3 last:border-0"><span className="min-w-0 break-words text-sm text-[var(--text-secondary)]">{EVENT_LABELS[event.eventName || ""] || event.eventName}</span><span className="shrink-0 font-semibold">{event.count}</span></div>)}</div> : <p className="text-sm text-[var(--text-muted)]">No engagement events recorded in this period. Persisted contact, newsletter and booking outcomes are counted directly from their saved records above.</p>}
         </div>
         <section className="min-w-0 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 sm:col-span-2 sm:p-5">
           <h2 className="mb-2 font-semibold">Core Web Vitals · real-user performance</h2>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useSwipeSidebar } from "@/hooks/useSwipeSidebar";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
@@ -23,6 +23,8 @@ export default function SiteHeader({ settings }: { settings?: PublicSiteChromeSe
   const activeLinkClass = "text-brand-cyan-300 after:absolute after:-bottom-2 after:left-0 after:right-0 after:h-0.5 after:rounded-full after:bg-gradient-to-r after:from-violet-500 after:to-cyan-400";
   const prefetchOnIntent = (href: string) => router.prefetch(href);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
+  useEffect(() => { setIsHydrated(true); }, []);
   const [openDesktopGroup, setOpenDesktopGroup] = useState<string | null>(null);
   const setMenuOpen = useCallback((open: boolean) => setIsMenuOpen(open), []);
   const drawerRef = useRef<HTMLElement>(null);
@@ -103,6 +105,7 @@ export default function SiteHeader({ settings }: { settings?: PublicSiteChromeSe
               aria-label="Open menu"
               aria-expanded={isMenuOpen}
               aria-controls="public-mobile-navigation"
+              data-interactive-ready={isHydrated ? "true" : "false"}
               className="text-neutral-100 sm:hidden"
             >
               <Menu size={24} />

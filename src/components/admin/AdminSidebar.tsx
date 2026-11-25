@@ -71,15 +71,9 @@ const NAV_GROUPS = [
   ]},
   { title: "Founder & Intelligence", items: [
     { label: "Founder Control Centre", hrefSuffix: "/platform", icon: Crown, badgeKey: null },
-    { label: "Executive Intelligence", hrefSuffix: "/executive-intelligence", icon: BrainCircuit, badgeKey: null },
-    { label: "Business Ecosystem", hrefSuffix: "/businesses", icon: Building2, badgeKey: null },
-    { label: "Business Roles & Permissions", hrefSuffix: "/business-roles", icon: KeySquare, badgeKey: null },
-    { label: "Visitor Analytics", hrefSuffix: "/analytics", icon: BarChart3, badgeKey: null },
-    { label: "Conversion Analytics", hrefSuffix: "/analytics/conversions", icon: BarChart3, badgeKey: null },
   ]},
   { title: "AI & Automation", items: [
     { label: "AI Command Centre", hrefSuffix: "/ai-workforce", icon: Bot, badgeKey: null },
-    { label: "AI Chatbot Configuration", hrefSuffix: "/ai-workforce/chatbots", icon: BrainCircuit, badgeKey: null },
   ]},
   { title: "Growth & Marketing", items: [
     { label: "Marketing & Sales", hrefSuffix: "/growth", icon: Megaphone, badgeKey: null },
@@ -108,6 +102,12 @@ const NAV_GROUPS = [
 ] as const;
 
 const NAV_ROUTE_ALIASES: Record<string, string> = {
+  "/executive-intelligence": "/platform",
+  "/businesses": "/platform",
+  "/business-roles": "/platform",
+  "/analytics": "/platform",
+  "/analytics/conversions": "/platform",
+  "/ai-workforce/chatbots": "/ai-workforce",
   "/clients": "/sales-client-relations",
   "/client-enquiries": "/sales-client-relations",
   "/commercial": "/sales-client-relations",
@@ -152,6 +152,8 @@ const NAV_ROUTE_ALIASES: Record<string, string> = {
 };
 
 const NAV_SEARCH_TERMS: Record<string, string[]> = {
+  "/platform": ["founder control centre", "executive intelligence", "business ecosystem", "business roles", "permissions", "visitor analytics", "conversion analytics", "governance", "strategy"],
+  "/ai-workforce": ["ai employees", "ai workforce", "agents", "automation", "tasks", "delegation", "provider connections", "ai performance", "chatbot", "assistant", "public assistant", "client assistant", "admin assistant", "knowledge base"],
   "/ai-workforce": ["ai employees", "ai workforce", "agents", "automation", "tasks", "delegation", "provider connections", "ai performance"],
   "/ai-workforce/chatbots": ["chatbot", "assistant", "public assistant", "client assistant", "admin assistant", "knowledge base"],
   "/sales-client-relations": ["clients", "client management", "enquiries", "contact submissions", "book a call", "commercial", "sales", "delivery", "proposals", "contracts", "projects"],

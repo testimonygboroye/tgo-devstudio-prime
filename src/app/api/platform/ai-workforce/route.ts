@@ -282,7 +282,7 @@ export async function POST(request: NextRequest) {
     }
     if (body.action === "provider.import_gemini_env") {
       const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) return NextResponse.json({ status: "error", message: "GEMINI_API_KEY is not configured in this Vercel environment." }, { status: 503 });
+      if (!apiKey) return NextResponse.json({ status: "error", message: "GEMINI_API_KEY is not configured in this application's runtime environment." }, { status: 503 });
       let provider = await AIProvider.findOne({ name: "Gemini environment provider" });
       if (provider) {
         provider.provider = "google"; provider.encryptedApiKey = encryptProviderSecret(apiKey); provider.enabled = true; provider.lastTestStatus = undefined; provider.lastTestedAt = undefined; await provider.save();

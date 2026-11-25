@@ -98,7 +98,7 @@ const NAV_GROUPS = [
     { label: "Customer Support", hrefSuffix: "/support", icon: LifeBuoy, badgeKey: null },
     { label: "Newsletter", hrefSuffix: "/newsletter", icon: Send, badgeKey: null },
   ]},
-  { title: "People & Workforce", items: [
+  { title: "People & Operations", items: [
     { label: "Workforce Management", hrefSuffix: "/workforce", icon: Network, badgeKey: null },
     { label: "Users & Access", hrefSuffix: "/users", icon: UserCog, badgeKey: null },
     { label: "Invitations", hrefSuffix: "/invites", icon: UserPlus, badgeKey: null },
@@ -110,10 +110,11 @@ const NAV_GROUPS = [
     { label: "Universal Workspaces", hrefSuffix: "/workspaces", icon: MessageCircle, badgeKey: null },
     { label: "Access Roles", hrefSuffix: "/roles", icon: ShieldCheck, badgeKey: null },
   ]},
-  { title: "Finance & Commerce", items: [
+  { title: "Finance & Integrations", items: [
     { label: "Finance & Payments", hrefSuffix: "/finance", icon: WalletCards, badgeKey: null },
+    { label: "Integration Centre", hrefSuffix: "/integrations", icon: PlugZap, badgeKey: null },
   ]},
-  { title: "Website & Content", items: [
+  { title: "Website & Creative Studio", items: [
     { label: "Homepage", hrefSuffix: "/home-settings", icon: Home, badgeKey: null },
     { label: "Site Pages & Legal", hrefSuffix: "/pages", icon: FileText, badgeKey: null },
     { label: "Landing Pages", hrefSuffix: "/public-pages", icon: FileText, badgeKey: null },
@@ -127,26 +128,17 @@ const NAV_GROUPS = [
     { label: "FAQs", hrefSuffix: "/faq-items", icon: MessageCircleQuestion, badgeKey: null },
     { label: "Reviews", hrefSuffix: "/reviews", icon: Star, badgeKey: "reviews" },
     { label: "Technology Stack", hrefSuffix: "/stack-items", icon: Boxes, badgeKey: null },
-  ]},
-  { title: "Media & Creative Studio", items: [
     { label: "Media Library", hrefSuffix: "/media", icon: Image, badgeKey: null },
     { label: "Homepage Media", hrefSuffix: "/homepage-media", icon: Video, badgeKey: null },
     { label: "Media Collections & Advertising", hrefSuffix: "/media-collections", icon: Megaphone, badgeKey: null },
   ]},
-  { title: "Trust, Security & Compliance", items: [
+  { title: "Security, Compliance & Administration", items: [
     { label: "Security & Two-Factor Authentication", hrefSuffix: "/security", icon: KeyRound, badgeKey: null },
     { label: "Privacy Requests", hrefSuffix: "/privacy-requests", icon: ShieldCheck, badgeKey: null },
     { label: "Audit Log", hrefSuffix: "/audit-log", icon: ScrollText, badgeKey: null },
-  ]},
-  { title: "Integrations & Platform", items: [
-    { label: "Integration Centre", hrefSuffix: "/integrations", icon: PlugZap, badgeKey: null },
-  ]},
-  { title: "Help & Resources", items: [
     { label: "Help & Guide", hrefSuffix: "/help", icon: HelpCircle, badgeKey: null },
     { label: "Knowledge Base Articles", hrefSuffix: "/help-articles", icon: BookOpen, badgeKey: null },
     { label: "Availability", hrefSuffix: "/availability", icon: Zap, badgeKey: null },
-  ]},
-  { title: "Administration", items: [
     { label: "Admin Settings", hrefSuffix: "/settings", icon: Settings, badgeKey: null },
   ]},
 ] as const;
@@ -175,7 +167,7 @@ export default function AdminSidebar({
   const [navQuery, setNavQuery] = useState("");
   const normalizedQuery = navQuery.trim().toLowerCase();
   const visibleGroups = NAV_GROUPS
-    .filter((group) => (group.title !== "Founder & Intelligence" && group.title !== "AI & Automation" && group.title !== "Finance & Commerce") || isFounder)
+    .filter((group) => (group.title !== "Founder & Intelligence" && group.title !== "AI & Automation" && group.title !== "Finance & Integrations") || isFounder)
     .map((group) => ({ ...group, items: group.items.filter((item) => (item.hrefSuffix !== "/commercial" || isFounder) && (item.hrefSuffix !== "/engagement" || isFounder) && (!normalizedQuery || group.title.toLowerCase().includes(normalizedQuery) || item.label.toLowerCase().includes(normalizedQuery))) }))
     .filter((group) => group.items.length > 0);
   const activeHref = visibleGroups

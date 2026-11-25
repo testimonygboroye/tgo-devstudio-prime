@@ -9,6 +9,7 @@ export interface IAIProvider extends Document {
   createdBy: string;
   lastTestedAt?: Date;
   lastTestStatus?: "success" | "failed";
+  lastTestedModel?: string;
 }
 const AIProviderSchema = new Schema<IAIProvider>({
   name: { type: String, required: true, trim: true, maxlength: 80 },
@@ -19,6 +20,7 @@ const AIProviderSchema = new Schema<IAIProvider>({
   createdBy: { type: String, required: true },
   lastTestedAt: Date,
   lastTestStatus: { type: String, enum: ["success", "failed"] },
+  lastTestedModel: { type: String, maxlength: 120 },
 }, { timestamps: true });
 AIProviderSchema.index({ name: 1 }, { unique: true });
 

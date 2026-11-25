@@ -168,7 +168,7 @@ export default function AdminSidebar({
   const normalizedQuery = navQuery.trim().toLowerCase();
   const visibleGroups = NAV_GROUPS
     .filter((group) => (group.title !== "Founder & Intelligence" && group.title !== "AI & Automation" && group.title !== "Finance & Integrations") || isFounder)
-    .map((group) => ({ ...group, items: group.items.filter((item) => (item.hrefSuffix !== "/commercial" || isFounder) && (item.hrefSuffix !== "/engagement" || isFounder) && (!normalizedQuery || group.title.toLowerCase().includes(normalizedQuery) || item.label.toLowerCase().includes(normalizedQuery))) }))
+    .map((group) => ({ ...group, items: group.items.filter((item) => (item.hrefSuffix !== "/commercial" || isFounder) && (item.hrefSuffix !== "/engagement" || isFounder) && (!["/operations", "/operations/payroll", "/operations/documents", "/operations/training"].includes(item.hrefSuffix) || isFounder) && (!normalizedQuery || group.title.toLowerCase().includes(normalizedQuery) || item.label.toLowerCase().includes(normalizedQuery))) }))
     .filter((group) => group.items.length > 0);
   const activeHref = visibleGroups
     .flatMap((group) => group.items.map(resolveNavHref))

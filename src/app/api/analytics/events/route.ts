@@ -182,7 +182,6 @@ export async function GET(request: NextRequest) {
     }),
   ]);
 
-  const eventMap = Object.fromEntries(eventGroups.map((item: { eventName: string; count: number }) => [item.eventName, item.count]));
   const conversions = contactSubmissions + newsletterSubscriptions + completedBookings;
   return NextResponse.json({
     status: "ok",

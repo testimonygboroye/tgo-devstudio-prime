@@ -530,7 +530,7 @@ export default function AnalyticsClient() {
               className="w-full rounded-lg border border-base-800 bg-base-900 px-3 py-2.5 text-sm text-neutral-200 outline-none focus:border-violet-500"
             >
               <option value="all">
-                All rankings
+                All
               </option>
               <option value="recent">
                 Most recent

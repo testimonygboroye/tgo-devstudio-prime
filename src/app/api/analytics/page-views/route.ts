@@ -262,7 +262,8 @@ export async function GET(request: NextRequest) {
   });
 
   const visitors = await Visitor.find(visitorQuery)
-    .limit(1000)
+    .sort({ lastSeen: -1 })
+    .limit(5000)
     .lean();
 
   const visitorIds = visitors.map(

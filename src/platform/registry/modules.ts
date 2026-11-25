@@ -61,6 +61,7 @@ export const PLATFORM_MODULE_REGISTRY: readonly PlatformModuleDefinition[] = [
     category: "business",
     requiredPermission: "finance.view",
     status: "available",
+    href: "/finance",
   },
   {
     id: "workforce",
@@ -69,6 +70,7 @@ export const PLATFORM_MODULE_REGISTRY: readonly PlatformModuleDefinition[] = [
     category: "business",
     requiredPermission: "workforce.view",
     status: "available",
+    href: "/workforce",
   },
   {
     id: "workspace",
@@ -77,6 +79,7 @@ export const PLATFORM_MODULE_REGISTRY: readonly PlatformModuleDefinition[] = [
     category: "business",
     requiredPermission: "workspace.view",
     status: "available",
+    href: "/workspaces",
   },
   {
     id: "executive-intelligence",

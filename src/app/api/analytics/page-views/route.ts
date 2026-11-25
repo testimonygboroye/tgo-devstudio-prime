@@ -157,7 +157,9 @@ export async function GET(request: NextRequest) {
       Object.keys(dateFilter).length
     );
 
-  const matchingVisitorIds = await PageView.distinct("visitorId", pageViewMatch);
+  const visitorListMatch: Record<string, unknown> = { ...pageViewMatch };
+  if (presence === "online") delete visitorListMatch.createdAt;
+  const matchingVisitorIds = await PageView.distinct("visitorId", visitorListMatch);
 
   const visitorQuery: Record<string, unknown> = {
     isInternal: { $ne: true },
@@ -256,7 +258,6 @@ export async function GET(request: NextRequest) {
 
   const onlineVisitorCount = await Visitor.countDocuments({
     isInternal: { $ne: true },
-    visitorId: { $in: matchingVisitorIds },
     lastActiveAt: { $gte: onlineSince },
   });
 

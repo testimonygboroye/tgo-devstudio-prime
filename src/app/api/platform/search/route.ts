@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
   const query = (request.nextUrl.searchParams.get("q") || "").trim().slice(0, 80);
   if (query.length < 2) return NextResponse.json({ results: [] }, { headers: { "Cache-Control": "private, no-store" } });
   await connectToDatabase();
-  const expression = new RegExp(escapeRegex(query), "i");
+  const expression = { $regex: escapeRegex(query), $options: "i" };
   const [organizations, users] = await Promise.all([
     BusinessOrganization.find({ $or: [{ name: expression }, { slug: expression }] }).sort({ createdAt: -1 }).limit(6).select("name slug type status").lean(),
     User.find({ $or: [{ name: expression }, { email: expression }] }).sort({ createdAt: -1 }).limit(6).select("name email accountType").lean(),

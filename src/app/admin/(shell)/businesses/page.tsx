@@ -40,7 +40,7 @@ export default async function BusinessEcosystemPage() {
         <div className="relative max-w-3xl">
           <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[.18em] text-cyan-200">Phase 03 · Business ecosystem</div>
           <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">Organizations & business accounts</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base">Manage the shared organization directory for internal units, clients, partners and vendors across TGO's business operations. Every change is recorded in the platform audit trail.</p>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base">Manage the shared organization directory for internal units, clients, partners and vendors across TGO business operations. Every change is recorded in the platform audit trail.</p>
         </div>
       </section>
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

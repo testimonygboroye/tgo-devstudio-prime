@@ -478,6 +478,18 @@ export async function GET(request: NextRequest) {
     });
   }
 
+  const [excludedAutomatedPageViews, excludedInternalPageViews] = await Promise.all([
+    PageView.countDocuments({
+      createdAt: dateFilter.createdAt,
+      $or: [
+        { userAgent: { $regex: "HeadlessChrome|PhantomJS|Playwright|Puppeteer|bot|crawler|spider|slurp|facebookexternalhit|TelegramBot|Twitterbot|LinkedInBot|Discordbot|Google-InspectionTool", $options: "i" } },
+        { host: { $regex: "^tgo-devstudio-prime-[a-z0-9]+-testimonygboroye\\.vercel\\.app$", $options: "i" } },
+        { referrer: { $regex: "tgo-devstudio-prime-[a-z0-9]+-testimonygboroye\\.vercel\\.app", $options: "i" } },
+      ],
+    }),
+    PageView.countDocuments({ createdAt: dateFilter.createdAt, isInternal: true }),
+  ]);
+
   return NextResponse.json({
     status: "ok",
 
@@ -498,6 +510,7 @@ export async function GET(request: NextRequest) {
 
     onlineVisitorCount,
     onlineWindowSeconds: 120,
+    trafficClassification: { excludedAutomatedOrPreviewPageViews, excludedInternalPageViews },
 
     averageDailyVisitors,
 

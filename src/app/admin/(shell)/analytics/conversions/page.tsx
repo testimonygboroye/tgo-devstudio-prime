@@ -34,8 +34,7 @@ const EVENT_LABELS: Record<string, string> = {
 };
 
 function toLocalInputValue(date: Date) {
-  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-  return local.toISOString().slice(0, 16);
+  return date.toISOString().slice(0, 10);
 }
 
 function MetricCard({ label, value, icon: Icon, hint }: { label: string; value: string | number; icon: typeof Eye; hint: string }) {
@@ -77,8 +76,8 @@ export default function ConversionInsightsPage() {
       if (range === "custom") {
         const from = new Date(customFrom);
         const to = new Date(customTo);
-        if (!customFrom || !customTo || Number.isNaN(from.getTime()) || Number.isNaN(to.getTime()) || from >= to) {
-          throw new Error("Choose a valid start and end date/time. The end must be later than the start.");
+        if (!customFrom || !customTo || Number.isNaN(from.getTime()) || Number.isNaN(to.getTime()) || from > to) {
+          throw new Error("Choose a valid start and end date. The end date must not precede the start date.");
         }
         params.set("from", from.toISOString());
         params.set("to", to.toISOString());
@@ -113,7 +112,7 @@ export default function ConversionInsightsPage() {
         <button type="button" onClick={() => setRange("custom")} aria-pressed={range === "custom"} className={`rounded-lg border px-3 py-2 text-sm transition-colors ${range === "custom" ? "border-brand-cyan-400 bg-brand-cyan-400/10 text-brand-cyan-300" : "border-[var(--border-subtle)] text-[var(--text-secondary)] hover:border-brand-cyan-400/50"}`}>Custom range</button>
       </div>
       {range === "custom" && <div className="mt-4 grid min-w-0 gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
-        <label className="min-w-0 text-xs font-medium text-[var(--text-secondary)]">From <input type="datetime-local" value={customFrom} max={customTo || undefined} onChange={(event) => setCustomFrom(event.target.value)} className="mt-1 block w-full min-w-0 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-page)] px-3 py-2.5 text-sm text-[var(--text-primary)]"/></label>
+        <label className="min-w-0 text-xs font-medium text-[var(--text-secondary)]">From <input type="date" value={customFrom} max={customTo || undefined} onChange={(event) => setCustomFrom(event.target.value)} className="mt-1 block w-full min-w-0 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-page)] px-3 py-2.5 text-sm text-[var(--text-primary)]"/></label>
         <label className="min-w-0 text-xs font-medium text-[var(--text-secondary)]">To <input type="datetime-local" value={customTo} min={customFrom || undefined} max={toLocalInputValue(new Date())} onChange={(event) => setCustomTo(event.target.value)} className="mt-1 block w-full min-w-0 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-page)] px-3 py-2.5 text-sm text-[var(--text-primary)]"/></label>
         <button type="button" onClick={() => void load()} className="rounded-lg bg-brand-cyan-500 px-4 py-2.5 text-sm font-semibold text-slate-950">Apply range</button>
       </div>}

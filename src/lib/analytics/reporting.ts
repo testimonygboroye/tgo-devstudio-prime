@@ -40,8 +40,3 @@ export function onlineCutoff(now = new Date()) {
   return new Date(now.getTime() - ONLINE_VISITOR_WINDOW_MS);
 }
 
-export function isOnlineAt(lastActiveAt?: Date | string | null, now = Date.now()) {
-  if (!lastActiveAt) return false;
-  const timestamp = new Date(lastActiveAt).getTime();
-  return Number.isFinite(timestamp) && timestamp >= now - ONLINE_VISITOR_WINDOW_MS;
-}

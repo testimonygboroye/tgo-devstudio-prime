@@ -12,8 +12,6 @@ export function getPublicSiteUrl(_request?: NextRequest): string {
     process.env.NEXT_PUBLIC_SITE_URL,
     process.env.RENDER_EXTERNAL_URL,
     process.env.URL,
-    // Stable Render production origin is the canonical fallback; a verified Vercel production origin can still be configured explicitly.
-    "https://tgo-devstudio-prime.vercel.app",
   ];
 
   for (const candidate of candidates) {

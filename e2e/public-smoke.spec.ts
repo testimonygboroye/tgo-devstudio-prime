@@ -104,6 +104,7 @@ test("FAQ detail route resolves the published question slug", async ({ page }) =
 test("mobile navigation drawer opens, expands and navigates", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/", { waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: "Open menu" }).toHaveAttribute("data-interactive-ready", "true");
   await page.getByRole("button", { name: "Dismiss", exact: true }).click().catch(() => {});
   await page.getByRole("button", { name: "Accept", exact: true }).click().catch(() => {});
   const openMenu = page.getByRole("button", { name: "Open menu" });

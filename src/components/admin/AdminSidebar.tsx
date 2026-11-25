@@ -154,7 +154,6 @@ const NAV_ROUTE_ALIASES: Record<string, string> = {
 const NAV_SEARCH_TERMS: Record<string, string[]> = {
   "/platform": ["founder control centre", "executive intelligence", "business ecosystem", "business roles", "permissions", "visitor analytics", "conversion analytics", "governance", "strategy"],
   "/ai-workforce": ["ai employees", "ai workforce", "agents", "automation", "tasks", "delegation", "provider connections", "ai performance", "chatbot", "assistant", "public assistant", "client assistant", "admin assistant", "knowledge base"],
-  "/ai-workforce": ["ai employees", "ai workforce", "agents", "automation", "tasks", "delegation", "provider connections", "ai performance"],
   "/ai-workforce/chatbots": ["chatbot", "assistant", "public assistant", "client assistant", "admin assistant", "knowledge base"],
   "/sales-client-relations": ["clients", "client management", "enquiries", "contact submissions", "book a call", "commercial", "sales", "delivery", "proposals", "contracts", "projects"],
   "/communications": ["messages", "conversations", "support", "tickets", "newsletter", "whatsapp", "internal communication", "ai task conversations"],

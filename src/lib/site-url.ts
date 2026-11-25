@@ -12,8 +12,7 @@ export function getPublicSiteUrl(_request?: NextRequest): string {
     process.env.NEXT_PUBLIC_SITE_URL,
     process.env.RENDER_EXTERNAL_URL,
     process.env.URL,
-    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined,
-    // Stable Vercel production origin is the canonical client OAuth host.
+    // Stable Render production origin is the canonical fallback; a verified Vercel production origin can still be configured explicitly.
     "https://tgo-devstudio-prime.vercel.app",
   ];
 
@@ -33,5 +32,5 @@ export function getPublicSiteUrl(_request?: NextRequest): string {
   }
 
   // This is intentionally a stable HTTPS production URL, not request-derived.
-  return "https://tgo-devstudio-prime.vercel.app";
+  return "https://tgo-devstudio-prime.onrender.com";
 }

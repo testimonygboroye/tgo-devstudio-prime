@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "@/lib/auth/serverSession";
 import { connectToDatabase } from "@/lib/db";
 import { AIProvider } from "@/models/AIWorkforce";
-import { decryptProviderSecret } from "@/lib/ai/provider-secrets";
+import { resolveProviderApiKey } from "@/lib/ai/provider-key";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const key = decryptProviderSecret(provider.encryptedApiKey);
+    const key = resolveProviderApiKey(provider.name, provider.provider, provider.encryptedApiKey);
     const base = provider.provider === "google"
       ? "https://generativelanguage.googleapis.com/v1beta/models"
       : provider.provider === "anthropic"

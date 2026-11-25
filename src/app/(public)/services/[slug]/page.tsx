@@ -165,7 +165,10 @@ export default async function ServiceDetailPage({
 
   return (
     <main className="service-detail-page">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{__html:JSON.stringify(schema)}}/>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{
+        // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- JSON-LD escapes < so untrusted text cannot terminate the script element.
+        __html: JSON.stringify(schema).replace(/</g, "\\u003c"),
+      }}/ >
       <div className="home-container service-detail-container">
         <Link href="/services" className="service-detail-back"><ArrowLeft size={16}/>{t("nav.services")}</Link>
         <section className="service-detail-hero">

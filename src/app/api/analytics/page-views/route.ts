@@ -3,6 +3,7 @@ import { connectToDatabase } from "@/lib/db";
 import { captureAnalyticsSnapshot } from "@/lib/push/analyticsSnapshot";
 import PageView from "@/models/PageView";
 import Visitor from "@/models/Visitor";
+import { TRUSTED_ANALYTICS_TRAFFIC_FILTER, onlineCutoff, getUtcDayRange } from "@/lib/analytics/reporting";
 import { canonicalizeDeploymentHost, countryName, decodeAnalyticsLabel, formatRegionName, isLikelyGeoMismatch } from "@/lib/analytics/visitor";
 import {
   getAuthenticatedSession,
@@ -13,29 +14,8 @@ import {
 } from "@/lib/auth/authorize";
 
 function getDateRange(searchParams: URLSearchParams) {
-  const from = searchParams.get("from");
-  const to = searchParams.get("to");
-
-  const createdAt: {
-    $gte?: Date;
-    $lte?: Date;
-  } = {};
-
-  if (from) {
-    const date = new Date(`${from}T00:00:00.000Z`);
-    if (!Number.isNaN(date.getTime())) {
-      createdAt.$gte = date;
-    }
-  }
-
-  if (to) {
-    const date = new Date(`${to}T23:59:59.999Z`);
-    if (!Number.isNaN(date.getTime())) {
-      createdAt.$lte = date;
-    }
-  }
-
-  return Object.keys(createdAt).length ? { createdAt } : {};
+  const range = getUtcDayRange(searchParams.get("from"), searchParams.get("to"));
+  return { createdAt: range };
 }
 
 function calculateStatus(visitor: {
@@ -123,17 +103,12 @@ export async function GET(request: NextRequest) {
     searchParams.get("operatingSystem") || undefined;
   const status = searchParams.get("status") || undefined;
   const search = searchParams.get("search") || undefined;
+  const presence = searchParams.get("presence") || "";
   const sort = searchParams.get("sort") || "recent";
 
   const dateFilter = getDateRange(searchParams);
   // Preview deployments and automated headless checks are infrastructure traffic, not people visiting the public site.
-  const trustedTrafficFilter: Record<string, unknown> = {
-    isInternal: { $ne: true },
-    $nor: [
-      { userAgent: { $regex: "HeadlessChrome|PhantomJS|Playwright|Puppeteer|bot|crawler|spider|slurp|facebookexternalhit|TelegramBot|Twitterbot|LinkedInBot|Discordbot|Google-InspectionTool", $options: "i" } },
-      { referrer: { $regex: "tgo-devstudio-prime-[a-z0-9]+-testimonygboroye\\.vercel\\.app", $options: "i" } },
-    ],
-  };
+  const trustedTrafficFilter = TRUSTED_ANALYTICS_TRAFFIC_FILTER;
   const recordedHosts = await PageView.distinct("host", trustedTrafficFilter);
   const regionPairs = await PageView.aggregate([
     { $match: { ...trustedTrafficFilter, region: { $exists: true, $nin: [null, ""] } } },
@@ -191,24 +166,17 @@ export async function GET(request: NextRequest) {
 
   if (search) {
     visitorQuery.$or = [
-      {
-        displayName: {
-          $regex: search,
-          $options: "i",
-        },
-      },
-      {
-        email: {
-          $regex: search,
-          $options: "i",
-        },
-      },
-      {
-        visitorId: {
-          $regex: search,
-          $options: "i",
-        },
-      },
+      { displayName: { $regex: search, $options: "i" } },
+      { email: { $regex: search, $options: "i" } },
+      { visitorId: { $regex: search, $options: "i" } },
+    ];
+  }
+  const onlineSince = onlineCutoff();
+  if (presence === "online") {
+    visitorQuery.lastActiveAt = { $gte: onlineSince };
+  } else if (presence === "offline") {
+    visitorQuery.$and = [
+      { $or: [{ lastActiveAt: { $lt: onlineSince } }, { lastActiveAt: { $exists: false } }] },
     ];
   }
 
@@ -338,6 +306,12 @@ export async function GET(request: NextRequest) {
     PageView.distinct("operatingSystem", trustedTrafficFilter),
   ]);
 
+  const onlineVisitorCount = await Visitor.countDocuments({
+    isInternal: { $ne: true },
+    visitorId: { $in: matchingVisitorIds },
+    lastActiveAt: { $gte: onlineSince },
+  });
+
   const visitors = await Visitor.find(visitorQuery)
     .sort(sortQuery)
     .limit(250)
@@ -436,6 +410,7 @@ export async function GET(request: NextRequest) {
       return {
         ...visitor,
         _id: String(visitor._id),
+        isOnline: Boolean(visitor.lastActiveAt && new Date(visitor.lastActiveAt).getTime() >= onlineSince.getTime()),
         activeDays,
         status: calculateStatus({
           firstSeen: visitor.firstSeen,
@@ -527,6 +502,9 @@ export async function GET(request: NextRequest) {
 
     uniqueVisitorCount:
       uniqueVisitors.length,
+
+    onlineVisitorCount,
+    onlineWindowSeconds: 120,
 
     averageDailyVisitors,
 

@@ -161,10 +161,14 @@ export async function GET(request: NextRequest) {
       { visitorId: { $in: trustedVisitorIds } },
     ],
   };
-  const [pageViews, visitorIds, sessionIds, topPages, countries, devices, sources, daily, eventGroups, webVitals, contactSubmissions, newsletterSubscriptions, completedBookings] = await Promise.all([
+  const [pageViews, visitorIds, sessionGroups, topPages, countries, devices, sources, daily, eventGroups, webVitals, contactSubmissions, newsletterSubscriptions, completedBookings] = await Promise.all([
     PageView.countDocuments(match),
     PageView.distinct("visitorId", match),
-    PageView.distinct("sessionId", { ...match, sessionId: { $exists: true, $ne: null } }),
+    PageView.aggregate([
+      { $match: { ...match, sessionId: { $exists: true, $nin: [null, ""] } } },
+      { $group: { _id: { visitorId: "$visitorId", sessionId: "$sessionId" } } },
+      { $count: "count" },
+    ]),
     PageView.aggregate([{ $match: match }, { $group: { _id: "$path", views: { $sum: 1 }, visitors: { $addToSet: "$visitorId" } } }, { $project: { _id: 0, path: "$_id", views: 1, visitors: { $size: "$visitors" } } }, { $sort: { views: -1 } }, { $limit: 10 }]),
     PageView.aggregate([{ $match: { ...match, $or: [{ countryCode: { $exists: true, $ne: "" } }, { country: { $exists: true, $ne: "" } }] } }, { $group: { _id: { $ifNull: ["$countryCode", "$country"] }, visitors: { $addToSet: "$visitorId" }, views: { $sum: 1 } } }, { $project: { _id: 0, country: "$_id", visitors: { $size: "$visitors" }, views: 1 } }, { $sort: { visitors: -1 } }, { $limit: 10 }]),
     PageView.aggregate([{ $match: { ...match, deviceType: { $exists: true, $ne: "" } } }, { $group: { _id: "$deviceType", visitors: { $addToSet: "$visitorId" }, views: { $sum: 1 } } }, { $project: { _id: 0, device: "$_id", visitors: { $size: "$visitors" }, views: 1 } }, { $sort: { visitors: -1 } }]),
@@ -192,7 +196,7 @@ export async function GET(request: NextRequest) {
     summary: {
       visitors: visitorIds.length,
       pageViews,
-      sessions: sessionIds.length,
+      sessions: sessionGroups[0]?.count || 0,
       pagesPerVisitor: visitorIds.length ? Number((pageViews / visitorIds.length).toFixed(2)) : 0,
       contactSubmissions,
       newsletterSubscriptions,

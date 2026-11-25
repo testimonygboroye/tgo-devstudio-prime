@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "@/lib/auth/serverSession";
 import { connectToDatabase } from "@/lib/db";
 import { AIChatSession, AIChatbotConfig, AIChatbotScope } from "@/models/AIChatbot";
-import AIProvider from "@/models/AIProvider";
+import { AIProvider } from "@/models/AIWorkforce";
 import { runProviderCompletion } from "@/lib/ai/provider-runtime";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import PageContent from "@/models/PageContent";

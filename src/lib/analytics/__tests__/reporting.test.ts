@@ -19,6 +19,12 @@ describe("shared analytics reporting rules", () => {
     expect(range.$lt.toISOString()).toBe("2026-11-25T00:00:00.000Z");
   });
 
+  it("preserves exact ISO timestamp boundaries for custom ranges", () => {
+    const range = getUtcDayRange("2026-11-24T08:00:00.000Z", "2026-11-24T17:00:00.000Z", new Date("2026-11-25T12:00:00.000Z"));
+    expect(range.$gte.toISOString()).toBe("2026-11-24T08:00:00.000Z");
+    expect(range.$lt.toISOString()).toBe("2026-11-24T17:00:00.001Z");
+  });
+
   it("defines online presence using the shared two-minute heartbeat window", () => {
     const now = new Date("2026-11-25T12:00:00.000Z");
     expect(onlineCutoff(now).getTime()).toBe(now.getTime() - ONLINE_VISITOR_WINDOW_MS);

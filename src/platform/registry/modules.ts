@@ -60,7 +60,7 @@ export const PLATFORM_MODULE_REGISTRY: readonly PlatformModuleDefinition[] = [
     description: "Orders, payment records, account credits and financial controls.",
     category: "business",
     requiredPermission: "finance.view",
-    status: "planned",
+    status: "available",
   },
   {
     id: "workforce",
@@ -68,7 +68,7 @@ export const PLATFORM_MODULE_REGISTRY: readonly PlatformModuleDefinition[] = [
     description: "Departments, teams, employee records and organizational structure.",
     category: "business",
     requiredPermission: "workforce.view",
-    status: "planned",
+    status: "available",
   },
   {
     id: "workspace",
@@ -76,7 +76,7 @@ export const PLATFORM_MODULE_REGISTRY: readonly PlatformModuleDefinition[] = [
     description: "Shared collaboration, communication, tasks and documents.",
     category: "business",
     requiredPermission: "workspace.view",
-    status: "planned",
+    status: "available",
   },
   {
     id: "executive-intelligence",
@@ -90,9 +90,10 @@ export const PLATFORM_MODULE_REGISTRY: readonly PlatformModuleDefinition[] = [
   {
     id: "ai-workforce",
     name: "AI Workforce",
-    description: "Governed AI agents, provider connections and delegated execution.",
+    description: "AI workforce and chatbot interfaces exist, but provider-generation failures currently prevent reliable operation. Keep this module visible for diagnosis; do not present it as live until end-to-end tests pass.",
     category: "intelligence",
     requiredPermission: "ai.agents.view",
-    status: "planned",
+    status: "maintenance",
+    href: "/ai-workforce",
   },
 ] as const;

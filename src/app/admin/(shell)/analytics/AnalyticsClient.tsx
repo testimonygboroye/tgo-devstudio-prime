@@ -113,6 +113,8 @@ function shortDate(value?: string) {
 }
 
 function optionLabel(value: string) {
+  if (value === "online") return "Online now";
+  if (value === "offline") return "Offline";
   return value;
 }
 
@@ -446,7 +448,7 @@ export default function AnalyticsClient() {
         />
       </section>
       <p className="text-xs leading-relaxed text-neutral-500">
-        Reporting window: rolling 30 days, using UTC timestamps and an exclusive end boundary. Historical records are retained; automated/preview and authenticated internal pageviews are excluded from trusted totals and classified below. Online means a visitor browser has sent a visible-tab heartbeat within the last {data?.onlineWindowSeconds ?? 120} seconds.
+        Reporting window: {from || to ? "selected UTC calendar-day range" : "rolling 30 days"}, using UTC timestamps and an exclusive end boundary. Historical records are retained; automated/preview and authenticated internal pageviews are excluded from trusted totals and classified below. Online means a visitor browser has sent a visible-tab heartbeat within the last {data?.onlineWindowSeconds ?? 120} seconds.
         {data?.trafficClassification ? ` Excluded in this window: ${data.trafficClassification.excludedAutomatedOrPreviewPageViews.toLocaleString()} automated/preview pageviews and ${data.trafficClassification.excludedInternalPageViews.toLocaleString()} internal pageviews.` : ""}
       </p>
 

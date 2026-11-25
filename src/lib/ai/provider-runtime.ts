@@ -21,11 +21,29 @@ export async function runProviderCompletion(providerId: string, model: string, s
   // Keep each provider attempt below the 50-second Hobby function ceiling so fallback providers can run.
   const timeout = AbortSignal.timeout(14000);
   if (provider.provider === "google") {
-    const url = "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent";
-    const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, signal: timeout, cache: "no-store", body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 4096, temperature: 0.2 } }) });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error("Gemini request failed (" + response.status + "): " + String(data?.error?.message || "Provider error").slice(0, 500));
-    return { text: (data.candidates?.[0]?.content?.parts || []).map((p: { text?: string }) => p.text || "").join(""), inputTokens: Number(data.usageMetadata?.promptTokenCount || 0), outputTokens: Number(data.usageMetadata?.candidatesTokenCount || 0) };
+    const catalogueResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/models", { headers: { "x-goog-api-key": key }, signal: AbortSignal.timeout(8000), cache: "no-store" });
+    const catalogue = await catalogueResponse.json().catch(() => ({}));
+    if (!catalogueResponse.ok) throw new Error("Gemini model catalogue failed (" + catalogueResponse.status + "): " + String(catalogue?.error?.message || "Provider error").slice(0, 400));
+    const available = (Array.isArray(catalogue.models) ? catalogue.models : [])
+      .filter((item: any) => Array.isArray(item.supportedGenerationMethods) && item.supportedGenerationMethods.includes("generateContent"))
+      .map((item: any) => String(item.name || "").replace(/^models\//, ""))
+      .filter((id: string) => /^gemini-/i.test(id));
+    const preferred = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+    const candidates = [model, ...preferred.filter((id) => id !== model && available.includes(id)), ...available.filter((id: string) => id !== model && !preferred.includes(id))].filter((id, index, all) => id && all.indexOf(id) === index).slice(0, 3);
+    const failures: string[] = [];
+    for (const candidate of candidates) {
+      const url = "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(candidate) + ":generateContent";
+      const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, signal: AbortSignal.timeout(8000), cache: "no-store", body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 4096, temperature: 0.2 } }) });
+      const data = await response.json().catch(() => ({}));
+      if (response.ok) {
+        const text = (data.candidates?.[0]?.content?.parts || []).map((p: { text?: string }) => p.text || "").join("");
+        if (text.trim()) return { text, inputTokens: Number(data.usageMetadata?.promptTokenCount || 0), outputTokens: Number(data.usageMetadata?.candidatesTokenCount || 0), model: candidate, fallbackUsed: candidate !== model };
+      }
+      const message = String(data?.error?.message || "Provider error").slice(0, 300);
+      failures.push(candidate + " (HTTP " + response.status + "): " + message);
+      if (![404, 429, 500, 502, 503, 504].includes(response.status)) break;
+    }
+    throw new Error("Gemini generation failed across available models. " + failures.join(" | ").slice(0, 1200));
   }
   if (provider.provider === "anthropic") {
     const response = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" }, signal: timeout, cache: "no-store", body: JSON.stringify({ model, system, max_tokens: 4096, temperature: 0.2, messages: [{ role: "user", content: prompt }] }) });
@@ -62,7 +80,7 @@ export async function runProviderCompletionWithFallback(
     try {
       const result = await runProviderCompletion(attempt.providerId, attempt.modelName, system, prompt);
       if (!result.text.trim()) throw new Error("Provider returned an empty response.");
-      return { ...result, providerId: attempt.providerId, model: attempt.modelName, fallbackUsed: attemptsTried > 1 };
+      return { ...result, providerId: attempt.providerId, model: result.model || attempt.modelName, fallbackUsed: Boolean(result.fallbackUsed || attemptsTried > 1) };
     } catch (error) {
       failures.push(attempt.providerId + "/" + attempt.modelName + ": " + (error instanceof Error ? error.message : "Provider request failed."));
     }

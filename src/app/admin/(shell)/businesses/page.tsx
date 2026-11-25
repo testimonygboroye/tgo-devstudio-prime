@@ -25,7 +25,7 @@ export default async function BusinessEcosystemPage() {
   const serialized = organizations.map((item) => ({
     id: String(item._id), name: item.name, slug: item.slug, type: item.type, status: item.status,
     website: item.website || "", contactEmail: item.contactEmail || "",
-    createdAt: item.createdAt.toISOString(),
+    createdAt: item.createdAt?.toISOString?.() || new Date(0).toISOString(),
   }));
   const metrics = [
     { label: "Organizations", value: total, icon: Building2, tone: "violet" },
@@ -40,7 +40,7 @@ export default async function BusinessEcosystemPage() {
         <div className="relative max-w-3xl">
           <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[.18em] text-cyan-200">Phase 03 · Business ecosystem</div>
           <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">Organizations & business accounts</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base">Establish the organization directory that future client, partner, vendor, workforce and project systems will share. Every change is recorded in the platform audit trail.</p>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base">Manage the shared organization directory for internal units, clients, partners and vendors across TGO business operations. Every change is recorded in the platform audit trail.</p>
         </div>
       </section>
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

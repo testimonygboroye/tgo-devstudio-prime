@@ -69,72 +69,82 @@ const NAV_GROUPS = [
   { title: "Overview", items: [
     { label: "Dashboard", hrefSuffix: "/dashboard", icon: LayoutDashboard, badgeKey: null },
   ]},
-  { title: "Founder", items: [
+  { title: "Founder & Intelligence", items: [
     { label: "Founder Control Centre", hrefSuffix: "/platform", icon: Crown, badgeKey: null },
     { label: "Executive Intelligence", hrefSuffix: "/executive-intelligence", icon: BrainCircuit, badgeKey: null },
-    { label: "Business Roles", hrefSuffix: "/business-roles", icon: KeySquare, badgeKey: null },
     { label: "Business Ecosystem", hrefSuffix: "/businesses", icon: Building2, badgeKey: null },
+    { label: "Business Roles & Permissions", hrefSuffix: "/business-roles", icon: KeySquare, badgeKey: null },
     { label: "Visitor Analytics", hrefSuffix: "/analytics", icon: BarChart3, badgeKey: null },
+    { label: "Conversion Analytics", hrefSuffix: "/analytics/conversions", icon: BarChart3, badgeKey: null },
   ]},
-  { title: "AI Workforce", items: [
+  { title: "AI & Automation", items: [
     { label: "AI Command Centre", hrefSuffix: "/ai-workforce", icon: Bot, badgeKey: null },
+    { label: "AI Chatbot Configuration", hrefSuffix: "/ai-workforce/chatbots", icon: BrainCircuit, badgeKey: null },
   ]},
-  { title: "Growth & Engagement", items: [
-    { label: "Rewards & Referrals", hrefSuffix: "/engagement", icon: Gift, badgeKey: null },
-  ]},
-  { title: "Integration & Growth", items: [
-    { label: "Integration Centre", hrefSuffix: "/integrations", icon: PlugZap, badgeKey: null },
+  { title: "Growth & Marketing", items: [
     { label: "Marketing & Sales", hrefSuffix: "/growth", icon: Megaphone, badgeKey: null },
     { label: "SEO Operations", hrefSuffix: "/seo", icon: SearchCheck, badgeKey: null },
+    { label: "Rewards & Referrals", hrefSuffix: "/engagement", icon: Gift, badgeKey: null },
   ]},
-  { title: "Commercial & Delivery", items: [
-    { label: "Sales & Delivery", hrefSuffix: "/commercial", icon: ShoppingCart, badgeKey: null },
-    { label: "Finance & Payments", hrefSuffix: "/finance", icon: WalletCards, badgeKey: null },
-    { label: "Customer Support", hrefSuffix: "/support", icon: LifeBuoy, badgeKey: null },
-  ]},
-  { title: "People & Access", items: [
-    { label: "Invites", hrefSuffix: "/invites", icon: UserPlus, badgeKey: null },
-    { label: "Users & Roles", hrefSuffix: "/users", icon: UserCog, badgeKey: null },
+  { title: "Sales & Client Relations", items: [
     { label: "Client Management", hrefSuffix: "/clients", icon: Contact, badgeKey: null },
+    { label: "Client Enquiries", hrefSuffix: "/client-enquiries", icon: MessageSquareText, badgeKey: null },
+    { label: "Sales & Delivery", hrefSuffix: "/commercial", icon: ShoppingCart, badgeKey: null },
+    { label: "Book a Call", hrefSuffix: "/book-a-call", icon: PhoneCall, badgeKey: null },
+    { label: "Contact Submissions", hrefSuffix: "/contact", icon: Mail, badgeKey: "contactSubmissions" },
+  ]},
+  { title: "Communications & Support", items: [
+    { label: "Messages & Conversations", hrefSuffix: "/messages", icon: MessageSquare, badgeKey: "messages" },
+    { label: "Customer Support", hrefSuffix: "/support", icon: LifeBuoy, badgeKey: null },
+    { label: "Newsletter", hrefSuffix: "/newsletter", icon: Send, badgeKey: null },
+  ]},
+  { title: "People & Workforce", items: [
     { label: "Workforce Management", hrefSuffix: "/workforce", icon: Network, badgeKey: null },
+    { label: "Users & Access", hrefSuffix: "/users", icon: UserCog, badgeKey: null },
+    { label: "Invitations", hrefSuffix: "/invites", icon: UserPlus, badgeKey: null },
+    { label: "Recruitment & Applications", hrefSuffix: "/applications", icon: Inbox, badgeKey: "jobApplications" },
     { label: "Business Operations", hrefSuffix: "/operations", icon: ClipboardList, badgeKey: null },
     { label: "Payroll & Compensation", hrefSuffix: "/operations/payroll", icon: WalletCards, badgeKey: null },
+    { label: "Training & Development", hrefSuffix: "/operations/training", icon: BookOpen, badgeKey: null },
     { label: "Private Document Vault", hrefSuffix: "/operations/documents", icon: ShieldCheck, badgeKey: null },
     { label: "Universal Workspaces", hrefSuffix: "/workspaces", icon: MessageCircle, badgeKey: null },
-    { label: "Manage Roles", hrefSuffix: "/roles", icon: ShieldCheck, badgeKey: null },
-    { label: "Security (2FA)", hrefSuffix: "/security", icon: KeyRound, badgeKey: null },
-    { label: "Audit Log", hrefSuffix: "/audit-log", icon: ScrollText, badgeKey: null },
+    { label: "Access Roles", hrefSuffix: "/roles", icon: ShieldCheck, badgeKey: null },
   ]},
-  { title: "Website Content", items: [
+  { title: "Finance & Commerce", items: [
+    { label: "Finance & Payments", hrefSuffix: "/finance", icon: WalletCards, badgeKey: null },
+  ]},
+  { title: "Website & Content", items: [
     { label: "Homepage", hrefSuffix: "/home-settings", icon: Home, badgeKey: null },
-    { label: "Homepage Media", hrefSuffix: "/homepage-media", icon: Video, badgeKey: null },
-    { label: "Media & Advertising Studio", hrefSuffix: "/media-collections", icon: Megaphone, badgeKey: null },
-    { label: "Case Studies", hrefSuffix: "/case-studies", icon: Briefcase, badgeKey: null },
+    { label: "Site Pages & Legal", hrefSuffix: "/pages", icon: FileText, badgeKey: null },
+    { label: "Landing Pages", hrefSuffix: "/public-pages", icon: FileText, badgeKey: null },
+    { label: "Site Identity & Navigation", hrefSuffix: "/site-settings", icon: Settings, badgeKey: null },
     { label: "Services", hrefSuffix: "/services", icon: Layers, badgeKey: null },
+    { label: "Case Studies", hrefSuffix: "/case-studies", icon: Briefcase, badgeKey: null },
     { label: "Process", hrefSuffix: "/process", icon: Workflow, badgeKey: null },
     { label: "Team", hrefSuffix: "/team", icon: Users, badgeKey: null },
     { label: "Blog", hrefSuffix: "/blog", icon: Newspaper, badgeKey: null },
     { label: "Careers", hrefSuffix: "/careers", icon: DoorOpen, badgeKey: null },
-    { label: "FAQ", hrefSuffix: "/faq-items", icon: MessageCircleQuestion, badgeKey: null },
+    { label: "FAQs", hrefSuffix: "/faq-items", icon: MessageCircleQuestion, badgeKey: null },
     { label: "Reviews", hrefSuffix: "/reviews", icon: Star, badgeKey: "reviews" },
-    { label: "Site Pages", hrefSuffix: "/pages", icon: FileText, badgeKey: null },
-    { label: "Landing Pages", hrefSuffix: "/public-pages", icon: FileText, badgeKey: null },
-    { label: "Site Identity & Navigation", hrefSuffix: "/site-settings", icon: Settings, badgeKey: null },
-    { label: "Stack Items", hrefSuffix: "/stack-items", icon: Boxes, badgeKey: null },
+    { label: "Technology Stack", hrefSuffix: "/stack-items", icon: Boxes, badgeKey: null },
   ]},
-  { title: "Messages & Leads", items: [
-    { label: "Messages", hrefSuffix: "/messages", icon: MessageSquare, badgeKey: "messages" },
-    { label: "Client Enquiries", hrefSuffix: "/client-enquiries", icon: MessageSquareText, badgeKey: null },
-    { label: "Contact", hrefSuffix: "/contact", icon: Mail, badgeKey: "contactSubmissions" },
-    { label: "Applications", hrefSuffix: "/applications", icon: Inbox, badgeKey: "jobApplications" },
-    { label: "Newsletter", hrefSuffix: "/newsletter", icon: Send, badgeKey: null },
-    { label: "Book a Call", hrefSuffix: "/book-a-call", icon: PhoneCall, badgeKey: null },
-  ]},
-  { title: "Site Tools", items: [
-    { label: "Availability", hrefSuffix: "/availability", icon: Zap, badgeKey: null },
+  { title: "Media & Creative Studio", items: [
     { label: "Media Library", hrefSuffix: "/media", icon: Image, badgeKey: null },
+    { label: "Homepage Media", hrefSuffix: "/homepage-media", icon: Video, badgeKey: null },
+    { label: "Media Collections & Advertising", hrefSuffix: "/media-collections", icon: Megaphone, badgeKey: null },
+  ]},
+  { title: "Trust, Security & Compliance", items: [
+    { label: "Security & Two-Factor Authentication", hrefSuffix: "/security", icon: KeyRound, badgeKey: null },
+    { label: "Privacy Requests", hrefSuffix: "/privacy-requests", icon: ShieldCheck, badgeKey: null },
+    { label: "Audit Log", hrefSuffix: "/audit-log", icon: ScrollText, badgeKey: null },
+  ]},
+  { title: "Integrations & Platform", items: [
+    { label: "Integration Centre", hrefSuffix: "/integrations", icon: PlugZap, badgeKey: null },
+  ]},
+  { title: "Help & Resources", items: [
     { label: "Help & Guide", hrefSuffix: "/help", icon: HelpCircle, badgeKey: null },
-    { label: "Manage Articles", hrefSuffix: "/help-articles", icon: BookOpen, badgeKey: null },
+    { label: "Knowledge Base Articles", hrefSuffix: "/help-articles", icon: BookOpen, badgeKey: null },
+    { label: "Availability", hrefSuffix: "/availability", icon: Zap, badgeKey: null },
   ]},
   { title: "Administration", items: [
     { label: "Admin Settings", hrefSuffix: "/settings", icon: Settings, badgeKey: null },
@@ -165,7 +175,7 @@ export default function AdminSidebar({
   const [navQuery, setNavQuery] = useState("");
   const normalizedQuery = navQuery.trim().toLowerCase();
   const visibleGroups = NAV_GROUPS
-    .filter((group) => (group.title !== "Founder" && group.title !== "Commercial & Delivery" && group.title !== "AI Workforce" && group.title !== "Growth & Engagement") || isFounder)
+    .filter((group) => (group.title !== "Founder & Intelligence" && group.title !== "AI & Automation" && group.title !== "Finance & Commerce") || isFounder)
     .map((group) => ({ ...group, items: group.items.filter((item) => !normalizedQuery || group.title.toLowerCase().includes(normalizedQuery) || item.label.toLowerCase().includes(normalizedQuery)) }))
     .filter((group) => group.items.length > 0);
   const activeHref = visibleGroups
@@ -259,7 +269,7 @@ export default function AdminSidebar({
                 <div className="mb-1 flex justify-center" title={group.title}>
                   <span className="h-px w-7 rounded-full bg-brand-cyan-400/30"/>
                 </div>
-                {group.items.map((item) => {
+                {group.items.slice(0, 1).map((item) => {
                   const href = resolveNavHref(item);
                   const isActive = href === activeHref;
                   const Icon = item.icon;

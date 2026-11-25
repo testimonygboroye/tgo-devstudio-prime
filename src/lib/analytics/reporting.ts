@@ -10,7 +10,7 @@ export const TRUSTED_ANALYTICS_TRAFFIC_FILTER: Record<string, unknown> = {
   $nor: [
     { userAgent: { $regex: ANALYTICS_BOT_USER_AGENT_PATTERN, $options: "i" } },
     { referrer: { $regex: "tgo-devstudio-prime-[a-z0-9]+-testimonygboroye\\.vercel\\.app", $options: "i" } },
-    { host: { $regex: "^(?!tgo-devstudio-prime\\.(vercel\\.app|onrender\\.com)$).*\\.vercel\\.app$", $options: "i" } },
+    { host: { $regex: "^tgo-devstudio-prime-[a-z0-9]+-testimonygboroye\\.vercel\\.app$", $options: "i" } },
   ],
 };
 

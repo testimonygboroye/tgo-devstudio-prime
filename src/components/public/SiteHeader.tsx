@@ -23,8 +23,10 @@ export default function SiteHeader({ settings }: { settings?: PublicSiteChromeSe
   const activeLinkClass = "text-brand-cyan-300 after:absolute after:-bottom-2 after:left-0 after:right-0 after:h-0.5 after:rounded-full after:bg-gradient-to-r after:from-violet-500 after:to-cyan-400";
   const prefetchOnIntent = (href: string) => router.prefetch(href);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isHydrated, setIsHydrated] = useState(false);
-  useEffect(() => { setIsHydrated(true); }, []);
+  const openMenuButtonRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    openMenuButtonRef.current?.setAttribute("data-interactive-ready", "true");
+  }, []);
   const [openDesktopGroup, setOpenDesktopGroup] = useState<string | null>(null);
   const setMenuOpen = useCallback((open: boolean) => setIsMenuOpen(open), []);
   const drawerRef = useRef<HTMLElement>(null);
@@ -100,12 +102,13 @@ export default function SiteHeader({ settings }: { settings?: PublicSiteChromeSe
             <HelpSearchPopup />
             <Link href={settings?.headerCtaHref || "/contact"} className="hidden sm:inline-flex items-center rounded-full bg-gradient-to-r from-violet-600 to-cyan-500 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-violet-950/20 transition hover:-translate-y-0.5">{settings?.headerCtaLabel || "Start a project"}</Link>
             <button
+              ref={openMenuButtonRef}
               type="button"
               onClick={() => setIsMenuOpen(true)}
               aria-label="Open menu"
               aria-expanded={isMenuOpen}
               aria-controls="public-mobile-navigation"
-              data-interactive-ready={isHydrated ? "true" : "false"}
+              data-interactive-ready="false"
               className="text-neutral-100 sm:hidden"
             >
               <Menu size={24} />

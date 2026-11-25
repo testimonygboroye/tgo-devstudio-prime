@@ -269,7 +269,7 @@ export default function AnalyticsClient() {
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
 
-    params.set("limit", "100");
+    params.set("limit", "250");
 
     if (host) params.set("host", host);
     if (provider) params.set("provider", provider);

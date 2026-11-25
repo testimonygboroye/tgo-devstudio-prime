@@ -186,6 +186,7 @@ export async function GET(request: NextRequest) {
     views,
     totalCount,
     uniqueVisitors,
+    singlePageTraffic,
     dailyVisitors,
     availableHosts,
     availableProviders,
@@ -207,6 +208,19 @@ export async function GET(request: NextRequest) {
       "visitorId",
       pageViewMatch
     ),
+
+    PageView.aggregate([
+      { $match: pageViewMatch },
+      { $group: { _id: "$visitorId", pageViews: { $sum: 1 } } },
+      {
+        $group: {
+          _id: null,
+          singlePageVisitors: { $sum: { $cond: [{ $eq: ["$pageViews", 1] }, 1, 0] } },
+          repeatVisitors: { $sum: { $cond: [{ $gt: ["$pageViews", 1] }, 1, 0] } },
+        },
+      },
+      { $project: { _id: 0, singlePageVisitors: 1, repeatVisitors: 1 } },
+    ]),
 
     PageView.aggregate([
       {
@@ -514,7 +528,12 @@ export async function GET(request: NextRequest) {
 
     onlineVisitorCount,
     onlineWindowSeconds: 120,
-    trafficClassification: { excludedAutomatedOrPreviewPageViews: excludedAutomatedPageViews, excludedInternalPageViews },
+    trafficClassification: {
+      excludedAutomatedOrPreviewPageViews: excludedAutomatedPageViews,
+      excludedInternalPageViews,
+      singlePageVisitorsForReview: singlePageTraffic[0]?.singlePageVisitors || 0,
+      repeatVisitors: singlePageTraffic[0]?.repeatVisitors || 0,
+    },
 
     averageDailyVisitors,
 

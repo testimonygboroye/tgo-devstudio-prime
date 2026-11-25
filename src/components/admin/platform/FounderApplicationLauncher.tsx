@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight, Globe2, LayoutDashboard, Building2, Users, Sparkles, Bot, Workflow, LifeBuoy } from "lucide-react";
+import { ArrowUpRight, Globe2, LayoutDashboard, Building2, Users, Sparkles, Bot, Workflow, LifeBuoy, BrainCircuit, KeyRound, BarChart3 } from "lucide-react";
 
 type LauncherItem = {
   title: string;
@@ -16,6 +16,10 @@ const items: LauncherItem[] = [
   { title: "Public Website", description: "Open the live TGO DevStudio website and its public-facing services.", href: "/", icon: Globe2, eyebrow: "Live environment" },
   { title: "Website Administration", description: "Manage website content, users, analytics and existing CMS operations.", href: "/admin/dashboard", icon: LayoutDashboard, eyebrow: "Existing administration" },
   { title: "Business Ecosystem", description: "Manage the shared directory of internal units, clients, partners and vendors.", href: "/admin/businesses", icon: Building2, eyebrow: "Business administration" },
+  { title: "Executive Intelligence", description: "Review company-wide performance, forecasts, risks, recommendations and decision tracking.", href: "/admin/executive-intelligence", icon: BrainCircuit, eyebrow: "Strategy & intelligence" },
+  { title: "Business Roles & Permissions", description: "Manage business roles, access policies and the central permission catalogue.", href: "/admin/business-roles", icon: KeyRound, eyebrow: "Governance & access" },
+  { title: "Visitor Analytics", description: "Review website traffic, visitor activity, acquisition and audience trends.", href: "/admin/analytics", icon: BarChart3, eyebrow: "Visitor intelligence" },
+  { title: "Conversion Analytics", description: "Review enquiry, booking and conversion performance across the public website.", href: "/admin/analytics/conversions", icon: BarChart3, eyebrow: "Conversion performance" },
   { title: "Client Portal", description: "Client accounts, profile settings, enquiries, notifications and relationship updates.", href: "/client/login", icon: Users, eyebrow: "Live client environment" },
   { title: "Workforce Portal", description: "Employee profile, assigned work, schedules, requests, reviews and team workspace.", href: "/workforce", icon: Workflow, eyebrow: "Live workforce environment" },
   { title: "AI Command Centre", description: "AI workforce and chatbot operations are currently in repair. Open the command centre to inspect provider health, credentials status and live-generation diagnostics.", href: "/admin/ai-workforce", icon: Bot, eyebrow: "Founder AI operations", status: "maintenance" },

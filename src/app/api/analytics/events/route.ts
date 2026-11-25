@@ -7,6 +7,10 @@ import AnalyticsEvent, { type AnalyticsEventName } from "@/models/AnalyticsEvent
 import { countryName, parseUserAgent } from "@/lib/analytics/visitor";
 import PageView from "@/models/PageView";
 import Visitor from "@/models/Visitor";
+import ContactSubmission from "@/models/ContactSubmission";
+import NewsletterSubscriber from "@/models/NewsletterSubscriber";
+import ConsultationBooking from "@/models/ConsultationBooking";
+import { TRUSTED_ANALYTICS_TRAFFIC_FILTER, getDefaultAnalyticsRange, getUtcDayRange } from "@/lib/analytics/reporting";
 
 export const dynamic = "force-dynamic";
 
@@ -129,42 +133,42 @@ export async function GET(request: NextRequest) {
   let start: Date;
   let end: Date;
   if (isCustomRange) {
-    start = new Date(fromParam || "");
-    end = new Date(toParam || "");
-    if (!fromParam || !toParam || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start >= end || end > now) {
-      return NextResponse.json({ status: "error", message: "Choose a valid reporting period ending no later than the current time." }, { status: 400 });
+    const dayRange = getUtcDayRange(fromParam, toParam, now);
+    start = dayRange.$gte;
+    end = dayRange.$lt;
+    if (!fromParam || !toParam || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start >= end || start > now) {
+      return NextResponse.json({ status: "error", message: "Choose a valid UTC calendar-date range that does not start in the future." }, { status: 400 });
     }
   } else {
     const duration = presetDurations[rangeParam] || presetDurations["30d"];
+    const defaults = getDefaultAnalyticsRange(now);
     end = now;
-    start = new Date(now.getTime() - duration);
+    start = rangeParam === "30d" || rangeParam === "30" ? defaults.start : new Date(now.getTime() - duration);
   }
   const durationMs = end.getTime() - start.getTime();
   const range = isCustomRange ? "custom" : rangeParam;
-  const trustedTrafficFilter = {
-    isInternal: { $ne: true },
-    $nor: [
-      { userAgent: { $regex: "HeadlessChrome|PhantomJS|Playwright|Puppeteer|bot|crawler|spider|slurp|facebookexternalhit|TelegramBot|Twitterbot|LinkedInBot|Discordbot|Google-InspectionTool", $options: "i" } },
-      { referrer: { $regex: "tgo-devstudio-prime-[a-z0-9]+-testimonygboroye\\.vercel\\.app", $options: "i" } },
-    ],
-  };
-  const match = { ...trustedTrafficFilter, createdAt: { $gte: start, $lte: end } };
+  const trustedTrafficFilter = TRUSTED_ANALYTICS_TRAFFIC_FILTER;
+  const match = { ...trustedTrafficFilter, createdAt: { $gte: start, $lt: end } };
   const bucketFormat = durationMs <= 48 * 60 * 60 * 1000 ? "%Y-%m-%d %H:00" : "%Y-%m-%d";
 
   await connectToDatabase();
   const trustedVisitorIds = await PageView.distinct("visitorId", trustedTrafficFilter);
   const eventMatch = {
-    createdAt: { $gte: start, $lte: end },
+    createdAt: { $gte: start, $lt: end },
     isInternal: { $ne: true },
     $or: [
       { visitorId: { $exists: false } },
       { visitorId: { $in: trustedVisitorIds } },
     ],
   };
-  const [pageViews, visitorIds, sessionIds, topPages, countries, devices, sources, daily, eventGroups, webVitals] = await Promise.all([
+  const [pageViews, visitorIds, sessionGroups, topPages, countries, devices, sources, daily, eventGroups, webVitals, contactSubmissions, newsletterSubscriptions, completedBookings] = await Promise.all([
     PageView.countDocuments(match),
     PageView.distinct("visitorId", match),
-    PageView.distinct("sessionId", { ...match, sessionId: { $exists: true, $ne: null } }),
+    PageView.aggregate([
+      { $match: { ...match, sessionId: { $exists: true, $nin: [null, ""] } } },
+      { $group: { _id: { visitorId: "$visitorId", sessionId: "$sessionId" } } },
+      { $count: "count" },
+    ]),
     PageView.aggregate([{ $match: match }, { $group: { _id: "$path", views: { $sum: 1 }, visitors: { $addToSet: "$visitorId" } } }, { $project: { _id: 0, path: "$_id", views: 1, visitors: { $size: "$visitors" } } }, { $sort: { views: -1 } }, { $limit: 10 }]),
     PageView.aggregate([{ $match: { ...match, $or: [{ countryCode: { $exists: true, $ne: "" } }, { country: { $exists: true, $ne: "" } }] } }, { $group: { _id: { $ifNull: ["$countryCode", "$country"] }, visitors: { $addToSet: "$visitorId" }, views: { $sum: 1 } } }, { $project: { _id: 0, country: "$_id", visitors: { $size: "$visitors" }, views: 1 } }, { $sort: { visitors: -1 } }, { $limit: 10 }]),
     PageView.aggregate([{ $match: { ...match, deviceType: { $exists: true, $ne: "" } } }, { $group: { _id: "$deviceType", visitors: { $addToSet: "$visitorId" }, views: { $sum: 1 } } }, { $project: { _id: 0, device: "$_id", visitors: { $size: "$visitors" }, views: 1 } }, { $sort: { visitors: -1 } }]),
@@ -172,10 +176,18 @@ export async function GET(request: NextRequest) {
     PageView.aggregate([{ $match: match }, { $group: { _id: { $dateToString: { format: bucketFormat, date: "$createdAt" } }, views: { $sum: 1 }, visitors: { $addToSet: "$visitorId" } } }, { $project: { _id: 0, date: "$_id", views: 1, visitors: { $size: "$visitors" } } }, { $sort: { date: 1 } }]),
     AnalyticsEvent.aggregate([{ $match: { ...eventMatch, eventName: { $ne: "web_vital" } } }, { $group: { _id: "$eventName", count: { $sum: 1 } } }, { $project: { _id: 0, eventName: "$_id", count: 1 } }, { $sort: { count: -1 } }]),
     AnalyticsEvent.aggregate([{ $match: { ...eventMatch, visitorId: { $in: trustedVisitorIds }, eventName: "web_vital", metricName: { $exists: true }, metricValue: { $exists: true } } }, { $group: { _id: { metricName: "$metricName", deviceType: "$deviceType" }, samples: { $sum: 1 }, average: { $avg: "$metricValue" }, worst: { $max: "$metricValue" } } }, { $project: { _id: 0, metricName: "$_id.metricName", deviceType: "$_id.deviceType", samples: 1, average: { $round: ["$average", 2] }, worst: { $round: ["$worst", 2] } } }, { $sort: { metricName: 1, deviceType: 1 } }]),
+    ContactSubmission.countDocuments({ createdAt: { $gte: start, $lt: end } }),
+    NewsletterSubscriber.countDocuments({
+      status: "subscribed",
+      $or: [{ createdAt: { $gte: start, $lt: end } }, { updatedAt: { $gte: start, $lt: end } }],
+    }),
+    ConsultationBooking.countDocuments({
+      status: { $in: ["confirmed", "completed"] },
+      createdAt: { $gte: start, $lt: end },
+    }),
   ]);
 
-  const eventMap = Object.fromEntries(eventGroups.map((item: { eventName: string; count: number }) => [item.eventName, item.count]));
-  const conversions = (eventMap.contact_form_submitted || 0) + (eventMap.calendly_event_scheduled || 0) + (eventMap.newsletter_subscribed || 0);
+  const conversions = contactSubmissions + newsletterSubscriptions + completedBookings;
   return NextResponse.json({
     status: "ok",
     range,
@@ -184,11 +196,11 @@ export async function GET(request: NextRequest) {
     summary: {
       visitors: visitorIds.length,
       pageViews,
-      sessions: sessionIds.length,
+      sessions: sessionGroups[0]?.count || 0,
       pagesPerVisitor: visitorIds.length ? Number((pageViews / visitorIds.length).toFixed(2)) : 0,
-      contactSubmissions: eventMap.contact_form_submitted || 0,
-      newsletterSubscriptions: eventMap.newsletter_subscribed || 0,
-      completedBookings: eventMap.calendly_event_scheduled || 0,
+      contactSubmissions,
+      newsletterSubscriptions,
+      completedBookings,
       conversions,
     },
     events: eventGroups,

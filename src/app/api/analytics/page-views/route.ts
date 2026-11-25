@@ -3,6 +3,7 @@ import { connectToDatabase } from "@/lib/db";
 import { captureAnalyticsSnapshot } from "@/lib/push/analyticsSnapshot";
 import PageView from "@/models/PageView";
 import Visitor from "@/models/Visitor";
+import { TRUSTED_ANALYTICS_TRAFFIC_FILTER, onlineCutoff, getUtcDayRange } from "@/lib/analytics/reporting";
 import { canonicalizeDeploymentHost, countryName, decodeAnalyticsLabel, formatRegionName, isLikelyGeoMismatch } from "@/lib/analytics/visitor";
 import {
   getAuthenticatedSession,
@@ -13,29 +14,8 @@ import {
 } from "@/lib/auth/authorize";
 
 function getDateRange(searchParams: URLSearchParams) {
-  const from = searchParams.get("from");
-  const to = searchParams.get("to");
-
-  const createdAt: {
-    $gte?: Date;
-    $lte?: Date;
-  } = {};
-
-  if (from) {
-    const date = new Date(`${from}T00:00:00.000Z`);
-    if (!Number.isNaN(date.getTime())) {
-      createdAt.$gte = date;
-    }
-  }
-
-  if (to) {
-    const date = new Date(`${to}T23:59:59.999Z`);
-    if (!Number.isNaN(date.getTime())) {
-      createdAt.$lte = date;
-    }
-  }
-
-  return Object.keys(createdAt).length ? { createdAt } : {};
+  const range = getUtcDayRange(searchParams.get("from"), searchParams.get("to"));
+  return { createdAt: range };
 }
 
 function calculateStatus(visitor: {
@@ -123,17 +103,12 @@ export async function GET(request: NextRequest) {
     searchParams.get("operatingSystem") || undefined;
   const status = searchParams.get("status") || undefined;
   const search = searchParams.get("search") || undefined;
+  const presence = searchParams.get("presence") || "";
   const sort = searchParams.get("sort") || "recent";
 
   const dateFilter = getDateRange(searchParams);
   // Preview deployments and automated headless checks are infrastructure traffic, not people visiting the public site.
-  const trustedTrafficFilter: Record<string, unknown> = {
-    isInternal: { $ne: true },
-    $nor: [
-      { userAgent: { $regex: "HeadlessChrome|PhantomJS|Playwright|Puppeteer|bot|crawler|spider|slurp|facebookexternalhit|TelegramBot|Twitterbot|LinkedInBot|Discordbot|Google-InspectionTool", $options: "i" } },
-      { referrer: { $regex: "tgo-devstudio-prime-[a-z0-9]+-testimonygboroye\\.vercel\\.app", $options: "i" } },
-    ],
-  };
+  const trustedTrafficFilter = TRUSTED_ANALYTICS_TRAFFIC_FILTER;
   const recordedHosts = await PageView.distinct("host", trustedTrafficFilter);
   const regionPairs = await PageView.aggregate([
     { $match: { ...trustedTrafficFilter, region: { $exists: true, $nin: [null, ""] } } },
@@ -182,7 +157,9 @@ export async function GET(request: NextRequest) {
       Object.keys(dateFilter).length
     );
 
-  const matchingVisitorIds = await PageView.distinct("visitorId", pageViewMatch);
+  const visitorListMatch: Record<string, unknown> = { ...pageViewMatch };
+  if (presence === "online") delete visitorListMatch.createdAt;
+  const matchingVisitorIds = await PageView.distinct("visitorId", visitorListMatch);
 
   const visitorQuery: Record<string, unknown> = {
     isInternal: { $ne: true },
@@ -191,77 +168,18 @@ export async function GET(request: NextRequest) {
 
   if (search) {
     visitorQuery.$or = [
-      {
-        displayName: {
-          $regex: search,
-          $options: "i",
-        },
-      },
-      {
-        email: {
-          $regex: search,
-          $options: "i",
-        },
-      },
-      {
-        visitorId: {
-          $regex: search,
-          $options: "i",
-        },
-      },
+      { displayName: { $regex: search, $options: "i" } },
+      { email: { $regex: search, $options: "i" } },
+      { visitorId: { $regex: search, $options: "i" } },
     ];
   }
-
-  let sortQuery: Record<string, 1 | -1>;
-
-  switch (sort) {
-    case "all":
-    case "recent":
-      sortQuery = {
-        lastSeen: -1,
-      };
-      break;
-
-    case "top-visited":
-      sortQuery = {
-        totalPageViews: -1,
-        lastSeen: -1,
-      };
-      break;
-
-    case "top-active":
-      sortQuery = {
-        totalSessions: -1,
-        totalPageViews: -1,
-        lastSeen: -1,
-      };
-      break;
-
-    case "top-constant":
-      sortQuery = {
-        activeDays: -1,
-        totalSessions: -1,
-        lastSeen: -1,
-      };
-      break;
-
-    case "oldest":
-      sortQuery = {
-        firstSeen: 1,
-      };
-      break;
-
-    case "newest":
-      sortQuery = {
-        firstSeen: -1,
-      };
-      break;
-
-    default:
-      sortQuery = {
-        lastSeen: -1,
-      };
-      break;
+  const onlineSince = onlineCutoff();
+  if (presence === "online") {
+    visitorQuery.lastActiveAt = { $gte: onlineSince };
+  } else if (presence === "offline") {
+    visitorQuery.$and = [
+      { $or: [{ lastActiveAt: { $lt: onlineSince } }, { lastActiveAt: { $exists: false } }] },
+    ];
   }
 
   const [
@@ -338,9 +256,14 @@ export async function GET(request: NextRequest) {
     PageView.distinct("operatingSystem", trustedTrafficFilter),
   ]);
 
+  const onlineVisitorCount = await Visitor.countDocuments({
+    isInternal: { $ne: true },
+    lastActiveAt: { $gte: onlineSince },
+  });
+
   const visitors = await Visitor.find(visitorQuery)
-    .sort(sortQuery)
-    .limit(250)
+    .sort({ lastSeen: -1 })
+    .limit(5000)
     .lean();
 
   const visitorIds = visitors.map(
@@ -426,22 +349,59 @@ export async function GET(request: NextRequest) {
     ])
   );
 
+  const visitorStatsRows = visitorIds.length
+    ? await PageView.aggregate([
+        { $match: { ...trustedTrafficFilter, visitorId: { $in: visitorIds } } },
+        {
+          $group: {
+            _id: "$visitorId",
+            totalPageViews: { $sum: 1 },
+            sessions: { $addToSet: "$sessionId" },
+            activeDates: {
+              $addToSet: {
+                $dateToString: { format: "%Y-%m-%d", date: "$createdAt", timezone: "UTC" },
+              },
+            },
+          },
+        },
+        {
+          $project: {
+            totalPageViews: 1,
+            totalSessions: {
+              $size: {
+                $filter: {
+                  input: "$sessions",
+                  as: "session",
+                  cond: { $and: [{ $ne: ["$$session", null] }, { $ne: ["$$session", ""] }] },
+                },
+              },
+            },
+            activeDays: { $size: "$activeDates" },
+          },
+        },
+      ])
+    : [];
+  const visitorStatsMap = new Map(visitorStatsRows.map((row) => [row._id as string, row]));
+
   const formattedVisitors = visitors
     .map((visitor) => {
-      const activeDays =
-        activeDayMap.get(visitor.visitorId) ||
-        visitor.activeDays ||
-        0;
+      const stats = visitorStatsMap.get(visitor.visitorId);
+      const activeDays = stats?.activeDays ?? activeDayMap.get(visitor.visitorId) ?? visitor.activeDays ?? 0;
+      const totalPageViews = stats?.totalPageViews ?? visitor.totalPageViews;
+      const totalSessions = stats?.totalSessions ?? visitor.totalSessions;
 
       return {
         ...visitor,
+        totalPageViews,
+        totalSessions,
         _id: String(visitor._id),
+        isOnline: Boolean(visitor.lastActiveAt && new Date(visitor.lastActiveAt).getTime() >= onlineSince.getTime()),
         activeDays,
         status: calculateStatus({
           firstSeen: visitor.firstSeen,
           lastSeen: visitor.lastSeen,
-          totalPageViews: visitor.totalPageViews,
-          totalSessions: visitor.totalSessions,
+          totalPageViews,
+          totalSessions,
           activeDays,
         }),
         hosts:
@@ -451,6 +411,18 @@ export async function GET(request: NextRequest) {
     .filter((visitor) =>
       status ? visitor.status === status : true
     )
+    .sort((a, b) => {
+      switch (sort) {
+        case "all": return new Date(b.lastSeen).getTime() - new Date(a.lastSeen).getTime();
+        case "recent": return new Date(b.lastSeen).getTime() - new Date(a.lastSeen).getTime();
+        case "top-visited": return b.totalPageViews - a.totalPageViews || new Date(b.lastSeen).getTime() - new Date(a.lastSeen).getTime();
+        case "top-active": return b.totalSessions - a.totalSessions || b.totalPageViews - a.totalPageViews;
+        case "top-constant": return b.activeDays - a.activeDays || b.totalSessions - a.totalSessions;
+        case "oldest": return new Date(a.firstSeen).getTime() - new Date(b.firstSeen).getTime();
+        case "newest": return new Date(b.firstSeen).getTime() - new Date(a.firstSeen).getTime();
+        default: return new Date(b.lastSeen).getTime() - new Date(a.lastSeen).getTime();
+      }
+    })
     .slice(0, limit)
     .map((visitor, index) => ({
       ...visitor,
@@ -510,6 +482,18 @@ export async function GET(request: NextRequest) {
     });
   }
 
+  const [excludedAutomatedPageViews, excludedInternalPageViews] = await Promise.all([
+    PageView.countDocuments({
+      createdAt: dateFilter.createdAt,
+      $or: [
+        { userAgent: { $regex: "HeadlessChrome|PhantomJS|Playwright|Puppeteer|bot|crawler|spider|slurp|facebookexternalhit|TelegramBot|Twitterbot|LinkedInBot|Discordbot|Google-InspectionTool", $options: "i" } },
+        { host: { $regex: "^tgo-devstudio-prime-[a-z0-9]+-testimonygboroye\\.vercel\\.app$", $options: "i" } },
+        { referrer: { $regex: "tgo-devstudio-prime-[a-z0-9]+-testimonygboroye\\.vercel\\.app", $options: "i" } },
+      ],
+    }),
+    PageView.countDocuments({ createdAt: dateFilter.createdAt, isInternal: true }),
+  ]);
+
   return NextResponse.json({
     status: "ok",
 
@@ -527,6 +511,10 @@ export async function GET(request: NextRequest) {
 
     uniqueVisitorCount:
       uniqueVisitors.length,
+
+    onlineVisitorCount,
+    onlineWindowSeconds: 120,
+    trafficClassification: { excludedAutomatedOrPreviewPageViews: excludedAutomatedPageViews, excludedInternalPageViews },
 
     averageDailyVisitors,
 

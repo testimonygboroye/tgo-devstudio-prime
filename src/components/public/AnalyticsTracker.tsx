@@ -121,6 +121,36 @@ export default function AnalyticsTracker() {
   }, []);
 
   useEffect(() => {
+    let stopped = false;
+    const heartbeat = () => {
+      if (stopped || document.visibilityState !== "visible" || !navigator.onLine) return;
+      try {
+        const visitorId = stableId(localStorage, VISITOR_KEY);
+        void fetch("/api/analytics/presence", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          keepalive: true,
+          body: JSON.stringify({ visitorId }),
+        }).catch(() => undefined);
+      } catch {
+        // Presence reporting must never interrupt the visitor experience.
+      }
+    };
+    heartbeat();
+    const timer = window.setInterval(heartbeat, 30_000);
+    const onVisible = () => { if (document.visibilityState === "visible") heartbeat(); };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", heartbeat);
+    return () => {
+      stopped = true;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", heartbeat);
+    };
+  }, []);
+
+  useEffect(() => {
     const handleClick = (event: MouseEvent) => {
       const target = event.target instanceof Element ? event.target.closest("a") : null;
       if (!target) return;

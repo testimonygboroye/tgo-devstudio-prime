@@ -225,7 +225,7 @@ export async function POST(request: NextRequest) {
         {
           $setOnInsert: { visitorId, firstSeen: now, firstPath: path, firstReferrer: referrer, activeDays: 1 },
           $set: {
-            lastSeen: now, latestPath: path, latestReferrer: referrer,
+            lastSeen: now, lastActiveAt: now, latestPath: path, latestReferrer: referrer,
             language: client.language, languages: client.languages,
             timezone: client.timezone || geo.timezone, screenWidth: client.screenWidth,
             screenHeight: client.screenHeight, viewportWidth: client.viewportWidth,

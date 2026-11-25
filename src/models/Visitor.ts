@@ -70,6 +70,7 @@ export interface IVisitor extends Document {
 
   firstSeen: Date;
   lastSeen: Date;
+  lastActiveAt?: Date;
 
   totalPageViews: number;
   totalSessions: number;
@@ -216,6 +217,7 @@ const VisitorSchema = new Schema<IVisitor>(
       required: true,
       index: true,
     },
+    lastActiveAt: { type: Date, index: true },
 
     totalPageViews: {
       type: Number,
@@ -253,6 +255,7 @@ const VisitorSchema = new Schema<IVisitor>(
 
 VisitorSchema.index({ totalPageViews: -1 });
 VisitorSchema.index({ lastSeen: -1 });
+VisitorSchema.index({ lastActiveAt: -1 });
 VisitorSchema.index({ activeDays: -1 });
 VisitorSchema.index({
   status: 1,

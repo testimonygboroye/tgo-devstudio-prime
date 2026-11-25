@@ -180,58 +180,6 @@ export async function GET(request: NextRequest) {
     ];
   }
 
-  let sortQuery: Record<string, 1 | -1>;
-
-  switch (sort) {
-    case "all":
-    case "recent":
-      sortQuery = {
-        lastSeen: -1,
-      };
-      break;
-
-    case "top-visited":
-      sortQuery = {
-        totalPageViews: -1,
-        lastSeen: -1,
-      };
-      break;
-
-    case "top-active":
-      sortQuery = {
-        totalSessions: -1,
-        totalPageViews: -1,
-        lastSeen: -1,
-      };
-      break;
-
-    case "top-constant":
-      sortQuery = {
-        activeDays: -1,
-        totalSessions: -1,
-        lastSeen: -1,
-      };
-      break;
-
-    case "oldest":
-      sortQuery = {
-        firstSeen: 1,
-      };
-      break;
-
-    case "newest":
-      sortQuery = {
-        firstSeen: -1,
-      };
-      break;
-
-    default:
-      sortQuery = {
-        lastSeen: -1,
-      };
-      break;
-  }
-
   const [
     views,
     totalCount,

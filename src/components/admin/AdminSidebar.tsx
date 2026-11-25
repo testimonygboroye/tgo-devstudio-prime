@@ -151,6 +151,16 @@ const NAV_ROUTE_ALIASES: Record<string, string> = {
   "/availability": "/security-administration",
 };
 
+const NAV_SEARCH_TERMS: Record<string, string[]> = {
+  "/ai-workforce": ["ai employees", "ai workforce", "agents", "automation", "tasks", "delegation", "provider connections", "ai performance"],
+  "/ai-workforce/chatbots": ["chatbot", "assistant", "public assistant", "client assistant", "admin assistant", "knowledge base"],
+  "/sales-client-relations": ["clients", "client management", "enquiries", "contact submissions", "book a call", "commercial", "sales", "delivery", "proposals", "contracts", "projects"],
+  "/communications": ["messages", "conversations", "support", "tickets", "newsletter", "whatsapp", "internal communication", "ai task conversations"],
+  "/people-operations": ["workforce", "employees", "users", "access", "invitations", "recruitment", "applications", "business operations", "payroll", "compensation", "training", "documents", "vault", "workspaces", "roles"],
+  "/content-studio": ["homepage", "site pages", "legal", "accessibility", "privacy policy", "terms", "cookies", "landing pages", "services", "case studies", "process", "team", "blog", "careers", "faqs", "reviews", "technology stack", "media library", "homepage media", "media collections", "advertising"],
+  "/security-administration": ["security", "two factor", "2fa", "privacy", "requests", "audit", "settings", "theme", "language", "notifications", "help", "guide", "knowledge base", "availability"],
+};
+
 export default function AdminSidebar({
   userName,
   userEmail,
@@ -176,7 +186,7 @@ export default function AdminSidebar({
   const normalizedQuery = navQuery.trim().toLowerCase();
   const visibleGroups = NAV_GROUPS
     .filter((group) => (group.title !== "Founder & Intelligence" && group.title !== "AI & Automation" && group.title !== "Finance & Integrations") || isFounder)
-    .map((group) => ({ ...group, items: group.items.filter((item) => (item.hrefSuffix !== "/commercial" || isFounder) && (item.hrefSuffix !== "/engagement" || isFounder) && (!["/operations", "/operations/payroll", "/operations/documents", "/operations/training"].includes(item.hrefSuffix) || isFounder) && (!normalizedQuery || group.title.toLowerCase().includes(normalizedQuery) || item.label.toLowerCase().includes(normalizedQuery))) }))
+    .map((group) => ({ ...group, items: group.items.filter((item) => (item.hrefSuffix !== "/commercial" || isFounder) && (item.hrefSuffix !== "/engagement" || isFounder) && (!["/operations", "/operations/payroll", "/operations/documents", "/operations/training"].includes(item.hrefSuffix) || isFounder) && (!normalizedQuery || group.title.toLowerCase().includes(normalizedQuery) || item.label.toLowerCase().includes(normalizedQuery) || (NAV_SEARCH_TERMS[item.hrefSuffix] || []).some((term) => term.includes(normalizedQuery)))) }))
     .filter((group) => group.items.length > 0);
   const directActiveHref = visibleGroups
     .flatMap((group) => group.items.map(resolveNavHref))

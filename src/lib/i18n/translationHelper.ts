@@ -14,17 +14,18 @@ export function createTranslator(locale: Locale) {
 
   return (key: string, options?: TranslationOptions): string => {
     const keys = key.split(".");
+    if (keys.some((part) => part === "__proto__" || part === "prototype" || part === "constructor")) return key;
     let value: any = dict;
 
     for (const k of keys) {
-      if (value && typeof value === "object" && k in value) {
+      if (value && typeof value === "object" && Object.prototype.hasOwnProperty.call(value, k)) {
         value = value[k];
       } else {
         // Fallback to English if not found in current locale
         const enDict = getDictionary("en");
         let enValue: any = enDict;
         for (const enK of keys) {
-          if (enValue && typeof enValue === "object" && enK in enValue) {
+          if (enValue && typeof enValue === "object" && Object.prototype.hasOwnProperty.call(enValue, enK)) {
             enValue = enValue[enK];
           } else {
             return key; // Key not found in English either
@@ -41,7 +42,7 @@ export function createTranslator(locale: Locale) {
 
     if (options) {
       Object.entries(options).forEach(([k, v]) => {
-        value = (value as string).replace(new RegExp(`{${k}}`, "g"), String(v));
+        value = (value as string).split(`{${k}}`).join(String(v));
       });
     }
 

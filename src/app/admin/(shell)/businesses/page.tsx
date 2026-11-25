@@ -25,7 +25,7 @@ export default async function BusinessEcosystemPage() {
   const serialized = organizations.map((item) => ({
     id: String(item._id), name: item.name, slug: item.slug, type: item.type, status: item.status,
     website: item.website || "", contactEmail: item.contactEmail || "",
-    createdAt: item.createdAt.toISOString(),
+    createdAt: item.createdAt ? new Date(item.createdAt).toISOString() : "",
   }));
   const metrics = [
     { label: "Organizations", value: total, icon: Building2, tone: "violet" },
@@ -38,9 +38,9 @@ export default async function BusinessEcosystemPage() {
       <section className="relative overflow-hidden rounded-3xl border border-violet-400/20 bg-[radial-gradient(circle_at_85%_10%,rgba(46,197,240,0.18),transparent_30%),linear-gradient(125deg,#111735_0%,#17133a_52%,#101b35_100%)] p-6 shadow-2xl sm:p-8">
         <div className="absolute -right-12 -top-20 h-64 w-64 rounded-full bg-violet-500/20 blur-3xl" />
         <div className="relative max-w-3xl">
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[.18em] text-cyan-200">Phase 03 · Business ecosystem</div>
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[.18em] text-cyan-200">Business ecosystem</div>
           <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">Organizations & business accounts</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base">Establish the organization directory that future client, partner, vendor, workforce and project systems will share. Every change is recorded in the platform audit trail.</p>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base">Manage the shared organization directory used by client, partner, vendor, workforce and project operations. Every change is recorded in the platform audit trail.</p>
         </div>
       </section>
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

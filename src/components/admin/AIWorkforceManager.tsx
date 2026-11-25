@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { Bot, BrainCircuit, CheckCircle2, CircleAlert, Cpu, KeyRound, Loader2, Plus, RefreshCw, ShieldCheck, Workflow } from "lucide-react";
 
-type ProviderItem = { _id:string; name:string; provider:string; lastTestStatus?:string; enabled:boolean };
+type ProviderItem = { _id:string; name:string; provider:string; lastTestStatus?:string; lastTestedAt?:string | Date; enabled:boolean };
 type AgentItem = { _id:string; name:string; role:string; department:string; providerId?:{name?:string}; modelName:string; enabled:boolean; permissions:string[] };
 type TaskItem = { _id:string; title:string; agentId?:{name?:string}; status:string; inputTokens?:number; outputTokens?:number; result?:string; error?:string; operation?:string };
 type WorkspaceItem = { _id:string; name:string; department:string; description:string };
@@ -39,7 +39,7 @@ export default function AIWorkforceManager() {
   const panel="rounded-2xl border border-white/10 bg-slate-950/60 p-5 shadow-xl shadow-black/10";
   const input="mt-1 w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-400";
   const button="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-cyan-500 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50";
-  const verifiedProviders = data.providers.filter((item) => item.enabled && item.lastTestStatus === "success").length;
+  const verifiedProviders = data.providers.filter((item) => item.enabled && item.lastTestStatus === "success" && item.lastTestedAt && Date.now() - new Date(item.lastTestedAt).getTime() < 24 * 60 * 60 * 1000).length;
   return <main className="mx-auto max-w-7xl space-y-6 text-white">
     <header className="rounded-3xl border border-violet-400/20 bg-gradient-to-br from-[#17112f] via-[#101a35] to-[#082d3c] p-6 sm:p-8">
       <div className="flex flex-wrap items-start justify-between gap-4"><div><div className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[.22em] text-cyan-300"><BrainCircuit size={16}/> TGO AI Command Centre</div><h1 className="text-3xl font-bold tracking-tight sm:text-4xl">AI Workforce</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">Register AI providers, configure specialist agents, and route work through human approval. Credentials are encrypted at rest; new agents start disabled and unprivileged.</p></div><button className={button} onClick={()=>void load()}><RefreshCw size={16}/> Refresh</button></div>

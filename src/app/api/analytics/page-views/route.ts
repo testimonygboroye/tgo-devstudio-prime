@@ -313,8 +313,7 @@ export async function GET(request: NextRequest) {
   });
 
   const visitors = await Visitor.find(visitorQuery)
-    .sort(sortQuery)
-    .limit(250)
+    .limit(1000)
     .lean();
 
   const visitorIds = visitors.map(
@@ -400,23 +399,59 @@ export async function GET(request: NextRequest) {
     ])
   );
 
+  const visitorStatsRows = visitorIds.length
+    ? await PageView.aggregate([
+        { $match: { ...trustedTrafficFilter, visitorId: { $in: visitorIds } } },
+        {
+          $group: {
+            _id: "$visitorId",
+            totalPageViews: { $sum: 1 },
+            sessions: { $addToSet: "$sessionId" },
+            activeDates: {
+              $addToSet: {
+                $dateToString: { format: "%Y-%m-%d", date: "$createdAt", timezone: "UTC" },
+              },
+            },
+          },
+        },
+        {
+          $project: {
+            totalPageViews: 1,
+            totalSessions: {
+              $size: {
+                $filter: {
+                  input: "$sessions",
+                  as: "session",
+                  cond: { $and: [{ $ne: ["$session", null] }, { $ne: ["$session", ""] }] },
+                },
+              },
+            },
+            activeDays: { $size: "$activeDates" },
+          },
+        },
+      ])
+    : [];
+  const visitorStatsMap = new Map(visitorStatsRows.map((row) => [row._id as string, row]));
+
   const formattedVisitors = visitors
     .map((visitor) => {
-      const activeDays =
-        activeDayMap.get(visitor.visitorId) ||
-        visitor.activeDays ||
-        0;
+      const stats = visitorStatsMap.get(visitor.visitorId);
+      const activeDays = stats?.activeDays ?? activeDayMap.get(visitor.visitorId) ?? visitor.activeDays ?? 0;
+      const totalPageViews = stats?.totalPageViews ?? visitor.totalPageViews;
+      const totalSessions = stats?.totalSessions ?? visitor.totalSessions;
 
       return {
         ...visitor,
+        totalPageViews,
+        totalSessions,
         _id: String(visitor._id),
         isOnline: Boolean(visitor.lastActiveAt && new Date(visitor.lastActiveAt).getTime() >= onlineSince.getTime()),
         activeDays,
         status: calculateStatus({
           firstSeen: visitor.firstSeen,
           lastSeen: visitor.lastSeen,
-          totalPageViews: visitor.totalPageViews,
-          totalSessions: visitor.totalSessions,
+          totalPageViews,
+          totalSessions,
           activeDays,
         }),
         hosts:
@@ -426,6 +461,16 @@ export async function GET(request: NextRequest) {
     .filter((visitor) =>
       status ? visitor.status === status : true
     )
+    .sort((a, b) => {
+      switch (sort) {
+        case "top-visited": return b.totalPageViews - a.totalPageViews || new Date(b.lastSeen).getTime() - new Date(a.lastSeen).getTime();
+        case "top-active": return b.totalSessions - a.totalSessions || b.totalPageViews - a.totalPageViews;
+        case "top-constant": return b.activeDays - a.activeDays || b.totalSessions - a.totalSessions;
+        case "oldest": return new Date(a.firstSeen).getTime() - new Date(b.firstSeen).getTime();
+        case "newest": return new Date(b.firstSeen).getTime() - new Date(a.firstSeen).getTime();
+        default: return new Date(b.lastSeen).getTime() - new Date(a.lastSeen).getTime();
+      }
+    })
     .slice(0, limit)
     .map((visitor, index) => ({
       ...visitor,

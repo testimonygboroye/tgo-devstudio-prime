@@ -370,7 +370,7 @@ export async function GET(request: NextRequest) {
                 $filter: {
                   input: "$sessions",
                   as: "session",
-                  cond: { $and: [{ $ne: ["$session", null] }, { $ne: ["$session", ""] }] },
+                  cond: { $and: [{ $ne: ["$$session", null] }, { $ne: ["$$session", ""] }] },
                 },
               },
             },

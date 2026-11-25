@@ -182,7 +182,7 @@ export async function GET(request: NextRequest) {
       $or: [{ createdAt: { $gte: start, $lt: end } }, { updatedAt: { $gte: start, $lt: end } }],
     }),
     ConsultationBooking.countDocuments({
-      status: { $in: ["requested", "confirmed", "completed"] },
+      status: { $in: ["confirmed", "completed"] },
       createdAt: { $gte: start, $lt: end },
     }),
   ]);

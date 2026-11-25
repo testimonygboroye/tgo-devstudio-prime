@@ -29,7 +29,7 @@ export function getUtcDayRange(from?: string | null, to?: string | null, now = n
   const parseBoundary = (value: string, isEnd: boolean) => {
     // Date-only selections represent complete UTC calendar days; ISO timestamps
     // from datetime-local controls preserve the exact selected instant.
-    if (/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
       const day = new Date(`${value}T00:00:00.000Z`);
       return isEnd ? new Date(day.getTime() + 24 * 60 * 60 * 1000) : day;
     }

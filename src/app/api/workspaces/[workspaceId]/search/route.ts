@@ -20,7 +20,7 @@ export async function GET(req:NextRequest,{params}:Ctx){
  const membership=await WorkspaceMembership.findOne({workspaceId,userId:session.user._id,status:"active"}).lean();
  if(!membership)return NextResponse.json({error:"Workspace access denied."},{status:403});
  const workspace=await Workspace.findOne({_id:workspaceId,status:"active"}).lean();if(!workspace)return NextResponse.json({error:"Workspace not found."},{status:404});
- const rx=new RegExp(q.replace(/[.*+?^${}()|[\\]\\]/g,"\\$&"),"i");
+ const rx={ $regex:q.replace(/[.*+?^${}()|[\\]\\]/g,"\\const rx=new RegExp(q.replace(/[.*+?^${}()|[\\]\\]/g,"\\$&"),"i");"), $options:"i" };
  const [messages,workspaceTasks,documents,channels,deliveryTasks]=await Promise.all([
   WorkspaceMessage.find({workspaceId,deletedAt:null,body:rx}).sort({createdAt:-1}).limit(20).lean(),
   WorkspaceTask.find({workspaceId,title:rx}).sort({updatedAt:-1}).limit(20).lean(),

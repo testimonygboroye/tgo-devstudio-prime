@@ -374,7 +374,7 @@ export async function POST(request: NextRequest) {
         if (provider.provider === "google") {
           const models = Array.isArray(catalogue.models) ? catalogue.models : [];
           const eligible = models.filter((item: any) => Array.isArray(item.supportedGenerationMethods) && item.supportedGenerationMethods.includes("generateContent"));
-          const ids = eligible.map((item: any) => String(item.name || "").replace(/^models\\//, "")).filter(Boolean);
+          const ids = eligible.map((item: any) => String(item.name || "").replace(/^models\//, "")).filter(Boolean);
           const preferred = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-3.8-flash"];
           googleCandidates = [...preferred.filter((id) => ids.includes(id)), ...ids.filter((id) => !preferred.includes(id))].slice(0, 5);
           testedModel = googleCandidates[0] || "";
@@ -384,7 +384,7 @@ export async function POST(request: NextRequest) {
           testedModel = eligible.find((id: string) => /(?:sonnet|4\.1-mini|4o-mini|flash)/i.test(id)) || eligible[0] || "";
         }
         if (!testedModel) throw new Error("The provider account returned no supported text-generation model.");
-        let generationResponse: Response;
+        let generationResponse: Response = new Response(null, { status: 503 });
         let generatedText = "";
         if (provider.provider === "google") {
           let lastProviderMessage = "No Gemini model was available.";
@@ -401,7 +401,7 @@ export async function POST(request: NextRequest) {
             lastProviderMessage = String(result?.error?.message || "Provider error").slice(0, 300);
             if (![429, 500, 502, 503, 504].includes(generationResponse.status)) break;
           }
-          if (!generationResponse!.ok) throw new Error("Gemini generation failed after trying " + googleCandidates.length + " available models (HTTP " + statusCode + "): " + lastProviderMessage);
+          if (!generationResponse.ok) throw new Error("Gemini generation failed after trying " + googleCandidates.length + " available models (HTTP " + statusCode + "): " + lastProviderMessage);
         } else if (provider.provider === "anthropic") {
           generationResponse = await fetch("https://api.anthropic.com/v1/messages", {
             method: "POST", headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" }, signal: controller.signal, cache: "no-store",

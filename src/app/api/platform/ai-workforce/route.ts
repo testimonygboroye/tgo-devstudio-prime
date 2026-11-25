@@ -374,9 +374,9 @@ export async function POST(request: NextRequest) {
         if (provider.provider === "google") {
           const models = Array.isArray(catalogue.models) ? catalogue.models : [];
           const eligible = models.filter((item: any) => Array.isArray(item.supportedGenerationMethods) && item.supportedGenerationMethods.includes("generateContent"));
-          const ids = eligible.map((item: any) => String(item.name || "").replace(/^models\//, "")).filter(Boolean);
+          const ids: string[] = eligible.map((item: any): string => String(item.name || "").replace(/^models\//, "")).filter((id: string): boolean => Boolean(id));
           const preferred = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-3.8-flash"];
-          googleCandidates = [...preferred.filter((id) => ids.includes(id)), ...ids.filter((id) => !preferred.includes(id))].slice(0, 5);
+          googleCandidates = [...preferred.filter((id: string) => ids.includes(id)), ...ids.filter((id: string) => !preferred.includes(id))].slice(0, 5);
           testedModel = googleCandidates[0] || "";
         } else {
           const models = Array.isArray(catalogue.data) ? catalogue.data : [];

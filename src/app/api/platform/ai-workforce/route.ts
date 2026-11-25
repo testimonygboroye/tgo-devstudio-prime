@@ -304,6 +304,28 @@ export async function POST(request: NextRequest) {
       await writePlatformAuditEvent({ actorType: "human", actorId, actorLabel: session.user.name, action: "ai.provider.created", module: "ai-workforce", targetType: "AIProvider", targetId: String(created._id), outcome: "success", metadata: { provider, name } });
       return NextResponse.json({ status: "ok", provider: { id: created._id, name: created.name, provider: created.provider } }, { status: 201 });
     }
+    if (body.action === "provider.rotate_key") {
+      const providerId = String(body.providerId || "");
+      const apiKey = String(body.apiKey || "").trim();
+      if (!mongoose.isValidObjectId(providerId) || apiKey.length < 8 || apiKey.length > 5000) {
+        return NextResponse.json({ status: "error", message: "Choose a provider and enter a valid API key." }, { status: 400 });
+      }
+      const provider = await AIProvider.findById(providerId);
+      if (!provider) return NextResponse.json({ status: "error", message: "Provider not found." }, { status: 404 });
+      provider.encryptedApiKey = encryptProviderSecret(apiKey);
+      provider.enabled = false;
+      provider.lastTestStatus = undefined;
+      provider.lastTestedAt = undefined;
+      await provider.save();
+      await AIAgent.updateMany({ providerId: provider._id }, { $set: { enabled: false } });
+      await writePlatformAuditEvent({
+        actorType: "human", actorId, actorLabel: session.user.name,
+        action: "ai.provider.credential_replaced", module: "ai-workforce",
+        targetType: "AIProvider", targetId: String(provider._id), outcome: "success",
+        metadata: { provider: provider.provider, name: provider.name, dependentAgentsDisabled: true },
+      });
+      return NextResponse.json({ status: "ok", message: "API key encrypted and replaced. The provider and its dependent agents are disabled until a live generation test succeeds." });
+    }
     if (body.action === "provider.enable" || body.action === "provider.disable") {
       const provider = await AIProvider.findById(body.providerId);
       if (!provider) return NextResponse.json({ status: "error", message: "Provider not found." }, { status: 404 });

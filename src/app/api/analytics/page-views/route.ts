@@ -215,6 +215,13 @@ export async function GET(request: NextRequest) {
   let sortQuery: Record<string, 1 | -1>;
 
   switch (sort) {
+    case "all":
+    case "recent":
+      sortQuery = {
+        lastSeen: -1,
+      };
+      break;
+
     case "top-visited":
       sortQuery = {
         totalPageViews: -1,

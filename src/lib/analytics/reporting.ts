@@ -27,9 +27,10 @@ export function getDefaultAnalyticsRange(now = new Date()) {
 export function getUtcDayRange(from?: string | null, to?: string | null, now = new Date()) {
   const defaults = getDefaultAnalyticsRange(now);
   const start = from ? new Date(`${from}T00:00:00.000Z`) : defaults.start;
-  const end = to
+  const requestedEnd = to
     ? new Date(new Date(`${to}T00:00:00.000Z`).getTime() + 24 * 60 * 60 * 1000)
     : defaults.end;
+  const end = requestedEnd > now ? now : requestedEnd;
   return {
     $gte: Number.isNaN(start.getTime()) ? defaults.start : start,
     $lt: Number.isNaN(end.getTime()) ? defaults.end : end,

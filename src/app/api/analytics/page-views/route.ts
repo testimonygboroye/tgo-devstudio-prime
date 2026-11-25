@@ -130,7 +130,7 @@ export async function GET(request: NextRequest) {
   const trustedTrafficFilter: Record<string, unknown> = {
     isInternal: { $ne: true },
     $nor: [
-      { userAgent: { $regex: "HeadlessChrome|PhantomJS|Playwright|Puppeteer", $options: "i" } },
+      { userAgent: { $regex: "HeadlessChrome|PhantomJS|Playwright|Puppeteer|bot|crawler|spider|slurp|facebookexternalhit|TelegramBot|Twitterbot|LinkedInBot|Discordbot|Google-InspectionTool", $options: "i" } },
       { referrer: { $regex: "tgo-devstudio-prime-[a-z0-9]+-testimonygboroye\\.vercel\\.app", $options: "i" } },
     ],
   };

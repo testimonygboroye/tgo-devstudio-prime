@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "@/lib/auth/serverSession";
 import { connectToDatabase } from "@/lib/db";
 import { AIChatSession, AIChatbotConfig, AIChatbotScope } from "@/models/AIChatbot";
+import AIProvider from "@/models/AIProvider";
 import { runProviderCompletion } from "@/lib/ai/provider-runtime";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import PageContent from "@/models/PageContent";
@@ -143,9 +144,15 @@ export async function handleAIChat(request:NextRequest,scope:Scope,method:"GET"|
  const auth=await authenticate(scope);if(auth.denied)return auth.denied;
  await connectToDatabase();
  const config=await AIChatbotConfig.findOne({scope,enabled:true}).lean();
+ let providerStatus:"verified"|"unverified"|"unconfigured"=config?"unverified":"unconfigured";
+ if(method==="GET"&&config){
+  const providerIds=[config.providerId,...(config.fallbackProviderIds||[])].filter(Boolean);
+  const verifiedProviders=await AIProvider.countDocuments({_id:{$in:providerIds},enabled:true,lastTestStatus:"success"});
+  providerStatus=verifiedProviders>0?"verified":"unverified";
+ }
  if(method==="GET"){
   const {row,token}=await getSession(scope,request,auth.session);
-  const response=json({enabled:Boolean(config),welcomeMessage:config?.welcomeMessage||"Hello. How can I help?",messages:(row.messages||[]).slice(-40).map(m=>({messageId:m.messageId,role:m.role,content:m.content,feedback:m.feedback,sources:m.sources||[],createdAt:m.createdAt}))});
+  const response=json({enabled:Boolean(config),providerStatus,welcomeMessage:config?.welcomeMessage||"Hello. How can I help?",messages:(row.messages||[]).slice(-40).map(m=>({messageId:m.messageId,role:m.role,content:m.content,feedback:m.feedback,sources:m.sources||[],createdAt:m.createdAt}))});
   return attachPublicCookie(response,scope,token);
  }
  if(method==="DELETE"){

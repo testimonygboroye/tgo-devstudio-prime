@@ -1,15 +1,14 @@
-import { createHmac } from "node:crypto";
+import { createHmac, randomBytes } from "node:crypto";
 import { verifyPaystackWebhookSignature } from "../paystack-webhook";
 
 describe("Paystack webhook signature verification", () => {
   const body = Buffer.from('{"event":"charge.success","data":{"reference":"TGO_ABC"}}');
   const nowSeconds = 1_800_000_000;
-  const webhookSecret = "whsec_test_secret";
-  const secretKey = "sk_test_secret";
+  const webhookSecret = randomBytes(32).toString("hex");
+  const secretKey = randomBytes(32).toString("hex");
 
   it("accepts a valid timestamped Paystack-Signature header", () => {
     const timestamp = String(nowSeconds);
-    // nosemgrep: javascript.lang.security.audit.hardcoded-hmac-key.hardcoded-hmac-key -- synthetic test-only fixture; no production credential is present.
     const signature = createHmac("sha512", webhookSecret).update(timestamp + ".").update(body).digest("hex");
     expect(verifyPaystackWebhookSignature({
       rawBody: body,
@@ -31,7 +30,6 @@ describe("Paystack webhook signature verification", () => {
   });
 
   it("accepts the legacy x-paystack-signature during migration", () => {
-    // nosemgrep: javascript.lang.security.audit.hardcoded-hmac-key.hardcoded-hmac-key -- synthetic test-only fixture; no production credential is present.
     const signature = createHmac("sha512", secretKey).update(body).digest("hex");
     expect(verifyPaystackWebhookSignature({ rawBody: body, legacySignatureHeader: signature, secretKey })).toBe(true);
   });

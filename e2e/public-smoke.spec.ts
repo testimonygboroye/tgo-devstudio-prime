@@ -115,8 +115,8 @@ test("mobile navigation drawer opens, expands and navigates", async ({ page }) =
   await expect(openMenu).toHaveAttribute("aria-expanded", "true");
   await expect(mobileNavigation).toHaveAttribute("aria-hidden", "false");
 
-  const capabilityGroup = mobileNavigation.locator("summary").filter({ hasText: "Capabilities & Work" });
-  await capabilityGroup.click();
+  const capabilityGroup = mobileNavigation.locator("details").filter({ hasText: "Capabilities & Work" });
+  if (!(await capabilityGroup.evaluate(element => (element as HTMLDetailsElement).open))) await capabilityGroup.locator("summary").click();
   const servicesLink = mobileNavigation.getByRole("link", { name: "Services", exact: true });
   await expect(servicesLink).toBeVisible();
 
@@ -127,7 +127,8 @@ test("mobile navigation drawer opens, expands and navigates", async ({ page }) =
   await openMenu.click();
   await expect(openMenu).toHaveAttribute("aria-expanded", "true");
   await expect(mobileNavigation).toHaveAttribute("aria-hidden", "false");
-  await mobileNavigation.locator("summary").filter({ hasText: "Capabilities & Work" }).click();
+  const reopenedCapabilityGroup = mobileNavigation.locator("details").filter({ hasText: "Capabilities & Work" });
+  if (!(await reopenedCapabilityGroup.evaluate(element => (element as HTMLDetailsElement).open))) await reopenedCapabilityGroup.locator("summary").click();
   await mobileNavigation.getByRole("link", { name: "Services", exact: true }).click();
   await expect(page).toHaveURL(/\/services$/);
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();

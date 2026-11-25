@@ -21,8 +21,11 @@ export async function GET() {
   await connectToDatabase();
   const rows = await IntegrationConnection.find({}).sort({ category: 1, displayName: 1 }).lean();
   const connected = new Map(rows.map((row) => [row.providerId, serialize(row as unknown as Record<string, unknown>)]));
-  const googleOAuthMissing = ["GOOGLE_OAUTH_CLIENT_ID", "GOOGLE_OAUTH_CLIENT_SECRET", "JWT_ACCESS_SECRET"].filter((name) => !process.env[name]);
-  if (!process.env.SITE_URL && !process.env.NEXT_PUBLIC_SITE_URL) googleOAuthMissing.push("SITE_URL");
+  const googleOAuthMissing: string[] = [];
+  if (!process.env.GOOGLE_OAUTH_CLIENT_ID && !process.env.GOOGLE_CLIENT_ID) googleOAuthMissing.push("GOOGLE_OAUTH_CLIENT_ID or GOOGLE_CLIENT_ID");
+  if (!process.env.GOOGLE_OAUTH_CLIENT_SECRET && !process.env.GOOGLE_CLIENT_SECRET) googleOAuthMissing.push("GOOGLE_OAUTH_CLIENT_SECRET or GOOGLE_CLIENT_SECRET");
+  if (!process.env.JWT_ACCESS_SECRET) googleOAuthMissing.push("JWT_ACCESS_SECRET");
+  if (!process.env.SITE_URL && !process.env.NEXT_PUBLIC_SITE_URL && !process.env.GOOGLE_OAUTH_REDIRECT_URI) googleOAuthMissing.push("SITE_URL or GOOGLE_OAUTH_REDIRECT_URI");
   return NextResponse.json({ providers: INTEGRATION_REGISTRY.map((provider) => ({ ...provider, connection: connected.get(provider.id) || null })), encryptionReady: Boolean(process.env.INTEGRATION_CREDENTIALS_KEY && (() => { try { const value = process.env.INTEGRATION_CREDENTIALS_KEY!; return /^[a-f0-9]{64}$/i.test(value) || Buffer.from(value, "base64").length === 32; } catch { return false; } })()), googleOAuthReady: googleOAuthMissing.length === 0, googleOAuthMissing }, { headers: { "Cache-Control": "private, no-store" } });
 }
 export async function POST(request: NextRequest) {

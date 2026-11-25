@@ -130,7 +130,7 @@ export default function ConversionInsightsPage() {
         <MetricCard label="Views per visitor" value={summary.pagesPerVisitor.toFixed(2)} icon={Globe2} hint="Average pages viewed by each visitor"/>
         <MetricCard label="Contact enquiries" value={summary.contactSubmissions.toLocaleString()} icon={MessageSquare} hint="Saved contact submissions in the selected period"/>
         <MetricCard label="Newsletter subscriptions" value={(summary.newsletterSubscriptions || 0).toLocaleString()} icon={MessageSquare} hint="Persisted subscribed records created or reactivated in the selected period"/>
-        <MetricCard label="Confirmed / completed bookings" value={(summary.completedBookings || 0).toLocaleString()} icon={BarChart3} hint="Saved bookings with confirmed or completed status"/>
+        <MetricCard label="Booking requests / confirmations" value={(summary.completedBookings || 0).toLocaleString()} icon={BarChart3} hint="Saved booking requests, confirmations and completions; cancelled and no-show bookings excluded"/>
         <MetricCard label="Tracked conversions" value={summary.conversions.toLocaleString()} icon={MousePointerClick} hint="Contact submissions, subscriptions and completed bookings"/>
       </section>
 

@@ -6,54 +6,19 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
-  Briefcase,
   Bot,
-  Gift,
-  Users,
-  Newspaper,
-  DoorOpen,
-  Inbox,
-  Mail,
-  Star,
-  Layers,
-  Workflow,
-  FileText,
-  Home,
-  HelpCircle,
-  PhoneCall,
-  Boxes,
-  UserPlus,
-  Send,
-  BookOpen,
-  MessageCircleQuestion,
-  MessageCircle,
-  UserCog,
   Contact,
-  MessageSquareText,
   MessageSquare,
   ShieldCheck,
   Crown,
-  Building2,
   Network,
   Image,
-  ScrollText,
-  ShoppingCart,
   WalletCards,
-  BarChart3,
-  KeyRound,
-  KeySquare,
-  Zap,
-  Video,
-  Settings,
   LogOut,
   ChevronLeft,
   ChevronRight,
-  LifeBuoy,
-  ClipboardList,
   PlugZap,
   Megaphone,
-  SearchCheck,
-  BrainCircuit,
   Search,
 } from "lucide-react";
 
@@ -69,77 +34,100 @@ const NAV_GROUPS = [
   { title: "Overview", items: [
     { label: "Dashboard", hrefSuffix: "/dashboard", icon: LayoutDashboard, badgeKey: null },
   ]},
-  { title: "Founder", items: [
+  { title: "Founder & Intelligence", items: [
     { label: "Founder Control Centre", hrefSuffix: "/platform", icon: Crown, badgeKey: null },
-    { label: "Executive Intelligence", hrefSuffix: "/executive-intelligence", icon: BrainCircuit, badgeKey: null },
-    { label: "Business Roles", hrefSuffix: "/business-roles", icon: KeySquare, badgeKey: null },
-    { label: "Business Ecosystem", hrefSuffix: "/businesses", icon: Building2, badgeKey: null },
-    { label: "Visitor Analytics", hrefSuffix: "/analytics", icon: BarChart3, badgeKey: null },
   ]},
-  { title: "AI Workforce", items: [
+  { title: "AI & Automation", items: [
     { label: "AI Command Centre", hrefSuffix: "/ai-workforce", icon: Bot, badgeKey: null },
   ]},
-  { title: "Growth & Engagement", items: [
-    { label: "Rewards & Referrals", hrefSuffix: "/engagement", icon: Gift, badgeKey: null },
+  { title: "Growth & Marketing", items: [
+    { label: "Growth & Marketing", hrefSuffix: "/growth-marketing", icon: Megaphone, badgeKey: null },
   ]},
-  { title: "Integration & Growth", items: [
-    { label: "Integration Centre", hrefSuffix: "/integrations", icon: PlugZap, badgeKey: null },
-    { label: "Marketing & Sales", hrefSuffix: "/growth", icon: Megaphone, badgeKey: null },
-    { label: "SEO Operations", hrefSuffix: "/seo", icon: SearchCheck, badgeKey: null },
+  { title: "Sales & Client Relations", items: [
+    { label: "Sales & Client Relations", hrefSuffix: "/sales-client-relations", icon: Contact, badgeKey: null },
   ]},
-  { title: "Commercial & Delivery", items: [
-    { label: "Sales & Delivery", hrefSuffix: "/commercial", icon: ShoppingCart, badgeKey: null },
+  { title: "Communications & Support", items: [
+    { label: "Communications & Support", hrefSuffix: "/communications", icon: MessageSquare, badgeKey: "messages" },
+  ]},
+  { title: "People & Operations", items: [
+    { label: "People & Operations", hrefSuffix: "/people-operations", icon: Network, badgeKey: null },
+  ]},
+  { title: "Finance & Integrations", items: [
     { label: "Finance & Payments", hrefSuffix: "/finance", icon: WalletCards, badgeKey: null },
-    { label: "Customer Support", hrefSuffix: "/support", icon: LifeBuoy, badgeKey: null },
+    { label: "Integration Centre", hrefSuffix: "/integrations", icon: PlugZap, badgeKey: null },
   ]},
-  { title: "People & Access", items: [
-    { label: "Invites", hrefSuffix: "/invites", icon: UserPlus, badgeKey: null },
-    { label: "Users & Roles", hrefSuffix: "/users", icon: UserCog, badgeKey: null },
-    { label: "Client Management", hrefSuffix: "/clients", icon: Contact, badgeKey: null },
-    { label: "Workforce Management", hrefSuffix: "/workforce", icon: Network, badgeKey: null },
-    { label: "Business Operations", hrefSuffix: "/operations", icon: ClipboardList, badgeKey: null },
-    { label: "Payroll & Compensation", hrefSuffix: "/operations/payroll", icon: WalletCards, badgeKey: null },
-    { label: "Private Document Vault", hrefSuffix: "/operations/documents", icon: ShieldCheck, badgeKey: null },
-    { label: "Universal Workspaces", hrefSuffix: "/workspaces", icon: MessageCircle, badgeKey: null },
-    { label: "Manage Roles", hrefSuffix: "/roles", icon: ShieldCheck, badgeKey: null },
-    { label: "Security (2FA)", hrefSuffix: "/security", icon: KeyRound, badgeKey: null },
-    { label: "Audit Log", hrefSuffix: "/audit-log", icon: ScrollText, badgeKey: null },
+  { title: "Website & Creative Studio", items: [
+    { label: "Content Studio", hrefSuffix: "/content-studio", icon: Image, badgeKey: null },
   ]},
-  { title: "Website Content", items: [
-    { label: "Homepage", hrefSuffix: "/home-settings", icon: Home, badgeKey: null },
-    { label: "Homepage Media", hrefSuffix: "/homepage-media", icon: Video, badgeKey: null },
-    { label: "Media & Advertising Studio", hrefSuffix: "/media-collections", icon: Megaphone, badgeKey: null },
-    { label: "Case Studies", hrefSuffix: "/case-studies", icon: Briefcase, badgeKey: null },
-    { label: "Services", hrefSuffix: "/services", icon: Layers, badgeKey: null },
-    { label: "Process", hrefSuffix: "/process", icon: Workflow, badgeKey: null },
-    { label: "Team", hrefSuffix: "/team", icon: Users, badgeKey: null },
-    { label: "Blog", hrefSuffix: "/blog", icon: Newspaper, badgeKey: null },
-    { label: "Careers", hrefSuffix: "/careers", icon: DoorOpen, badgeKey: null },
-    { label: "FAQ", hrefSuffix: "/faq-items", icon: MessageCircleQuestion, badgeKey: null },
-    { label: "Reviews", hrefSuffix: "/reviews", icon: Star, badgeKey: "reviews" },
-    { label: "Site Pages", hrefSuffix: "/pages", icon: FileText, badgeKey: null },
-    { label: "Landing Pages", hrefSuffix: "/public-pages", icon: FileText, badgeKey: null },
-    { label: "Site Identity & Navigation", hrefSuffix: "/site-settings", icon: Settings, badgeKey: null },
-    { label: "Stack Items", hrefSuffix: "/stack-items", icon: Boxes, badgeKey: null },
-  ]},
-  { title: "Messages & Leads", items: [
-    { label: "Messages", hrefSuffix: "/messages", icon: MessageSquare, badgeKey: "messages" },
-    { label: "Client Enquiries", hrefSuffix: "/client-enquiries", icon: MessageSquareText, badgeKey: null },
-    { label: "Contact", hrefSuffix: "/contact", icon: Mail, badgeKey: "contactSubmissions" },
-    { label: "Applications", hrefSuffix: "/applications", icon: Inbox, badgeKey: "jobApplications" },
-    { label: "Newsletter", hrefSuffix: "/newsletter", icon: Send, badgeKey: null },
-    { label: "Book a Call", hrefSuffix: "/book-a-call", icon: PhoneCall, badgeKey: null },
-  ]},
-  { title: "Site Tools", items: [
-    { label: "Availability", hrefSuffix: "/availability", icon: Zap, badgeKey: null },
-    { label: "Media Library", hrefSuffix: "/media", icon: Image, badgeKey: null },
-    { label: "Help & Guide", hrefSuffix: "/help", icon: HelpCircle, badgeKey: null },
-    { label: "Manage Articles", hrefSuffix: "/help-articles", icon: BookOpen, badgeKey: null },
-  ]},
-  { title: "Administration", items: [
-    { label: "Admin Settings", hrefSuffix: "/settings", icon: Settings, badgeKey: null },
+  { title: "Security, Compliance & Administration", items: [
+    { label: "Security & Administration", hrefSuffix: "/security-administration", icon: ShieldCheck, badgeKey: null },
   ]},
 ] as const;
+
+const NAV_ROUTE_ALIASES: Record<string, string> = {
+  "/executive-intelligence": "/platform",
+  "/businesses": "/platform",
+  "/business-roles": "/platform",
+  "/analytics": "/platform",
+  "/analytics/conversions": "/platform",
+  "/ai-workforce/chatbots": "/ai-workforce",
+  "/growth": "/growth-marketing",
+  "/seo": "/growth-marketing",
+  "/engagement": "/growth-marketing",
+  "/clients": "/sales-client-relations",
+  "/client-enquiries": "/sales-client-relations",
+  "/commercial": "/sales-client-relations",
+  "/book-a-call": "/sales-client-relations",
+  "/contact": "/sales-client-relations",
+  "/messages": "/communications",
+  "/support": "/communications",
+  "/newsletter": "/communications",
+  "/workforce": "/people-operations",
+  "/users": "/people-operations",
+  "/invites": "/people-operations",
+  "/applications": "/people-operations",
+  "/operations": "/people-operations",
+  "/operations/payroll": "/people-operations",
+  "/operations/training": "/people-operations",
+  "/operations/documents": "/people-operations",
+  "/workspaces": "/people-operations",
+  "/roles": "/people-operations",
+  "/home-settings": "/content-studio",
+  "/pages": "/content-studio",
+  "/public-pages": "/content-studio",
+  "/site-settings": "/content-studio",
+  "/services": "/content-studio",
+  "/case-studies": "/content-studio",
+  "/process": "/content-studio",
+  "/team": "/content-studio",
+  "/blog": "/content-studio",
+  "/careers": "/content-studio",
+  "/faq-items": "/content-studio",
+  "/reviews": "/content-studio",
+  "/stack-items": "/content-studio",
+  "/media": "/content-studio",
+  "/homepage-media": "/content-studio",
+  "/media-collections": "/content-studio",
+  "/security": "/security-administration",
+  "/privacy-requests": "/security-administration",
+  "/audit-log": "/security-administration",
+  "/settings": "/security-administration",
+  "/help": "/security-administration",
+  "/help-articles": "/security-administration",
+  "/availability": "/security-administration",
+};
+
+const NAV_SEARCH_TERMS: Record<string, string[]> = {
+  "/platform": ["founder control centre", "executive intelligence", "business ecosystem", "business roles", "permissions", "visitor analytics", "conversion analytics", "governance", "strategy"],
+  "/ai-workforce": ["ai employees", "ai workforce", "agents", "automation", "tasks", "delegation", "provider connections", "ai performance", "chatbot", "assistant", "public assistant", "client assistant", "admin assistant", "knowledge base"],
+  "/growth-marketing": ["marketing", "sales", "seo", "search", "campaigns", "growth", "referrals", "rewards", "loyalty", "engagement"],
+  "/ai-workforce/chatbots": ["chatbot", "assistant", "public assistant", "client assistant", "admin assistant", "knowledge base"],
+  "/sales-client-relations": ["clients", "client management", "enquiries", "contact submissions", "book a call", "commercial", "sales", "delivery", "proposals", "contracts", "projects"],
+  "/communications": ["messages", "conversations", "support", "tickets", "newsletter", "whatsapp", "internal communication", "ai task conversations"],
+  "/people-operations": ["workforce", "employees", "users", "access", "invitations", "recruitment", "applications", "business operations", "payroll", "compensation", "training", "documents", "vault", "workspaces", "roles"],
+  "/content-studio": ["homepage", "site pages", "legal", "accessibility", "privacy policy", "terms", "cookies", "landing pages", "services", "case studies", "process", "team", "blog", "careers", "faqs", "reviews", "technology stack", "media library", "homepage media", "media collections", "advertising"],
+  "/security-administration": ["security", "two factor", "2fa", "privacy", "requests", "audit", "settings", "theme", "language", "notifications", "help", "guide", "knowledge base", "availability"],
+};
 
 export default function AdminSidebar({
   userName,
@@ -160,18 +148,21 @@ export default function AdminSidebar({
   const collapsed = isCollapsed && !isMobileOpen;
 
   const basePathSegment = basePath;
-  const resolveNavHref = (item: { hrefSuffix: string }) =>
-    item.hrefSuffix === "/workforce" && !isFounder ? "/workforce" : `${basePathSegment}${item.hrefSuffix}`;
+  const resolveNavHref = (item: { hrefSuffix: string }) => `${basePathSegment}${item.hrefSuffix}`;
   const [navQuery, setNavQuery] = useState("");
   const normalizedQuery = navQuery.trim().toLowerCase();
   const visibleGroups = NAV_GROUPS
-    .filter((group) => (group.title !== "Founder" && group.title !== "Commercial & Delivery" && group.title !== "AI Workforce" && group.title !== "Growth & Engagement") || isFounder)
-    .map((group) => ({ ...group, items: group.items.filter((item) => !normalizedQuery || group.title.toLowerCase().includes(normalizedQuery) || item.label.toLowerCase().includes(normalizedQuery)) }))
+    .filter((group) => (group.title !== "Founder & Intelligence" && group.title !== "AI & Automation" && group.title !== "Growth & Marketing" && group.title !== "Finance & Integrations") || isFounder)
+    .map((group) => ({ ...group, items: group.items.filter((item) => !normalizedQuery || group.title.toLowerCase().includes(normalizedQuery) || item.label.toLowerCase().includes(normalizedQuery) || (NAV_SEARCH_TERMS[item.hrefSuffix] || []).some((term) => term.includes(normalizedQuery))) }))
     .filter((group) => group.items.length > 0);
-  const activeHref = visibleGroups
+  const directActiveHref = visibleGroups
     .flatMap((group) => group.items.map(resolveNavHref))
     .filter((href) => pathname === href || pathname.startsWith(`${href}/`))
-    .sort((a, b) => b.length - a.length)[0] || "";
+    .sort((a, b) => b.length - a.length)[0];
+  const aliasRoute = Object.keys(NAV_ROUTE_ALIASES)
+    .filter((route) => pathname === route || pathname.startsWith(`${route}/`))
+    .sort((a, b) => b.length - a.length)[0];
+  const activeHref = directActiveHref || (aliasRoute ? `${basePathSegment}${NAV_ROUTE_ALIASES[aliasRoute]}` : "");
 
   const loadCounts = useCallback(async () => {
     try {
@@ -259,13 +250,13 @@ export default function AdminSidebar({
                 <div className="mb-1 flex justify-center" title={group.title}>
                   <span className="h-px w-7 rounded-full bg-brand-cyan-400/30"/>
                 </div>
-                {group.items.map((item) => {
+                {group.items.slice(0, 1).map((item) => {
                   const href = resolveNavHref(item);
-                  const isActive = href === activeHref;
+                  const isActive = group.items.some((groupItem) => resolveNavHref(groupItem) === activeHref);
                   const Icon = item.icon;
                   const count = item.badgeKey ? counts[item.badgeKey] || 0 : 0;
                   return (
-                    <Link key={item.hrefSuffix} href={href} prefetch={false} onClick={() => setIsMobileOpen(false)} onPointerEnter={() => router.prefetch(href)} onFocus={() => router.prefetch(href)} title={item.label} aria-label={item.label}
+                    <Link key={item.hrefSuffix} href={href} prefetch={false} onClick={() => setIsMobileOpen(false)} onPointerEnter={() => router.prefetch(href)} onFocus={() => router.prefetch(href)} title={group.title} aria-label={`${group.title} — open ${item.label}`}
                       className={`group relative mx-auto mb-1 flex h-11 w-11 items-center justify-center rounded-xl transition-all duration-150 ${isActive ? "brand-gradient-bg text-white shadow-lg shadow-brand-violet-600/25" : "text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-brand-cyan-300"}`}>
                       <Icon size={19}/>
                       {count > 0 && <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white">{count > 9 ? "9+" : count}</span>}

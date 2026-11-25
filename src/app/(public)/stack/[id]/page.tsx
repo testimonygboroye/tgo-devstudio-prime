@@ -50,7 +50,10 @@ export default async function StackItemDetailPage({ params }: PageProps) {
         <div className="mt-8 rounded-2xl border p-6 sm:p-8" style={{ borderColor: "var(--border-subtle)", background: "var(--bg-surface)" }}>
           <p className="whitespace-pre-wrap text-base leading-relaxed" style={{ color: "var(--text-secondary)" }}>{item.description}</p>
         </div>
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema).replace(/</g, "\\u003c") }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{
+          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- JSON-LD escapes < so untrusted text cannot terminate the script element.
+          __html: JSON.stringify(schema).replace(/</g, "\\u003c"),
+        }} />
       </article>
     </main>
   );

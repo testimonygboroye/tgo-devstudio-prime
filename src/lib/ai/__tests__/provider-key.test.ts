@@ -5,7 +5,7 @@ jest.mock("@/lib/ai/provider-secrets", () => ({
   decryptProviderSecret: jest.fn(() => "decrypted-stored-key"),
 }));
 
-describe("environment-managed AI provider credentials", () => {
+describe("AI provider credential resolution", () => {
   const originalKey = process.env.GEMINI_API_KEY;
 
   afterEach(() => {
@@ -14,21 +14,21 @@ describe("environment-managed AI provider credentials", () => {
     jest.clearAllMocks();
   });
 
-  it("uses the current server environment key instead of a stale encrypted Gemini snapshot", () => {
+  it("uses GEMINI_API_KEY for every Google provider record, regardless of its stored display name", () => {
     process.env.GEMINI_API_KEY = "current-environment-key";
-    expect(resolveProviderApiKey("Gemini environment provider", "google", "old-encrypted-value")).toBe("current-environment-key");
+    expect(resolveProviderApiKey("Gemini Production", "google", "old-encrypted-value")).toBe("current-environment-key");
     expect(decryptProviderSecret).not.toHaveBeenCalled();
   });
 
-  it("continues to decrypt manually configured provider credentials", () => {
+  it("continues to decrypt manually configured credentials for non-Google providers", () => {
     delete process.env.GEMINI_API_KEY;
     expect(resolveProviderApiKey("Claude TGO DevStudio Production", "anthropic", "ciphertext")).toBe("decrypted-stored-key");
     expect(decryptProviderSecret).toHaveBeenCalledWith("ciphertext");
   });
 
-  it("does not use the Gemini environment variable for unrelated Google providers", () => {
-    process.env.GEMINI_API_KEY = "current-environment-key";
-    expect(resolveProviderApiKey("Other Google provider", "google", "ciphertext")).toBe("decrypted-stored-key");
+  it("falls back to encrypted Google credentials when no environment key is configured", () => {
+    delete process.env.GEMINI_API_KEY;
+    expect(resolveProviderApiKey("Gemini Production", "google", "ciphertext")).toBe("decrypted-stored-key");
     expect(decryptProviderSecret).toHaveBeenCalledWith("ciphertext");
   });
 });

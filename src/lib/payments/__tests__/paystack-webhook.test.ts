@@ -1,11 +1,11 @@
-import { createHmac } from "node:crypto";
+import { createHmac, randomBytes } from "node:crypto";
 import { verifyPaystackWebhookSignature } from "../paystack-webhook";
 
 describe("Paystack webhook signature verification", () => {
   const body = Buffer.from('{"event":"charge.success","data":{"reference":"TGO_ABC"}}');
   const nowSeconds = 1_800_000_000;
-  const webhookSecret = "whsec_test_secret";
-  const secretKey = "sk_test_secret";
+  const webhookSecret = randomBytes(32).toString("hex");
+  const secretKey = randomBytes(32).toString("hex");
 
   it("accepts a valid timestamped Paystack-Signature header", () => {
     const timestamp = String(nowSeconds);

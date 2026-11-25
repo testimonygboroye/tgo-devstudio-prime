@@ -322,6 +322,7 @@ export default async function BlogDetailPage({
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
+          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- JSON-LD is serialized with < escaped by safeJsonLd.
           __html: safeJsonLd(articleSchema),
         }}
       />
@@ -329,6 +330,7 @@ export default async function BlogDetailPage({
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
+          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- JSON-LD is serialized with < escaped by safeJsonLd.
           __html: safeJsonLd(breadcrumbSchema),
         }}
       />
@@ -382,6 +384,7 @@ export default async function BlogDetailPage({
             color: "var(--text-secondary)",
           }}
           dangerouslySetInnerHTML={{
+            // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- safeHtml is sanitized by sanitizeBlogHtml; fallback path HTML-escapes all markup.
             __html: safeHtml,
           }}
         />

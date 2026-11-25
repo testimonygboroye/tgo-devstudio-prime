@@ -7,7 +7,8 @@ import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import { AIProvider, AIAgent, AITask } from "@/models/AIWorkforce";
 import { UnifiedConversation, UnifiedMessage } from "@/models/UnifiedConversation";
 import { mirrorMessageToPersonalWhatsApp } from "@/lib/messaging/whatsappSync";
-import { decryptProviderSecret, encryptProviderSecret } from "@/lib/ai/provider-secrets";
+import { encryptProviderSecret } from "@/lib/ai/provider-secrets";
+import { resolveProviderApiKey } from "@/lib/ai/provider-key";
 import { runProviderCompletionWithFallback } from "@/lib/ai/provider-runtime";
 import { AIWorkspace, AIMemory } from "@/models/AIKnowledge";
 import User from "@/models/User";
@@ -282,7 +283,7 @@ export async function POST(request: NextRequest) {
     }
     if (body.action === "provider.import_gemini_env") {
       const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) return NextResponse.json({ status: "error", message: "GEMINI_API_KEY is not configured in this Vercel environment." }, { status: 503 });
+      if (!apiKey) return NextResponse.json({ status: "error", message: "GEMINI_API_KEY is not configured in this application's runtime environment." }, { status: 503 });
       let provider = await AIProvider.findOne({ name: "Gemini environment provider" });
       if (provider) {
         provider.provider = "google"; provider.encryptedApiKey = encryptProviderSecret(apiKey); provider.enabled = true; provider.lastTestStatus = undefined; provider.lastTestedAt = undefined; await provider.save();
@@ -315,12 +316,12 @@ export async function POST(request: NextRequest) {
     if (body.action === "provider.test") {
       const provider = await AIProvider.findById(body.providerId).select("+encryptedApiKey");
       if (!provider) return NextResponse.json({ status: "error", message: "Provider not found." }, { status: 404 });
-      const key = decryptProviderSecret(provider.encryptedApiKey);
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 20000);
       let testedModel = "";
       let statusCode = 0;
       try {
+        const key = resolveProviderApiKey(provider.name, provider.provider, provider.encryptedApiKey);
         const catalogueUrl = provider.provider === "google"
           ? "https://generativelanguage.googleapis.com/v1beta/models"
           : provider.provider === "anthropic"

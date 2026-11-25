@@ -1,37 +1,39 @@
 import type { NextRequest } from "next/server";
 
+const CANONICAL_PRODUCTION_URL = "https://tgo-devstudio-prime.onrender.com";
+
+function isPrivateOrLocalHost(hostname: string): boolean {
+  const host = hostname.toLowerCase();
+  return host === "localhost" || host === "127.0.0.1" || host === "0.0.0.0" ||
+    host.endsWith(".localhost") || host.endsWith(".local") ||
+    /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(host);
+}
+
+function isHostingPlatformHost(hostname: string): boolean {
+  const host = hostname.toLowerCase();
+  return ["vercel.app", "netlify.app", "onrender.com", "render.com"].some(
+    (domain) => host === domain || host.endsWith(`.${domain}`)
+  );
+}
+
 /**
- * Resolve the public origin used in emails and other externally shared links.
- * A request's Host header is deliberately not trusted: reverse proxies,
- * preview hosts and local development requests must never leak into emails.
+ * Resolve the public origin used in emails and externally shared links.
+ * Preview and provider-owned platform hostnames are never canonical.
  */
 export function getPublicSiteUrl(_request?: NextRequest): string {
-  const candidates = [
-    process.env.SITE_URL,
-    process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : undefined,
-    process.env.NEXT_PUBLIC_SITE_URL,
-    process.env.RENDER_EXTERNAL_URL,
-    process.env.URL,
-    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined,
-    // Stable Vercel production origin is the canonical client OAuth host.
-    "https://tgo-devstudio-prime.vercel.app",
-  ];
+  const candidates = [process.env.SITE_URL, process.env.NEXT_PUBLIC_SITE_URL, process.env.URL];
 
   for (const candidate of candidates) {
     if (!candidate) continue;
     try {
       const parsed = new URL(candidate.includes("://") ? candidate : `https://${candidate}`);
-      const host = parsed.hostname.toLowerCase();
-      const isLocal = host === "localhost" || host === "127.0.0.1" || host === "0.0.0.0" || host.endsWith(".localhost") || host.endsWith(".local");
-      const isPrivateIPv4 = /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(host);
-      if (isLocal || isPrivateIPv4) continue;
-      if (parsed.protocol !== "https:") continue;
+      if (parsed.protocol !== "https:" || isPrivateOrLocalHost(parsed.hostname)) continue;
+      if (isHostingPlatformHost(parsed.hostname)) continue;
       return parsed.origin;
     } catch {
-      // Ignore malformed values and try the next configured public origin.
+      // Ignore malformed values and continue to the stable production host.
     }
   }
 
-  // This is intentionally a stable HTTPS production URL, not request-derived.
-  return "https://tgo-devstudio-prime.vercel.app";
+  return CANONICAL_PRODUCTION_URL;
 }

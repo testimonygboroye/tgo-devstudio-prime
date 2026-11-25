@@ -101,7 +101,10 @@ export default async function CaseStudyDetailPage({ params }: PageProps) {
     <main className="min-h-screen px-6 py-20 sm:px-12">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+        dangerouslySetInnerHTML={{
+          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- JSON-LD escapes < so untrusted text cannot terminate the script element.
+          __html: JSON.stringify(schema).replace(/</g, "\\u003c"),
+        }}
       />
 
       <article className="mx-auto max-w-3xl">

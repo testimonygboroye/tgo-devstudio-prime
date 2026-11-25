@@ -14,18 +14,21 @@ export function createTranslator(locale: Locale) {
 
   return (key: string, options?: TranslationOptions): string => {
     const keys = key.split(".");
+    if (keys.some((part) => part === "__proto__" || part === "prototype" || part === "constructor")) return key;
     let value: any = dict;
 
     for (const k of keys) {
-      if (value && typeof value === "object" && k in value) {
-        value = value[k];
+      const descriptor = value && typeof value === "object" ? Object.getOwnPropertyDescriptor(value, k) : undefined;
+      if (descriptor && Object.prototype.hasOwnProperty.call(descriptor, "value")) {
+        value = descriptor.value;
       } else {
         // Fallback to English if not found in current locale
         const enDict = getDictionary("en");
         let enValue: any = enDict;
         for (const enK of keys) {
-          if (enValue && typeof enValue === "object" && enK in enValue) {
-            enValue = enValue[enK];
+          const enDescriptor = enValue && typeof enValue === "object" ? Object.getOwnPropertyDescriptor(enValue, enK) : undefined;
+          if (enDescriptor && Object.prototype.hasOwnProperty.call(enDescriptor, "value")) {
+            enValue = enDescriptor.value;
           } else {
             return key; // Key not found in English either
           }
@@ -41,7 +44,7 @@ export function createTranslator(locale: Locale) {
 
     if (options) {
       Object.entries(options).forEach(([k, v]) => {
-        value = (value as string).replace(new RegExp(`{${k}}`, "g"), String(v));
+        value = (value as string).split(`{${k}}`).join(String(v));
       });
     }
 

@@ -16,7 +16,7 @@ export function encryptCredentials(credentials: Record<string, string>): string 
 export function decryptCredentials(value: string): Record<string, string> {
   const [ivPart, tagPart, dataPart] = value.split(".");
   if (!ivPart || !tagPart || !dataPart) throw new Error("Stored integration credentials are invalid.");
-  const decipher = createDecipheriv("aes-256-gcm", key(), Buffer.from(ivPart, "base64url"));
+  const decipher = createDecipheriv("aes-256-gcm", key(), Buffer.from(ivPart, "base64url"), { authTagLength: 16 });
   decipher.setAuthTag(Buffer.from(tagPart, "base64url"));
   const decrypted = Buffer.concat([decipher.update(Buffer.from(dataPart, "base64url")), decipher.final()]).toString("utf8");
   const parsed: unknown = JSON.parse(decrypted);

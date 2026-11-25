@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "@/lib/auth/serverSession";
 import { connectToDatabase } from "@/lib/db";
 import { AIProvider } from "@/models/AIWorkforce";
-import { decryptProviderSecret } from "@/lib/ai/provider-secrets";
+import { resolveProviderApiKey } from "@/lib/ai/provider-key";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,19 +26,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Enable and successfully test this provider before loading its models." }, { status: 409 });
   }
 
-  const key = decryptProviderSecret(provider.encryptedApiKey);
-  const base = provider.provider === "google"
-    ? "https://generativelanguage.googleapis.com/v1beta/models"
-    : provider.provider === "anthropic"
-      ? "https://api.anthropic.com/v1/models?limit=1000"
-      : (provider.provider === "openai" ? "https://api.openai.com/v1" : String(provider.baseUrl || "").replace(/\/$/, "")) + "/models";
-  const headers: Record<string, string> = provider.provider === "google"
-    ? { "x-goog-api-key": key }
-    : provider.provider === "anthropic"
-      ? { "x-api-key": key, "anthropic-version": "2023-06-01" }
-      : { Authorization: "Bearer " + key };
-
   try {
+    const key = resolveProviderApiKey(provider.name, provider.provider, provider.encryptedApiKey);
+    const base = provider.provider === "google"
+      ? "https://generativelanguage.googleapis.com/v1beta/models"
+      : provider.provider === "anthropic"
+        ? "https://api.anthropic.com/v1/models?limit=1000"
+        : (provider.provider === "openai" ? "https://api.openai.com/v1" : String(provider.baseUrl || "").replace(/\/$/, "")) + "/models";
+    const headers: Record<string, string> = provider.provider === "google"
+      ? { "x-goog-api-key": key }
+      : provider.provider === "anthropic"
+        ? { "x-api-key": key, "anthropic-version": "2023-06-01" }
+        : { Authorization: "Bearer " + key };
     const response = await fetch(base, { headers, cache: "no-store", signal: AbortSignal.timeout(15000) });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
@@ -61,7 +60,8 @@ export async function GET(request: NextRequest) {
     if (provider.provider === "google") models = models.filter((item) => /^gemini-/i.test(item.id));
     models.sort((a, b) => a.displayName.localeCompare(b.displayName));
     return NextResponse.json({ models }, { headers: { "Cache-Control": "private, no-store" } });
-  } catch {
-    return NextResponse.json({ error: "Could not reach the provider model catalogue. Try again shortly." }, { status: 502 });
+  } catch (error) {
+    const diagnostic = error instanceof Error ? error.message.slice(0, 300) : "Unknown provider connection error.";
+    return NextResponse.json({ error: "Provider model catalogue could not be loaded: " + diagnostic }, { status: 502 });
   }
 }

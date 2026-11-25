@@ -18,15 +18,17 @@ export function createTranslator(locale: Locale) {
     let value: any = dict;
 
     for (const k of keys) {
-      if (value && typeof value === "object" && Object.prototype.hasOwnProperty.call(value, k)) {
-        value = value[k];
+      const descriptor = value && typeof value === "object" ? Object.getOwnPropertyDescriptor(value, k) : undefined;
+      if (descriptor && Object.prototype.hasOwnProperty.call(descriptor, "value")) {
+        value = descriptor.value;
       } else {
         // Fallback to English if not found in current locale
         const enDict = getDictionary("en");
         let enValue: any = enDict;
         for (const enK of keys) {
-          if (enValue && typeof enValue === "object" && Object.prototype.hasOwnProperty.call(enValue, enK)) {
-            enValue = enValue[enK];
+          const enDescriptor = enValue && typeof enValue === "object" ? Object.getOwnPropertyDescriptor(enValue, enK) : undefined;
+          if (enDescriptor && Object.prototype.hasOwnProperty.call(enDescriptor, "value")) {
+            enValue = enDescriptor.value;
           } else {
             return key; // Key not found in English either
           }

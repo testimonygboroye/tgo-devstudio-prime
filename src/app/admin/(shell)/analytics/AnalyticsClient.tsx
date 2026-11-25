@@ -341,6 +341,9 @@ export default function AnalyticsClient() {
 
         if (!cancelled) {
           setData(json);
+          setSelectedVisitor((current) =>
+            current ? json.visitors.find((visitor) => visitor.visitorId === current.visitorId) || current : null
+          );
           setLastUpdatedAt(new Date());
         }
       } catch (loadError) {

@@ -25,7 +25,7 @@ export default async function BusinessEcosystemPage() {
   const serialized = organizations.map((item) => ({
     id: String(item._id), name: item.name, slug: item.slug, type: item.type, status: item.status,
     website: item.website || "", contactEmail: item.contactEmail || "",
-    createdAt: item.createdAt.toISOString(),
+    createdAt: item.createdAt?.toISOString?.() || new Date(0).toISOString(),
   }));
   const metrics = [
     { label: "Organizations", value: total, icon: Building2, tone: "violet" },

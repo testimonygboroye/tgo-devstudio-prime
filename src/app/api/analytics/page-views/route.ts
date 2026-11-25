@@ -412,6 +412,8 @@ export async function GET(request: NextRequest) {
     )
     .sort((a, b) => {
       switch (sort) {
+        case "all": return new Date(b.lastSeen).getTime() - new Date(a.lastSeen).getTime();
+        case "recent": return new Date(b.lastSeen).getTime() - new Date(a.lastSeen).getTime();
         case "top-visited": return b.totalPageViews - a.totalPageViews || new Date(b.lastSeen).getTime() - new Date(a.lastSeen).getTime();
         case "top-active": return b.totalSessions - a.totalSessions || b.totalPageViews - a.totalPageViews;
         case "top-constant": return b.activeDays - a.activeDays || b.totalSessions - a.totalSessions;
@@ -511,7 +513,7 @@ export async function GET(request: NextRequest) {
 
     onlineVisitorCount,
     onlineWindowSeconds: 120,
-    trafficClassification: { excludedAutomatedOrPreviewPageViews, excludedInternalPageViews },
+    trafficClassification: { excludedAutomatedOrPreviewPageViews: excludedAutomatedPageViews, excludedInternalPageViews },
 
     averageDailyVisitors,
 

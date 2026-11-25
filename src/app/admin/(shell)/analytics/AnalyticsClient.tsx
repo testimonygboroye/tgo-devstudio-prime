@@ -54,6 +54,8 @@ interface VisitorEntry {
   deploymentProvider?: string;
   firstSeen: string;
   lastSeen: string;
+  lastActiveAt?: string;
+  isOnline: boolean;
   totalPageViews: number;
   totalSessions: number;
   activeDays: number;
@@ -68,6 +70,8 @@ interface AnalyticsResponse {
   visitors: VisitorEntry[];
   totalCount: number;
   uniqueVisitorCount: number;
+  onlineVisitorCount: number;
+  onlineWindowSeconds: number;
   averageDailyVisitors: number;
   peakDailyVisitors: number;
   peakDay: string | null;
@@ -227,6 +231,8 @@ export default function AnalyticsClient() {
   const [status, setStatus] =
     useState("");
 
+  const [presence, setPresence] = useState("");
+
   const [sort, setSort] =
     useState("all");
 
@@ -280,6 +286,7 @@ export default function AnalyticsClient() {
       );
     }
     if (status) params.set("status", status);
+    if (presence) params.set("presence", presence);
     if (sort) params.set("sort", sort);
     if (search) params.set("search", search);
     if (from) params.set("from", from);
@@ -296,6 +303,7 @@ export default function AnalyticsClient() {
     browser,
     operatingSystem,
     status,
+    presence,
     sort,
     search,
     from,
@@ -365,6 +373,7 @@ export default function AnalyticsClient() {
     setBrowser("");
     setOperatingSystem("");
     setStatus("");
+    setPresence("");
     setSort("all");
     setSearch("");
     setFrom("");
@@ -381,6 +390,7 @@ export default function AnalyticsClient() {
     browser,
     operatingSystem,
     status,
+    presence,
     search,
     from,
     to,
@@ -392,7 +402,7 @@ export default function AnalyticsClient() {
       <div className="flex justify-end text-xs text-neutral-600" aria-live="polite">
         {lastUpdatedAt ? `Live data · Updated ${formatDate(lastUpdatedAt.toISOString())} · Refreshes every 30 seconds` : "Loading live analytics…"}
       </div>
-      <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <section className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <StatCard
           label="Total page views"
           value={data?.totalCount ?? 0}
@@ -403,6 +413,12 @@ export default function AnalyticsClient() {
           label="Unique visitors"
           value={data?.uniqueVisitorCount ?? 0}
           detail="Distinct first-party browser IDs"
+        />
+
+        <StatCard
+          label="Online now"
+          value={data?.onlineVisitorCount ?? 0}
+          detail="Active within the last 2 minutes"
         />
 
         <StatCard
@@ -482,6 +498,13 @@ export default function AnalyticsClient() {
               "constant",
               "dormant",
             ]}
+          />
+
+          <FilterSelect
+            label="Online presence"
+            value={presence}
+            onChange={setPresence}
+            options={["online", "offline"]}
           />
 
           <label className="block">
@@ -673,6 +696,10 @@ export default function AnalyticsClient() {
                           <StatusBadge
                             status={visitor.status}
                           />
+                          <span className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[11px] font-medium ${visitor.isOnline ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" : "border-base-700 bg-base-800 text-neutral-500"}`}>
+                            <span className={`h-1.5 w-1.5 rounded-full ${visitor.isOnline ? "bg-emerald-400" : "bg-neutral-500"}`} />
+                            {visitor.isOnline ? "Online now" : "Offline"}
+                          </span>
                         </div>
 
                         <p className="mt-1 truncate text-xs text-neutral-600">
@@ -1075,14 +1102,18 @@ export default function AnalyticsClient() {
 
                 <div className="mt-4 space-y-2 text-sm">
                   <p>
-                    <span className="text-neutral-600">
-                      Status:
-                    </span>{" "}
-                    <StatusBadge
-                      status={
-                        selectedVisitor.status
-                      }
-                    />
+                    <span className="text-neutral-600">Activity status:</span>{" "}
+                    <StatusBadge status={selectedVisitor.status} />
+                  </p>
+                  <p>
+                    <span className="text-neutral-600">Online presence:</span>{" "}
+                    <span className={selectedVisitor.isOnline ? "font-semibold text-emerald-300" : "text-neutral-500"}>
+                      {selectedVisitor.isOnline ? "Online now" : "Offline"}
+                    </span>
+                  </p>
+                  <p>
+                    <span className="text-neutral-600">Last active:</span>{" "}
+                    {formatDate(selectedVisitor.lastActiveAt || selectedVisitor.lastSeen)}
                   </p>
 
                   <p>

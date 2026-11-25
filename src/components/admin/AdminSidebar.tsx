@@ -87,61 +87,69 @@ const NAV_GROUPS = [
     { label: "Rewards & Referrals", hrefSuffix: "/engagement", icon: Gift, badgeKey: null },
   ]},
   { title: "Sales & Client Relations", items: [
-    { label: "Client Management", hrefSuffix: "/clients", icon: Contact, badgeKey: null },
-    { label: "Client Enquiries", hrefSuffix: "/client-enquiries", icon: MessageSquareText, badgeKey: null },
-    { label: "Sales & Delivery", hrefSuffix: "/commercial", icon: ShoppingCart, badgeKey: null },
-    { label: "Book a Call", hrefSuffix: "/book-a-call", icon: PhoneCall, badgeKey: null },
-    { label: "Contact Submissions", hrefSuffix: "/contact", icon: Mail, badgeKey: "contactSubmissions" },
+    { label: "Sales & Client Relations", hrefSuffix: "/sales-client-relations", icon: Contact, badgeKey: null },
   ]},
   { title: "Communications & Support", items: [
-    { label: "Messages & Conversations", hrefSuffix: "/messages", icon: MessageSquare, badgeKey: "messages" },
-    { label: "Customer Support", hrefSuffix: "/support", icon: LifeBuoy, badgeKey: null },
-    { label: "Newsletter", hrefSuffix: "/newsletter", icon: Send, badgeKey: null },
+    { label: "Communications & Support", hrefSuffix: "/communications", icon: MessageSquare, badgeKey: "messages" },
   ]},
   { title: "People & Operations", items: [
-    { label: "Workforce Management", hrefSuffix: "/workforce", icon: Network, badgeKey: null },
-    { label: "Users & Access", hrefSuffix: "/users", icon: UserCog, badgeKey: null },
-    { label: "Invitations", hrefSuffix: "/invites", icon: UserPlus, badgeKey: null },
-    { label: "Recruitment & Applications", hrefSuffix: "/applications", icon: Inbox, badgeKey: "jobApplications" },
-    { label: "Business Operations", hrefSuffix: "/operations", icon: ClipboardList, badgeKey: null },
-    { label: "Payroll & Compensation", hrefSuffix: "/operations/payroll", icon: WalletCards, badgeKey: null },
-    { label: "Training & Development", hrefSuffix: "/operations/training", icon: BookOpen, badgeKey: null },
-    { label: "Private Document Vault", hrefSuffix: "/operations/documents", icon: ShieldCheck, badgeKey: null },
-    { label: "Universal Workspaces", hrefSuffix: "/workspaces", icon: MessageCircle, badgeKey: null },
-    { label: "Access Roles", hrefSuffix: "/roles", icon: ShieldCheck, badgeKey: null },
+    { label: "People & Operations", hrefSuffix: "/people-operations", icon: Network, badgeKey: null },
   ]},
   { title: "Finance & Integrations", items: [
     { label: "Finance & Payments", hrefSuffix: "/finance", icon: WalletCards, badgeKey: null },
     { label: "Integration Centre", hrefSuffix: "/integrations", icon: PlugZap, badgeKey: null },
   ]},
   { title: "Website & Creative Studio", items: [
-    { label: "Homepage", hrefSuffix: "/home-settings", icon: Home, badgeKey: null },
-    { label: "Site Pages & Legal", hrefSuffix: "/pages", icon: FileText, badgeKey: null },
-    { label: "Landing Pages", hrefSuffix: "/public-pages", icon: FileText, badgeKey: null },
-    { label: "Site Identity & Navigation", hrefSuffix: "/site-settings", icon: Settings, badgeKey: null },
-    { label: "Services", hrefSuffix: "/services", icon: Layers, badgeKey: null },
-    { label: "Case Studies", hrefSuffix: "/case-studies", icon: Briefcase, badgeKey: null },
-    { label: "Process", hrefSuffix: "/process", icon: Workflow, badgeKey: null },
-    { label: "Team", hrefSuffix: "/team", icon: Users, badgeKey: null },
-    { label: "Blog", hrefSuffix: "/blog", icon: Newspaper, badgeKey: null },
-    { label: "Careers", hrefSuffix: "/careers", icon: DoorOpen, badgeKey: null },
-    { label: "FAQs", hrefSuffix: "/faq-items", icon: MessageCircleQuestion, badgeKey: null },
-    { label: "Reviews", hrefSuffix: "/reviews", icon: Star, badgeKey: "reviews" },
-    { label: "Technology Stack", hrefSuffix: "/stack-items", icon: Boxes, badgeKey: null },
-    { label: "Media Library", hrefSuffix: "/media", icon: Image, badgeKey: null },
-    { label: "Homepage Media", hrefSuffix: "/homepage-media", icon: Video, badgeKey: null },
-    { label: "Media Collections & Advertising", hrefSuffix: "/media-collections", icon: Megaphone, badgeKey: null },
+    { label: "Content Studio", hrefSuffix: "/content-studio", icon: Image, badgeKey: null },
   ]},
   { title: "Security, Compliance & Administration", items: [
-    { label: "Security & Two-Factor Authentication", hrefSuffix: "/security", icon: KeyRound, badgeKey: null },
-    { label: "Privacy Requests", hrefSuffix: "/privacy-requests", icon: ShieldCheck, badgeKey: null },
-    { label: "Audit Log", hrefSuffix: "/audit-log", icon: ScrollText, badgeKey: null },
-    { label: "Help & Guide", hrefSuffix: "/help", icon: HelpCircle, badgeKey: null },
-    { label: "Knowledge Base Articles", hrefSuffix: "/help-articles", icon: BookOpen, badgeKey: null },
-    { label: "Availability", hrefSuffix: "/availability", icon: Zap, badgeKey: null },
-    { label: "Admin Settings", hrefSuffix: "/settings", icon: Settings, badgeKey: null },
+    { label: "Security & Administration", hrefSuffix: "/security-administration", icon: ShieldCheck, badgeKey: null },
   ]},
 ] as const;
+
+const NAV_ROUTE_ALIASES: Record<string, string> = {
+  "/clients": "/sales-client-relations",
+  "/client-enquiries": "/sales-client-relations",
+  "/commercial": "/sales-client-relations",
+  "/book-a-call": "/sales-client-relations",
+  "/contact": "/sales-client-relations",
+  "/messages": "/communications",
+  "/support": "/communications",
+  "/newsletter": "/communications",
+  "/workforce": "/people-operations",
+  "/users": "/people-operations",
+  "/invites": "/people-operations",
+  "/applications": "/people-operations",
+  "/operations": "/people-operations",
+  "/operations/payroll": "/people-operations",
+  "/operations/training": "/people-operations",
+  "/operations/documents": "/people-operations",
+  "/workspaces": "/people-operations",
+  "/roles": "/people-operations",
+  "/home-settings": "/content-studio",
+  "/pages": "/content-studio",
+  "/public-pages": "/content-studio",
+  "/site-settings": "/content-studio",
+  "/services": "/content-studio",
+  "/case-studies": "/content-studio",
+  "/process": "/content-studio",
+  "/team": "/content-studio",
+  "/blog": "/content-studio",
+  "/careers": "/content-studio",
+  "/faq-items": "/content-studio",
+  "/reviews": "/content-studio",
+  "/stack-items": "/content-studio",
+  "/media": "/content-studio",
+  "/homepage-media": "/content-studio",
+  "/media-collections": "/content-studio",
+  "/security": "/security-administration",
+  "/privacy-requests": "/security-administration",
+  "/audit-log": "/security-administration",
+  "/settings": "/security-administration",
+  "/help": "/security-administration",
+  "/help-articles": "/security-administration",
+  "/availability": "/security-administration",
+};
 
 export default function AdminSidebar({
   userName,
@@ -170,10 +178,14 @@ export default function AdminSidebar({
     .filter((group) => (group.title !== "Founder & Intelligence" && group.title !== "AI & Automation" && group.title !== "Finance & Integrations") || isFounder)
     .map((group) => ({ ...group, items: group.items.filter((item) => (item.hrefSuffix !== "/commercial" || isFounder) && (item.hrefSuffix !== "/engagement" || isFounder) && (!["/operations", "/operations/payroll", "/operations/documents", "/operations/training"].includes(item.hrefSuffix) || isFounder) && (!normalizedQuery || group.title.toLowerCase().includes(normalizedQuery) || item.label.toLowerCase().includes(normalizedQuery))) }))
     .filter((group) => group.items.length > 0);
-  const activeHref = visibleGroups
+  const directActiveHref = visibleGroups
     .flatMap((group) => group.items.map(resolveNavHref))
     .filter((href) => pathname === href || pathname.startsWith(`${href}/`))
-    .sort((a, b) => b.length - a.length)[0] || "";
+    .sort((a, b) => b.length - a.length)[0];
+  const aliasRoute = Object.keys(NAV_ROUTE_ALIASES)
+    .filter((route) => pathname === route || pathname.startsWith(`${route}/`))
+    .sort((a, b) => b.length - a.length)[0];
+  const activeHref = directActiveHref || (aliasRoute ? `${basePathSegment}${NAV_ROUTE_ALIASES[aliasRoute]}` : "");
 
   const loadCounts = useCallback(async () => {
     try {

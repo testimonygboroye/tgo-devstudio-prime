@@ -79,8 +79,8 @@ export default function ConversionInsightsPage() {
         if (!customFrom || !customTo || Number.isNaN(from.getTime()) || Number.isNaN(to.getTime()) || from > to) {
           throw new Error("Choose a valid start and end date. The end date must not precede the start date.");
         }
-        params.set("from", from.toISOString());
-        params.set("to", to.toISOString());
+        params.set("from", customFrom);
+        params.set("to", customTo);
       } else {
         params.set("range", range);
       }

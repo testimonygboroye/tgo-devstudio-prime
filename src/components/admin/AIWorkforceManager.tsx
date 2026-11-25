@@ -35,7 +35,7 @@ export default function AIWorkforceManager() {
       .finally(()=>{if(!cancelled)setModelsLoading(false);});
     return()=>{cancelled=true;};
   },[agent.providerId]);
-  async function act(payload:Record<string,unknown>){setBusy(true);setNotice("");try{const r=await fetch("/api/platform/ai-workforce",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});const j=await r.json();if(!r.ok)throw new Error(j.message||"Action failed.");setNotice(j.message||"Saved successfully.");await load();}catch(e){setNotice(e instanceof Error?e.message:"Action failed.");}finally{setBusy(false);}}
+  async function act(payload:Record<string,unknown>){setBusy(true);setNotice("");try{const r=await fetch("/api/platform/ai-workforce",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});const j=await r.json();if(!r.ok)throw new Error([j.message||"Action failed.",typeof j.diagnostic==="string"?j.diagnostic:""].filter(Boolean).join(" — "));setNotice([j.message||"Saved successfully.",typeof j.diagnostic==="string"?j.diagnostic:""].filter(Boolean).join(" — "));await load();}catch(e){setNotice(e instanceof Error?e.message:"Action failed.");}finally{setBusy(false);}}
   const panel="rounded-2xl border border-white/10 bg-slate-950/60 p-5 shadow-xl shadow-black/10";
   const input="mt-1 w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-400";
   const button="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-cyan-500 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50";

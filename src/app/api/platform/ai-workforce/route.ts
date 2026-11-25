@@ -73,7 +73,7 @@ export async function GET() {
   }
 
   const [providers, agents, tasks, workspaces, memories] = await Promise.all([
-    AIProvider.find().select("-encryptedApiKey").sort({ createdAt: -1 }).lean(),
+    AIProvider.find({ archivedAt: { $exists: false } }).select("-encryptedApiKey").sort({ createdAt: -1 }).lean(),
     AIAgent.find().populate("providerId", "name provider").sort({ createdAt: -1 }).lean(),
     AITask.find().populate("agentId", "name role").sort({ createdAt: -1 }).limit(100).lean(),
     AIWorkspace.find({ active: true }).sort({ name: 1 }).lean(),
@@ -286,9 +286,9 @@ export async function POST(request: NextRequest) {
       if (!apiKey) return NextResponse.json({ status: "error", message: "GEMINI_API_KEY is not configured in this application's runtime environment." }, { status: 503 });
       let provider = await AIProvider.findOne({ name: "Gemini environment provider" });
       if (provider) {
-        provider.provider = "google"; provider.encryptedApiKey = encryptProviderSecret(apiKey); provider.enabled = true; provider.lastTestStatus = undefined; provider.lastTestedAt = undefined; await provider.save();
+        provider.provider = "google"; provider.encryptedApiKey = encryptProviderSecret(apiKey); provider.enabled = false; provider.lastTestStatus = undefined; provider.lastTestedAt = undefined; provider.archivedAt = undefined; await provider.save();
       } else {
-        provider = await AIProvider.create({ name: "Gemini environment provider", provider: "google", encryptedApiKey: encryptProviderSecret(apiKey), enabled: true, createdBy: actorId });
+        provider = await AIProvider.create({ name: "Gemini environment provider", provider: "google", encryptedApiKey: encryptProviderSecret(apiKey), enabled: false, createdBy: actorId });
       }
       await writePlatformAuditEvent({ actorType: "human", actorId, action: "ai.provider.imported_from_environment", module: "ai-workforce", targetType: "AIProvider", targetId: String(provider._id), outcome: "success", metadata: { provider: "google", source: "GEMINI_API_KEY" } });
       return NextResponse.json({ status: "ok", provider: { id: provider._id, name: provider.name, provider: provider.provider }, message: "Existing Gemini environment credential encrypted and imported. Test the connection before enabling agents." }, { status: 201 });
@@ -326,6 +326,18 @@ export async function POST(request: NextRequest) {
       });
       return NextResponse.json({ status: "ok", message: "API key encrypted and replaced. The provider and its dependent agents are disabled until a live generation test succeeds." });
     }
+    if (body.action === "provider.archive") {
+      const providerId = String(body.providerId || "");
+      if (!mongoose.isValidObjectId(providerId)) return NextResponse.json({ status: "error", message: "Choose a valid provider." }, { status: 400 });
+      const provider = await AIProvider.findOne({ _id: providerId, archivedAt: { $exists: false } });
+      if (!provider) return NextResponse.json({ status: "error", message: "Provider not found or already removed." }, { status: 404 });
+      provider.enabled = false;
+      provider.archivedAt = new Date();
+      await provider.save();
+      const dependent = await AIAgent.updateMany({ providerId: provider._id, enabled: true }, { $set: { enabled: false } });
+      await writePlatformAuditEvent({ actorType: "human", actorId, actorLabel: session.user.name, action: "ai.provider.archived", module: "ai-workforce", targetType: "AIProvider", targetId: String(provider._id), outcome: "success", metadata: { provider: provider.provider, name: provider.name, dependentAgentsDisabled: dependent.modifiedCount } });
+      return NextResponse.json({ status: "ok", message: "Provider removed from the active registry. Dependent agents were safely disabled; task and audit history were preserved." });
+    }
     if (body.action === "provider.enable" || body.action === "provider.disable") {
       const provider = await AIProvider.findById(body.providerId);
       if (!provider) return NextResponse.json({ status: "error", message: "Provider not found." }, { status: 404 });
@@ -358,11 +370,14 @@ export async function POST(request: NextRequest) {
         statusCode = catalogueResponse.status;
         const catalogue = await catalogueResponse.json().catch(() => ({}));
         if (!catalogueResponse.ok) throw new Error("Provider model catalogue rejected the credential (HTTP " + catalogueResponse.status + ").");
+        let googleCandidates: string[] = [];
         if (provider.provider === "google") {
           const models = Array.isArray(catalogue.models) ? catalogue.models : [];
           const eligible = models.filter((item: any) => Array.isArray(item.supportedGenerationMethods) && item.supportedGenerationMethods.includes("generateContent"));
-          const preferred = eligible.find((item: any) => String(item.name || "").endsWith("gemini-3.8-flash")) || eligible.find((item: any) => String(item.name || "").endsWith("gemini-2.5-flash"));
-          testedModel = String((preferred || eligible[0])?.name || "").replace(/^models\//, "");
+          const ids = eligible.map((item: any) => String(item.name || "").replace(/^models\\//, "")).filter(Boolean);
+          const preferred = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-3.8-flash"];
+          googleCandidates = [...preferred.filter((id) => ids.includes(id)), ...ids.filter((id) => !preferred.includes(id))].slice(0, 5);
+          testedModel = googleCandidates[0] || "";
         } else {
           const models = Array.isArray(catalogue.data) ? catalogue.data : [];
           const eligible = models.map((item: any) => String(item.id || "")).filter((id: string) => provider.provider === "anthropic" ? /^claude-/i.test(id) : provider.provider === "openai" ? /^gpt-/i.test(id) : Boolean(id));
@@ -372,12 +387,21 @@ export async function POST(request: NextRequest) {
         let generationResponse: Response;
         let generatedText = "";
         if (provider.provider === "google") {
-          generationResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(testedModel) + ":generateContent", {
-            method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, signal: controller.signal, cache: "no-store",
-            body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "Reply with exactly: TGO live generation test successful." }] }], generationConfig: { maxOutputTokens: 24, temperature: 0 } }),
-          });
-          const result = await generationResponse.json().catch(() => ({}));
-          generatedText = (result.candidates?.[0]?.content?.parts || []).map((part: { text?: string }) => part.text || "").join("").trim();
+          let lastProviderMessage = "No Gemini model was available.";
+          for (const candidate of googleCandidates) {
+            testedModel = candidate;
+            generationResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(candidate) + ":generateContent", {
+              method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, signal: controller.signal, cache: "no-store",
+              body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "Reply with exactly: TGO live generation test successful." }] }], generationConfig: { maxOutputTokens: 24, temperature: 0 } }),
+            });
+            const result = await generationResponse.json().catch(() => ({}));
+            statusCode = generationResponse.status;
+            generatedText = (result.candidates?.[0]?.content?.parts || []).map((part: { text?: string }) => part.text || "").join("").trim();
+            if (generationResponse.ok && generatedText) break;
+            lastProviderMessage = String(result?.error?.message || "Provider error").slice(0, 300);
+            if (![429, 500, 502, 503, 504].includes(generationResponse.status)) break;
+          }
+          if (!generationResponse!.ok) throw new Error("Gemini generation failed after trying " + googleCandidates.length + " available models (HTTP " + statusCode + "): " + lastProviderMessage);
         } else if (provider.provider === "anthropic") {
           generationResponse = await fetch("https://api.anthropic.com/v1/messages", {
             method: "POST", headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" }, signal: controller.signal, cache: "no-store",

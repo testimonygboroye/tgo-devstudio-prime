@@ -193,7 +193,7 @@ export async function POST(request: NextRequest) {
 
     const previousPageViews = existingVisitor?.totalPageViews || 0;
     const previousSessions = existingVisitor?.totalSessions || 0;
-    const existingSession = Boolean(await PageView.exists({ sessionId }));
+    const existingSession = Boolean(await PageView.exists({ sessionId, visitorId }));
     let inserted = false;
     try {
       const result = await PageView.updateOne(

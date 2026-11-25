@@ -7,7 +7,6 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Bot,
-  Gift,
   Contact,
   MessageSquare,
   ShieldCheck,
@@ -20,7 +19,6 @@ import {
   ChevronRight,
   PlugZap,
   Megaphone,
-  SearchCheck,
   Search,
 } from "lucide-react";
 
@@ -43,9 +41,7 @@ const NAV_GROUPS = [
     { label: "AI Command Centre", hrefSuffix: "/ai-workforce", icon: Bot, badgeKey: null },
   ]},
   { title: "Growth & Marketing", items: [
-    { label: "Marketing & Sales", hrefSuffix: "/growth", icon: Megaphone, badgeKey: null },
-    { label: "SEO Operations", hrefSuffix: "/seo", icon: SearchCheck, badgeKey: null },
-    { label: "Rewards & Referrals", hrefSuffix: "/engagement", icon: Gift, badgeKey: null },
+    { label: "Growth & Marketing", hrefSuffix: "/growth-marketing", icon: Megaphone, badgeKey: null },
   ]},
   { title: "Sales & Client Relations", items: [
     { label: "Sales & Client Relations", hrefSuffix: "/sales-client-relations", icon: Contact, badgeKey: null },
@@ -75,6 +71,9 @@ const NAV_ROUTE_ALIASES: Record<string, string> = {
   "/analytics": "/platform",
   "/analytics/conversions": "/platform",
   "/ai-workforce/chatbots": "/ai-workforce",
+  "/growth": "/growth-marketing",
+  "/seo": "/growth-marketing",
+  "/engagement": "/growth-marketing",
   "/clients": "/sales-client-relations",
   "/client-enquiries": "/sales-client-relations",
   "/commercial": "/sales-client-relations",
@@ -121,6 +120,7 @@ const NAV_ROUTE_ALIASES: Record<string, string> = {
 const NAV_SEARCH_TERMS: Record<string, string[]> = {
   "/platform": ["founder control centre", "executive intelligence", "business ecosystem", "business roles", "permissions", "visitor analytics", "conversion analytics", "governance", "strategy"],
   "/ai-workforce": ["ai employees", "ai workforce", "agents", "automation", "tasks", "delegation", "provider connections", "ai performance", "chatbot", "assistant", "public assistant", "client assistant", "admin assistant", "knowledge base"],
+  "/growth-marketing": ["marketing", "sales", "seo", "search", "campaigns", "growth", "referrals", "rewards", "loyalty", "engagement"],
   "/ai-workforce/chatbots": ["chatbot", "assistant", "public assistant", "client assistant", "admin assistant", "knowledge base"],
   "/sales-client-relations": ["clients", "client management", "enquiries", "contact submissions", "book a call", "commercial", "sales", "delivery", "proposals", "contracts", "projects"],
   "/communications": ["messages", "conversations", "support", "tickets", "newsletter", "whatsapp", "internal communication", "ai task conversations"],
@@ -153,7 +153,7 @@ export default function AdminSidebar({
   const [navQuery, setNavQuery] = useState("");
   const normalizedQuery = navQuery.trim().toLowerCase();
   const visibleGroups = NAV_GROUPS
-    .filter((group) => (group.title !== "Founder & Intelligence" && group.title !== "AI & Automation" && group.title !== "Finance & Integrations") || isFounder)
+    .filter((group) => (group.title !== "Founder & Intelligence" && group.title !== "AI & Automation" && group.title !== "Growth & Marketing" && group.title !== "Finance & Integrations") || isFounder)
     .map((group) => ({ ...group, items: group.items.filter((item) => (item.hrefSuffix !== "/commercial" || isFounder) && (item.hrefSuffix !== "/engagement" || isFounder) && (!["/operations", "/operations/payroll", "/operations/documents", "/operations/training"].includes(item.hrefSuffix) || isFounder) && (!normalizedQuery || group.title.toLowerCase().includes(normalizedQuery) || item.label.toLowerCase().includes(normalizedQuery) || (NAV_SEARCH_TERMS[item.hrefSuffix] || []).some((term) => term.includes(normalizedQuery)))) }))
     .filter((group) => group.items.length > 0);
   const directActiveHref = visibleGroups

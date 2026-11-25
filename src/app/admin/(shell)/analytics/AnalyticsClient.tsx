@@ -228,7 +228,7 @@ export default function AnalyticsClient() {
     useState("");
 
   const [sort, setSort] =
-    useState("recent");
+    useState("all");
 
   const [search, setSearch] =
     useState("");
@@ -365,7 +365,7 @@ export default function AnalyticsClient() {
     setBrowser("");
     setOperatingSystem("");
     setStatus("");
-    setSort("recent");
+    setSort("all");
     setSearch("");
     setFrom("");
     setTo("");
@@ -496,6 +496,9 @@ export default function AnalyticsClient() {
               }
               className="w-full rounded-lg border border-base-800 bg-base-900 px-3 py-2.5 text-sm text-neutral-200 outline-none focus:border-violet-500"
             >
+              <option value="all">
+                All rankings
+              </option>
               <option value="recent">
                 Most recent
               </option>
@@ -630,9 +633,8 @@ export default function AnalyticsClient() {
                   Visitors
                 </h2>
                 <p className="mt-1 text-xs text-neutral-600">
-                  Default order is most recently seen.
-                  Change Ranking to see the highest-visited,
-                  most-active or most-constant visitors.
+                  All rankings shows the complete visitor list in recent-activity order.
+                  Choose a specific ranking to sort by that activity pattern.
                 </p>
               </div>
 

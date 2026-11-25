@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useSwipeSidebar } from "@/hooks/useSwipeSidebar";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
@@ -23,6 +23,10 @@ export default function SiteHeader({ settings }: { settings?: PublicSiteChromeSe
   const activeLinkClass = "text-brand-cyan-300 after:absolute after:-bottom-2 after:left-0 after:right-0 after:h-0.5 after:rounded-full after:bg-gradient-to-r after:from-violet-500 after:to-cyan-400";
   const prefetchOnIntent = (href: string) => router.prefetch(href);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const openMenuButtonRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    openMenuButtonRef.current?.setAttribute("data-interactive-ready", "true");
+  }, []);
   const [openDesktopGroup, setOpenDesktopGroup] = useState<string | null>(null);
   const setMenuOpen = useCallback((open: boolean) => setIsMenuOpen(open), []);
   const drawerRef = useRef<HTMLElement>(null);
@@ -98,8 +102,13 @@ export default function SiteHeader({ settings }: { settings?: PublicSiteChromeSe
             <HelpSearchPopup />
             <Link href={settings?.headerCtaHref || "/contact"} className="hidden sm:inline-flex items-center rounded-full bg-gradient-to-r from-violet-600 to-cyan-500 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-violet-950/20 transition hover:-translate-y-0.5">{settings?.headerCtaLabel || "Start a project"}</Link>
             <button
+              ref={openMenuButtonRef}
+              type="button"
               onClick={() => setIsMenuOpen(true)}
               aria-label="Open menu"
+              aria-expanded={isMenuOpen}
+              aria-controls="public-mobile-navigation"
+              data-interactive-ready="false"
               className="text-neutral-100 sm:hidden"
             >
               <Menu size={24} />
@@ -109,8 +118,8 @@ export default function SiteHeader({ settings }: { settings?: PublicSiteChromeSe
       </div>
 
       <div ref={backdropRef} className={`fixed inset-0 z-[60] bg-black/60 sm:hidden transition-opacity duration-150 ${isMenuOpen ? "opacity-100" : "pointer-events-none opacity-0"}`} onClick={() => setIsMenuOpen(false)} aria-hidden={!isMenuOpen}>
-        <nav ref={drawerRef} aria-label="Main navigation" aria-hidden={!isMenuOpen} className={`fixed right-0 top-0 flex h-dvh w-[min(21rem,86vw)] flex-col border-l border-base-800 bg-base-950 shadow-2xl transition-transform duration-150 ease-out ${isMenuOpen ? "translate-x-0" : "translate-x-full"}`} onClick={(event) => event.stopPropagation()}>
-          <div className="flex flex-shrink-0 items-center justify-between border-b border-base-800 px-4 py-5"><span className="font-mono text-xs uppercase tracking-widest text-neutral-500">Explore TGO</span><button onClick={() => setIsMenuOpen(false)} aria-label="Close menu" className="text-neutral-100"><X size={22} /></button></div>
+        <nav id="public-mobile-navigation" ref={drawerRef} aria-label="Main navigation" aria-hidden={!isMenuOpen} className={`fixed right-0 top-0 flex h-dvh w-[min(21rem,86vw)] flex-col border-l border-base-800 bg-base-950 shadow-2xl transition-transform duration-150 ease-out ${isMenuOpen ? "translate-x-0" : "translate-x-full"}`} onClick={(event) => event.stopPropagation()}>
+          <div className="flex flex-shrink-0 items-center justify-between border-b border-base-800 px-4 py-5"><span className="font-mono text-xs uppercase tracking-widest text-neutral-500">Explore TGO</span><button type="button" onClick={() => setIsMenuOpen(false)} aria-label="Close menu" className="text-neutral-100"><X size={22} /></button></div>
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 py-3"><div className="flex flex-col divide-y divide-base-800 overflow-hidden rounded-lg border border-base-800">
             {NAV_GROUPS.map((group,index) => <details key={group.title} open={index===0} className="border-b border-base-800 last:border-0"><summary className="flex cursor-pointer list-none items-center justify-between bg-base-900 px-4 py-3.5 text-sm font-semibold text-neutral-200 hover:bg-base-800"><span>{group.title}</span><ChevronDown size={15} className="text-brand-cyan-400"/></summary><div className="bg-base-950/70">{group.links.map(link=>{const Icon=link.icon;return <Link key={link.href} href={link.href} prefetch={false} onPointerEnter={()=>prefetchOnIntent(link.href)} onFocus={()=>prefetchOnIntent(link.href)} onTouchStart={()=>prefetchOnIntent(link.href)} onClick={()=>setIsMenuOpen(false)} className={`flex items-center gap-3 border-l-2 px-6 py-3 text-sm transition-colors ${isActive(link.href) ? "border-brand-cyan-400 bg-brand-cyan-400/10 font-semibold text-brand-cyan-200" : "border-transparent text-neutral-300 hover:bg-base-800 hover:text-brand-cyan-300"}`} aria-current={isActive(link.href) ? "page" : undefined}><Icon size={17} className="text-brand-cyan-400"/>{link.label}</Link>;})}</div></details>)}
           </div></div>

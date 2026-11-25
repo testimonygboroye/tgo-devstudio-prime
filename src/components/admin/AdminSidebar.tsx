@@ -271,11 +271,11 @@ export default function AdminSidebar({
                 </div>
                 {group.items.slice(0, 1).map((item) => {
                   const href = resolveNavHref(item);
-                  const isActive = href === activeHref;
+                  const isActive = group.items.some((groupItem) => resolveNavHref(groupItem) === activeHref);
                   const Icon = item.icon;
                   const count = item.badgeKey ? counts[item.badgeKey] || 0 : 0;
                   return (
-                    <Link key={item.hrefSuffix} href={href} prefetch={false} onClick={() => setIsMobileOpen(false)} onPointerEnter={() => router.prefetch(href)} onFocus={() => router.prefetch(href)} title={item.label} aria-label={item.label}
+                    <Link key={item.hrefSuffix} href={href} prefetch={false} onClick={() => setIsMobileOpen(false)} onPointerEnter={() => router.prefetch(href)} onFocus={() => router.prefetch(href)} title={group.title} aria-label={`${group.title} — open ${item.label}`}
                       className={`group relative mx-auto mb-1 flex h-11 w-11 items-center justify-center rounded-xl transition-all duration-150 ${isActive ? "brand-gradient-bg text-white shadow-lg shadow-brand-violet-600/25" : "text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-brand-cyan-300"}`}>
                       <Icon size={19}/>
                       {count > 0 && <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white">{count > 9 ? "9+" : count}</span>}

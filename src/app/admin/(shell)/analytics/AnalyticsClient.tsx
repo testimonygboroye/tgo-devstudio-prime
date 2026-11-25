@@ -72,6 +72,7 @@ interface AnalyticsResponse {
   uniqueVisitorCount: number;
   onlineVisitorCount: number;
   onlineWindowSeconds: number;
+  trafficClassification?: { excludedAutomatedOrPreviewPageViews: number; excludedInternalPageViews: number };
   averageDailyVisitors: number;
   peakDailyVisitors: number;
   peakDay: string | null;
@@ -441,6 +442,10 @@ export default function AnalyticsClient() {
           }
         />
       </section>
+      <p className="text-xs leading-relaxed text-neutral-500">
+        Reporting window: rolling 30 days, using UTC timestamps and an exclusive end boundary. Historical records are retained; automated/preview and authenticated internal pageviews are excluded from trusted totals and classified below. Online means a visitor browser has sent a visible-tab heartbeat within the last {data?.onlineWindowSeconds ?? 120} seconds.
+        {data?.trafficClassification ? ` Excluded in this window: ${data.trafficClassification.excludedAutomatedOrPreviewPageViews.toLocaleString()} automated/preview pageviews and ${data.trafficClassification.excludedInternalPageViews.toLocaleString()} internal pageviews.` : ""}
+      </p>
 
       <section className="rounded-xl border border-base-800 bg-base-900 p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

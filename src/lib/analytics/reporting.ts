@@ -26,10 +26,18 @@ export function getDefaultAnalyticsRange(now = new Date()) {
 
 export function getUtcDayRange(from?: string | null, to?: string | null, now = new Date()) {
   const defaults = getDefaultAnalyticsRange(now);
-  const start = from ? new Date(`${from}T00:00:00.000Z`) : defaults.start;
-  const requestedEnd = to
-    ? new Date(new Date(`${to}T00:00:00.000Z`).getTime() + 24 * 60 * 60 * 1000)
-    : defaults.end;
+  const parseBoundary = (value: string, isEnd: boolean) => {
+    // Date-only selections represent complete UTC calendar days; ISO timestamps
+    // from datetime-local controls preserve the exact selected instant.
+    if (/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) {
+      const day = new Date(`${value}T00:00:00.000Z`);
+      return isEnd ? new Date(day.getTime() + 24 * 60 * 60 * 1000) : day;
+    }
+    const instant = new Date(value);
+    return isEnd ? new Date(instant.getTime() + 1) : instant;
+  };
+  const start = from ? parseBoundary(from, false) : defaults.start;
+  const requestedEnd = to ? parseBoundary(to, true) : defaults.end;
   const end = requestedEnd > now ? now : requestedEnd;
   return {
     $gte: Number.isNaN(start.getTime()) ? defaults.start : start,

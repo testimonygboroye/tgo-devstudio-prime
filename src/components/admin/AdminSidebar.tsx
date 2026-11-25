@@ -148,8 +148,7 @@ export default function AdminSidebar({
   const collapsed = isCollapsed && !isMobileOpen;
 
   const basePathSegment = basePath;
-  const resolveNavHref = (item: { hrefSuffix: string }) =>
-    item.hrefSuffix === "/workforce" && !isFounder ? "/workforce" : `${basePathSegment}${item.hrefSuffix}`;
+  const resolveNavHref = (item: { hrefSuffix: string }) => `${basePathSegment}${item.hrefSuffix}`;
   const [navQuery, setNavQuery] = useState("");
   const normalizedQuery = navQuery.trim().toLowerCase();
   const visibleGroups = NAV_GROUPS

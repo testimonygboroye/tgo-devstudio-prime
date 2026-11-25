@@ -7,7 +7,8 @@ import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import { AIProvider, AIAgent, AITask } from "@/models/AIWorkforce";
 import { UnifiedConversation, UnifiedMessage } from "@/models/UnifiedConversation";
 import { mirrorMessageToPersonalWhatsApp } from "@/lib/messaging/whatsappSync";
-import { decryptProviderSecret, encryptProviderSecret } from "@/lib/ai/provider-secrets";
+import { encryptProviderSecret } from "@/lib/ai/provider-secrets";
+import { resolveProviderApiKey } from "@/lib/ai/provider-key";
 import { runProviderCompletionWithFallback } from "@/lib/ai/provider-runtime";
 import { AIWorkspace, AIMemory } from "@/models/AIKnowledge";
 import User from "@/models/User";
@@ -320,7 +321,7 @@ export async function POST(request: NextRequest) {
       let testedModel = "";
       let statusCode = 0;
       try {
-        const key = decryptProviderSecret(provider.encryptedApiKey);
+        const key = resolveProviderApiKey(provider.name, provider.provider, provider.encryptedApiKey);
         const catalogueUrl = provider.provider === "google"
           ? "https://generativelanguage.googleapis.com/v1beta/models"
           : provider.provider === "anthropic"

@@ -41,6 +41,15 @@ describe("canonical public site URL", () => {
     expect(getPublicSiteUrl()).toBe("https://tgo-devstudio-prime.onrender.com");
   });
 
+  it("ignores the legacy Vercel production hostname when Render is the production host", () => {
+    mutableEnv.NODE_ENV = "production";
+    delete mutableEnv.SITE_URL;
+    delete mutableEnv.RENDER_EXTERNAL_URL;
+    mutableEnv.NEXT_PUBLIC_SITE_URL = "https://tgo-devstudio-prime.vercel.app";
+    mutableEnv.VERCEL_PROJECT_PRODUCTION_URL = "tgo-devstudio-prime.vercel.app";
+    expect(getPublicSiteUrl()).toBe("https://tgo-devstudio-prime.onrender.com");
+  });
+
   it("ignores deployment-specific Vercel preview hosts", () => {
     mutableEnv.NODE_ENV = "production";
     delete mutableEnv.SITE_URL;

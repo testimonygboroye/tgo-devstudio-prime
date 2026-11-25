@@ -21,7 +21,7 @@ export async function runProviderCompletion(providerId: string, model: string, s
   // Keep each provider attempt below the 50-second Hobby function ceiling so fallback providers can run.
   const timeout = AbortSignal.timeout(14000);
   if (provider.provider === "google") {
-    const catalogueResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/models", { headers: { "x-goog-api-key": key }, signal: timeout, cache: "no-store" });
+    const catalogueResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/models", { headers: { "x-goog-api-key": key }, signal: AbortSignal.timeout(8000), cache: "no-store" });
     const catalogue = await catalogueResponse.json().catch(() => ({}));
     if (!catalogueResponse.ok) throw new Error("Gemini model catalogue failed (" + catalogueResponse.status + "): " + String(catalogue?.error?.message || "Provider error").slice(0, 400));
     const available = (Array.isArray(catalogue.models) ? catalogue.models : [])
@@ -29,11 +29,11 @@ export async function runProviderCompletion(providerId: string, model: string, s
       .map((item: any) => String(item.name || "").replace(/^models\//, ""))
       .filter((id: string) => /^gemini-/i.test(id));
     const preferred = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
-    const candidates = [model, ...preferred.filter((id) => id !== model && available.includes(id)), ...available.filter((id: string) => id !== model && !preferred.includes(id))].filter((id, index, all) => id && all.indexOf(id) === index).slice(0, 4);
+    const candidates = [model, ...preferred.filter((id) => id !== model && available.includes(id)), ...available.filter((id: string) => id !== model && !preferred.includes(id))].filter((id, index, all) => id && all.indexOf(id) === index).slice(0, 3);
     const failures: string[] = [];
     for (const candidate of candidates) {
       const url = "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(candidate) + ":generateContent";
-      const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, signal: AbortSignal.timeout(14000), cache: "no-store", body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 4096, temperature: 0.2 } }) });
+      const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, signal: AbortSignal.timeout(8000), cache: "no-store", body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 4096, temperature: 0.2 } }) });
       const data = await response.json().catch(() => ({}));
       if (response.ok) {
         const text = (data.candidates?.[0]?.content?.parts || []).map((p: { text?: string }) => p.text || "").join("");

@@ -52,7 +52,8 @@ export const PLATFORM_MODULE_REGISTRY: readonly PlatformModuleDefinition[] = [
     description: "Commercial projects, milestones, deliverables and approvals.",
     category: "business",
     requiredPermission: "projects.view",
-    status: "planned",
+    status: "available",
+    href: "/commercial",
   },
   {
     id: "finance",

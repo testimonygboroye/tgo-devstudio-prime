@@ -16,7 +16,7 @@ export function encryptProviderSecret(secret: string): string {
 export function decryptProviderSecret(value: string): string {
   const [iv, tag, ciphertext] = value.split(".");
   if (!iv || !tag || !ciphertext) throw new Error("Stored provider credential is malformed.");
-  const decipher = createDecipheriv("aes-256-gcm", encryptionKey(), Buffer.from(iv, "base64"));
+  const decipher = createDecipheriv("aes-256-gcm", encryptionKey(), Buffer.from(iv, "base64"), { authTagLength: 16 });
   decipher.setAuthTag(Buffer.from(tag, "base64"));
   return Buffer.concat([decipher.update(Buffer.from(ciphertext, "base64")), decipher.final()]).toString("utf8");
 }

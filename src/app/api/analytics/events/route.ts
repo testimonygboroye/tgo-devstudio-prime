@@ -10,7 +10,7 @@ import Visitor from "@/models/Visitor";
 import ContactSubmission from "@/models/ContactSubmission";
 import NewsletterSubscriber from "@/models/NewsletterSubscriber";
 import ConsultationBooking from "@/models/ConsultationBooking";
-import { TRUSTED_ANALYTICS_TRAFFIC_FILTER, getDefaultAnalyticsRange } from "@/lib/analytics/reporting";
+import { TRUSTED_ANALYTICS_TRAFFIC_FILTER, getDefaultAnalyticsRange, getUtcDayRange } from "@/lib/analytics/reporting";
 
 export const dynamic = "force-dynamic";
 
@@ -133,10 +133,11 @@ export async function GET(request: NextRequest) {
   let start: Date;
   let end: Date;
   if (isCustomRange) {
-    start = new Date(fromParam || "");
-    end = new Date(toParam || "");
-    if (!fromParam || !toParam || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start >= end || end > now) {
-      return NextResponse.json({ status: "error", message: "Choose a valid reporting period ending no later than the current time." }, { status: 400 });
+    const dayRange = getUtcDayRange(fromParam, toParam, now);
+    start = dayRange.$gte;
+    end = dayRange.$lt;
+    if (!fromParam || !toParam || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start >= end || start > now) {
+      return NextResponse.json({ status: "error", message: "Choose a valid UTC calendar-date range that does not start in the future." }, { status: 400 });
     }
   } else {
     const duration = presetDurations[rangeParam] || presetDurations["30d"];

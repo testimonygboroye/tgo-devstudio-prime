@@ -8,6 +8,8 @@ export interface IAIProvider extends Document {
   enabled: boolean;
   createdBy: string;
   lastTestedAt?: Date;
+  lastTestedModel?: string;
+  apiKeyFingerprint?: string;
   lastTestStatus?: "success" | "failed";
   archivedAt?: Date;
 }
@@ -19,20 +21,25 @@ const AIProviderSchema = new Schema<IAIProvider>({
   enabled: { type: Boolean, default: true },
   createdBy: { type: String, required: true },
   lastTestedAt: Date,
+  lastTestedModel: { type: String, maxlength: 120 },
+  apiKeyFingerprint: { type: String, select: false, maxlength: 64 },
   lastTestStatus: { type: String, enum: ["success", "failed"] },
   archivedAt: { type: Date, default: undefined, index: true },
 }, { timestamps: true });
 AIProviderSchema.index({ name: 1 }, { unique: true });
+// Atomic cross-provider duplicate-key protection. Archived providers release their key.
+AIProviderSchema.index({ apiKeyFingerprint: 1 }, { unique: true, partialFilterExpression: { apiKeyFingerprint: { $type: "string" }, archivedAt: { $exists: false } } });
 
 export interface IAIAgent extends Document {
   name: string;
   role: string;
   department: string;
   workspaceId?: Types.ObjectId;
+  memoryKey?: string;
   positionId?: Types.ObjectId;
   assignedUserId?: Types.ObjectId;
   description: string;
-  providerId: Types.ObjectId;
+  providerId?: Types.ObjectId;
   modelName: string;
   systemInstructions: string;
   permissions: string[];
@@ -46,11 +53,13 @@ const AIAgentSchema = new Schema<IAIAgent>({
   role: { type: String, required: true, maxlength: 100 },
   department: { type: String, required: true, maxlength: 100 },
   workspaceId: { type: Schema.Types.ObjectId, ref: "AIWorkspace" },
+  memoryKey: { type: String, maxlength: 300, index: true },
   positionId: { type: Schema.Types.ObjectId, ref: "Position", index: true },
   assignedUserId: { type: Schema.Types.ObjectId, ref: "User", index: true },
   description: { type: String, default: "", maxlength: 1000 },
-  providerId: { type: Schema.Types.ObjectId, ref: "AIProvider", required: true },
-  modelName: { type: String, required: true, maxlength: 120 },
+  // Legacy display hint only. Agents are not bound to a provider; runtime routes across all healthy TGO providers.
+  providerId: { type: Schema.Types.ObjectId, ref: "AIProvider", required: false, index: true },
+  modelName: { type: String, default: "", maxlength: 120 },
   systemInstructions: { type: String, required: true, maxlength: 12000 },
   permissions: { type: [String], default: [] },
   requiresApproval: { type: Boolean, default: true },
@@ -62,6 +71,7 @@ AIAgentSchema.index({ department: 1, enabled: 1 });
 
 export interface AITask extends Document {
   agentId: Types.ObjectId;
+  agentMemoryKey?: string;
   parentTaskId?: Types.ObjectId;
   operation?: string;
   operationPayload?: Record<string, unknown>;
@@ -85,6 +95,7 @@ export interface AITask extends Document {
 }
 const AITaskSchema = new Schema<AITask>({
   agentId: { type: Schema.Types.ObjectId, ref: "AIAgent", required: true },
+  agentMemoryKey: { type: String, maxlength: 300, index: true },
   parentTaskId: { type: Schema.Types.ObjectId, ref: "AITask" },
   operation: { type: String, maxlength: 80 },
   operationPayload: { type: Schema.Types.Mixed },

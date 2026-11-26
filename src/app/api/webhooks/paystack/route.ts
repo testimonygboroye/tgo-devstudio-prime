@@ -19,7 +19,7 @@ export const dynamic="force-dynamic";
 
 export async function POST(request:NextRequest){
  const rawBody=Buffer.from(await request.arrayBuffer());
- const integrationCredentials=process.env.PAYSTACK_SECRET_KEY?null:await getVerifiedIntegrationCredentials("paystack").catch(()=>null);
+ const integrationCredentials=await getVerifiedIntegrationCredentials("paystack").catch(()=>null);
  const verified=verifyPaystackWebhookSignature({
   rawBody,signatureHeader:request.headers.get("paystack-signature"),
   legacySignatureHeader:request.headers.get("x-paystack-signature"),

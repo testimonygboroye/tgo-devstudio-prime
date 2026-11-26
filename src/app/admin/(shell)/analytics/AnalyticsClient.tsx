@@ -252,7 +252,7 @@ export default function AnalyticsClient() {
     useState<VisitorEntry | null>(null);
   const [refreshTick, setRefreshTick] = useState(0);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
-  const requestInFlight = useRef(false);
+  const activeRequest = useRef<AbortController | null>(null);
 
   useEffect(() => {
     const refresh = () => {
@@ -314,31 +314,31 @@ export default function AnalyticsClient() {
   ]);
 
   useEffect(() => {
+    // Abort the previous request when filters change. A shared in-flight lock
+    // can otherwise skip the new request and leave the old results on screen.
+    const controller = new AbortController();
+    activeRequest.current?.abort();
+    activeRequest.current = controller;
     let cancelled = false;
 
     async function load() {
-      if (requestInFlight.current || document.visibilityState === "hidden") return;
-      requestInFlight.current = true;
+      if (document.visibilityState === "hidden") return;
+      setIsLoading(true);
       setError("");
 
       try {
         const response = await fetch(
-          `/api/analytics/page-views?${queryString}`,
+          "/api/analytics/page-views?" + queryString,
           {
             cache: "no-store",
+            signal: controller.signal,
+            headers: { "Cache-Control": "no-cache" },
           }
         );
 
-        const json =
-          (await response.json()) as AnalyticsResponse & {
-            message?: string;
-          };
-
+        const json = (await response.json()) as AnalyticsResponse & { message?: string };
         if (!response.ok || json.status !== "ok") {
-          throw new Error(
-            json.message ||
-              "Failed to load analytics."
-          );
+          throw new Error(json.message || "Failed to load analytics.");
         }
 
         if (!cancelled) {
@@ -349,26 +349,22 @@ export default function AnalyticsClient() {
           setLastUpdatedAt(new Date());
         }
       } catch (loadError) {
-        if (!cancelled) {
-          setError(
-            loadError instanceof Error
-              ? loadError.message
-              : "Failed to load analytics."
-          );
+        const aborted = loadError instanceof DOMException && loadError.name === "AbortError";
+        if (!cancelled && !aborted) {
+          setError(loadError instanceof Error ? loadError.message : "Failed to load analytics.");
         }
       } finally {
-        requestInFlight.current = false;
         if (!cancelled) setIsLoading(false);
       }
     }
 
     void load();
-
     return () => {
       cancelled = true;
+      controller.abort();
+      if (activeRequest.current === controller) activeRequest.current = null;
     };
   }, [queryString, refreshTick]);
-
   function resetFilters() {
     setHost("");
     setProvider("");

@@ -36,7 +36,7 @@ export async function POST(request:NextRequest){
  if(["cancelled","refunded","completed"].includes(order.status))return fail("This order is not eligible for payment.");
  if(!settings?.paystackEnabled)return fail("Paystack checkout is currently disabled by TGO DevStudio.",503);
  const currency=String(order.currency||"NGN").toUpperCase();
- const eligibleCurrencies=PAYSTACK_CURRENCIES_BY_COUNTRY[settings.paystackMerchantCountry||"NG"]||[];if(!eligibleCurrencies.includes(currency)||!settings.enabledCurrencies.includes(currency))return fail(`Paystack checkout is not enabled for the ${currency} currency on this merchant account.`);
+ const eligibleCurrencies=PAYSTACK_CURRENCIES_BY_COUNTRY[settings.paystackMerchantCountry||"NG"]||[];if(!eligibleCurrencies.includes(currency)||!(settings.enabledCurrencies||[settings.baseCurrency||"NGN"]).includes(currency))return fail(`Paystack checkout is not enabled for the ${currency} currency on this merchant account.`);
 
  let amountMinor=0;let milestoneId:string|undefined;let invoiceId:string|undefined;let installmentId:string|undefined;
  let existingQuery:Record<string,unknown>;
@@ -61,7 +61,7 @@ export async function POST(request:NextRequest){
   const remainingMinor=invoice.balanceMinor;
   if(remainingMinor<1)return fail("This invoice has already been paid.");
   if(body.amount===undefined)amountMinor=remainingMinor;
-  else{if(typeof body.amount!=="number"||!Number.isFinite(body.amount)||body.amount<=0)return fail("Enter a valid partial payment amount.");amountMinor=toMinorUnits(body.amount,currency);if(amountMinor<1||amountMinor>remainingMinor)return fail("Payment amount cannot exceed the invoice balance.");}
+  else{if(settings.allowPartialPayments===false)return fail("Partial payments are disabled for this order. Pay the full invoice balance.");if(typeof body.amount!=="number"||!Number.isFinite(body.amount)||body.amount<=0)return fail("Enter a valid partial payment amount.");amountMinor=toMinorUnits(body.amount,currency);if(amountMinor<1||amountMinor>remainingMinor)return fail("Payment amount cannot exceed the invoice balance.");}
   existingQuery={orderId:order._id,invoiceId:invoice._id,status:"pending",amountMinor,authorizationUrl:{$exists:true}};
  }else if(typeof body.milestoneId==="string"){
   if(!Types.ObjectId.isValid(body.milestoneId))return fail("Invalid milestone id.");
@@ -83,7 +83,7 @@ export async function POST(request:NextRequest){
   const paidMinor=Number(paid[0]?.total||0);const remainingMinor=orderTotalMinor-paidMinor;
   if(remainingMinor<=0)return fail("This order has already been paid.");
   if(body.amount===undefined)amountMinor=remainingMinor;
-  else{if(typeof body.amount!=="number"||!Number.isFinite(body.amount)||body.amount<=0)return fail("Enter a valid partial payment amount.");amountMinor=toMinorUnits(body.amount,currency);if(amountMinor<1||amountMinor>remainingMinor)return fail("The payment amount must be positive and cannot exceed the outstanding balance.");}
+  else{if(settings.allowPartialPayments===false)return fail("Partial payments are disabled for this order. Pay the full outstanding balance.");if(typeof body.amount!=="number"||!Number.isFinite(body.amount)||body.amount<=0)return fail("Enter a valid partial payment amount.");amountMinor=toMinorUnits(body.amount,currency);if(amountMinor<1||amountMinor>remainingMinor)return fail("The payment amount must be positive and cannot exceed the outstanding balance.");}
   if(invoice)invoiceId=String(invoice._id);
   existingQuery={orderId:order._id,milestoneId:{$exists:false},status:"pending",amountMinor,authorizationUrl:{$exists:true}};
  }

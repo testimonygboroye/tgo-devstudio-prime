@@ -94,6 +94,7 @@ export async function POST(request:NextRequest){
  if(remainingMinor<=0)return fail("There is no outstanding balance for this payment.");
  let amountMinor=remainingMinor;
  if(body.amount!==undefined){
+  if(settings?.allowPartialPayments===false&&!milestone&&!installment)return fail("Partial payments are disabled for this order. Pay the full outstanding balance.");
   if(typeof body.amount!=="number"||!Number.isFinite(body.amount)||body.amount<=0)return fail("Enter a valid positive payment amount.");
   amountMinor=toMinorUnits(body.amount,currency);
   if(amountMinor<1||amountMinor>remainingMinor)return fail("Payment amount must not exceed the outstanding balance.");

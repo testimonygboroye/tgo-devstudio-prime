@@ -8,6 +8,7 @@ import { connectToDatabase } from "@/lib/db";
 import { getSiteUrl } from "@/lib/siteUrl";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import { AIProvider, AIAgent, AITask } from "@/models/AIWorkforce";
+import { AIChatbotConfig } from "@/models/AIChatbot";
 import { UnifiedConversation, UnifiedMessage } from "@/models/UnifiedConversation";
 import { mirrorMessageToPersonalWhatsApp } from "@/lib/messaging/whatsappSync";
 import { decryptProviderSecret, encryptProviderSecret } from "@/lib/ai/provider-secrets";
@@ -497,8 +498,21 @@ export async function POST(request: NextRequest) {
         // Once it succeeds, make the verified provider available to the TGO-wide router.
         provider.enabled = true;
         await provider.save();
+        // A founder-initiated successful live test activates the three governed,
+        // read-only assistants. Existing provider/model choices are preserved.
+        await Promise.all((["public", "client", "admin"] as const).map((scope) =>
+          AIChatbotConfig.findOneAndUpdate(
+            { scope },
+            { $set: { enabled: true }, $setOnInsert: {
+              scope, providerId: provider._id, modelName: testedModel,
+              welcomeMessage: scope === "public" ? "Welcome to TGO DevStudio. How can I help?" : "Hello. How can I help?",
+              updatedBy: new mongoose.Types.ObjectId(actorId),
+            } },
+            { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
+          ),
+        ));
         await writePlatformAuditEvent({ actorType: "human", actorId, actorLabel: session.user.name, action: "ai.provider.tested", module: "ai-workforce", targetType: "AIProvider", targetId: String(provider._id), outcome: "success", metadata: { model: testedModel, statusCode, liveGeneration: true } });
-        return NextResponse.json({ status: "ok", httpStatus: statusCode, model: testedModel, message: "Live generation test succeeded with " + testedModel + ". This provider can generate a real response." });
+        return NextResponse.json({ status: "ok", httpStatus: statusCode, model: testedModel, message: "Live generation test succeeded with " + testedModel + ". The provider is enabled and the public, client and admin read-only assistants are activated." });
       } catch (error) {
         provider.lastTestedAt = new Date();
         provider.lastTestedModel = undefined;

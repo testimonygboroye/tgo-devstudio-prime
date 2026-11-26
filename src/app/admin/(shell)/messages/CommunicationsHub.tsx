@@ -32,7 +32,8 @@ export default function CommunicationsHub() {
   const chunksRef=useRef<BlobPart[]>([]);
   const [threadReplyId,setThreadReplyId]=useState<string|undefined>(undefined);
   const [loading,setLoading]=useState(true);
-  const [notice,setNoticeState]=useState("");\n  const setNotice=(message:string)=>{setNoticeState(message);if(message)notify(message,/failed|could not|denied|unavailable|error/i.test(message)?"error":"info");};
+  const [notice,setNoticeState]=useState("");
+  const setNotice=(message:string)=>{setNoticeState(message);if(message)notify(message,/failed|could not|denied|unavailable|error/i.test(message)?"error":"info");};
   const [selectedPerson,setSelectedPerson]=useState("");
   const [selectedPeople,setSelectedPeople]=useState<string[]>([]);
   const [selectedAgent,setSelectedAgent]=useState("");

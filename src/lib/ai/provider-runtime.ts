@@ -1,4 +1,5 @@
 import { resolveProviderApiKey } from "@/lib/ai/provider-key";
+import { supportsTextGenerationModel } from "@/lib/ai/model-capabilities";
 import { AIProvider } from "@/models/AIWorkforce";
 import type { AIChatbotScope } from "@/models/AIChatbot";
 import { randomUUID } from "node:crypto";
@@ -126,12 +127,14 @@ async function discoverProviderModels(provider: any): Promise<string[]> {
     const body: any = await response.json().catch(() => ({}));
     const rows = Array.isArray(body.models) ? body.models : Array.isArray(body.data) ? body.data : [];
     const discovered = rows.map((row: any) => String(row.name || row.id || "").replace(/^models\//, ""))
-      .filter((id: string) => id && id.length < 120)
-      .filter((id: string) => !(provider.provider === "google" && /^gemini-2\.5-pro(?:-|$)/i.test(id)))
-      .filter((id: string) => provider.provider === "google" ? /^gemini-/i.test(id) : provider.provider === "anthropic" ? /^claude-/i.test(id) : provider.provider === "openai" ? /^(gpt-|o[1-9]|chatgpt-)/i.test(id) : true);
-    return [...new Set([provider.lastTestedModel, ...discovered, ...fallback].filter(Boolean) as string[])].filter((id) => !(provider.provider === "google" && /^gemini-2\.5-pro(?:-|$)/i.test(id)));
+      .filter((id: string) => id && id.length < 120 && supportsTextGenerationModel(provider.provider, id))
+      .filter((id: string) => !(provider.provider === "google" && /^gemini-2\.5-pro(?:-|$)/i.test(id)));
+    return [...new Set([provider.lastTestedModel, ...discovered, ...fallback].filter(Boolean) as string[])]
+      .filter((id) => supportsTextGenerationModel(provider.provider, id))
+      .filter((id) => !(provider.provider === "google" && /^gemini-2\.5-pro(?:-|$)/i.test(id)));
   } catch {
-    return [...new Set([provider.lastTestedModel, ...fallback].filter(Boolean) as string[])];
+    return [...new Set([provider.lastTestedModel, ...fallback].filter(Boolean) as string[])]
+      .filter((id) => supportsTextGenerationModel(provider.provider, id));
   }
 }
 
@@ -145,12 +148,22 @@ export async function runProviderCompletionWithFallback(
 ): Promise<AICompletion> {
   await connectToDatabase();
   const traceId = randomUUID();
-  const storedProviders: any[] = await AIProvider.find({}).select("+encryptedApiKey").lean();
+  const storedProviders: any[] = await AIProvider.find({}).select("+encryptedApiKey +apiKeyFingerprint").lean();
   // Mongoose legacy rows can store archivedAt as null. `$exists:false` would
   // silently exclude those valid, unarchived providers from the global pool.
-  const providers: any[] = storedProviders.filter((provider) =>
+  const eligibleProviders: any[] = storedProviders.filter((provider) =>
     provider.enabled === true && provider.lastTestStatus === "success" && !provider.archivedAt
   );
+  // A duplicated API key must not consume the same provider quota multiple times.
+  // Older databases may contain duplicates from before fingerprint uniqueness was enforced.
+  const seenCredentialFingerprints = new Set<string>();
+  const providers: any[] = eligibleProviders.filter((provider) => {
+    const fingerprint = String(provider.apiKeyFingerprint || "").trim();
+    if (!fingerprint) return true;
+    if (seenCredentialFingerprints.has(fingerprint)) return false;
+    seenCredentialFingerprints.add(fingerprint);
+    return true;
+  });
   // The founder can explicitly import/test GEMINI_API_KEY in Vercel without
   // relying on a database provider row being enabled on every deployment.
   // Keep it as a final, provider-independent fallback; never expose the key.
@@ -181,7 +194,9 @@ export async function runProviderCompletionWithFallback(
     failures.push(message);
     await AIExecutionLog.create({ traceId, feature: "ai_model_discovery", providerId: String(catalogue.provider._id), providerName: catalogue.provider.name, providerType: catalogue.provider.provider, model: "model-discovery", status: "failure", errorCode: "model_discovery_unavailable", errorMessage: message }).catch(() => undefined);
   }
-  const candidates = catalogues.flatMap(({ provider, models }) => models.map((modelName) => ({ provider, modelName, score: modelQualityScore(modelName) })))
+  const candidates = catalogues.flatMap(({ provider, models }) => models
+    .filter((modelName) => supportsTextGenerationModel(provider.provider, modelName))
+    .map((modelName) => ({ provider, modelName, score: modelQualityScore(modelName) + (modelName === provider.lastTestedModel ? 60 : 0) })))
     .sort((a, b) => b.score - a.score || a.modelName.localeCompare(b.modelName));
   const seen = new Set<string>();
   let attempt = 0;

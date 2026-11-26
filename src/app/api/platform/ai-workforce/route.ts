@@ -445,7 +445,9 @@ export async function POST(request: NextRequest) {
         let generatedText = "";
         if (provider.provider === "google") {
           let lastProviderMessage = "No Gemini model was available.";
+          let attemptedModels = 0;
           for (const candidate of googleCandidates) {
+            attemptedModels += 1;
             testedModel = candidate;
             const attemptStartedAt = Date.now();
             generationResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
@@ -456,15 +458,15 @@ export async function POST(request: NextRequest) {
             statusCode = generationResponse.status;
             generatedText = Array.isArray(result.steps) ? result.steps.filter((step: any) => step.type === "model_output").flatMap((step: any) => step.content || []).filter((part: any) => part.type === "text").map((part: any) => part.text || "").join("").trim() : String(result.output_text || "").trim();
             if (generationResponse.ok && generatedText) {
-              await AIExecutionLog.create({ traceId: testTraceId, feature: "provider_live_test", providerId: String(provider._id), providerName: provider.name, providerType: provider.provider, model: candidate, status: "success", durationMs: Date.now() - attemptStartedAt }).catch(() => undefined);
+              await AIExecutionLog.create({ traceId: testTraceId, feature: "provider_live_test", providerId: String(provider._id), providerName: provider.name, providerType: provider.provider, model: candidate, status: "success", durationMs: Date.now() - attemptStartedAt, inputTokens: Number(result.usage?.total_input_tokens || result.usage?.input_tokens || 0), outputTokens: Number(result.usage?.total_output_tokens || result.usage?.output_tokens || 0) }).catch(() => undefined);
               break;
             }
             const attemptMessage = String(result?.error?.message || result?.error?.code || "Provider error").replace(/(key|token|secret)[=: ]+[^\s,"]+/gi, "$1=[redacted]").slice(0, 1200);
             await AIExecutionLog.create({ traceId: testTraceId, feature: "provider_live_test", providerId: String(provider._id), providerName: provider.name, providerType: provider.provider, model: candidate, status: "failure", durationMs: Date.now() - attemptStartedAt, httpStatus: generationResponse.status, errorCode: generationResponse.status === 404 ? "model_unavailable" : generationResponse.status === 429 ? "rate_limit" : "provider_request_failed", errorMessage: attemptMessage }).catch(() => undefined);
             lastProviderMessage = attemptMessage.slice(0, 300);
-            if (![429, 500, 502, 503, 504].includes(generationResponse.status)) break;
+            if ([401, 403].includes(generationResponse.status)) break;
           }
-          if (!generationResponse.ok) throw new Error("Gemini generation failed after trying " + googleCandidates.length + " available models (HTTP " + statusCode + "): " + lastProviderMessage);
+          if (!generationResponse.ok) throw new Error("Gemini generation failed after trying " + attemptedModels + " available models (HTTP " + statusCode + "): " + lastProviderMessage);
         } else if (provider.provider === "anthropic") {
           generationResponse = await fetch("https://api.anthropic.com/v1/messages", {
             method: "POST", headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" }, signal: controller.signal, cache: "no-store",

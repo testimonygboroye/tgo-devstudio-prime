@@ -49,19 +49,19 @@ export default function CommunicationsHub() {
     return getReadReceiptSummary(message.readBy, message.senderId, currentUserId, active?.memberIds || [], active?.kind || "direct");
   }
   const listInFlight=useRef(false);
-  const messagesInFlight=useRef(false);
+  const messagesInFlight=useRef(false);\n  const lastPollingErrorToastAt=useRef(0);\n  const notifyPollingError=(message:string)=>{if(Date.now()-lastPollingErrorToastAt.current>15000){notify(message,"error");lastPollingErrorToastAt.current=Date.now();}};
   const loadList=useCallback(async()=>{
     if(listInFlight.current)return;
     listInFlight.current=true;
     try{const response=await fetch("/api/platform/messaging",{cache:"no-store"});const data=await response.json();if(!response.ok||data.status!=="ok")throw new Error(data.message||"Could not refresh conversations.");setConversations(data.conversations||[]);setPeople(data.people||[]);setAgents(data.agents||[]);}
-    catch(error){notify(error instanceof Error?error.message:"Could not refresh conversations.","error");}
+    catch(error){notifyPollingError(error instanceof Error?error.message:"Could not refresh conversations.");}
     finally{listInFlight.current=false;setLoading(false);}
   },[]);
   const loadMessages=useCallback(async(id:string,refreshList=false)=>{
     if(messagesInFlight.current)return;
     messagesInFlight.current=true;
     try{const params=new URLSearchParams({conversationId:id});if(searchTerm.trim())params.set("q",searchTerm.trim());const response=await fetch("/api/platform/messaging?"+params.toString(),{cache:"no-store"});const data=await response.json();if(!response.ok||data.status!=="ok")throw new Error(data.message||"Could not refresh conversation messages.");setActive(data.conversation);setMessages(data.messages||[]);setIsFounder(Boolean(data.isFounder));setCurrentUserId(String(data.currentUserId||""));if(refreshList)void loadList();}
-    catch(error){notify(error instanceof Error?error.message:"Could not refresh messages.","error");}
+    catch(error){notifyPollingError(error instanceof Error?error.message:"Could not refresh messages.");}
     finally{messagesInFlight.current=false;}
   },[searchTerm,loadList]);
   const loadWhatsAppConnection=useCallback(async()=>{try{const r=await fetch("/api/platform/messaging/whatsapp-connection",{cache:"no-store"});const d=await r.json();setWaConnected(Boolean(d.connected));if(d.personalPhoneNumber)setWaForm(v=>({...v,personalPhoneNumber:d.personalPhoneNumber,consent:Boolean(d.optedIn)}));}catch{}},[]);

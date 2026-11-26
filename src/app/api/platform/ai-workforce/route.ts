@@ -548,7 +548,7 @@ export async function POST(request: NextRequest) {
     }
     if (body.action === "agent.enable_text_only_all") {
       const result = await AIAgent.updateMany(
-        { enabled: false, permissions: { $size: 0 } },
+        { enabled: false, $or: [{ permissions: { $size: 0 } }, { permissions: { $exists: false } }] },
         { $set: { enabled: true, requiresApproval: true } },
       );
       await writePlatformAuditEvent({

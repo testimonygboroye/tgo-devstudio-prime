@@ -160,13 +160,41 @@ export async function runProviderCompletionWithFallback(
   const storedProviders: any[] = await AIProvider.find({}).select("+encryptedApiKey +apiKeyFingerprint").lean();
   // Mongoose legacy rows can store archivedAt as null. `$exists:false` would
   // silently exclude those valid, unarchived providers from the global pool.
+  const failures: string[] = [];
   const eligibleProviders: any[] = storedProviders.filter((provider) =>
     provider.enabled === true && provider.lastTestStatus === "success" && !provider.archivedAt
   );
+  // A provider can have an old successful test while its encrypted credential
+  // can no longer be decrypted after an encryption-key rotation. Check that a
+  // usable key can actually be resolved before model discovery, so dead
+  // Claude/OpenAI rows do not consume routing time or produce misleading
+  // "no model candidates" diagnostics. Environment-key recovery remains
+  // supported by resolveProviderApiKey().
+  const credentialReadyProviders: any[] = [];
+  for (const provider of eligibleProviders) {
+    try {
+      resolveProviderApiKey(provider.name, provider.provider, provider.encryptedApiKey);
+      credentialReadyProviders.push(provider);
+    } catch {
+      const message = provider.name + ": credentials are unavailable. Restore a decryptable saved key or configure the matching server environment key; this provider is skipped until then.";
+      failures.push(message);
+      await AIExecutionLog.create({
+        traceId,
+        feature: "ai_provider_credential_check",
+        providerId: String(provider._id),
+        providerName: provider.name,
+        providerType: provider.provider,
+        model: "credential-check",
+        status: "failure",
+        errorCode: "credential_unavailable",
+        errorMessage: message,
+      }).catch(() => undefined);
+    }
+  }
   // A duplicated API key must not consume the same provider quota multiple times.
   // Older databases may contain duplicates from before fingerprint uniqueness was enforced.
   const seenCredentialFingerprints = new Set<string>();
-  const providers: any[] = eligibleProviders.filter((provider) => {
+  const providers: any[] = credentialReadyProviders.filter((provider) => {
     const fingerprint = String(provider.apiKeyFingerprint || "").trim();
     if (!fingerprint) return true;
     if (seenCredentialFingerprints.has(fingerprint)) return false;
@@ -176,7 +204,6 @@ export async function runProviderCompletionWithFallback(
   // The founder can explicitly import/test GEMINI_API_KEY in Vercel without
   // relying on a database provider row being enabled on every deployment.
   // Keep it as a final, provider-independent fallback; never expose the key.
-  const failures: string[] = [];
   const environmentGeminiKey = process.env.GEMINI_API_KEY?.trim() || process.env.GOOGLE_API_KEY?.trim() || "";
   if (!providers.some((provider) => provider.provider === "google")) {
     console.warn("[TGO AI] Google provider inventory", {
@@ -203,7 +230,7 @@ export async function runProviderCompletionWithFallback(
       : "no saved Google provider record";
     failures.push(`Google provider is not eligible for global routing (${savedState}); GEMINI_API_KEY/GOOGLE_API_KEY runtime value is ${environmentGeminiKey ? "present" : "missing or empty"}.`);
   }
-  if (!providers.length) throw new Error("No active, connection-verified AI provider is available. AI employees remain enabled; add or enable a provider and retry this task.");
+  if (!providers.length) throw new Error(failures.length ? "No usable AI provider credential is available. " + failures.slice(0, 5).join(" | ") : "No active, connection-verified AI provider is available. AI employees remain enabled; add or enable a provider and retry this task.");
   const catalogues = await Promise.all(providers.map(async (provider: any) => ({ provider, models: await discoverProviderModels(provider) })));
   for (const catalogue of catalogues) {
     if (catalogue.models.length) continue;

@@ -24,7 +24,7 @@ export default function IntegrationAccountsPanel() {
  const [appForm,setAppForm]=useState({providerId:"github",appName:"",clientId:"",clientSecret:"",scopes:"read:user, user:email, repo"});
  const [appSaving,setAppSaving]=useState(false);
 
- const callbackUrl=typeof window!=="undefined"?window.location.origin+"/api/platform/integrations/oauth/callback":"/api/platform/integrations/oauth/callback";
+ const [callbackUrl,setCallbackUrl]=useState("/api/platform/integrations/oauth/callback");
  const load=useCallback(async()=>{
   setLoading(true);
   try{
@@ -35,7 +35,7 @@ export default function IntegrationAccountsPanel() {
    const [accountData,appData]=await Promise.all([accountResponse.json(),appResponse.json()]);
    if(!accountResponse.ok)throw new Error(accountData.error||"Could not load account connections.");
    if(!appResponse.ok)throw new Error(appData.error||"Could not load developer applications.");
-   setProviders(accountData.providers||[]);setAccounts(accountData.accounts||[]);setApps(appData.applications||[]);
+   setProviders(accountData.providers||[]);setAccounts(accountData.accounts||[]);setApps(appData.applications||[]);if(appData.callbackUrl)setCallbackUrl(String(appData.callbackUrl));
   }catch(error){notify(error instanceof Error?error.message:"Could not load integration data.","error");}
   finally{setLoading(false);}
  },[]);

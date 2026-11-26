@@ -1,11 +1,11 @@
 "use client";
 import {useCallback,useEffect,useRef,useState} from "react";
-import {Activity,AlertTriangle,CheckCircle2,RefreshCw,Workflow} from "lucide-react";
+import {Activity,AlertTriangle,CheckCircle2,RefreshCw,Workflow} from "lucide-react";\nimport { notify } from "@/lib/platform/toast";
 type Log={id:string;traceId:string;feature:string;providerName?:string;providerType?:string;model:string;status:string;durationMs:number;inputTokens:number;outputTokens:number;httpStatus?:number;errorCode?:string;errorMessage?:string;fallbackFrom?:string;createdAt:string};
 export default function AIObservabilityPanel(){
- const inFlight=useRef(false);
+ const inFlight=useRef(false);\n const lastErrorToastAt=useRef(0);
  const [logs,setLogs]=useState<Log[]>([]),[total,setTotal]=useState(0),[loading,setLoading]=useState(true),[status,setStatus]=useState(""),[error,setError]=useState("");
- const load=useCallback(async(silent=false)=>{if(inFlight.current)return;inFlight.current=true;if(!silent)setLoading(true);try{const q=new URLSearchParams({limit:"100"});if(status)q.set("status",status);const r=await fetch("/api/platform/ai-observability?"+q.toString(),{cache:"no-store"});const j=await r.json();if(!r.ok)throw new Error(j.error||"Could not load AI diagnostics.");setLogs(j.logs||[]);setTotal(j.total||0);setError("");}catch(e){setError(e instanceof Error?e.message:"Could not load AI diagnostics.");}finally{inFlight.current=false;setLoading(false);}},[status]);
+ const load=useCallback(async(silent=false)=>{if(inFlight.current)return;inFlight.current=true;if(!silent)setLoading(true);try{const q=new URLSearchParams({limit:"100"});if(status)q.set("status",status);const r=await fetch("/api/platform/ai-observability?"+q.toString(),{cache:"no-store"});const j=await r.json();if(!r.ok)throw new Error(j.error||"Could not load AI diagnostics.");setLogs(j.logs||[]);setTotal(j.total||0);setError("");}catch(e){const message=e instanceof Error?e.message:"Could not load AI diagnostics.";setError(message);if(Date.now()-lastErrorToastAt.current>15000){notify(message,"error");lastErrorToastAt.current=Date.now();}}finally{inFlight.current=false;setLoading(false);}},[status]);
  useEffect(()=>{void load();const timer=window.setInterval(()=>{if(document.visibilityState==="visible")void load(true);},3000);const onVisible=()=>{if(document.visibilityState==="visible")void load(true);};document.addEventListener("visibilitychange",onVisible);return()=>{window.clearInterval(timer);document.removeEventListener("visibilitychange",onVisible);};},[load]);
  const failures=logs.filter(x=>x.status==="failure").length,fallbacks=logs.filter(x=>x.status==="fallback").length,successes=logs.filter(x=>x.status==="success").length;
  return <section className="space-y-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5">

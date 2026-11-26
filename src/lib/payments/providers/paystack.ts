@@ -32,7 +32,7 @@ export const paystackAdapter: PaymentProviderAdapter = {
   },
   async verify(reference) {
     const saved = await getVerifiedIntegrationCredentials("paystack").catch(() => null);
-    const secret = saved?.secretKey || process.env.PAYSTACK_SECRET_KEY;
+    const secret = process.env.PAYSTACK_SECRET_KEY?.trim() || saved?.secretKey;
     if (!secret) throw new Error("Paystack is not configured. Connect and verify Paystack in the Integration Centre or set PAYSTACK_SECRET_KEY.");
     const response = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
       headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/json" },

@@ -123,7 +123,9 @@ async function discoverProviderModels(provider: any): Promise<string[]> {
     : [String(provider.lastTestedModel || "default")];
   try {
     const response = await fetch(base + "/models", { headers, signal: AbortSignal.timeout(3500), cache: "no-store" });
-    if (!response.ok) return [...new Set([provider.lastTestedModel, ...fallback].filter(Boolean) as string[])].filter((id) => !(provider.provider === "google" && /^gemini-2\.5-pro(?:-|$)/i.test(id)));
+    if (!response.ok) return [...new Set([provider.lastTestedModel, ...fallback].filter(Boolean) as string[])]
+      .filter((id) => supportsTextGenerationModel(provider.provider, id))
+      .filter((id) => !(provider.provider === "google" && /^gemini-2\.5-pro(?:-|$)/i.test(id)));
     const body: any = await response.json().catch(() => ({}));
     const rows = Array.isArray(body.models) ? body.models : Array.isArray(body.data) ? body.data : [];
     const discovered = rows.map((row: any) => String(row.name || row.id || "").replace(/^models\//, ""))
@@ -196,7 +198,7 @@ export async function runProviderCompletionWithFallback(
   }
   const candidates = catalogues.flatMap(({ provider, models }) => models
     .filter((modelName) => supportsTextGenerationModel(provider.provider, modelName))
-    .map((modelName) => ({ provider, modelName, score: modelQualityScore(modelName) + (modelName === provider.lastTestedModel ? 60 : 0) })))
+    .map((modelName) => ({ provider, modelName, score: modelQualityScore(modelName) + (modelName === provider.lastTestedModel ? 160 : 0) })))
     .sort((a, b) => b.score - a.score || a.modelName.localeCompare(b.modelName));
   const seen = new Set<string>();
   let attempt = 0;

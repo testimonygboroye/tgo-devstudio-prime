@@ -12,10 +12,10 @@ type MemoryItem = { _id:string; title:string; scope:string; source:string };
 type Data = { providers:ProviderItem[]; agents:AgentItem[]; tasks:TaskItem[]; workspaces:WorkspaceItem[]; memories:MemoryItem[] };
 const empty: Data = { providers: [], agents: [], tasks: [], workspaces: [], memories: [] };
 export default function AIWorkforceManager() {
-  const inFlight = useRef(false);\n  const [data,setData] = useState<Data>(empty);
+  const inFlight = useRef(false);
+  const [data,setData] = useState<Data>(empty);
   const [loading,setLoading] = useState(true);
   const [busy,setBusy] = useState(false);
-  const [notice,setNotice] = useState("");
   const [provider,setProvider] = useState({name:"",provider:"google",apiKey:"",baseUrl:""});
   const [replacementKeys,setReplacementKeys] = useState<Record<string,string>>({});
   const [agent,setAgent] = useState({name:"",role:"Operations assistant",department:"Operations",workspaceId:"",systemInstructions:"You are an assistant for TGO DevStudio. Follow company policy, protect client information, and never claim an action was completed unless verified.",maxDailyTokens:100000});

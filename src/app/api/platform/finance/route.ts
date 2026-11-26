@@ -291,7 +291,8 @@ export async function POST(request:NextRequest){
   if(action==="reconciliation.run"){
    const fromDate=new Date(String(body.fromDate));const toDate=new Date(String(body.toDate)+"T23:59:59.999Z");const currency=String(body.currency||"NGN").toUpperCase();
    if(!Number.isFinite(fromDate.getTime())||!Number.isFinite(toDate.getTime())||toDate<=fromDate)return fail("Choose a valid reconciliation date range.");
-   if(!process.env.PAYSTACK_SECRET_KEY)return fail("PAYSTACK_SECRET_KEY is required to reconcile Paystack transactions.",503);
+   const reconciliationCredentials=await getVerifiedIntegrationCredentials("paystack").catch(()=>null);
+    if(!(process.env.PAYSTACK_SECRET_KEY||reconciliationCredentials?.secretKey))return fail("A verified Paystack secret is required to reconcile Paystack transactions.",503);
    const payments=await PaymentTransaction.find({provider:"paystack",currency,createdAt:{$gte:fromDate,$lte:toDate}}).sort({createdAt:1}).limit(500);
    const details:Array<{paymentId:Types.ObjectId;reference:string;status:string;localAmountMinor:number;providerAmountMinor?:number;note?:string}>=[];
    let verifiedCount=0,totalLocalMinor=0,totalProviderMinor=0;

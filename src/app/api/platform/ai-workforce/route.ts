@@ -243,7 +243,7 @@ export async function POST(request: NextRequest) {
           existing.department = definition.department;
           existing.description = definition.description;
           existing.systemInstructions = definition.systemInstructions;
-          if (!Array.isArray(existing.permissions) || existing.permissions.length === 0) existing.permissions = definition.permissions;
+          existing.permissions = definition.permissions;
           existing.requiresApproval = true;
           existing.workspaceId = workspaceIds.get(definition.department);
           existing.memoryKey = buildAgentMemoryKey({ role: definition.role, department: definition.department, workspaceId: workspaceIds.get(definition.department), assignedUserId: existing.assignedUserId });

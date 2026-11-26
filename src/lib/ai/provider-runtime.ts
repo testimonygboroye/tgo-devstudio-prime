@@ -1,7 +1,6 @@
 import { resolveProviderApiKey } from "@/lib/ai/provider-key";
 import { AIProvider } from "@/models/AIWorkforce";
 import { AIChatbotConfig, type AIChatbotScope } from "@/models/AIChatbot";
-import { buildProviderAttempts } from "@/lib/ai/provider-attempts";
 
 
 export interface AICompletion {
@@ -14,7 +13,7 @@ export interface AICompletion {
   fallbackUsed?: boolean;
 }
 
-export async function runProviderCompletion(providerId: string, model: string, system: string, prompt: string): Promise<AICompletion> {
+export async function runProviderCompletion(providerId: string, model: string, system: string, prompt: string, singleModelAttempt = false): Promise<AICompletion> {
   const provider = await AIProvider.findById(providerId).select("+encryptedApiKey");
   if (!provider || !provider.enabled || provider.lastTestStatus !== "success" || provider.archivedAt) throw new Error("AI provider is not enabled and connection-verified.");
   const key = resolveProviderApiKey(provider.name, provider.provider, provider.encryptedApiKey);
@@ -48,7 +47,7 @@ export async function runProviderCompletion(providerId: string, model: string, s
       }
     }
   } catch { /* Use known model fallbacks when catalogue discovery is unavailable. */ }
-  const candidates = [model, ...preferred, ...discovered].filter((id, index, all) => id && all.indexOf(id) === index).slice(0, 6);
+  const candidates = (singleModelAttempt ? [model] : [model, ...preferred, ...discovered]).filter((id, index, all) => id && all.indexOf(id) === index).slice(0, singleModelAttempt ? 1 : 6);
   const failures: string[] = [];
   for (const candidate of candidates) {
     try {
@@ -92,50 +91,70 @@ export async function runProviderCompletion(providerId: string, model: string, s
  * the admin assistant's configured primary and ordered fallbacks are then used
  * as eligible alternatives, without duplicating the same provider.
  */
+function modelQualityScore(model: string): number {
+  const id = model.toLowerCase();
+  let score = 50;
+  if (/opus|pro|o3|o1|gpt-4\.1(?!-mini|-nano)|gpt-4o(?!-mini)|gemini-2\.5-pro|gemini-3|sonnet-4/i.test(id)) score += 45;
+  if (/sonnet|gpt-4|gemini-2\.5|deepseek-r1|qwen.*max/i.test(id)) score += 25;
+  if (/flash|haiku|mini|nano|lite|small|fast/i.test(id)) score -= 18;
+  if (/preview|experimental|latest/i.test(id)) score -= 4;
+  return score;
+}
+async function discoverProviderModels(provider: any): Promise<string[]> {
+  const key = resolveProviderApiKey(provider.name, provider.provider, provider.encryptedApiKey);
+  const base = provider.provider === "google" ? "https://generativelanguage.googleapis.com/v1beta"
+    : provider.provider === "openai" ? "https://api.openai.com/v1"
+    : provider.provider === "anthropic" ? "https://api.anthropic.com/v1"
+    : String(provider.baseUrl || "").replace(/\\/$/, "");
+  const headers: Record<string, string> = provider.provider === "google" ? { "x-goog-api-key": key }
+    : provider.provider === "anthropic" ? { "x-api-key": key, "anthropic-version": "2023-06-01" }
+    : { Authorization: "Bearer " + key };
+  const fallback = provider.provider === "google" ? ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash"]
+    : provider.provider === "anthropic" ? ["claude-opus-4-1", "claude-sonnet-4-5", "claude-3-5-haiku-latest"]
+    : provider.provider === "openai" ? ["gpt-4.1", "o3", "gpt-4.1-mini", "gpt-4o-mini"]
+    : [String(provider.lastTestedModel || "default")];
+  try {
+    const response = await fetch(base + "/models", { headers, signal: AbortSignal.timeout(3500), cache: "no-store" });
+    if (!response.ok) return [...new Set([provider.lastTestedModel, ...fallback].filter(Boolean) as string[])];
+    const body: any = await response.json().catch(() => ({}));
+    const rows = Array.isArray(body.models) ? body.models : Array.isArray(body.data) ? body.data : [];
+    const discovered = rows.map((row: any) => String(row.name || row.id || "").replace(/^models\\//, ""))
+      .filter((id: string) => id && id.length < 120)
+      .filter((id: string) => provider.provider === "google" ? /^gemini-/i.test(id) : provider.provider === "anthropic" ? /^claude-/i.test(id) : provider.provider === "openai" ? /^(gpt-|o[1-9]|chatgpt-)/i.test(id) : true);
+    return [...new Set([provider.lastTestedModel, ...discovered, ...fallback].filter(Boolean) as string[])];
+  } catch {
+    return [...new Set([provider.lastTestedModel, ...fallback].filter(Boolean) as string[])];
+  }
+}
+
+/** TGO-wide model router: one global ranking across every verified provider/model. */
 export async function runProviderCompletionWithFallback(
-  providerId: string,
-  model: string,
+  _providerId: string,
+  _model: string,
   system: string,
   prompt: string,
-  scope: AIChatbotScope = "admin",
+  _scope: AIChatbotScope = "admin",
 ): Promise<AICompletion> {
-  const config = await AIChatbotConfig.findOne({ scope }).lean();
-  // AI employees belong to TGO, not to an inference vendor. A legacy providerId is
-  // intentionally not treated as a binding: any healthy, verified TGO provider can run any agent.
-  const configuredAttempts = buildProviderAttempts("", "", config);
-  const configuredIds = new Set(configuredAttempts.map((attempt) => attempt.providerId));
-  const availableProviders = await AIProvider.find({
-    enabled: true,
-    lastTestStatus: "success",
-    archivedAt: { $exists: false },
-  }).select("_id provider lastTestedModel updatedAt").sort({ updatedAt: -1 }).lean();
-  const providerModels: Record<string, string> = {
-    google: "gemini-2.5-flash",
-    openai: "gpt-4.1-mini",
-    anthropic: "claude-3-5-haiku-latest",
-    "openai-compatible": "default",
-  };
-  const attempts = [
-    ...configuredAttempts.filter((attempt) => availableProviders.some((provider) => String(provider._id) === attempt.providerId)),
-    ...availableProviders
-      .filter((provider) => !configuredIds.has(String(provider._id)))
-      .map((provider) => ({
-        providerId: String(provider._id),
-        modelName: String(provider.lastTestedModel || providerModels[provider.provider] || model || ""),
-      })),
-  ];
+  const providers = await AIProvider.find({ enabled: true, lastTestStatus: "success", archivedAt: { $exists: false } }).select("+encryptedApiKey").lean();
+  if (!providers.length) throw new Error("No active, connection-verified AI provider is available. AI employees remain enabled; add or enable a provider and retry this task.");
+  const catalogues = await Promise.all(providers.map(async (provider: any) => ({ provider, models: await discoverProviderModels(provider) })));
+  const candidates = catalogues.flatMap(({ provider, models }) => models.map((modelName) => ({ provider, modelName, score: modelQualityScore(modelName) })))
+    .sort((a, b) => b.score - a.score || a.modelName.localeCompare(b.modelName));
+  const seen = new Set<string>();
   const failures: string[] = [];
-  let attemptsTried = 0;
-  if (!attempts.length) throw new Error("No active, connection-verified AI provider is available. AI employees remain enabled; add or enable a provider and retry this task.");
-  for (const attempt of attempts) {
-    attemptsTried += 1;
+  let attempt = 0;
+  for (const candidate of candidates) {
+    const identity = String(candidate.provider._id) + ":" + candidate.modelName;
+    if (seen.has(identity)) continue;
+    seen.add(identity);
+    attempt += 1;
     try {
-      const result = await runProviderCompletion(attempt.providerId, attempt.modelName, system, prompt);
-      if (!result.text.trim()) throw new Error("Provider returned an empty response.");
-      return { ...result, providerId: attempt.providerId, model: result.model || attempt.modelName, fallbackUsed: Boolean(result.fallbackUsed || attemptsTried > 1) };
+      const result = await runProviderCompletion(String(candidate.provider._id), candidate.modelName, system, prompt, true);
+      if (!result.text.trim()) throw new Error("Model returned an empty response.");
+      return { ...result, providerId: String(candidate.provider._id), model: result.model || candidate.modelName, fallbackUsed: attempt > 1 };
     } catch (error) {
-      failures.push(attempt.providerId + "/" + attempt.modelName + ": " + (error instanceof Error ? error.message : "Provider request failed."));
+      failures.push(candidate.provider.name + "/" + candidate.modelName + ": " + (error instanceof Error ? error.message : "Model request failed."));
     }
   }
-  throw new Error("All configured AI providers failed. " + failures.join(" | ").slice(0, 1800));
+  throw new Error("Every globally ranked available AI model failed. " + failures.slice(0, 18).join(" | ").slice(0, 1800));
 }

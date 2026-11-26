@@ -16,6 +16,8 @@ const providers: Record<string, { authorizeUrl: string; defaultScopes: string[];
   github: { authorizeUrl: "https://github.com/login/oauth/authorize", defaultScopes: ["read:user", "user:email", "repo"], pkce: false },
   google_workspace: { authorizeUrl: "https://accounts.google.com/o/oauth2/v2/auth", defaultScopes: ["openid", "email", "profile"], pkce: true, extraParams: { access_type: "offline", prompt: "consent" } },
   google_cloud: { authorizeUrl: "https://accounts.google.com/o/oauth2/v2/auth", defaultScopes: ["openid", "email", "profile"], pkce: true, extraParams: { access_type: "offline", prompt: "consent" } },
+  google_search_console: { authorizeUrl: "https://accounts.google.com/o/oauth2/v2/auth", defaultScopes: ["openid", "email", "profile", "https://www.googleapis.com/auth/webmasters.readonly"], pkce: true, extraParams: { access_type: "offline", prompt: "consent" } },
+  google_analytics: { authorizeUrl: "https://accounts.google.com/o/oauth2/v2/auth", defaultScopes: ["openid", "email", "profile", "https://www.googleapis.com/auth/analytics.readonly"], pkce: true, extraParams: { access_type: "offline", prompt: "consent" } },
 };
 
 const fail = (message: string, status = 400) => NextResponse.json({ error: message }, { status });

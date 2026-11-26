@@ -104,7 +104,9 @@ export async function POST(request: NextRequest) {
   if (!row || row.status === "disconnected") return fail("Save active credentials before testing this connection.", 409);
   let errorMessage = "";
   try {
-    const storedCredentials = decryptCredentials(row.credentialsCiphertext);
+    let storedCredentials: Record<string, string> = {};
+    try { storedCredentials = decryptCredentials(row.credentialsCiphertext); }
+    catch (error) { if (providerId !== "paystack" || !process.env.PAYSTACK_SECRET_KEY) throw error; }
     let credentials: Record<string, string> | null = providerId === "google_search_console" || providerId === "google_analytics"
       ? await getVerifiedIntegrationCredentials(providerId)
       : { ...storedCredentials };

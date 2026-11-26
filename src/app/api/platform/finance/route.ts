@@ -26,6 +26,7 @@ import {verifyAndRecordPaystackPayment} from "@/lib/payments/paystack";
 import {getPaymentProvider} from "@/lib/payments/provider";
 import {sendNotificationEmail} from "@/lib/email/sendEmail";
 import {getPublicSiteUrl} from "@/lib/site-url";
+import {getVerifiedIntegrationCredentials} from "@/lib/integrations/credentials";
 
 export const dynamic="force-dynamic";
 const PAYSTACK_CURRENCIES_BY_COUNTRY:Record<string,string[]>={NG:["NGN","USD"],GH:["GHS"],KE:["KES","USD"],ZA:["ZAR"],CI:["XOF"]};
@@ -56,6 +57,8 @@ export async function GET(){
  const summary=await FinancialLedgerEntry.aggregate([
   {$group:{_id:{currency:"$currency",accountCode:"$accountCode",direction:"$direction"},total:{$sum:"$amountMinor"},entries:{$sum:1}}},
  ]);
+ const paystackCredentials=await getVerifiedIntegrationCredentials("paystack").catch(()=>null);
+ const paymentConfiguration={enabled:Boolean(settings?.paystackEnabled),credentialsReady:Boolean(process.env.PAYSTACK_SECRET_KEY||paystackCredentials?.secretKey),ready:Boolean(settings?.paystackEnabled&&(process.env.PAYSTACK_SECRET_KEY||paystackCredentials?.secretKey))};
  const now=new Date();
  // GET requests remain read-only: calculate overdue labels for the response
  // instead of writing invoice/installment status changes during dashboard reads.
@@ -70,7 +73,7 @@ export async function GET(){
    status:["pending","partially_paid"].includes(installment.status)&&installment.dueAt&&new Date(installment.dueAt)<now?"overdue":installment.status,
   })),
  }));
- return NextResponse.json({ok:true,settings:settings||null,invoices:displayInvoices,expenses,refunds,installments:displayInstallments,approvals,reconciliations,credits,payments,ledger,orders,clients,summary},{headers:{"Cache-Control":"private, no-store"}});
+ return NextResponse.json({ok:true,settings:settings||null,paymentConfiguration,invoices:displayInvoices,expenses,refunds,installments:displayInstallments,approvals,reconciliations,credits,payments,ledger,orders,clients,summary},{headers:{"Cache-Control":"private, no-store"}});
 }
 
 export async function POST(request:NextRequest){

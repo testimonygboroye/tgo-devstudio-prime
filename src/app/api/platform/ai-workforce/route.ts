@@ -46,7 +46,7 @@ const TGO_AI_PLATFORM_RULES = [
 ];
 
 // Memory identity belongs to TGO, not to a provider or a disposable agent document.
-// It follows the stable role within its workspace so a replacement can inherit that role's private history.
+// It follows department + role (and employee assignment for private counterparts), never workspace or provider identity.
 function buildAgentMemoryKey(input: { role?: unknown; department?: unknown; workspaceId?: unknown; assignedUserId?: unknown }) {
   const normalise = (value: unknown) => String(value || "").normalize("NFKC").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 90);
   return ["tgo-role", normalise(input.department || "operations"), normalise(input.role || "general-assistant"), String(input.assignedUserId || "company")].join(":").slice(0, 300);

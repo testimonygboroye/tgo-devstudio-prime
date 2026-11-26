@@ -508,7 +508,7 @@ export async function POST(request: NextRequest) {
         if (provider.provider === "google") {
           const models = Array.isArray(catalogue.models) ? catalogue.models : [];
           const ids: string[] = models.map((item: any): string => String(item.name || item.id || "").replace(/^models\//, "")).filter((id: string): boolean => /^gemini-/i.test(id));
-          const preferred = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite"];
+          const preferred = ["gemini-3.1-pro-preview", "gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.5-flash-lite"];
           googleCandidates = [...preferred.filter((id: string) => ids.includes(id)), ...ids.filter((id: string) => !preferred.includes(id))].slice(0, 8);
           testedModel = googleCandidates[0] || "";
         } else {

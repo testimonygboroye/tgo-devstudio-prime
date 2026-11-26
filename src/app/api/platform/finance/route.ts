@@ -58,7 +58,7 @@ export async function GET(){
   {$group:{_id:{currency:"$currency",accountCode:"$accountCode",direction:"$direction"},total:{$sum:"$amountMinor"},entries:{$sum:1}}},
  ]);
  const paystackCredentials=await getVerifiedIntegrationCredentials("paystack").catch(()=>null);
- const paymentConfiguration={enabled:Boolean(settings?.paystackEnabled),credentialsReady:Boolean(process.env.PAYSTACK_SECRET_KEY||paystackCredentials?.secretKey),ready:Boolean(settings?.paystackEnabled&&(process.env.PAYSTACK_SECRET_KEY||paystackCredentials?.secretKey)),webhookUrl:new URL("/api/webhooks/paystack",getPublicSiteUrl()).toString(),callbackUrl:new URL("/client/finance",getPublicSiteUrl()).toString()};
+ const paymentConfiguration={enabled:Boolean(settings?.paystackEnabled),credentialsReady:Boolean(process.env.PAYSTACK_SECRET_KEY||paystackCredentials?.secretKey),ready:Boolean(settings?.paystackEnabled&&(process.env.PAYSTACK_SECRET_KEY||paystackCredentials?.secretKey)),webhookUrl:new URL("/api/webhooks/paystack",getPublicSiteUrl()).toString(),callbackUrl:new URL("/client/payments/callback",getPublicSiteUrl()).toString()};
  const now=new Date();
  // GET requests remain read-only: calculate overdue labels for the response
  // instead of writing invoice/installment status changes during dashboard reads.

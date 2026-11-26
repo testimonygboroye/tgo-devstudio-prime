@@ -13,7 +13,7 @@ const WorkspaceSchema = new Schema<IAIWorkspace>({
 WorkspaceSchema.index({ department: 1, active: 1 });
 
 export interface IAIMemory extends Document {
-  title: string; content: string; scope: "shared" | "agent"; agentId?: Types.ObjectId; workspaceId?: Types.ObjectId;
+  title: string; content: string; scope: "shared" | "agent"; agentId?: Types.ObjectId; agentMemoryKey?: string; workspaceId?: Types.ObjectId;
   tags: string[]; source: string; active: boolean; expiresAt?: Date; createdBy: string; updatedAt: Date;
 }
 const MemorySchema = new Schema<IAIMemory>({
@@ -21,6 +21,7 @@ const MemorySchema = new Schema<IAIMemory>({
   content: { type: String, required: true, maxlength: 12000 },
   scope: { type: String, enum: ["shared", "agent"], default: "shared" },
   agentId: { type: Schema.Types.ObjectId, ref: "AIAgent" },
+  agentMemoryKey: { type: String, maxlength: 300, index: true },
   workspaceId: { type: Schema.Types.ObjectId, ref: "AIWorkspace" },
   tags: { type: [String], default: [] },
   source: { type: String, default: "founder_knowledge", maxlength: 120 },

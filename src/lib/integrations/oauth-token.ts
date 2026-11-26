@@ -34,11 +34,12 @@ export async function getIntegrationOAuthAccessToken(input: {
     }).select("+clientSecretCiphertext");
     if (!application?.clientSecretCiphertext) throw new Error("The active OAuth application configuration is unavailable.");
     const secret = decryptCredentials(application.clientSecretCiphertext).clientSecret || "";
-    if (!secret) throw new Error("The OAuth application secret is missing.");
+    const clientId = String(application.clientId || "");
+    if (!secret || !clientId) throw new Error("The OAuth application client ID or secret is missing.");
     const response = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
       body: new URLSearchParams({
-        client_id: application.clientId, client_secret: secret,
+        client_id: clientId, client_secret: secret,
         refresh_token: refreshToken, grant_type: "refresh_token",
       }).toString(),
       signal: AbortSignal.timeout(12000), cache: "no-store",

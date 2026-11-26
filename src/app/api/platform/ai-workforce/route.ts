@@ -401,10 +401,26 @@ export async function POST(request: NextRequest) {
     if (body.action === "provider.enable" || body.action === "provider.disable") {
       const provider = await AIProvider.findById(body.providerId);
       if (!provider) return NextResponse.json({ status: "error", message: "Provider not found." }, { status: 404 });
+      if (body.action === "provider.enable" && provider.lastTestStatus !== "success") {
+        return NextResponse.json({ status: "error", message: "Run a successful live-generation test for this provider before enabling it." }, { status: 409 });
+      }
       provider.enabled = body.action === "provider.enable";
       await provider.save();
-      await writePlatformAuditEvent({ actorType: "human", actorId, action: body.action === "provider.enable" ? "ai.provider.enabled" : "ai.provider.disabled", module: "ai-workforce", targetType: "AIProvider", targetId: String(provider._id), outcome: "success" });
-      return NextResponse.json({ status: "ok", message: provider.enabled ? "Provider enabled and available to all AI employees." : "Provider disabled. AI employees remain enabled and will use another available verified provider." });
+      if (provider.enabled) {
+        await Promise.all((["public", "client", "admin"] as const).map((scope) =>
+          AIChatbotConfig.findOneAndUpdate(
+            { scope },
+            { $set: { enabled: true }, $setOnInsert: {
+              scope, providerId: provider._id, modelName: provider.lastTestedModel || "",
+              welcomeMessage: scope === "public" ? "Welcome to TGO DevStudio. How can I help?" : "Hello. How can I help?",
+              updatedBy: new mongoose.Types.ObjectId(actorId),
+            } },
+            { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
+          ),
+        ));
+      }
+      await writePlatformAuditEvent({ actorType: "human", actorId, action: body.action === "provider.enable" ? "ai.provider.enabled" : "ai.provider.disabled", module: "ai-workforce", targetType: "AIProvider", targetId: String(provider._id), outcome: "success", metadata: { lastTestStatus: provider.lastTestStatus, assistantsActivated: provider.enabled } });
+      return NextResponse.json({ status: "ok", message: provider.enabled ? "Provider enabled and the public, client and admin read-only assistants are activated. All AI employees can now use the global provider pool." : "Provider disabled. AI employees and assistant configurations remain enabled and will use another available verified provider." });
     }
     if (body.action === "runtime.test") {
       const traceStartedAt = Date.now();

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
+import { randomUUID } from "node:crypto";
+import AIExecutionLog from "@/models/AIExecutionLog";
 import { createHash } from "node:crypto";
 import { getServerSession } from "@/lib/auth/serverSession";
 import { connectToDatabase } from "@/lib/db";
@@ -409,6 +411,7 @@ export async function POST(request: NextRequest) {
       const timeout = setTimeout(() => controller.abort(), 20000);
       let testedModel = "";
       let statusCode = 0;
+      const testTraceId = randomUUID();
       try {
         const key = resolveProviderApiKey(provider.name, provider.provider, provider.encryptedApiKey);
         const catalogueUrl = provider.provider === "google"
@@ -444,6 +447,7 @@ export async function POST(request: NextRequest) {
           let lastProviderMessage = "No Gemini model was available.";
           for (const candidate of googleCandidates) {
             testedModel = candidate;
+            const attemptStartedAt = Date.now();
             generationResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
               method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, signal: controller.signal, cache: "no-store",
               body: JSON.stringify({ model: candidate.replace(/^models\//, ""), input: "Reply with exactly: TGO live generation test successful.", store: false }),
@@ -451,8 +455,13 @@ export async function POST(request: NextRequest) {
             const result = await generationResponse.json().catch(() => ({}));
             statusCode = generationResponse.status;
             generatedText = Array.isArray(result.steps) ? result.steps.filter((step: any) => step.type === "model_output").flatMap((step: any) => step.content || []).filter((part: any) => part.type === "text").map((part: any) => part.text || "").join("").trim() : String(result.output_text || "").trim();
-            if (generationResponse.ok && generatedText) break;
-            lastProviderMessage = String(result?.error?.message || "Provider error").slice(0, 300);
+            if (generationResponse.ok && generatedText) {
+              await AIExecutionLog.create({ traceId: testTraceId, feature: "provider_live_test", providerId: String(provider._id), providerName: provider.name, providerType: provider.provider, model: candidate, status: "success", durationMs: Date.now() - attemptStartedAt }).catch(() => undefined);
+              break;
+            }
+            const attemptMessage = String(result?.error?.message || result?.error?.code || "Provider error").replace(/(key|token|secret)[=: ]+[^\s,"]+/gi, "$1=[redacted]").slice(0, 1200);
+            await AIExecutionLog.create({ traceId: testTraceId, feature: "provider_live_test", providerId: String(provider._id), providerName: provider.name, providerType: provider.provider, model: candidate, status: "failure", durationMs: Date.now() - attemptStartedAt, httpStatus: generationResponse.status, errorCode: generationResponse.status === 404 ? "model_unavailable" : generationResponse.status === 429 ? "rate_limit" : "provider_request_failed", errorMessage: attemptMessage }).catch(() => undefined);
+            lastProviderMessage = attemptMessage.slice(0, 300);
             if (![429, 500, 502, 503, 504].includes(generationResponse.status)) break;
           }
           if (!generationResponse.ok) throw new Error("Gemini generation failed after trying " + googleCandidates.length + " available models (HTTP " + statusCode + "): " + lastProviderMessage);
@@ -475,6 +484,9 @@ export async function POST(request: NextRequest) {
         statusCode = generationResponse.status;
         if (!generationResponse.ok) throw new Error("Provider model generation request failed (HTTP " + generationResponse.status + ").");
         if (!generatedText) throw new Error("The provider accepted the request but returned no text completion.");
+        if (provider.provider !== "google") {
+          await AIExecutionLog.create({ traceId: testTraceId, feature: "provider_live_test", providerId: String(provider._id), providerName: provider.name, providerType: provider.provider, model: testedModel, status: "success" }).catch(() => undefined);
+        }
         provider.lastTestedAt = new Date();
         provider.lastTestedModel = testedModel;
         provider.lastTestStatus = "success";
@@ -486,7 +498,8 @@ export async function POST(request: NextRequest) {
         provider.lastTestedModel = undefined;
         provider.lastTestStatus = "failed";
         await provider.save();
-        const diagnostic = (error instanceof Error ? error.message : "Provider generation test failed.").slice(0, 500);
+        const diagnostic = (error instanceof Error ? error.message : "Provider generation test failed.").replace(/(key|token|secret)[=: ]+[^\s,"]+/gi, "$1=[redacted]").slice(0, 500);
+        await AIExecutionLog.create({ traceId: testTraceId, feature: "provider_live_test", providerId: String(provider._id), providerName: provider.name, providerType: provider.provider, model: testedModel || "model-discovery", status: "failure", httpStatus: statusCode || undefined, errorCode: statusCode === 404 ? "model_unavailable" : statusCode === 429 ? "rate_limit" : statusCode === 401 || statusCode === 403 ? "authentication_or_permission" : "provider_test_failed", errorMessage: diagnostic }).catch(() => undefined);
         await writePlatformAuditEvent({ actorType: "human", actorId, actorLabel: session.user.name, action: "ai.provider.tested", module: "ai-workforce", targetType: "AIProvider", targetId: String(provider._id), outcome: "failure", metadata: { model: testedModel, statusCode, error: diagnostic, liveGeneration: true } });
         return NextResponse.json({ status: "error", message: "Live generation test failed. Check the provider API key, model access, billing/quota and model availability. Founder diagnostics have been recorded.", ...(isFounder ? { diagnostic } : {}) }, { status: 502 });
       } finally {

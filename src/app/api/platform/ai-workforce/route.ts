@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
+import { createHash } from "node:crypto";
 import { getServerSession } from "@/lib/auth/serverSession";
 import { connectToDatabase } from "@/lib/db";
 import { getSiteUrl } from "@/lib/siteUrl";
@@ -7,7 +8,7 @@ import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import { AIProvider, AIAgent, AITask } from "@/models/AIWorkforce";
 import { UnifiedConversation, UnifiedMessage } from "@/models/UnifiedConversation";
 import { mirrorMessageToPersonalWhatsApp } from "@/lib/messaging/whatsappSync";
-import { encryptProviderSecret } from "@/lib/ai/provider-secrets";
+import { decryptProviderSecret, encryptProviderSecret } from "@/lib/ai/provider-secrets";
 import { resolveProviderApiKey } from "@/lib/ai/provider-key";
 import { runProviderCompletionWithFallback } from "@/lib/ai/provider-runtime";
 import { AIWorkspace, AIMemory } from "@/models/AIKnowledge";
@@ -35,6 +36,19 @@ import { buildAccessibleAIAgentFilter } from "@/lib/messaging/aiAgentAccess";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 50;
+
+async function getUniqueProviderKeyFingerprint(apiKey: string, excludeProviderId?: string) {
+  const fingerprint = createHash("sha256").update(apiKey).digest("hex");
+  const activeProviders = await AIProvider.find({ archivedAt: { $exists: false }, ...(excludeProviderId ? { _id: { $ne: excludeProviderId } } : {}) }).select("+encryptedApiKey apiKeyFingerprint name provider").lean();
+  for (const existing of activeProviders) {
+    let existingFingerprint = String(existing.apiKeyFingerprint || "");
+    if (!existingFingerprint) {
+      try { existingFingerprint = createHash("sha256").update(decryptProviderSecret(existing.encryptedApiKey)).digest("hex"); } catch { continue; }
+    }
+    if (existingFingerprint === fingerprint) return { fingerprint, duplicateName: existing.name };
+  }
+  return { fingerprint, duplicateName: "" };
+}
 
 // These governance rules are injected into every execution regardless of provider or agent configuration.
 const TGO_AI_PLATFORM_RULES = [
@@ -304,10 +318,12 @@ export async function POST(request: NextRequest) {
       const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) return NextResponse.json({ status: "error", message: "GEMINI_API_KEY is not configured in this application's runtime environment." }, { status: 503 });
       let provider = await AIProvider.findOne({ name: "Gemini environment provider" });
+      const keyCheck = await getUniqueProviderKeyFingerprint(apiKey, provider ? String(provider._id) : undefined);
+      if (keyCheck.duplicateName) return NextResponse.json({ status: "error", message: "This API key is already in use by the existing provider \"" + keyCheck.duplicateName + "\". Remove that provider before reusing the key." }, { status: 409 });
       if (provider) {
-        provider.provider = "google"; provider.encryptedApiKey = encryptProviderSecret(apiKey); provider.enabled = false; provider.lastTestStatus = undefined; provider.lastTestedAt = undefined; provider.archivedAt = undefined; await provider.save();
+        provider.provider = "google"; provider.apiKeyFingerprint = keyCheck.fingerprint; provider.encryptedApiKey = encryptProviderSecret(apiKey); provider.enabled = false; provider.lastTestStatus = undefined; provider.lastTestedAt = undefined; provider.archivedAt = undefined; await provider.save();
       } else {
-        provider = await AIProvider.create({ name: "Gemini environment provider", provider: "google", encryptedApiKey: encryptProviderSecret(apiKey), enabled: false, createdBy: actorId });
+        provider = await AIProvider.create({ name: "Gemini environment provider", provider: "google", apiKeyFingerprint: keyCheck.fingerprint, encryptedApiKey: encryptProviderSecret(apiKey), enabled: false, createdBy: actorId });
       }
       await writePlatformAuditEvent({ actorType: "human", actorId, action: "ai.provider.imported_from_environment", module: "ai-workforce", targetType: "AIProvider", targetId: String(provider._id), outcome: "success", metadata: { provider: "google", source: "GEMINI_API_KEY" } });
       return NextResponse.json({ status: "ok", provider: { id: provider._id, name: provider.name, provider: provider.provider }, message: "Existing Gemini environment credential encrypted and imported. Test the connection before enabling agents." }, { status: 201 });
@@ -319,6 +335,8 @@ export async function POST(request: NextRequest) {
       const supportedProviders = ["google", "openai", "anthropic", "openai-compatible"] as const;
       if (!name || !apiKey || !supportedProviders.includes(provider as (typeof supportedProviders)[number])) return NextResponse.json({ status: "error", message: "Provider name, supported provider type and API key are required." }, { status: 400 });
       if (provider === "openai-compatible") { try { const endpoint = new URL(String(body.baseUrl || "")); const host = endpoint.hostname.toLowerCase(); if (endpoint.protocol !== "https:" || !host.includes(".") || host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host.endsWith(".internal") || /^(10\\.|127\\.|192\\.168\\.|169\\.254\\.|172\\.(1[6-9]|2[0-9]|3[01])\\.)/.test(host) || host === "::1") throw new Error(); } catch { return NextResponse.json({ status: "error", message: "A public HTTPS base URL is required for compatible providers." }, { status: 400 }); } }
+      const keyCheck = await getUniqueProviderKeyFingerprint(apiKey, existing?._id ? String(existing._id) : undefined);
+      if (keyCheck.duplicateName) return NextResponse.json({ status: "error", message: "This API key is already in use by the existing provider \"" + keyCheck.duplicateName + "\". Remove that provider before reusing the key." }, { status: 409 });
       // A provider removed from the registry is soft-archived so its audit and task
       // history remain intact. The MongoDB unique name_1 index still reserves its
       // name, therefore restore that archived record instead of inserting a duplicate.
@@ -330,10 +348,10 @@ export async function POST(request: NextRequest) {
       const created = existing
         ? await AIProvider.findOneAndUpdate(
             { _id: existing._id, archivedAt: { $exists: true } },
-            { $set: { provider, baseUrl: body.baseUrl, encryptedApiKey, enabled: false, createdBy: actorId }, $unset: { archivedAt: 1, lastTestedAt: 1, lastTestStatus: 1 } },
+            { $set: { provider, baseUrl: body.baseUrl, encryptedApiKey, apiKeyFingerprint: keyCheck.fingerprint, enabled: false, createdBy: actorId }, $unset: { archivedAt: 1, lastTestedAt: 1, lastTestStatus: 1 } },
             { new: true, runValidators: true },
           )
-        : await AIProvider.create({ name, provider: provider as (typeof supportedProviders)[number], baseUrl: body.baseUrl, encryptedApiKey, createdBy: actorId });
+        : await AIProvider.create({ name, provider: provider as (typeof supportedProviders)[number], baseUrl: body.baseUrl, encryptedApiKey, apiKeyFingerprint: keyCheck.fingerprint, createdBy: actorId });
       if (!created) return NextResponse.json({ status: "error", message: "This provider was changed by another request. Refresh the provider list and try again." }, { status: 409 });
       await writePlatformAuditEvent({ actorType: "human", actorId, actorLabel: session.user.name, action: existing ? "ai.provider.restored" : "ai.provider.created", module: "ai-workforce", targetType: "AIProvider", targetId: String(created._id), outcome: "success", metadata: { provider, name, restoredArchivedRecord: Boolean(existing) } });
       return NextResponse.json({ status: "ok", provider: { id: created._id, name: created.name, provider: created.provider }, message: existing ? "The archived provider record was restored with the new encrypted API key. Test live generation before enabling it." : "Provider created. Test live generation before enabling it." }, { status: 201 });
@@ -346,6 +364,9 @@ export async function POST(request: NextRequest) {
       }
       const provider = await AIProvider.findById(providerId);
       if (!provider) return NextResponse.json({ status: "error", message: "Provider not found." }, { status: 404 });
+      const keyCheck = await getUniqueProviderKeyFingerprint(apiKey, String(provider._id));
+      if (keyCheck.duplicateName) return NextResponse.json({ status: "error", message: "This API key is already in use by the existing provider \"" + keyCheck.duplicateName + "\". Remove that provider before reusing the key." }, { status: 409 });
+      provider.apiKeyFingerprint = keyCheck.fingerprint;
       provider.encryptedApiKey = encryptProviderSecret(apiKey);
       provider.enabled = false;
       provider.lastTestStatus = undefined;

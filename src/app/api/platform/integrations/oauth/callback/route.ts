@@ -79,7 +79,8 @@ export async function GET(request: NextRequest) {
     } else if (providerId === "google_workspace" || providerId === "google_cloud") {
       const form = new URLSearchParams({
         code, client_id: String(application.clientId), client_secret: secret,
-        redirect_uri: stateRecord.redirectUri, grant_type: "authorization_code",\n        ...(stateRecord.pkceVerifierCiphertext ? { code_verifier: decryptCredentials(stateRecord.pkceVerifierCiphertext).verifier } : {}),
+        redirect_uri: stateRecord.redirectUri, grant_type: "authorization_code",
+        ...(stateRecord.pkceVerifierCiphertext ? { code_verifier: decryptCredentials(stateRecord.pkceVerifierCiphertext).verifier } : {}),
       });
       const response = await fetch("https://oauth2.googleapis.com/token", {
         method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },

@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";\nimport { encryptCredentials } from "@/lib/integrations/crypto";
 import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { getServerSession } from "@/lib/auth/serverSession";
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
   await IntegrationOAuthState.create({
     stateHash, providerId: application.providerId, applicationId: application._id,
     ownerType, ownerId, userId: session.user._id, redirectUri, scopes,
-    expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+    ...(usePkce ? { pkceVerifierCiphertext: encryptCredentials({ verifier }) } : {}),\n    expiresAt: new Date(Date.now() + 10 * 60 * 1000),
   });
 
   const authorization = new URL(definition.authorizeUrl);
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
   authorization.searchParams.set("redirect_uri", redirectUri);
   authorization.searchParams.set("response_type", "code");
   authorization.searchParams.set("scope", scopes.join(" "));
-  authorization.searchParams.set("state", state);
+  authorization.searchParams.set("state", state);\n  if (usePkce) { authorization.searchParams.set("code_challenge", challenge); authorization.searchParams.set("code_challenge_method", "S256"); }
   for (const [key, value] of Object.entries(definition.extraParams || {})) authorization.searchParams.set(key, value);
 
   return NextResponse.json({ authorizationUrl: authorization.toString(), expiresInSeconds: 600 });

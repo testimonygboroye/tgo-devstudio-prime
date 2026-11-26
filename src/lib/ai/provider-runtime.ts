@@ -108,6 +108,9 @@ async function discoverProviderModels(provider: any): Promise<string[]> {
     : provider.provider === "openai" ? "https://api.openai.com/v1"
     : provider.provider === "anthropic" ? "https://api.anthropic.com/v1"
     : String(provider.baseUrl || "").replace(/\/$/, "");
+  let key = "";
+  try { key = resolveProviderApiKey(provider.name, provider.provider, provider.encryptedApiKey); }
+  catch { return []; }
   const headers: Record<string, string> = provider.provider === "google" ? { "x-goog-api-key": key }
     : provider.provider === "anthropic" ? { "x-api-key": key, "anthropic-version": "2023-06-01" }
     : { Authorization: "Bearer " + key };
@@ -115,9 +118,6 @@ async function discoverProviderModels(provider: any): Promise<string[]> {
     : provider.provider === "anthropic" ? ["claude-opus-4-1", "claude-sonnet-4-5", "claude-3-5-haiku-latest"]
     : provider.provider === "openai" ? ["gpt-4.1", "o3", "gpt-4.1-mini", "gpt-4o-mini"]
     : [String(provider.lastTestedModel || "default")];
-  let key = "";
-  try { key = resolveProviderApiKey(provider.name, provider.provider, provider.encryptedApiKey); }
-  catch { return []; }
   try {
     const response = await fetch(base + "/models", { headers, signal: AbortSignal.timeout(3500), cache: "no-store" });
     if (!response.ok) return [...new Set([provider.lastTestedModel, ...fallback].filter(Boolean) as string[])];

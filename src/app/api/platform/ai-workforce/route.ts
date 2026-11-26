@@ -67,7 +67,7 @@ export async function GET() {
       allowedAgentIds: (employee.aiAllowedAgentIds || []).map((id: unknown) => String(id)),
     });
     const agents = await AIAgent.find(agentFilter || { _id: { $exists: false } })
-      .select("name role department description workspaceId positionId assignedUserId providerId modelName permissions requiresApproval maxDailyTokens enabled")
+      .select("name role department description workspaceId memoryKey positionId assignedUserId providerId modelName permissions requiresApproval maxDailyTokens enabled")
       .populate("providerId", "name provider")
       .sort({ department: 1, name: 1 }).lean();
     const agentIds = agents.map((agent) => agent._id);
@@ -364,7 +364,7 @@ export async function POST(request: NextRequest) {
       await provider.save();
       const dependent = await AIAgent.updateMany({ providerId: provider._id, enabled: true }, { $set: { enabled: false } });
       await writePlatformAuditEvent({ actorType: "human", actorId, actorLabel: session.user.name, action: "ai.provider.archived", module: "ai-workforce", targetType: "AIProvider", targetId: String(provider._id), outcome: "success", metadata: { provider: provider.provider, name: provider.name, dependentAgentsDisabled: dependent.modifiedCount } });
-      return NextResponse.json({ status: "ok", message: "Provider removed from the active registry. Dependent agents were safely disabled; task and audit history were preserved." });
+      return NextResponse.json({ status: "ok", message: "Provider archived from the active registry. Only this provider connection was retired; TGO-owned memories, role knowledge, completed work, projects, tasks and audit history remain intact and can be used by replacement agents connected to any verified provider." });
     }
     if (body.action === "provider.enable" || body.action === "provider.disable") {
       const provider = await AIProvider.findById(body.providerId);

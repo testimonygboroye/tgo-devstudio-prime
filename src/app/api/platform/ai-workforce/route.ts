@@ -267,7 +267,7 @@ export async function POST(request: NextRequest) {
       await writePlatformAuditEvent({
         actorType: "human", actorId, actorLabel: session.user.name,
         action: "ai.workforce.provisioned", module: "ai-workforce",
-        targetType: "AIWorkforce", targetId: String(provider._id), outcome: "success",
+        targetType: "AIWorkforce", targetId: actorId, outcome: "success",
         metadata: { createdCount, existingCount, counterpartCount, counterpartExistingCount, departments: workspaceIds.size, providerIndependent: true },
       });
       return NextResponse.json({

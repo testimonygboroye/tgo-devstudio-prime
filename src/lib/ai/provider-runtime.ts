@@ -145,7 +145,12 @@ export async function runProviderCompletionWithFallback(
 ): Promise<AICompletion> {
   await connectToDatabase();
   const traceId = randomUUID();
-  const providers: any[] = await AIProvider.find({ enabled: true, lastTestStatus: "success", archivedAt: { $exists: false } }).select("+encryptedApiKey").lean();
+  const storedProviders: any[] = await AIProvider.find({}).select("+encryptedApiKey").lean();
+  // Mongoose legacy rows can store archivedAt as null. `$exists:false` would
+  // silently exclude those valid, unarchived providers from the global pool.
+  const providers: any[] = storedProviders.filter((provider) =>
+    provider.enabled === true && provider.lastTestStatus === "success" && !provider.archivedAt
+  );
   // The founder can explicitly import/test GEMINI_API_KEY in Vercel without
   // relying on a database provider row being enabled on every deployment.
   // Keep it as a final, provider-independent fallback; never expose the key.

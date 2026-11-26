@@ -22,11 +22,13 @@ const AIProviderSchema = new Schema<IAIProvider>({
   createdBy: { type: String, required: true },
   lastTestedAt: Date,
   lastTestedModel: { type: String, maxlength: 120 },
-  apiKeyFingerprint: { type: String, select: false, maxlength: 64, index: true },
+  apiKeyFingerprint: { type: String, select: false, maxlength: 64 },
   lastTestStatus: { type: String, enum: ["success", "failed"] },
   archivedAt: { type: Date, default: undefined, index: true },
 }, { timestamps: true });
 AIProviderSchema.index({ name: 1 }, { unique: true });
+// Atomic cross-provider duplicate-key protection. Archived providers release their key.
+AIProviderSchema.index({ apiKeyFingerprint: 1 }, { unique: true, partialFilterExpression: { apiKeyFingerprint: { $type: "string" }, archivedAt: { $exists: false } } });
 
 export interface IAIAgent extends Document {
   name: string;

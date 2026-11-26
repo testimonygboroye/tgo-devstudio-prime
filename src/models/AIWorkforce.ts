@@ -12,6 +12,7 @@ export interface IAIProvider extends Document {
   apiKeyFingerprint?: string;
   lastTestStatus?: "success" | "failed";
   archivedAt?: Date;
+  disabledAt?: Date;
 }
 const AIProviderSchema = new Schema<IAIProvider>({
   name: { type: String, required: true, trim: true, maxlength: 80 },
@@ -25,6 +26,7 @@ const AIProviderSchema = new Schema<IAIProvider>({
   apiKeyFingerprint: { type: String, select: false, maxlength: 64 },
   lastTestStatus: { type: String, enum: ["success", "failed"] },
   archivedAt: { type: Date, default: undefined, index: true },
+  disabledAt: { type: Date, default: undefined, index: true },
 }, { timestamps: true });
 AIProviderSchema.index({ name: 1 }, { unique: true });
 // Atomic cross-provider duplicate-key protection. Archived providers release their key.
@@ -46,6 +48,7 @@ export interface IAIAgent extends Document {
   requiresApproval: boolean;
   maxDailyTokens: number;
   enabled: boolean;
+  disabledAt?: Date;
   createdBy: string;
 }
 const AIAgentSchema = new Schema<IAIAgent>({
@@ -65,6 +68,7 @@ const AIAgentSchema = new Schema<IAIAgent>({
   requiresApproval: { type: Boolean, default: true },
   maxDailyTokens: { type: Number, default: 100000, min: 5000, max: 1000000 },
   enabled: { type: Boolean, default: false },
+  disabledAt: { type: Date, default: undefined, index: true },
   createdBy: { type: String, required: true },
 }, { timestamps: true });
 AIAgentSchema.index({ department: 1, enabled: 1 });

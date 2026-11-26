@@ -2,7 +2,7 @@ import { Schema, model, models, type Document, type Model, Types } from "mongoos
 export interface IIntegrationApplication extends Document {
  providerId:string; appName:string; appType:"oauth_app"|"github_app"|"service_account"|"api_client";
  ownerType:"founder"|"client"; ownerId:Types.ObjectId; clientId?:string; clientSecretCiphertext?:string;
- callbackUrl:string; scopes:string[]; active:boolean; createdBy:Types.ObjectId; updatedBy:Types.ObjectId;
+ callbackUrl:string; scopes:string[]; active:boolean; createdBy:Types.ObjectId; updatedBy:Types.ObjectId; createdAt?:Date; updatedAt?:Date;
 }
 const schema=new Schema<IIntegrationApplication>({
  providerId:{type:String,required:true,index:true},appName:{type:String,required:true,trim:true,maxlength:120},

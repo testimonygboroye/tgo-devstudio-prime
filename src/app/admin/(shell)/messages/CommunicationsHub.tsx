@@ -49,7 +49,9 @@ export default function CommunicationsHub() {
     return getReadReceiptSummary(message.readBy, message.senderId, currentUserId, active?.memberIds || [], active?.kind || "direct");
   }
   const listInFlight=useRef(false);
-  const messagesInFlight=useRef(false);\n  const lastPollingErrorToastAt=useRef(0);\n  const notifyPollingError=(message:string)=>{if(Date.now()-lastPollingErrorToastAt.current>15000){notify(message,"error");lastPollingErrorToastAt.current=Date.now();}};
+  const messagesInFlight=useRef(false);
+  const lastPollingErrorToastAt=useRef(0);
+  const notifyPollingError=(message:string)=>{if(Date.now()-lastPollingErrorToastAt.current>15000){notify(message,"error");lastPollingErrorToastAt.current=Date.now();}};
   const loadList=useCallback(async()=>{
     if(listInFlight.current)return;
     listInFlight.current=true;

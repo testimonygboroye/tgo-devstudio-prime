@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
   const definition = providers[application.providerId];
   if (!definition) return fail("This provider does not yet have a verified OAuth adapter. Use its supported connection method instead.", 422);
 
-  const redirectUri = new URL("/api/platform/integrations/oauth/callback", getSiteUrl()).toString();
+  const redirectUri = new URL("/api/platform/integrations/oauth/callback", getSiteUrl()).toString();\n  const requestOrigin = new URL(request.url).origin;\n  const allowedReturnOrigins = new Set([\n    getSiteUrl(),\n    "https://tgo-devstudio-prime.vercel.app",\n    "https://tgo-devstudio-prime.onrender.com",\n    ...(process.env.SITE_URL ? [new URL(process.env.SITE_URL).origin] : []),\n    ...(process.env.NEXT_PUBLIC_SITE_URL ? [new URL(process.env.NEXT_PUBLIC_SITE_URL).origin] : []),\n    ...(process.env.VERCEL_URL ? ["https://" + process.env.VERCEL_URL.replace(/^https?:\\/\\//, "")] : []),\n  ]);\n  const returnOrigin = allowedReturnOrigins.has(requestOrigin) ? requestOrigin : getSiteUrl();
   if (application.callbackUrl !== redirectUri) return fail("The registered callback URL must exactly match: " + redirectUri, 409);
   const clientId = String(application.clientId || "").trim();
   if (!clientId) return fail("The OAuth application is missing its client ID.", 409);
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
   const challenge = verifier ? createHash("sha256").update(verifier).digest("base64url") : "";
   await IntegrationOAuthState.create({
     stateHash, providerId: application.providerId, applicationId: application._id,
-    ownerType, ownerId, userId: session.user._id, redirectUri, scopes,
+    ownerType, ownerId, userId: session.user._id, redirectUri, returnOrigin, scopes,
     ...(verifier ? { pkceVerifierCiphertext: encryptCredentials({ verifier }) } : {}),
     expiresAt: new Date(Date.now() + 10 * 60 * 1000),
   });

@@ -104,7 +104,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
   "Quality Assurance Lead": ["projects.read_summary", "site.routes.health_check", "github.repository.read", "github.file.read"],
   "QA Engineer": ["projects.read_summary", "site.routes.health_check", "github.repository.read", "github.file.read"],
   "Public Experience QA Specialist": ["site.routes.health_check", "github.repository.read", "github.file.read"],
-  "Client Portal QA Specialist": ["clients.read_summary", "projects.read_summary", "site.routes.health_check"],
+  "Client Portal QA Specialist": ["site.routes.health_check"],
   "Platform QA Specialist": ["site.routes.health_check", "integrations.status.read", "github.repository.read", "github.file.read"],
   "DevOps Architect": ["projects.read_summary", "site.routes.health_check", "integrations.status.read", "github.repository.read", "github.file.read"],
   "Cloud Engineer": ["projects.read_summary", "site.routes.health_check", "integrations.status.read", "github.repository.read", "github.file.read"],

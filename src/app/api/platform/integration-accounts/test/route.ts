@@ -1,0 +1,33 @@
+import {NextRequest,NextResponse} from "next/server";
+import {getServerSession} from "@/lib/auth/serverSession";
+import {connectToDatabase} from "@/lib/db";
+import ClientProfile from "@/models/ClientProfile";
+import IntegrationAccount from "@/models/IntegrationAccount";
+import {decryptCredentials} from "@/lib/integrations/crypto";
+import {writePlatformAuditEvent} from "@/lib/platform/audit";
+import mongoose from "mongoose";
+export const runtime="nodejs";export const dynamic="force-dynamic";
+export async function POST(request:NextRequest){
+ const session=await getServerSession();if(!session)return NextResponse.json({error:"Authentication required."},{status:401});
+ const founder=Boolean(session.role?.isFounderRole);const client=founder?null:await ClientProfile.findOne({userId:session.user._id}).select("organizationId").lean();if(!founder&&!client)return NextResponse.json({error:"Client account required."},{status:403});
+ let body:any;try{body=await request.json()}catch{return NextResponse.json({error:"Invalid request body."},{status:400})}
+ if(!mongoose.isValidObjectId(String(body.id||"")))return NextResponse.json({error:"Invalid account ID."},{status:400});
+ await connectToDatabase();const row=await IntegrationAccount.findOne({_id:body.id,ownerType:founder?"founder":"client",ownerId:session.user._id}).select("+credentialsCiphertext");if(!row)return NextResponse.json({error:"Account connection not found."},{status:404});
+ const c=decryptCredentials(row.credentialsCiphertext);const controller=AbortSignal.timeout(12000);let response:Response|undefined;let identity="";
+ try{
+  if(row.providerId==="github"){response=await fetch("https://api.github.com/user",{headers:{Authorization:"Bearer "+c.token,Accept:"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"},signal:controller,cache:"no-store"});if(response.ok){const user:any=await response.json();identity=user.login||"";}}
+  else if(row.providerId==="supabase"){response=await fetch("https://api.supabase.com/v1/projects",{headers:{Authorization:"Bearer "+c.accessToken,Accept:"application/json"},signal:controller,cache:"no-store"});if(response.ok){const projects:any=await response.json();identity=Array.isArray(projects)?projects.length+" accessible project(s)":"Supabase account";}}
+  else if(row.providerId==="cloudflare"){response=await fetch("https://api.cloudflare.com/client/v4/user/tokens/verify",{headers:{Authorization:"Bearer "+c.apiToken,Accept:"application/json"},signal:controller,cache:"no-store"});if(response.ok){const j:any=await response.json();identity=j.result?.status||"Cloudflare token";}}
+  else if(row.providerId==="vercel"){response=await fetch("https://api.vercel.com/v2/user",{headers:{Authorization:"Bearer "+c.token,Accept:"application/json"},signal:controller,cache:"no-store"});if(response.ok){const j:any=await response.json();identity=j.user?.username||j.user?.name||"Vercel account";}}
+  else if(row.providerId==="render"){response=await fetch("https://api.render.com/v1/owners?limit=1",{headers:{Authorization:"Bearer "+c.apiKey,Accept:"application/json"},signal:controller,cache:"no-store"});if(response.ok)identity="Render workspace";}
+  else if(row.providerId==="railway"){response=await fetch("https://backboard.railway.app/graphql/v2",{method:"POST",headers:{Authorization:"Bearer "+c.apiToken,"Content-Type":"application/json"},body:JSON.stringify({query:"query { me { id name email } }"}),signal:controller,cache:"no-store"});if(response.ok){const j:any=await response.json();identity=j.data?.me?.name||"Railway account";if(j.errors?.length)throw new Error(String(j.errors[0].message||"Railway verification failed."));}}
+  else if(row.providerId==="brevo"){response=await fetch("https://api.brevo.com/v3/account",{headers:{"api-key":c.apiKey,Accept:"application/json"},signal:controller,cache:"no-store"});if(response.ok){const j:any=await response.json();identity=j.email||j.companyName||"Brevo account";}}
+  else if(row.providerId==="paystack"){response=await fetch("https://api.paystack.co/balance",{headers:{Authorization:"Bearer "+c.secretKey,Accept:"application/json"},signal:controller,cache:"no-store"});if(response.ok)identity="Paystack account";}
+  else if(row.providerId==="mongodb_atlas"){const auth=Buffer.from(c.publicKey+":"+c.privateKey).toString("base64");response=await fetch("https://cloud.mongodb.com/api/atlas/v2/orgs?itemsPerPage=1",{headers:{Authorization:"Basic "+auth,Accept:"application/vnd.atlas.2023-01-01+json"},signal:controller,cache:"no-store"});if(response.ok)identity="MongoDB Atlas organization";}
+  else throw new Error("A live verification adapter is not yet available for this provider. The account remains configured, not connected.");
+  if(!response?.ok){const status=response?.status||0;const detail=await response?.text().catch(()=>"")||"";throw new Error("Provider verification returned HTTP "+status+". "+detail.slice(0,260));}
+  row.status="connected";row.lastVerifiedAt=new Date();row.lastError="";await row.save();
+  await writePlatformAuditEvent({actorType:"human",actorId:String(session.user._id),actorLabel:session.user.name,action:"integration.account_verified",module:"integrations",targetType:"IntegrationAccount",targetId:String(row._id),outcome:"success",metadata:{providerId:row.providerId,accountLabel:row.accountLabel,identity}});
+  return NextResponse.json({message:"Account verified successfully.",account:{id:String(row._id),status:row.status,identity}});
+ }catch(error){const message=error instanceof Error?error.message:"Connection verification failed.";row.status="error";row.lastError=message.slice(0,1000);await row.save();await writePlatformAuditEvent({actorType:"human",actorId:String(session.user._id),actorLabel:session.user.name,action:"integration.account_verification_failed",module:"integrations",targetType:"IntegrationAccount",targetId:String(row._id),outcome:"failure",metadata:{providerId:row.providerId,accountLabel:row.accountLabel,error:message.slice(0,300)}});return NextResponse.json({error:message},{status:502});}
+}

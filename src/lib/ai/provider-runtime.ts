@@ -177,11 +177,20 @@ export async function runProviderCompletionWithFallback(
       storedGoogleProviders: storedProviders.filter((provider) => provider.provider === "google").map((provider) => ({ enabled: provider.enabled === true, liveTestPassed: provider.lastTestStatus === "success", archived: Boolean(provider.archivedAt), disabled: Boolean(provider.disabledAt), encryptedCredentialPresent: Boolean(provider.encryptedApiKey) })),
     });
   }
-  if (environmentGeminiKey) providers.push({
-    _id: "__gemini_environment__", name: "Gemini environment provider", provider: "google",
-    encryptedApiKey: "", enabled: true, lastTestStatus: "success", lastTestedModel: "gemini-3.1-pro-preview",
-  });
   const storedGoogleProviders = storedProviders.filter((provider) => provider.provider === "google");
+  // Do not add a second synthetic provider when the same Gemini credential is
+  // already imported, tested and active in the provider registry. The synthetic
+  // record otherwise competes with the saved record using an untested hard-coded
+  // preview model and burns the same free-tier quota twice.
+  if (environmentGeminiKey && !providers.some((provider) => provider.provider === "google")) {
+    const previouslyTestedEnvironmentModel = storedGoogleProviders.find((provider) =>
+      provider.name === "Gemini environment provider" && provider.lastTestStatus === "success" && provider.lastTestedModel
+    )?.lastTestedModel || "";
+    providers.push({
+      _id: "__gemini_environment__", name: "Gemini environment provider", provider: "google",
+      encryptedApiKey: "", enabled: true, lastTestStatus: "success", lastTestedModel: previouslyTestedEnvironmentModel,
+    });
+  }
   if (!providers.some((provider) => provider.provider === "google")) {
     const savedState = storedGoogleProviders.length
       ? storedGoogleProviders.map((provider) => `enabled=${provider.enabled === true}, tested=${provider.lastTestStatus === "success"}, archived=${Boolean(provider.archivedAt)}, disabled=${Boolean(provider.disabledAt)}, credential=${Boolean(provider.encryptedApiKey)}`).join("; ")

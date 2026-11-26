@@ -104,7 +104,6 @@ function modelQualityScore(model: string): number {
   return score;
 }
 async function discoverProviderModels(provider: any): Promise<string[]> {
-  const key = resolveProviderApiKey(provider.name, provider.provider, provider.encryptedApiKey);
   const base = provider.provider === "google" ? "https://generativelanguage.googleapis.com/v1beta"
     : provider.provider === "openai" ? "https://api.openai.com/v1"
     : provider.provider === "anthropic" ? "https://api.anthropic.com/v1"
@@ -116,6 +115,9 @@ async function discoverProviderModels(provider: any): Promise<string[]> {
     : provider.provider === "anthropic" ? ["claude-opus-4-1", "claude-sonnet-4-5", "claude-3-5-haiku-latest"]
     : provider.provider === "openai" ? ["gpt-4.1", "o3", "gpt-4.1-mini", "gpt-4o-mini"]
     : [String(provider.lastTestedModel || "default")];
+  let key = "";
+  try { key = resolveProviderApiKey(provider.name, provider.provider, provider.encryptedApiKey); }
+  catch { return []; }
   try {
     const response = await fetch(base + "/models", { headers, signal: AbortSignal.timeout(3500), cache: "no-store" });
     if (!response.ok) return [...new Set([provider.lastTestedModel, ...fallback].filter(Boolean) as string[])];
@@ -142,11 +144,17 @@ export async function runProviderCompletionWithFallback(
   const traceId = randomUUID();
   const providers = await AIProvider.find({ enabled: true, lastTestStatus: "success", archivedAt: { $exists: false } }).select("+encryptedApiKey").lean();
   if (!providers.length) throw new Error("No active, connection-verified AI provider is available. AI employees remain enabled; add or enable a provider and retry this task.");
+  const failures: string[] = [];
   const catalogues = await Promise.all(providers.map(async (provider: any) => ({ provider, models: await discoverProviderModels(provider) })));
+  for (const catalogue of catalogues) {
+    if (catalogue.models.length) continue;
+    const message = catalogue.provider.name + ": provider credentials could not be resolved or no model candidates were discovered.";
+    failures.push(message);
+    await AIExecutionLog.create({ traceId, feature: "ai_model_discovery", providerId: String(catalogue.provider._id), providerName: catalogue.provider.name, providerType: catalogue.provider.provider, model: "model-discovery", status: "failure", errorCode: "model_discovery_unavailable", errorMessage: message }).catch(() => undefined);
+  }
   const candidates = catalogues.flatMap(({ provider, models }) => models.map((modelName) => ({ provider, modelName, score: modelQualityScore(modelName) })))
     .sort((a, b) => b.score - a.score || a.modelName.localeCompare(b.modelName));
   const seen = new Set<string>();
-  const failures: string[] = [];
   let attempt = 0;
   const routingDeadline = Date.now() + 42000;
   const maximumAttempts = 8;

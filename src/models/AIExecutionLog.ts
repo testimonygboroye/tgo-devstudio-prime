@@ -1,5 +1,5 @@
-import {Schema,model,models,type Document,type Model} from "mongoose";
-export interface IAIExecutionLog extends Document {
+import {Schema,model,models,type Model} from "mongoose";
+export interface IAIExecutionLog {
  traceId:string; feature:string; providerId?:string; providerName?:string; providerType?:string; model:string;
  status:"success"|"failure"|"fallback"; durationMs:number; inputTokens:number; outputTokens:number; httpStatus?:number;
  errorCode?:string; errorMessage?:string; fallbackFrom?:string; createdAt:Date;

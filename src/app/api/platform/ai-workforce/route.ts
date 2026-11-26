@@ -300,9 +300,24 @@ export async function POST(request: NextRequest) {
       const supportedProviders = ["google", "openai", "anthropic", "openai-compatible"] as const;
       if (!name || !apiKey || !supportedProviders.includes(provider as (typeof supportedProviders)[number])) return NextResponse.json({ status: "error", message: "Provider name, supported provider type and API key are required." }, { status: 400 });
       if (provider === "openai-compatible") { try { const endpoint = new URL(String(body.baseUrl || "")); const host = endpoint.hostname.toLowerCase(); if (endpoint.protocol !== "https:" || !host.includes(".") || host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host.endsWith(".internal") || /^(10\\.|127\\.|192\\.168\\.|169\\.254\\.|172\\.(1[6-9]|2[0-9]|3[01])\\.)/.test(host) || host === "::1") throw new Error(); } catch { return NextResponse.json({ status: "error", message: "A public HTTPS base URL is required for compatible providers." }, { status: 400 }); } }
-      const created = await AIProvider.create({ name, provider: provider as (typeof supportedProviders)[number], baseUrl: body.baseUrl, encryptedApiKey: encryptProviderSecret(apiKey), createdBy: actorId });
-      await writePlatformAuditEvent({ actorType: "human", actorId, actorLabel: session.user.name, action: "ai.provider.created", module: "ai-workforce", targetType: "AIProvider", targetId: String(created._id), outcome: "success", metadata: { provider, name } });
-      return NextResponse.json({ status: "ok", provider: { id: created._id, name: created.name, provider: created.provider } }, { status: 201 });
+      // A provider removed from the registry is soft-archived so its audit and task
+      // history remain intact. The MongoDB unique name_1 index still reserves its
+      // name, therefore restore that archived record instead of inserting a duplicate.
+      const existing = await AIProvider.findOne({ name });
+      if (existing && !existing.archivedAt) {
+        return NextResponse.json({ status: "error", message: "A provider with this name already exists. Rename the new provider or use Replace key on the existing provider." }, { status: 409 });
+      }
+      const encryptedApiKey = encryptProviderSecret(apiKey);
+      const created = existing
+        ? await AIProvider.findOneAndUpdate(
+            { _id: existing._id, archivedAt: { $exists: true } },
+            { $set: { provider, baseUrl: body.baseUrl, encryptedApiKey, enabled: false, createdBy: actorId }, $unset: { archivedAt: 1, lastTestedAt: 1, lastTestStatus: 1 } },
+            { new: true, runValidators: true },
+          )
+        : await AIProvider.create({ name, provider: provider as (typeof supportedProviders)[number], baseUrl: body.baseUrl, encryptedApiKey, createdBy: actorId });
+      if (!created) return NextResponse.json({ status: "error", message: "This provider was changed by another request. Refresh the provider list and try again." }, { status: 409 });
+      await writePlatformAuditEvent({ actorType: "human", actorId, actorLabel: session.user.name, action: existing ? "ai.provider.restored" : "ai.provider.created", module: "ai-workforce", targetType: "AIProvider", targetId: String(created._id), outcome: "success", metadata: { provider, name, restoredArchivedRecord: Boolean(existing) } });
+      return NextResponse.json({ status: "ok", provider: { id: created._id, name: created.name, provider: created.provider }, message: existing ? "The archived provider record was restored with the new encrypted API key. Test live generation before enabling it." : "Provider created. Test live generation before enabling it." }, { status: 201 });
     }
     if (body.action === "provider.rotate_key") {
       const providerId = String(body.providerId || "");

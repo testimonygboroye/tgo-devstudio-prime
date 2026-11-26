@@ -335,12 +335,11 @@ export async function POST(request: NextRequest) {
       const supportedProviders = ["google", "openai", "anthropic", "openai-compatible"] as const;
       if (!name || !apiKey || !supportedProviders.includes(provider as (typeof supportedProviders)[number])) return NextResponse.json({ status: "error", message: "Provider name, supported provider type and API key are required." }, { status: 400 });
       if (provider === "openai-compatible") { try { const endpoint = new URL(String(body.baseUrl || "")); const host = endpoint.hostname.toLowerCase(); if (endpoint.protocol !== "https:" || !host.includes(".") || host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host.endsWith(".internal") || /^(10\\.|127\\.|192\\.168\\.|169\\.254\\.|172\\.(1[6-9]|2[0-9]|3[01])\\.)/.test(host) || host === "::1") throw new Error(); } catch { return NextResponse.json({ status: "error", message: "A public HTTPS base URL is required for compatible providers." }, { status: 400 }); } }
+      // A provider removed from the registry is soft-archived so its audit and task
+      // history remain intact. Restore that archived record instead of inserting a duplicate.
+      const existing = await AIProvider.findOne({ name });
       const keyCheck = await getUniqueProviderKeyFingerprint(apiKey, existing?._id ? String(existing._id) : undefined);
       if (keyCheck.duplicateName) return NextResponse.json({ status: "error", message: "This API key is already in use by the existing provider \"" + keyCheck.duplicateName + "\". Remove that provider before reusing the key." }, { status: 409 });
-      // A provider removed from the registry is soft-archived so its audit and task
-      // history remain intact. The MongoDB unique name_1 index still reserves its
-      // name, therefore restore that archived record instead of inserting a duplicate.
-      const existing = await AIProvider.findOne({ name });
       if (existing && !existing.archivedAt) {
         return NextResponse.json({ status: "error", message: "A provider with this name already exists. Rename the new provider or use Replace key on the existing provider." }, { status: 409 });
       }
@@ -377,7 +376,7 @@ export async function POST(request: NextRequest) {
         actorType: "human", actorId, actorLabel: session.user.name,
         action: "ai.provider.credential_replaced", module: "ai-workforce",
         targetType: "AIProvider", targetId: String(provider._id), outcome: "success",
-        metadata: { provider: provider.provider, name: provider.name, dependentAgentsDisabled: true },
+        metadata: { provider: provider.provider, name: provider.name, dependentAgentsDisabled: false },
       });
       return NextResponse.json({ status: "ok", message: "API key encrypted and replaced. The provider and its dependent agents are disabled until a live generation test succeeds." });
     }

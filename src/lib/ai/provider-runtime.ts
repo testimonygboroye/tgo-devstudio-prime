@@ -72,9 +72,33 @@ export async function runProviderCompletionWithFallback(
   scope: AIChatbotScope = "admin",
 ): Promise<AICompletion> {
   const config = await AIChatbotConfig.findOne({ scope }).lean();
-  const attempts = buildProviderAttempts(providerId, model, config);
+  // AI employees belong to TGO, not to an inference vendor. A legacy providerId is
+  // intentionally not treated as a binding: any healthy, verified TGO provider can run any agent.
+  const configuredAttempts = buildProviderAttempts("", "", config);
+  const configuredIds = new Set(configuredAttempts.map((attempt) => attempt.providerId));
+  const availableProviders = await AIProvider.find({
+    enabled: true,
+    lastTestStatus: "success",
+    archivedAt: { $exists: false },
+  }).select("_id provider lastTestedModel updatedAt").sort({ updatedAt: -1 }).lean();
+  const providerModels: Record<string, string> = {
+    google: "gemini-2.5-flash",
+    openai: "gpt-4.1-mini",
+    anthropic: "claude-3-5-haiku-latest",
+    "openai-compatible": "default",
+  };
+  const attempts = [
+    ...configuredAttempts.filter((attempt) => availableProviders.some((provider) => String(provider._id) === attempt.providerId)),
+    ...availableProviders
+      .filter((provider) => !configuredIds.has(String(provider._id)))
+      .map((provider) => ({
+        providerId: String(provider._id),
+        modelName: String(provider.lastTestedModel || providerModels[provider.provider] || model || ""),
+      })),
+  ];
   const failures: string[] = [];
   let attemptsTried = 0;
+  if (!attempts.length) throw new Error("No active, connection-verified AI provider is available. AI employees remain enabled; add or enable a provider and retry this task.");
   for (const attempt of attempts) {
     attemptsTried += 1;
     try {

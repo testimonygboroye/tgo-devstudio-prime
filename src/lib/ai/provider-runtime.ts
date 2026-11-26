@@ -16,46 +16,74 @@ export interface AICompletion {
 
 export async function runProviderCompletion(providerId: string, model: string, system: string, prompt: string): Promise<AICompletion> {
   const provider = await AIProvider.findById(providerId).select("+encryptedApiKey");
-  if (!provider || !provider.enabled || provider.lastTestStatus !== "success") throw new Error("AI provider is not enabled and connection-verified.");
+  if (!provider || !provider.enabled || provider.lastTestStatus !== "success" || provider.archivedAt) throw new Error("AI provider is not enabled and connection-verified.");
   const key = resolveProviderApiKey(provider.name, provider.provider, provider.encryptedApiKey);
-  // Keep each provider attempt below the 50-second Hobby function ceiling so fallback providers can run.
-  const timeout = AbortSignal.timeout(14000);
-  if (provider.provider === "google") {
-    const catalogueResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/models", { headers: { "x-goog-api-key": key }, signal: AbortSignal.timeout(8000), cache: "no-store" });
-    const catalogue = await catalogueResponse.json().catch(() => ({}));
-    if (!catalogueResponse.ok) throw new Error("Gemini model catalogue failed (" + catalogueResponse.status + "): " + String(catalogue?.error?.message || "Provider error").slice(0, 400));
-    const available = (Array.isArray(catalogue.models) ? catalogue.models : [])
-      .filter((item: any) => Array.isArray(item.supportedGenerationMethods) && item.supportedGenerationMethods.includes("generateContent"))
-      .map((item: any) => String(item.name || "").replace(/^models\//, ""))
-      .filter((id: string) => /^gemini-/i.test(id));
-    const preferred = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
-    const candidates = [model, ...preferred.filter((id) => id !== model && available.includes(id)), ...available.filter((id: string) => id !== model && !preferred.includes(id))].filter((id, index, all) => id && all.indexOf(id) === index).slice(0, 3);
-    const failures: string[] = [];
-    for (const candidate of candidates) {
-      const url = "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(candidate) + ":generateContent";
-      const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, signal: AbortSignal.timeout(8000), cache: "no-store", body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 4096, temperature: 0.2 } }) });
-      const data = await response.json().catch(() => ({}));
-      if (response.ok) {
-        const text = (data.candidates?.[0]?.content?.parts || []).map((p: { text?: string }) => p.text || "").join("");
-        if (text.trim()) return { text, inputTokens: Number(data.usageMetadata?.promptTokenCount || 0), outputTokens: Number(data.usageMetadata?.candidatesTokenCount || 0), model: candidate, fallbackUsed: candidate !== model };
+  const base = provider.provider === "google" ? "https://generativelanguage.googleapis.com/v1beta" : provider.provider === "openai" ? "https://api.openai.com/v1" : provider.provider === "anthropic" ? "https://api.anthropic.com/v1" : String(provider.baseUrl || "").replace(/\\/$/, "");
+  const headers: Record<string, string> = provider.provider === "google"
+    ? { "Content-Type": "application/json", "x-goog-api-key": key }
+    : provider.provider === "anthropic"
+      ? { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" }
+      : { "Content-Type": "application/json", Authorization: "Bearer " + key };
+  const preferred = provider.provider === "google"
+    ? ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
+    : provider.provider === "anthropic"
+      ? ["claude-3-5-haiku-latest", "claude-3-7-sonnet-latest", "claude-sonnet-4-5"]
+      : provider.provider === "openai"
+        ? ["gpt-4.1-mini", "gpt-4o-mini", "gpt-4.1-nano"]
+        : [model || "default"];
+  const discovered: string[] = [];
+  try {
+    const catalogueUrl = provider.provider === "google" ? base + "/models" : base + "/models";
+    const catalogueResponse = await fetch(catalogueUrl, { headers: provider.provider === "google" ? { "x-goog-api-key": key } : provider.provider === "anthropic" ? { "x-api-key": key, "anthropic-version": "2023-06-01" } : { Authorization: "Bearer " + key }, signal: AbortSignal.timeout(5000), cache: "no-store" });
+    if (catalogueResponse.ok) {
+      const catalogue = await catalogueResponse.json().catch(() => ({}));
+      const rows = Array.isArray(catalogue.models) ? catalogue.models : Array.isArray(catalogue.data) ? catalogue.data : [];
+      for (const row of rows) {
+        const id = String(row.name || row.id || "").replace(/^models\\//, "");
+        if (!id || id.length > 120) continue;
+        if (provider.provider === "google" && (!Array.isArray(row.supportedGenerationMethods) || !row.supportedGenerationMethods.includes("generateContent") || !/^gemini-/i.test(id))) continue;
+        if (provider.provider === "openai" && !/^(gpt-|o[1-9]|chatgpt-)/i.test(id)) continue;
+        if (provider.provider === "anthropic" && !/^claude-/i.test(id)) continue;
+        discovered.push(id);
       }
-      const message = String(data?.error?.message || "Provider error").slice(0, 300);
-      failures.push(candidate + " (HTTP " + response.status + "): " + message);
-      if (![404, 429, 500, 502, 503, 504].includes(response.status)) break;
     }
-    throw new Error("Gemini generation failed across available models. " + failures.join(" | ").slice(0, 1200));
+  } catch { /* Use known model fallbacks when catalogue discovery is unavailable. */ }
+  const candidates = [model, ...preferred, ...discovered].filter((id, index, all) => id && all.indexOf(id) === index).slice(0, 6);
+  const failures: string[] = [];
+  for (const candidate of candidates) {
+    try {
+      let response: Response;
+      let data: any;
+      if (provider.provider === "google") {
+        response = await fetch(base + "/models/" + encodeURIComponent(candidate) + ":generateContent", { method: "POST", headers, signal: AbortSignal.timeout(9000), cache: "no-store", body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 4096, temperature: 0.2 } }) });
+        data = await response.json().catch(() => ({}));
+        if (response.ok) {
+          const text = (data.candidates?.[0]?.content?.parts || []).map((part: { text?: string }) => part.text || "").join("");
+          if (text.trim()) return { text, inputTokens: Number(data.usageMetadata?.promptTokenCount || 0), outputTokens: Number(data.usageMetadata?.candidatesTokenCount || 0), model: candidate, fallbackUsed: candidate !== model };
+        }
+      } else if (provider.provider === "anthropic") {
+        response = await fetch(base + "/messages", { method: "POST", headers, signal: AbortSignal.timeout(11000), cache: "no-store", body: JSON.stringify({ model: candidate, system, max_tokens: 4096, temperature: 0.2, messages: [{ role: "user", content: prompt }] }) });
+        data = await response.json().catch(() => ({}));
+        if (response.ok) {
+          const text = (data.content || []).filter((part: { type?: string }) => part.type === "text").map((part: { text?: string }) => part.text || "").join("");
+          if (text.trim()) return { text, inputTokens: Number(data.usage?.input_tokens || 0), outputTokens: Number(data.usage?.output_tokens || 0), providerRequestId: data.id, model: candidate, fallbackUsed: candidate !== model };
+        }
+      } else {
+        response = await fetch(base + "/chat/completions", { method: "POST", headers, signal: AbortSignal.timeout(11000), cache: "no-store", body: JSON.stringify({ model: candidate, temperature: 0.2, max_tokens: 4096, messages: [{ role: "system", content: system }, { role: "user", content: prompt }] }) });
+        data = await response.json().catch(() => ({}));
+        if (response.ok) {
+          const text = String(data.choices?.[0]?.message?.content || "");
+          if (text.trim()) return { text, inputTokens: Number(data.usage?.prompt_tokens || 0), outputTokens: Number(data.usage?.completion_tokens || 0), providerRequestId: data.id, model: candidate, fallbackUsed: candidate !== model };
+        }
+      }
+      const message = String(data?.error?.message || data?.message || "Provider returned no completion.").slice(0, 260);
+      failures.push(candidate + " (HTTP " + response.status + "): " + message);
+      if ([401, 403].includes(response.status)) break;
+    } catch (error) {
+      failures.push(candidate + ": " + (error instanceof Error ? error.message : "Request failed."));
+    }
   }
-  if (provider.provider === "anthropic") {
-    const response = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" }, signal: timeout, cache: "no-store", body: JSON.stringify({ model, system, max_tokens: 4096, temperature: 0.2, messages: [{ role: "user", content: prompt }] }) });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error("Anthropic request failed (" + response.status + "): " + String(data?.error?.message || "Provider error").slice(0, 500));
-    return { text: (data.content || []).filter((p: { type?: string }) => p.type === "text").map((p: { text?: string }) => p.text || "").join(""), inputTokens: Number(data.usage?.input_tokens || 0), outputTokens: Number(data.usage?.output_tokens || 0), providerRequestId: data.id };
-  }
-  const base = provider.provider === "openai" ? "https://api.openai.com/v1" : String(provider.baseUrl || "").replace(/\/$/, "");
-  const response = await fetch(base + "/chat/completions", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + key }, signal: timeout, cache: "no-store", body: JSON.stringify({ model, temperature: 0.2, max_tokens: 4096, messages: [{ role: "system", content: system }, { role: "user", content: prompt }] }) });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error("OpenAI-compatible completion failed (" + response.status + "): " + String(data?.error?.message || "Provider error").slice(0, 500));
-  return { text: String(data.choices?.[0]?.message?.content || ""), inputTokens: Number(data.usage?.prompt_tokens || 0), outputTokens: Number(data.usage?.completion_tokens || 0), providerRequestId: data.id };
+  throw new Error("All available models for provider " + provider.name + " failed. " + failures.join(" | ").slice(0, 1400));
 }
 
 /**

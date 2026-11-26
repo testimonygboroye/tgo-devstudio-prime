@@ -58,7 +58,7 @@ export default function CommunicationsHub() {
     try{const response=await fetch("/api/platform/messaging",{cache:"no-store"});const data=await response.json();if(!response.ok||data.status!=="ok")throw new Error(data.message||"Could not refresh conversations.");setConversations(data.conversations||[]);setPeople(data.people||[]);setAgents(data.agents||[]);}
     catch(error){notifyPollingError(error instanceof Error?error.message:"Could not refresh conversations.");}
     finally{listInFlight.current=false;setLoading(false);}
-  },[]);
+  },[notifyPollingError]);
   const loadMessages=useCallback(async(id:string,refreshList=false)=>{
     if(messagesInFlight.current)return;
     messagesInFlight.current=true;

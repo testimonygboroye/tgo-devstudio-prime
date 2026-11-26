@@ -99,10 +99,17 @@ export async function runProviderCompletion(providerId: string, model: string, s
  */
 function modelQualityScore(model: string): number {
   const id = model.toLowerCase();
+  // Prefer the lower-cost Gemini Flash-Lite family for the default global
+  // assistant route. Pro/preview models may have zero free-tier quota.
+  if (/^gemini-/.test(id)) {
+    if (/flash-lite/.test(id)) return 115;
+    if (/flash/.test(id)) return 95;
+    if (/pro/.test(id)) return 65;
+  }
   let score = 50;
-  if (/opus|pro|o3|o1|gpt-4\.1(?!-mini|-nano)|gpt-4o(?!-mini)|gemini-3\.1-pro|gemini-3\.8|gemini-3\.7|sonnet-4/i.test(id)) score += 45;
-  if (/sonnet|gpt-4|gemini-3\.1-pro|gemini-3\.8|gemini-3\.7|deepseek-r1|qwen.*max/i.test(id)) score += 25;
-  if (/flash|haiku|mini|nano|lite|small|fast/i.test(id)) score -= 18;
+  if (/opus|pro|o3|o1|gpt-4\.1(?!-mini|-nano)|gpt-4o(?!-mini)|sonnet-4/i.test(id)) score += 45;
+  if (/sonnet|gpt-4|deepseek-r1|qwen.*max/i.test(id)) score += 25;
+  if (/haiku|mini|nano|lite|small|fast/i.test(id)) score -= 18;
   if (/preview|experimental|latest/i.test(id)) score -= 4;
   return score;
 }
@@ -117,7 +124,7 @@ async function discoverProviderModels(provider: any): Promise<string[]> {
   const headers: Record<string, string> = provider.provider === "google" ? { "x-goog-api-key": key }
     : provider.provider === "anthropic" ? { "x-api-key": key, "anthropic-version": "2023-06-01" }
     : { Authorization: "Bearer " + key };
-  const fallback = provider.provider === "google" ? ["gemini-3.1-pro-preview", "gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.5-flash-lite"]
+  const fallback = provider.provider === "google" ? ["gemini-3.5-flash-lite", "gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.1-pro-preview"]
     : provider.provider === "anthropic" ? ["claude-opus-4-1", "claude-sonnet-4-5", "claude-3-5-haiku-latest"]
     : provider.provider === "openai" ? ["gpt-4.1", "o3", "gpt-4.1-mini", "gpt-4o-mini"]
     : [String(provider.lastTestedModel || "default")];

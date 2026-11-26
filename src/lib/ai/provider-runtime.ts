@@ -27,7 +27,7 @@ export async function runProviderCompletion(providerId: string, model: string, s
       ? { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" }
       : { "Content-Type": "application/json", Authorization: "Bearer " + key };
   const preferred = provider.provider === "google"
-    ? ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
+    ? ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite"]
     : provider.provider === "anthropic"
       ? ["claude-3-5-haiku-latest", "claude-3-7-sonnet-latest", "claude-sonnet-4-5"]
       : provider.provider === "openai"
@@ -43,7 +43,7 @@ export async function runProviderCompletion(providerId: string, model: string, s
       for (const row of rows) {
         const id = String(row.name || row.id || "").replace(/^models\\//, "");
         if (!id || id.length > 120) continue;
-        if (provider.provider === "google" && (!Array.isArray(row.supportedGenerationMethods) || !row.supportedGenerationMethods.includes("generateContent") || !/^gemini-/i.test(id))) continue;
+        if (provider.provider === "google" && !/^gemini-/i.test(id)) continue;
         if (provider.provider === "openai" && !/^(gpt-|o[1-9]|chatgpt-)/i.test(id)) continue;
         if (provider.provider === "anthropic" && !/^claude-/i.test(id)) continue;
         discovered.push(id);
@@ -57,11 +57,12 @@ export async function runProviderCompletion(providerId: string, model: string, s
       let response: Response;
       let data: any;
       if (provider.provider === "google") {
-        response = await fetch(base + "/models/" + encodeURIComponent(candidate) + ":generateContent", { method: "POST", headers, signal: AbortSignal.timeout(9000), cache: "no-store", body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 4096, temperature: 0.2 } }) });
+        const interactionInput = [system.trim() ? "SYSTEM INSTRUCTIONS:\n" + system.trim() : "", "USER REQUEST:\n" + prompt].filter(Boolean).join("\n\n");
+        response = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions", { method: "POST", headers, signal: AbortSignal.timeout(15000), cache: "no-store", body: JSON.stringify({ model: candidate.replace(/^models\//, ""), input: interactionInput, store: false }) });
         data = await response.json().catch(() => ({}));
         if (response.ok) {
-          const text = (data.candidates?.[0]?.content?.parts || []).map((part: { text?: string }) => part.text || "").join("");
-          if (text.trim()) return { text, inputTokens: Number(data.usageMetadata?.promptTokenCount || 0), outputTokens: Number(data.usageMetadata?.candidatesTokenCount || 0), model: candidate, fallbackUsed: candidate !== model };
+          const text = Array.isArray(data.steps) ? data.steps.filter((step: any) => step.type === "model_output").flatMap((step: any) => step.content || []).filter((part: any) => part.type === "text").map((part: any) => part.text || "").join("") : String(data.output_text || "");
+          if (text.trim()) return { text, inputTokens: Number(data.usage?.total_input_tokens || data.usage?.input_tokens || 0), outputTokens: Number(data.usage?.total_output_tokens || data.usage?.output_tokens || 0), providerRequestId: data.id, model: candidate, fallbackUsed: candidate !== model };
         }
       } else if (provider.provider === "anthropic") {
         response = await fetch(base + "/messages", { method: "POST", headers, signal: AbortSignal.timeout(11000), cache: "no-store", body: JSON.stringify({ model: candidate, system, max_tokens: 4096, temperature: 0.2, messages: [{ role: "user", content: prompt }] }) });
@@ -112,7 +113,7 @@ async function discoverProviderModels(provider: any): Promise<string[]> {
   const headers: Record<string, string> = provider.provider === "google" ? { "x-goog-api-key": key }
     : provider.provider === "anthropic" ? { "x-api-key": key, "anthropic-version": "2023-06-01" }
     : { Authorization: "Bearer " + key };
-  const fallback = provider.provider === "google" ? ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash"]
+  const fallback = provider.provider === "google" ? ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite"]
     : provider.provider === "anthropic" ? ["claude-opus-4-1", "claude-sonnet-4-5", "claude-3-5-haiku-latest"]
     : provider.provider === "openai" ? ["gpt-4.1", "o3", "gpt-4.1-mini", "gpt-4o-mini"]
     : [String(provider.lastTestedModel || "default")];

@@ -253,6 +253,7 @@ export async function POST(request: NextRequest) {
           department,
           description: "Private AI counterpart assigned to one active employee. " + blueprint.description,
           workspaceId,
+          memoryKey: buildAgentMemoryKey({ role: position, department, workspaceId, assignedUserId: personId }),
           positionId: positionDoc?._id || employee.positionId,
           assignedUserId: personId,
           providerId: provider._id,

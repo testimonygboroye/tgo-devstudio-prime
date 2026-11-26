@@ -109,7 +109,7 @@ async function discoverProviderModels(provider: any): Promise<string[]> {
   const base = provider.provider === "google" ? "https://generativelanguage.googleapis.com/v1beta"
     : provider.provider === "openai" ? "https://api.openai.com/v1"
     : provider.provider === "anthropic" ? "https://api.anthropic.com/v1"
-    : String(provider.baseUrl || "").replace(/\\/$/, "");
+    : String(provider.baseUrl || "").replace(/\/$/, "");
   const headers: Record<string, string> = provider.provider === "google" ? { "x-goog-api-key": key }
     : provider.provider === "anthropic" ? { "x-api-key": key, "anthropic-version": "2023-06-01" }
     : { Authorization: "Bearer " + key };

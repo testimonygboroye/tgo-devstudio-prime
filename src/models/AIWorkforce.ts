@@ -29,6 +29,7 @@ export interface IAIAgent extends Document {
   role: string;
   department: string;
   workspaceId?: Types.ObjectId;
+  memoryKey?: string;
   positionId?: Types.ObjectId;
   assignedUserId?: Types.ObjectId;
   description: string;
@@ -46,6 +47,7 @@ const AIAgentSchema = new Schema<IAIAgent>({
   role: { type: String, required: true, maxlength: 100 },
   department: { type: String, required: true, maxlength: 100 },
   workspaceId: { type: Schema.Types.ObjectId, ref: "AIWorkspace" },
+  memoryKey: { type: String, maxlength: 300, index: true },
   positionId: { type: Schema.Types.ObjectId, ref: "Position", index: true },
   assignedUserId: { type: Schema.Types.ObjectId, ref: "User", index: true },
   description: { type: String, default: "", maxlength: 1000 },

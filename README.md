@@ -53,6 +53,7 @@ Open `http://localhost:3000`.
 
 ```bash
 npm test -- --runInBand
+npm run test:coverage
 npm run lint
 npm run build
 npm run test:e2e
@@ -64,7 +65,7 @@ Playwright defaults to the Vercel production URL. To target another reachable en
 BASE_URL=https://your-deployment.example npm run test:e2e
 ```
 
-The CI workflow provisions MongoDB 7, runs Jest, performs a defined ESLint path set, and runs the Next.js production build (including its TypeScript validation) on pull requests. Playwright browser E2E is intentionally gated to manual workflow dispatches and successful pushes to `main`, rather than every pull request, because it requires a reachable deployment. The workflow waits for the merged production release before running the browser suite.
+Jest coverage can be generated locally with `npm run test:coverage`; no repository-wide minimum coverage threshold is currently enforced. The CI workflow provisions MongoDB 7, runs Jest, performs a defined ESLint path set, and runs the Next.js production build (including its TypeScript validation) on pull requests. Playwright browser E2E is intentionally gated to manual workflow dispatches and successful pushes to `main`, rather than every pull request, because it requires a reachable deployment. The workflow waits for the merged production release before running the browser suite.
 
 ## Environment configuration
 

@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
       if (!identityResponse.ok || !identity.id) throw new Error("GitHub account identity could not be verified.");
       const grantedHeader = identityResponse.headers.get("X-OAuth-Scopes") || String(token.scope || "");
       grantedPermissions = grantedHeader.split(/[ ,]+/).map(value => value.trim()).filter(Boolean);
-    } else if (providerId === "google-workspace" || providerId === "google-cloud") {
+    } else if (providerId === "google_workspace" || providerId === "google_cloud") {
       const form = new URLSearchParams({
         code, client_id: String(application.clientId), client_secret: secret,
         redirect_uri: stateRecord.redirectUri, grant_type: "authorization_code",\n        ...(stateRecord.pkceVerifierCiphertext ? { code_verifier: decryptCredentials(stateRecord.pkceVerifierCiphertext).verifier } : {}),

@@ -1,7 +1,4 @@
 import { NextRequest, NextResponse, after } from "next/server";
-
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
 import { connectToDatabase } from "@/lib/db";
 import { captureAnalyticsSnapshot } from "@/lib/push/analyticsSnapshot";
 import PageView from "@/models/PageView";
@@ -187,7 +184,7 @@ export async function GET(request: NextRequest) {
 
   const [
     views,
-    totalCount: finalTotalCount,
+    totalCount,
     uniqueVisitors,
     singlePageTraffic,
     dailyVisitors,
@@ -272,20 +269,6 @@ export async function GET(request: NextRequest) {
     PageView.distinct("browser", trustedTrafficFilter),
     PageView.distinct("operatingSystem", trustedTrafficFilter),
   ]);
-
-  const onlineCountQuery: Record<string, unknown> = {
-    isInternal: { $ne: true },
-    visitorId: { $in: matchingVisitorIds },
-    lastActiveAt: { $gte: onlineSince },
-  };
-  if (search) {
-    onlineCountQuery.$or = [
-      { displayName: { $regex: search, $options: "i" } },
-      { email: { $regex: search, $options: "i" } },
-      { visitorId: { $regex: search, $options: "i" } },
-    ];
-  }
-  const onlineVisitorCount = await Visitor.countDocuments(onlineCountQuery);
 
   const visitors = await Visitor.find(visitorQuery)
     .sort({ lastSeen: -1 })

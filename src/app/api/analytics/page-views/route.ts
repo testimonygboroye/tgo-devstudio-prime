@@ -270,10 +270,19 @@ export async function GET(request: NextRequest) {
     PageView.distinct("operatingSystem", trustedTrafficFilter),
   ]);
 
-  const onlineVisitorCount = await Visitor.countDocuments({
+  const onlineCountQuery: Record<string, unknown> = {
     isInternal: { $ne: true },
+    visitorId: { $in: matchingVisitorIds },
     lastActiveAt: { $gte: onlineSince },
-  });
+  };
+  if (search) {
+    onlineCountQuery.$or = [
+      { displayName: { $regex: search, $options: "i" } },
+      { email: { $regex: search, $options: "i" } },
+      { visitorId: { $regex: search, $options: "i" } },
+    ];
+  }
+  const onlineVisitorCount = await Visitor.countDocuments(onlineCountQuery);
 
   const visitors = await Visitor.find(visitorQuery)
     .sort({ lastSeen: -1 })

@@ -13,8 +13,8 @@ export const dynamic = "force-dynamic";
 
 const providers: Record<string, { authorizeUrl: string; defaultScopes: string[]; extraParams?: Record<string, string> }> = {
   github: { authorizeUrl: "https://github.com/login/oauth/authorize", defaultScopes: ["read:user", "user:email", "repo"] },
-  "google-workspace": { authorizeUrl: "https://accounts.google.com/o/oauth2/v2/auth", defaultScopes: ["openid", "email", "profile"], extraParams: { access_type: "offline", prompt: "consent" } },
-  "google-cloud": { authorizeUrl: "https://accounts.google.com/o/oauth2/v2/auth", defaultScopes: ["openid", "email", "profile"], extraParams: { access_type: "offline", prompt: "consent" } },
+  "google_workspace": { authorizeUrl: "https://accounts.google.com/o/oauth2/v2/auth", defaultScopes: ["openid", "email", "profile"], extraParams: { access_type: "offline", prompt: "consent" } },
+  "google_cloud": { authorizeUrl: "https://accounts.google.com/o/oauth2/v2/auth", defaultScopes: ["openid", "email", "profile"], extraParams: { access_type: "offline", prompt: "consent" } },
 };
 
 const fail = (message: string, status = 400) => NextResponse.json({ error: message }, { status });

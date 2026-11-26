@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Bot, BrainCircuit, CheckCircle2, CircleAlert, Cpu, KeyRound, Loader2, Plus, RefreshCw, ShieldCheck, Workflow } from "lucide-react";
 
@@ -11,7 +11,7 @@ type MemoryItem = { _id:string; title:string; scope:string; source:string };
 type Data = { providers:ProviderItem[]; agents:AgentItem[]; tasks:TaskItem[]; workspaces:WorkspaceItem[]; memories:MemoryItem[] };
 const empty: Data = { providers: [], agents: [], tasks: [], workspaces: [], memories: [] };
 export default function AIWorkforceManager() {
-  const [data,setData] = useState<Data>(empty);
+  const inFlight = useRef(false);\n  const [data,setData] = useState<Data>(empty);
   const [loading,setLoading] = useState(true);
   const [busy,setBusy] = useState(false);
   const [notice,setNotice] = useState("");
@@ -19,7 +19,7 @@ export default function AIWorkforceManager() {
   const [replacementKeys,setReplacementKeys] = useState<Record<string,string>>({});
   const [agent,setAgent] = useState({name:"",role:"Operations assistant",department:"Operations",workspaceId:"",systemInstructions:"You are an assistant for TGO DevStudio. Follow company policy, protect client information, and never claim an action was completed unless verified.",maxDailyTokens:100000});
   const [task,setTask] = useState({agentId:"",title:"",input:"",operation:"",targetId:"",targetStatus:"active",githubRepository:"testimonygboroye/tgo-devstudio-prime",githubPath:"",githubBaseBranch:"main",githubBranch:"",githubContent:""});
-  const load = useCallback(async()=>{setLoading(true);try{const r=await fetch("/api/platform/ai-workforce",{cache:"no-store"});const j=await r.json();if(!r.ok)throw new Error(j.message||"Unable to load AI workforce.");setData({providers:j.providers||[],agents:j.agents||[],tasks:j.tasks||[],workspaces:j.workspaces||[],memories:j.memories||[]});}catch(e){setNotice(e instanceof Error?e.message:"Request failed.");}finally{setLoading(false);}},[]);
+  const load = useCallback(async(silent=false)=>{if(inFlight.current)return;inFlight.current=true;if(!silent)setLoading(true);try{const r=await fetch("/api/platform/ai-workforce",{cache:"no-store"});const j=await r.json();if(!r.ok)throw new Error(j.message||"Unable to load AI workforce.");setData({providers:j.providers||[],agents:j.agents||[],tasks:j.tasks||[],workspaces:j.workspaces||[],memories:j.memories||[]});}catch(e){setNotice(e instanceof Error?e.message:"Request failed.");}finally{setLoading(false);}},[]);
   useEffect(()=>{void load();},[load]);
   async function act(payload:Record<string,unknown>){setBusy(true);setNotice("");try{const r=await fetch("/api/platform/ai-workforce",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});const j=await r.json();if(!r.ok)throw new Error([j.message||"Action failed.",typeof j.diagnostic==="string"?j.diagnostic:""].filter(Boolean).join(" — "));setNotice([j.message||"Saved successfully.",typeof j.diagnostic==="string"?j.diagnostic:""].filter(Boolean).join(" — "));await load();}catch(e){setNotice(e instanceof Error?e.message:"Action failed.");}finally{setBusy(false);}}
   const panel="rounded-2xl border border-white/10 bg-slate-950/60 p-5 shadow-xl shadow-black/10";

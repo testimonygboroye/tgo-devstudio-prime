@@ -1,10 +1,10 @@
 "use client";
-import {useCallback,useEffect,useState} from "react";
+import {useCallback,useEffect,useRef,useState} from "react";
 import {Activity,AlertTriangle,CheckCircle2,RefreshCw,Workflow} from "lucide-react";
 type Log={id:string;traceId:string;feature:string;providerName?:string;providerType?:string;model:string;status:string;durationMs:number;inputTokens:number;outputTokens:number;httpStatus?:number;errorCode?:string;errorMessage?:string;fallbackFrom?:string;createdAt:string};
 export default function AIObservabilityPanel(){
- const [logs,setLogs]=useState<Log[]>([]),[total,setTotal]=useState(0),[loading,setLoading]=useState(true),[status,setStatus]=useState(""),[error,setError]=useState("");
- const load=useCallback(async()=>{setLoading(true);try{const q=new URLSearchParams({limit:"100"});if(status)q.set("status",status);const r=await fetch("/api/platform/ai-observability?"+q.toString(),{cache:"no-store"});const j=await r.json();if(!r.ok)throw new Error(j.error||"Could not load AI diagnostics.");setLogs(j.logs||[]);setTotal(j.total||0);setError("");}catch(e){setError(e instanceof Error?e.message:"Could not load AI diagnostics.");}finally{setLoading(false);}},[status]);
+ const inFlight=useRef(false);\n const [logs,setLogs]=useState<Log[]>([]),[total,setTotal]=useState(0),[loading,setLoading]=useState(true),[status,setStatus]=useState(""),[error,setError]=useState("");
+ const load=useCallback(async(silent=false)=>{if(inFlight.current)return;inFlight.current=true;if(!silent)setLoading(true);try{const q=new URLSearchParams({limit:"100"});if(status)q.set("status",status);const r=await fetch("/api/platform/ai-observability?"+q.toString(),{cache:"no-store"});const j=await r.json();if(!r.ok)throw new Error(j.error||"Could not load AI diagnostics.");setLogs(j.logs||[]);setTotal(j.total||0);setError("");}catch(e){setError(e instanceof Error?e.message:"Could not load AI diagnostics.");}finally{setLoading(false);}},[status]);
  useEffect(()=>{void load();},[load]);
  const failures=logs.filter(x=>x.status==="failure").length,fallbacks=logs.filter(x=>x.status==="fallback").length,successes=logs.filter(x=>x.status==="success").length;
  return <section className="space-y-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5">

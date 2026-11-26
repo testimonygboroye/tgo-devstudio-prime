@@ -106,4 +106,4 @@ The package scripts do not currently define a dedicated `seed`, `bootstrap` or m
 
 ## Current implementation discipline
 
-The platform is intentionally modular, but the size of the application requires domain-level tests and clear ownership boundaries. New integrations should be delivered in complete slices: encrypted account storage, authorization, adapter, scope enforcement, audit logging, UI state, tests and operational documentation. Do not label a provider as working based only on a catalogue record.
+The platform is intentionally modular, but the size of the application requires domain-level tests and clear ownership boundaries. The current global stylesheet is approximately 166 KB of source and should be split into domain/component styles as the UI is maintained. New integrations should be delivered in complete slices: encrypted account storage, authorization, adapter, scope enforcement, audit logging, UI state, tests and operational documentation. Do not label a provider as working based only on a catalogue record.

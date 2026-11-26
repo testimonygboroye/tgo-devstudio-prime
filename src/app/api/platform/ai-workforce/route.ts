@@ -493,6 +493,9 @@ export async function POST(request: NextRequest) {
         provider.lastTestedAt = new Date();
         provider.lastTestedModel = testedModel;
         provider.lastTestStatus = "success";
+        // A founder-initiated live generation test is the explicit activation check.
+        // Once it succeeds, make the verified provider available to the TGO-wide router.
+        provider.enabled = true;
         await provider.save();
         await writePlatformAuditEvent({ actorType: "human", actorId, actorLabel: session.user.name, action: "ai.provider.tested", module: "ai-workforce", targetType: "AIProvider", targetId: String(provider._id), outcome: "success", metadata: { model: testedModel, statusCode, liveGeneration: true } });
         return NextResponse.json({ status: "ok", httpStatus: statusCode, model: testedModel, message: "Live generation test succeeded with " + testedModel + ". This provider can generate a real response." });

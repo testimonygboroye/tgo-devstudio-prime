@@ -30,7 +30,7 @@ type ClientFinanceSession=NonNullable<Awaited<ReturnType<typeof getServerSession
 type InstallmentPlanDocument=NonNullable<Awaited<ReturnType<typeof FinanceInstallmentPlan.findOne>>>;
 type InstallmentDocument=InstallmentPlanDocument["installments"][number];
 async function log(session:ClientFinanceSession,action:string,type:string,id:string,metadata:Record<string,unknown>={}){await writePlatformAuditEvent({actorType:"human",actorId:String(session.user._id),actorLabel:session.user.name,action,module:"finance",targetType:type,targetId:id,outcome:"success",metadata});}
-function ref(prefix:string){return `TGO_${prefix}_${randomUUID().replace(/-/g,"").slice(0,20).toUpperCase()}`;}
+function ref(){return `TGO_${randomUUID().replace(/-/g,"").slice(0,24).toUpperCase()}`;}
 
 export async function GET(){
  const session=await clientSession();if(!session)return fail("Verified client sign-in required.",401);
@@ -55,7 +55,7 @@ export async function POST(request:NextRequest){
  await connectToDatabase();
  if(body.action==="paystack.verify"){
   const reference=String(body.reference||"").trim();
-  if(!/^TGO_PAY_[A-F0-9]{20}$/.test(reference))return fail("The payment reference is invalid.");
+  if(!/^TGO_[A-F0-9]{24}$/.test(reference))return fail("The payment reference is invalid.");
   const ownedPayment=await PaymentTransaction.findOne({reference,clientId:session.user._id,provider:"paystack"});
   if(!ownedPayment)return fail("Payment reference was not found in your account.",404);
   if(ownedPayment.status==="paid")return NextResponse.json({ok:true,paid:true,message:"Payment is already verified.",reference});
@@ -102,7 +102,7 @@ export async function POST(request:NextRequest){
  if(installment&&amountMinor!==remainingMinor)return fail("Installments must be paid at their configured scheduled amount.");
  if(milestone&&amountMinor!==remainingMinor)return fail("Milestone payments must be paid in full. Partial payments are available for order balances.");
  const amount=fromMinorUnits(amountMinor,currency);
- const transactionReference=ref("PAY");
+ const transactionReference=ref();
 
  if(body.action==="paystack.initialize"){
   if(!settings?.paystackEnabled)return fail("Online card payments are currently disabled. Contact TGO DevStudio for payment options.",503);

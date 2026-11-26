@@ -21,7 +21,7 @@ async function access(){
 function safe(row:any){return {id:String(row._id),providerId:row.providerId,accountLabel:row.accountLabel,ownerType:row.ownerType,ownerId:String(row.ownerId),organizationId:row.organizationId?String(row.organizationId):null,providerAccountId:row.providerAccountId||"",authMethod:row.authMethod,credentialNames:row.credentialNames||[],requestedPermissions:row.requestedPermissions||[],grantedPermissions:row.grantedPermissions||[],readEnabled:row.readEnabled,writeEnabled:row.writeEnabled,status:row.status,lastVerifiedAt:row.lastVerifiedAt||null,lastSyncAt:row.lastSyncAt||null,lastError:row.lastError||"",createdAt:row.createdAt,updatedAt:row.updatedAt};}
 export async function GET(){
  const auth=await access();if("response"in auth)return auth.response;await connectToDatabase();
- const filter=auth.ownerType==="founder"?{ownerType:"founder",ownerId:auth.ownerId}:{ownerType:"client",ownerId:auth.ownerId};
+ const filter={ownerType:auth.ownerType,ownerId:auth.ownerId};
  const [accounts,applications]=await Promise.all([
   IntegrationAccount.find(filter).sort({providerId:1,createdAt:-1}).lean(),
   IntegrationApplication.find(filter).select("-clientSecretCiphertext").sort({providerId:1,appName:1}).lean()

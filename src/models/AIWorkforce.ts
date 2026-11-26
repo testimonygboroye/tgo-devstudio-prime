@@ -8,6 +8,7 @@ export interface IAIProvider extends Document {
   enabled: boolean;
   createdBy: string;
   lastTestedAt?: Date;
+  lastTestedModel?: string;
   lastTestStatus?: "success" | "failed";
   archivedAt?: Date;
 }
@@ -19,6 +20,7 @@ const AIProviderSchema = new Schema<IAIProvider>({
   enabled: { type: Boolean, default: true },
   createdBy: { type: String, required: true },
   lastTestedAt: Date,
+  lastTestedModel: { type: String, maxlength: 120 },
   lastTestStatus: { type: String, enum: ["success", "failed"] },
   archivedAt: { type: Date, default: undefined, index: true },
 }, { timestamps: true });
@@ -33,7 +35,7 @@ export interface IAIAgent extends Document {
   positionId?: Types.ObjectId;
   assignedUserId?: Types.ObjectId;
   description: string;
-  providerId: Types.ObjectId;
+  providerId?: Types.ObjectId;
   modelName: string;
   systemInstructions: string;
   permissions: string[];
@@ -51,8 +53,9 @@ const AIAgentSchema = new Schema<IAIAgent>({
   positionId: { type: Schema.Types.ObjectId, ref: "Position", index: true },
   assignedUserId: { type: Schema.Types.ObjectId, ref: "User", index: true },
   description: { type: String, default: "", maxlength: 1000 },
-  providerId: { type: Schema.Types.ObjectId, ref: "AIProvider", required: true },
-  modelName: { type: String, required: true, maxlength: 120 },
+  // Legacy display hint only. Agents are not bound to a provider; runtime routes across all healthy TGO providers.
+  providerId: { type: Schema.Types.ObjectId, ref: "AIProvider", required: false, index: true },
+  modelName: { type: String, default: "", maxlength: 120 },
   systemInstructions: { type: String, required: true, maxlength: 12000 },
   permissions: { type: [String], default: [] },
   requiresApproval: { type: Boolean, default: true },

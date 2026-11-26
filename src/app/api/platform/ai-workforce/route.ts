@@ -107,6 +107,40 @@ export async function GET() {
     return NextResponse.json({ status: "ok", providers: [], agents, tasks, workspaces, memories }, { headers: { "Cache-Control": "private, no-store" } });
   }
 
+  // One-time compatibility migration: before explicit disable timestamps existed,
+  // successful founder-tested providers and permission-free AI employees were left
+  // disabled by the old defaults. Promote only those legacy records. New manual
+  // disables are stamped with disabledAt and are never overridden by this migration.
+  const [legacyProviderActivation, legacyAgentActivation] = await Promise.all([
+    AIProvider.updateMany(
+      { enabled: false, lastTestStatus: "success", lastTestedAt: { $exists: true }, archivedAt: { $exists: false }, disabledAt: { $exists: false } },
+      { $set: { enabled: true } },
+    ),
+    AIAgent.updateMany(
+      { enabled: false, disabledAt: { $exists: false }, $or: [{ permissions: { $size: 0 } }, { permissions: { $exists: false } }] },
+      { $set: { enabled: true, requiresApproval: true } },
+    ),
+  ]);
+  if (legacyProviderActivation.modifiedCount > 0) {
+    const verifiedProvider = await AIProvider.findOne({ enabled: true, lastTestStatus: "success", archivedAt: { $exists: false } }).sort({ lastTestedAt: -1 }).lean();
+    await Promise.all((["public", "client", "admin"] as const).map((scope) =>
+      AIChatbotConfig.findOneAndUpdate(
+        { scope },
+        { $set: { enabled: true }, $setOnInsert: {
+          scope, providerId: verifiedProvider?._id,
+          modelName: verifiedProvider?.lastTestedModel || "",
+          welcomeMessage: scope === "public" ? "Welcome to TGO DevStudio. How can I help?" : "Hello. How can I help?",
+          updatedBy: new mongoose.Types.ObjectId(String(session.user._id)),
+        } },
+        { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
+      ),
+    ));
+    await writePlatformAuditEvent({ actorType: "human", actorId: String(session.user._id), actorLabel: session.user.name, action: "ai.legacy_verified_providers_activated", module: "ai-workforce", targetType: "AIProviderPool", targetId: "global", outcome: "success", metadata: { activatedCount: legacyProviderActivation.modifiedCount, reason: "legacy successful live tests before provider auto-activation was introduced" } }).catch(() => undefined);
+  }
+  if (legacyAgentActivation.modifiedCount > 0) {
+    await writePlatformAuditEvent({ actorType: "human", actorId: String(session.user._id), actorLabel: session.user.name, action: "ai.legacy_text_only_agents_activated", module: "ai-workforce", targetType: "AIAgent", targetId: "legacy-text-only", outcome: "success", metadata: { activatedCount: legacyAgentActivation.modifiedCount, permissionsGranted: 0, requiresApproval: true } }).catch(() => undefined);
+  }
+
   const [providers, agents, tasks, workspaces, memories] = await Promise.all([
     AIProvider.find({ archivedAt: { $exists: false } }).select("-encryptedApiKey").sort({ createdAt: -1 }).lean(),
     AIAgent.find().populate("providerId", "name provider").sort({ createdAt: -1 }).lean(),
@@ -227,7 +261,7 @@ export async function POST(request: NextRequest) {
           permissions: [],
           requiresApproval: true,
           maxDailyTokens: 100000,
-          enabled: false,
+          enabled: true,
           createdBy: actorId,
         });
         createdCount += 1;
@@ -325,9 +359,9 @@ export async function POST(request: NextRequest) {
       const keyCheck = await getUniqueProviderKeyFingerprint(apiKey, provider ? String(provider._id) : undefined);
       if (keyCheck.duplicateName) return NextResponse.json({ status: "error", message: "This API key is already in use by the existing provider \"" + keyCheck.duplicateName + "\". Remove that provider before reusing the key." }, { status: 409 });
       if (provider) {
-        provider.provider = "google"; provider.apiKeyFingerprint = keyCheck.fingerprint; provider.encryptedApiKey = encryptProviderSecret(apiKey); provider.enabled = false; provider.lastTestStatus = undefined; provider.lastTestedAt = undefined; provider.archivedAt = undefined; await provider.save();
+        provider.provider = "google"; provider.disabledAt = new Date(); provider.apiKeyFingerprint = keyCheck.fingerprint; provider.encryptedApiKey = encryptProviderSecret(apiKey); provider.enabled = false; provider.lastTestStatus = undefined; provider.lastTestedAt = undefined; provider.archivedAt = undefined; await provider.save();
       } else {
-        provider = await AIProvider.create({ name: "Gemini environment provider", provider: "google", apiKeyFingerprint: keyCheck.fingerprint, encryptedApiKey: encryptProviderSecret(apiKey), enabled: false, createdBy: actorId });
+        provider = await AIProvider.create({ name: "Gemini environment provider", provider: "google", apiKeyFingerprint: keyCheck.fingerprint, encryptedApiKey: encryptProviderSecret(apiKey), enabled: false, disabledAt: new Date(), createdBy: actorId });
       }
       await writePlatformAuditEvent({ actorType: "human", actorId, action: "ai.provider.imported_from_environment", module: "ai-workforce", targetType: "AIProvider", targetId: String(provider._id), outcome: "success", metadata: { provider: "google", source: "GEMINI_API_KEY" } });
       return NextResponse.json({ status: "ok", provider: { id: provider._id, name: provider.name, provider: provider.provider }, message: "Existing Gemini environment credential encrypted and imported. Test the connection before enabling agents." }, { status: 201 });
@@ -351,10 +385,10 @@ export async function POST(request: NextRequest) {
       const created = existing
         ? await AIProvider.findOneAndUpdate(
             { _id: existing._id, archivedAt: { $exists: true } },
-            { $set: { provider, baseUrl: body.baseUrl, encryptedApiKey, apiKeyFingerprint: keyCheck.fingerprint, enabled: false, createdBy: actorId }, $unset: { archivedAt: 1, lastTestedAt: 1, lastTestStatus: 1 } },
+            { $set: { provider, baseUrl: body.baseUrl, encryptedApiKey, apiKeyFingerprint: keyCheck.fingerprint, enabled: false, disabledAt: new Date(), createdBy: actorId }, $unset: { archivedAt: 1, lastTestedAt: 1, lastTestStatus: 1 } },
             { new: true, runValidators: true },
           )
-        : await AIProvider.create({ name, provider: provider as (typeof supportedProviders)[number], baseUrl: body.baseUrl, encryptedApiKey, apiKeyFingerprint: keyCheck.fingerprint, createdBy: actorId });
+        : await AIProvider.create({ name, provider: provider as (typeof supportedProviders)[number], baseUrl: body.baseUrl, encryptedApiKey, apiKeyFingerprint: keyCheck.fingerprint, enabled: false, disabledAt: new Date(), createdBy: actorId });
       if (!created) return NextResponse.json({ status: "error", message: "This provider was changed by another request. Refresh the provider list and try again." }, { status: 409 });
       await writePlatformAuditEvent({ actorType: "human", actorId, actorLabel: session.user.name, action: existing ? "ai.provider.restored" : "ai.provider.created", module: "ai-workforce", targetType: "AIProvider", targetId: String(created._id), outcome: "success", metadata: { provider, name, restoredArchivedRecord: Boolean(existing) } });
       return NextResponse.json({ status: "ok", provider: { id: created._id, name: created.name, provider: created.provider }, message: existing ? "The archived provider record was restored with the new encrypted API key. Test live generation before enabling it." : "Provider created. Test live generation before enabling it." }, { status: 201 });
@@ -372,6 +406,7 @@ export async function POST(request: NextRequest) {
       provider.apiKeyFingerprint = keyCheck.fingerprint;
       provider.encryptedApiKey = encryptProviderSecret(apiKey);
       provider.enabled = false;
+      provider.disabledAt = new Date();
       provider.lastTestStatus = undefined;
       provider.lastTestedAt = undefined;
       provider.lastTestedModel = undefined;
@@ -405,6 +440,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ status: "error", message: "Run a successful live-generation test for this provider before enabling it." }, { status: 409 });
       }
       provider.enabled = body.action === "provider.enable";
+      provider.disabledAt = provider.enabled ? undefined : new Date();
       await provider.save();
       if (provider.enabled) {
         await Promise.all((["public", "client", "admin"] as const).map((scope) =>
@@ -535,6 +571,7 @@ export async function POST(request: NextRequest) {
         // A founder-initiated live generation test is the explicit activation check.
         // Once it succeeds, make the verified provider available to the TGO-wide router.
         provider.enabled = true;
+        provider.disabledAt = undefined;
         await provider.save();
         // A founder-initiated successful live test activates the three governed,
         // read-only assistants. Existing provider/model choices are preserved.
@@ -586,7 +623,7 @@ export async function POST(request: NextRequest) {
     }
     if (body.action === "agent.enable_text_only_all") {
       const result = await AIAgent.updateMany(
-        { enabled: false, $or: [{ permissions: { $size: 0 } }, { permissions: { $exists: false } }] },
+        { enabled: false, disabledAt: { $exists: false }, $or: [{ permissions: { $size: 0 } }, { permissions: { $exists: false } }] },
         { $set: { enabled: true, requiresApproval: true } },
       );
       await writePlatformAuditEvent({
@@ -605,7 +642,8 @@ export async function POST(request: NextRequest) {
       if (!agent) return NextResponse.json({ status: "error", message: "Agent not found." }, { status: 404 });
       if (body.action === "agent.enable") {
         agent.enabled = true;
-      } else agent.enabled = false;
+        agent.disabledAt = undefined;
+      } else { agent.enabled = false; agent.disabledAt = new Date(); }
       // Preserve the founder-reviewed permission set when enabling/disabling an agent.
       // New agents still start with no permissions; every business operation remains approval-gated.
       agent.requiresApproval = true;

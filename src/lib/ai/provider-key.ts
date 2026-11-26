@@ -18,15 +18,19 @@ function environmentProviderKey(provider: string): string {
  * provider's explicit server-side environment key as a safe recovery path.
  */
 export function resolveProviderApiKey(_name: string, provider: string, encryptedApiKey: string): string {
+  const environmentKey = environmentProviderKey(provider);
+  // Explicit OpenAI/Anthropic environment keys are the operator's current
+  // credentials and must override older saved rows after key rotation.
+  // Gemini keeps per-provider saved keys first so multiple Google accounts can
+  // remain separate; its environment key is the fallback for the env provider.
+  if (provider !== "google" && environmentKey) return environmentKey;
   if (typeof encryptedApiKey === "string" && encryptedApiKey.trim()) {
     try { return decryptProviderSecret(encryptedApiKey); }
     catch (error) {
-      const fallback = environmentProviderKey(provider);
-      if (fallback) return fallback;
+      if (environmentKey) return environmentKey;
       throw error;
     }
   }
-  const environmentKey = environmentProviderKey(provider);
   if (environmentKey) return environmentKey;
   throw new Error("No decryptable provider credential or supported server-side environment key is configured for " + provider + ".");
 }

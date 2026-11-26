@@ -22,6 +22,7 @@ import DeliveryMilestone from "@/models/DeliveryMilestone";
 import DeliveryTask from "@/models/DeliveryTask";
 import ProjectDeliverable from "@/models/ProjectDeliverable";
 import Position from "@/models/Position";
+import Department from "@/models/Department"; // Registers the Department model before Position.departmentId populate().
 import FinanceSettings from "@/models/FinanceSettings";
 import FinanceInvoice from "@/models/FinanceInvoice";
 import FinanceExpense from "@/models/FinanceExpense";

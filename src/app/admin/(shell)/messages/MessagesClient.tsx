@@ -25,18 +25,29 @@ export default function MessagesClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [decidingId, setDecidingId] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    setIsLoading(true);
+  const inFlight = useRef(false);
+  const load = useCallback(async (silent = false) => {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    if (!silent) setIsLoading(true);
     const params = new URLSearchParams();
     if (statusFilter) params.set("status", statusFilter);
-    const res = await fetch(`/api/messages?${params.toString()}`);
-    const data = await res.json();
-    if (data.status === "ok") setMessages(data.messages);
-    setIsLoading(false);
+    try {
+      const res = await fetch(`/api/messages?${params.toString()}`, { cache: "no-store" });
+      const data = await res.json();
+      if (data.status === "ok") setMessages(data.messages);
+    } finally {
+      inFlight.current = false;
+      setIsLoading(false);
+    }
   }, [statusFilter]);
 
   useEffect(() => {
-    load();
+    void load();
+    const timer = window.setInterval(() => { if (document.visibilityState === "visible") void load(true); }, 5000);
+    const onVisible = () => { if (document.visibilityState === "visible") void load(true); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => { window.clearInterval(timer); document.removeEventListener("visibilitychange", onVisible); };
   }, [load]);
 
   async function updateStatus(id: string, status: string) {

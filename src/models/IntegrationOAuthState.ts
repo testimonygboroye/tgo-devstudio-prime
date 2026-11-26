@@ -8,6 +8,7 @@ export interface IIntegrationOAuthState extends Document {
   userId: Types.ObjectId;
   redirectUri: string;
   scopes: string[];
+  pkceVerifierCiphertext?: string;
   expiresAt: Date;
   usedAt?: Date;
   createdAt: Date;
@@ -21,6 +22,7 @@ const schema = new Schema<IIntegrationOAuthState>({
   userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
   redirectUri: { type: String, required: true },
   scopes: { type: [String], default: [] },
+  pkceVerifierCiphertext: { type: String, select: false },
   expiresAt: { type: Date, required: true },
   usedAt: Date,
 }, { timestamps: true });

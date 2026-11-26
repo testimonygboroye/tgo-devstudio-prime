@@ -1,6 +1,6 @@
 import { resolveProviderApiKey } from "@/lib/ai/provider-key";
 import { AIProvider } from "@/models/AIWorkforce";
-import { AIChatbotConfig, type AIChatbotScope } from "@/models/AIChatbot";
+import type { AIChatbotScope } from "@/models/AIChatbot";
 
 
 export interface AICompletion {
@@ -31,7 +31,7 @@ export async function runProviderCompletion(providerId: string, model: string, s
         ? ["gpt-4.1-mini", "gpt-4o-mini", "gpt-4.1-nano"]
         : [model || "default"];
   const discovered: string[] = [];
-  try {
+  if (!singleModelAttempt) try {
     const catalogueUrl = provider.provider === "google" ? base + "/models" : base + "/models";
     const catalogueResponse = await fetch(catalogueUrl, { headers: provider.provider === "google" ? { "x-goog-api-key": key } : provider.provider === "anthropic" ? { "x-api-key": key, "anthropic-version": "2023-06-01" } : { Authorization: "Bearer " + key }, signal: AbortSignal.timeout(5000), cache: "no-store" });
     if (catalogueResponse.ok) {

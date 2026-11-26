@@ -406,6 +406,28 @@ export async function POST(request: NextRequest) {
       await writePlatformAuditEvent({ actorType: "human", actorId, action: body.action === "provider.enable" ? "ai.provider.enabled" : "ai.provider.disabled", module: "ai-workforce", targetType: "AIProvider", targetId: String(provider._id), outcome: "success" });
       return NextResponse.json({ status: "ok", message: provider.enabled ? "Provider enabled and available to all AI employees." : "Provider disabled. AI employees remain enabled and will use another available verified provider." });
     }
+    if (body.action === "runtime.test") {
+      const traceStartedAt = Date.now();
+      try {
+        const completion = await runProviderCompletionWithFallback(
+          "", "",
+          "You are performing a TGO DevStudio AI runtime health check. Reply with the exact sentence requested and do not add anything else.",
+          "Reply exactly: TGO global AI router test successful.",
+          "admin",
+        );
+        const message = "Global AI routing succeeded with " + completion.model + (completion.fallbackUsed ? " after cross-provider fallback." : ".");
+        await writePlatformAuditEvent({ actorType: "human", actorId, actorLabel: session.user.name, action: "ai.runtime.tested", module: "ai-workforce", targetType: "AIProviderPool", targetId: "global", outcome: "success", metadata: { model: completion.model, providerId: completion.providerId, fallbackUsed: completion.fallbackUsed, durationMs: Date.now() - traceStartedAt } });
+        return NextResponse.json({ status: "ok", message, model: completion.model, fallbackUsed: completion.fallbackUsed, response: completion.text.slice(0, 500) });
+      } catch (error) {
+        const diagnostic = (error instanceof Error ? error.message : "Global AI routing test failed.")
+          .replace(/(?:AIza[0-9A-Za-z_-]{20,}|sk-ant-[0-9A-Za-z_-]{16,}|sk-[0-9A-Za-z_-]{16,})/g, "[redacted]")
+          .replace(/(Bearer\\s+)[^\\s,;]+/gi, "$1[redacted]")
+          .slice(0, 900);
+        await writePlatformAuditEvent({ actorType: "human", actorId, actorLabel: session.user.name, action: "ai.runtime.tested", module: "ai-workforce", targetType: "AIProviderPool", targetId: "global", outcome: "failure", metadata: { error: diagnostic, durationMs: Date.now() - traceStartedAt } }).catch(() => undefined);
+        return NextResponse.json({ status: "error", message: "Global AI routing test failed. " + diagnostic }, { status: 502 });
+      }
+    }
+
     if (body.action === "provider.test") {
       const provider = await AIProvider.findById(body.providerId).select("+encryptedApiKey");
       if (!provider) return NextResponse.json({ status: "error", message: "Provider not found." }, { status: 404 });

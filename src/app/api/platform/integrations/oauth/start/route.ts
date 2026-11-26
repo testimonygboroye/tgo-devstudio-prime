@@ -42,7 +42,17 @@ export async function POST(request: NextRequest) {
   const definition = providers[application.providerId];
   if (!definition) return fail("This provider does not yet have a verified OAuth adapter. Use its supported connection method instead.", 422);
 
-  const redirectUri = new URL("/api/platform/integrations/oauth/callback", getSiteUrl()).toString();\n  const requestOrigin = new URL(request.url).origin;\n  const allowedReturnOrigins = new Set([\n    getSiteUrl(),\n    "https://tgo-devstudio-prime.vercel.app",\n    "https://tgo-devstudio-prime.onrender.com",\n    ...(process.env.SITE_URL ? [new URL(process.env.SITE_URL).origin] : []),\n    ...(process.env.NEXT_PUBLIC_SITE_URL ? [new URL(process.env.NEXT_PUBLIC_SITE_URL).origin] : []),\n    ...(process.env.VERCEL_URL ? ["https://" + process.env.VERCEL_URL.replace(/^https?:\\/\\//, "")] : []),\n  ]);\n  const returnOrigin = allowedReturnOrigins.has(requestOrigin) ? requestOrigin : getSiteUrl();
+  const redirectUri = new URL("/api/platform/integrations/oauth/callback", getSiteUrl()).toString();
+  const requestOrigin = new URL(request.url).origin;
+  const allowedReturnOrigins = new Set([
+    getSiteUrl(),
+    "https://tgo-devstudio-prime.vercel.app",
+    "https://tgo-devstudio-prime.onrender.com",
+    ...(process.env.SITE_URL ? [new URL(process.env.SITE_URL).origin] : []),
+    ...(process.env.NEXT_PUBLIC_SITE_URL ? [new URL(process.env.NEXT_PUBLIC_SITE_URL).origin] : []),
+    ...(process.env.VERCEL_URL ? [process.env.VERCEL_URL.startsWith("http") ? new URL(process.env.VERCEL_URL).origin : "https://" + process.env.VERCEL_URL] : []),
+  ]);
+  const returnOrigin = allowedReturnOrigins.has(requestOrigin) ? requestOrigin : getSiteUrl();
   if (application.callbackUrl !== redirectUri) return fail("The registered callback URL must exactly match: " + redirectUri, 409);
   const clientId = String(application.clientId || "").trim();
   if (!clientId) return fail("The OAuth application is missing its client ID.", 409);

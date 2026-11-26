@@ -9,7 +9,7 @@ import Role from "@/models/Role";
 import { AIAgent, AITask } from "@/models/AIWorkforce";
 import EmployeeProfile from "@/models/EmployeeProfile";
 import { buildAccessibleAIAgentFilter } from "@/lib/messaging/aiAgentAccess";
-import { runProviderCompletion } from "@/lib/ai/provider-runtime";
+import { runProviderCompletionWithFallback } from "@/lib/ai/provider-runtime";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import { mirrorMessageToPersonalWhatsApp } from "@/lib/messaging/whatsappSync";
 
@@ -167,7 +167,7 @@ export async function POST(request: NextRequest) {
       try {
         const history = await UnifiedMessage.find({ conversationId, deletedAt: { $exists: false } }).sort({ createdAt: -1 }).limit(24).lean();
         const prompt = history.reverse().map((item) => (item.senderLabel || "Participant") + ": " + item.body).join("\\n\\n");
-        const completion = await runProviderCompletion(String(agent.providerId), agent.modelName, agent.systemInstructions + "\\n\\nYou are responding as " + agent.name + " in the TGO DevStudio internal communications platform. Reply conversationally. You have no external tools in this conversation; do not claim to have performed actions you did not execute.", prompt);
+        const completion = await runProviderCompletionWithFallback("", "", agent.systemInstructions + "\\n\\nYou are responding as " + agent.name + " in the TGO DevStudio internal communications platform. Reply conversationally. You have no external tools in this conversation; do not claim to have performed actions you did not execute.", prompt, "admin");
         task.status = "completed"; task.result = completion.text.slice(0, 50000); task.inputTokens = completion.inputTokens; task.outputTokens = completion.outputTokens; task.providerRequestId = completion.providerRequestId; task.completedAt = new Date(); await task.save();
         const reply = await UnifiedMessage.create({ conversationId, senderType: "ai", senderLabel: agent.name, body: completion.text.slice(0, 12000), status: "sent" });
         conversation.lastMessageAt = new Date(); await conversation.save();

@@ -23,7 +23,7 @@ export async function POST(request:NextRequest){
  const verified=verifyPaystackWebhookSignature({
   rawBody,signatureHeader:request.headers.get("paystack-signature"),
   legacySignatureHeader:request.headers.get("x-paystack-signature"),
-  webhookSecret:process.env.PAYSTACK_WEBHOOK_SECRET,
+  webhookSecret:process.env.PAYSTACK_WEBHOOK_SECRET||integrationCredentials?.webhookSecret,
   secretKey:process.env.PAYSTACK_SECRET_KEY||integrationCredentials?.secretKey,
  });
  if(!verified)return NextResponse.json({error:"Invalid or expired Paystack webhook signature."},{status:401});

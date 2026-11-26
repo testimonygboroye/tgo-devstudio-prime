@@ -4,6 +4,7 @@ import {randomUUID} from "node:crypto";
 import {getServerSession} from "@/lib/auth/serverSession";
 import {connectToDatabase} from "@/lib/db";
 import FinanceSettings from "@/models/FinanceSettings";
+import IntegrationConnection from "@/models/IntegrationConnection";
 import FinanceInvoice from "@/models/FinanceInvoice";
 import FinanceInstallmentPlan from "@/models/FinanceInstallmentPlan";
 import ClientCreditAccount from "@/models/ClientCreditAccount";
@@ -41,8 +42,14 @@ export async function GET(){
   CommercialOrder.find({clientId:session.user._id}).sort({createdAt:-1}).lean(),
   FinanceReceipt.find({clientId:session.user._id}).sort({issuedAt:-1}).limit(100).lean(),
  ]);
- const paystackCredentials=await getVerifiedIntegrationCredentials("paystack").catch(()=>null);
- return NextResponse.json({ok:true,bankTransfer:settings?.bankTransferEnabled?{enabled:true,bankAccounts:Array.isArray(settings.bankAccounts)&&settings.bankAccounts.length?settings.bankAccounts:[{bankName:settings.bankName,accountName:settings.bankAccountName,accountNumber:settings.bankAccountNumber,bankCode:settings.bankCode}],bankName:settings.bankName,accountName:settings.bankAccountName,accountNumber:settings.bankAccountNumber,bankCode:settings.bankCode,instructions:settings.bankTransferInstructions}: {enabled:false,bankAccounts:[]},invoices,credits,payments,installmentPlans,orders,receipts,paystackEnabled:Boolean(settings?.paystackEnabled),paystackCredentialsReady:Boolean(process.env.PAYSTACK_SECRET_KEY||paystackCredentials?.secretKey),paymentConfigured:Boolean(settings?.paystackEnabled&&(process.env.PAYSTACK_SECRET_KEY||paystackCredentials?.secretKey))},{headers:{"Cache-Control":"private, no-store"}});
+ const [paystackCredentials,paystackConnection]=await Promise.all([
+  getVerifiedIntegrationCredentials("paystack").catch(()=>null),
+  IntegrationConnection.findOne({providerId:"paystack"}).select("status lastVerifiedAt").lean(),
+ ]);
+ const paystackLastVerifiedAt=paystackConnection?.lastVerifiedAt||null;
+ const verificationAge=paystackLastVerifiedAt?Date.now()-new Date(paystackLastVerifiedAt).getTime():Number.POSITIVE_INFINITY;
+ const paystackLiveVerified=paystackConnection?.status==="connected"&&verificationAge>=0&&verificationAge<=24*60*60*1000;
+ return NextResponse.json({ok:true,bankTransfer:settings?.bankTransferEnabled?{enabled:true,bankAccounts:Array.isArray(settings.bankAccounts)&&settings.bankAccounts.length?settings.bankAccounts:[{bankName:settings.bankName,accountName:settings.bankAccountName,accountNumber:settings.bankAccountNumber,bankCode:settings.bankCode}],bankName:settings.bankName,accountName:settings.bankAccountName,accountNumber:settings.bankAccountNumber,bankCode:settings.bankCode,instructions:settings.bankTransferInstructions}: {enabled:false,bankAccounts:[]},invoices,credits,payments,installmentPlans,orders,receipts,paystackEnabled:Boolean(settings?.paystackEnabled),paystackCredentialsReady:Boolean(process.env.PAYSTACK_SECRET_KEY||paystackCredentials?.secretKey),paystackLiveVerified,paystackLastVerifiedAt,paymentConfigured:Boolean(settings?.paystackEnabled&&(process.env.PAYSTACK_SECRET_KEY||paystackCredentials?.secretKey))},{headers:{"Cache-Control":"private, no-store"}});
 }
 
 export async function POST(request:NextRequest){

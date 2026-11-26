@@ -252,7 +252,8 @@ export default function AnalyticsClient() {
     useState<VisitorEntry | null>(null);
   const [refreshTick, setRefreshTick] = useState(0);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
-  const activeRequest = useRef<AbortController | null>(null);\n  const hasLoaded = useRef(false);
+  const activeRequest = useRef<AbortController | null>(null);
+  const hasLoaded = useRef(false);
 
   useEffect(() => {
     const refresh = () => {
@@ -342,7 +343,8 @@ export default function AnalyticsClient() {
         }
 
         if (!cancelled) {
-          setData(json);\n          hasLoaded.current = true;
+          setData(json);
+          hasLoaded.current = true;
           setSelectedVisitor((current) =>
             current ? json.visitors.find((visitor) => visitor.visitorId === current.visitorId) || current : null
           );

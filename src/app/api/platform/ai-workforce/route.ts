@@ -378,7 +378,7 @@ export async function POST(request: NextRequest) {
         targetType: "AIProvider", targetId: String(provider._id), outcome: "success",
         metadata: { provider: provider.provider, name: provider.name, dependentAgentsDisabled: false },
       });
-      return NextResponse.json({ status: "ok", message: "API key encrypted and replaced. The provider and its dependent agents are disabled until a live generation test succeeds." });
+      return NextResponse.json({ status: "ok", message: "API key encrypted and replaced. This provider is temporarily unavailable until a live generation test succeeds; AI employees remain enabled and can route to other healthy models and providers." });
     }
     if (body.action === "provider.archive") {
       const providerId = String(body.providerId || "");

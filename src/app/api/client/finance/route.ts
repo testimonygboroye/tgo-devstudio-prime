@@ -27,7 +27,7 @@ type ClientFinanceSession=NonNullable<Awaited<ReturnType<typeof getServerSession
 type InstallmentPlanDocument=NonNullable<Awaited<ReturnType<typeof FinanceInstallmentPlan.findOne>>>;
 type InstallmentDocument=InstallmentPlanDocument["installments"][number];
 async function log(session:ClientFinanceSession,action:string,type:string,id:string,metadata:Record<string,unknown>={}){await writePlatformAuditEvent({actorType:"human",actorId:String(session.user._id),actorLabel:session.user.name,action,module:"finance",targetType:type,targetId:id,outcome:"success",metadata});}
-function ref(){return `TGO_${randomUUID().replace(/-/g,"").slice(0,24).toUpperCase()}`;}
+function ref(prefix:string){return `TGO_${prefix}_${randomUUID().replace(/-/g,"").slice(0,20).toUpperCase()}`;}
 
 export async function GET(){
  const session=await clientSession();if(!session)return fail("Verified client sign-in required.",401);
@@ -84,7 +84,7 @@ export async function POST(request:NextRequest){
  if(installment&&amountMinor!==remainingMinor)return fail("Installments must be paid at their configured scheduled amount.");
  if(milestone&&amountMinor!==remainingMinor)return fail("Milestone payments must be paid in full. Partial payments are available for order balances.");
  const amount=fromMinorUnits(amountMinor,currency);
- const transactionReference=ref();
+ const transactionReference=ref("PAY");
 
  if(body.action==="bank_transfer.submit"){
   if(!settings?.bankTransferEnabled)return fail("Bank transfer is not currently enabled. Contact TGO DevStudio for payment options.",503);

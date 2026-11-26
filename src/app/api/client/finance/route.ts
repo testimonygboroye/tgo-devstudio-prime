@@ -17,6 +17,10 @@ import {toMinorUnits,fromMinorUnits} from "@/lib/payments/money";
 import {buildPaymentLedgerEntries} from "@/lib/finance/ledger";
 import {ensureFinanceReceipt} from "@/lib/finance/receipts";
 import {writePlatformAuditEvent} from "@/lib/platform/audit";
+import {getPaymentProvider} from "@/lib/payments/provider";
+import {verifyAndRecordPaystackPayment} from "@/lib/payments/paystack";
+import {getPublicSiteUrl} from "@/lib/site-url";
+import {getVerifiedIntegrationCredentials} from "@/lib/integrations/credentials";
 
 export const dynamic="force-dynamic";
 function fail(message:string,status=400){return NextResponse.json({ok:false,error:message},{status});}
@@ -40,7 +44,8 @@ export async function GET(){
   CommercialOrder.find({clientId:session.user._id}).sort({createdAt:-1}).lean(),
   FinanceReceipt.find({clientId:session.user._id}).sort({issuedAt:-1}).limit(100).lean(),
  ]);
- return NextResponse.json({ok:true,bankTransfer:settings?.bankTransferEnabled?{enabled:true,bankAccounts:Array.isArray(settings.bankAccounts)&&settings.bankAccounts.length?settings.bankAccounts:[{bankName:settings.bankName,accountName:settings.bankAccountName,accountNumber:settings.bankAccountNumber,bankCode:settings.bankCode}],bankName:settings.bankName,accountName:settings.bankAccountName,accountNumber:settings.bankAccountNumber,bankCode:settings.bankCode,instructions:settings.bankTransferInstructions}: {enabled:false,bankAccounts:[]},invoices,credits,payments,installmentPlans,orders,receipts,paymentConfigured:Boolean(settings?.paystackEnabled&&process.env.PAYSTACK_SECRET_KEY)},{headers:{"Cache-Control":"private, no-store"}});
+ const paystackCredentials=await getVerifiedIntegrationCredentials("paystack").catch(()=>null);
+ return NextResponse.json({ok:true,bankTransfer:settings?.bankTransferEnabled?{enabled:true,bankAccounts:Array.isArray(settings.bankAccounts)&&settings.bankAccounts.length?settings.bankAccounts:[{bankName:settings.bankName,accountName:settings.bankAccountName,accountNumber:settings.bankAccountNumber,bankCode:settings.bankCode}],bankName:settings.bankName,accountName:settings.bankAccountName,accountNumber:settings.bankAccountNumber,bankCode:settings.bankCode,instructions:settings.bankTransferInstructions}: {enabled:false,bankAccounts:[]},invoices,credits,payments,installmentPlans,orders,receipts,paystackEnabled:Boolean(settings?.paystackEnabled),paymentConfigured:Boolean(settings?.paystackEnabled&&(process.env.PAYSTACK_SECRET_KEY||paystackCredentials?.secretKey))},{headers:{"Cache-Control":"private, no-store"}});
 }
 
 export async function POST(request:NextRequest){
@@ -48,6 +53,21 @@ export async function POST(request:NextRequest){
  let body:Record<string,unknown>;try{body=await request.json();}catch{return fail("Invalid finance request.");}
  if(!validId(body.orderId))return fail("A valid order id is required.");
  await connectToDatabase();
+ if(body.action==="paystack.verify"){
+  const reference=String(body.reference||"").trim();
+  if(!/^TGO_PAY_[A-F0-9]{20}$/.test(reference))return fail("The payment reference is invalid.");
+  const ownedPayment=await PaymentTransaction.findOne({reference,clientId:session.user._id,provider:"paystack"});
+  if(!ownedPayment)return fail("Payment reference was not found in your account.",404);
+  if(ownedPayment.status==="paid")return NextResponse.json({ok:true,paid:true,message:"Payment is already verified.",reference});
+  try{
+   const verified=await verifyAndRecordPaystackPayment(reference);
+   if(verified.status!=="paid")return fail("Paystack has not confirmed this payment yet. Refresh the page in a moment.",409);
+   return NextResponse.json({ok:true,paid:true,message:"Payment verified successfully. Your receipt and account ledger have been updated.",reference});
+  }catch(error){
+   return fail(error instanceof Error?error.message:"Payment verification could not be completed. Your payment remains unconfirmed.",409);
+  }
+ }
+ if(!validId(body.orderId))return fail("A valid order id is required.");
  const [user,order,settings]=await Promise.all([
   (await import("@/models/User")).default.findOne({_id:session.user._id,accountType:"client",isEmailVerified:true}),
   CommercialOrder.findOne({_id:body.orderId,clientId:session.user._id}),
@@ -82,6 +102,38 @@ export async function POST(request:NextRequest){
  if(milestone&&amountMinor!==remainingMinor)return fail("Milestone payments must be paid in full. Partial payments are available for order balances.");
  const amount=fromMinorUnits(amountMinor,currency);
  const transactionReference=ref("PAY");
+
+ if(body.action==="paystack.initialize"){
+  if(!settings?.paystackEnabled)return fail("Online card payments are currently disabled. Contact TGO DevStudio for payment options.",503);
+  const enabledCurrencies=(settings.enabledCurrencies||[settings.baseCurrency||"NGN"]).map((value:string)=>String(value).toUpperCase());
+  if(!enabledCurrencies.includes(currency))return fail("This order uses "+currency+", which is not enabled for online payments. Contact TGO DevStudio for an alternative payment arrangement.",409);
+  const payment=await PaymentTransaction.create({
+   reference:transactionReference,provider:"paystack",paymentMethod:"card",clientId:user._id,orderId:order._id,
+   milestoneId:milestone?._id,installmentId:installment?._id,amount,amountMinor,currency,status:"pending",
+  });
+  try{
+   const callbackUrl=new URL("/client/finance",getPublicSiteUrl());
+   callbackUrl.searchParams.set("payment",transactionReference);
+   const initialized=await getPaymentProvider("paystack").initialize({
+    email:String(user.email||session.user.email||""),
+    amountMinor,currency,reference:transactionReference,callbackUrl:callbackUrl.toString(),
+    metadata:{clientId:String(user._id),orderId:String(order._id),paymentId:String(payment._id),orderReference:String(order.reference||"")},
+   });
+   if(initialized.reference!==transactionReference)throw new Error("Paystack returned a different payment reference. The checkout was not accepted.");
+   payment.authorizationUrl=initialized.authorizationUrl;
+   payment.accessCode=initialized.accessCode||"";
+   await payment.save();
+   if(order.paymentStatus!=="partially_paid"){order.paymentStatus="pending";await order.save();}
+   await log(session,"finance.paystack_checkout_initialized","payment_transaction",String(payment._id),{reference:transactionReference,amountMinor,currency,orderId:String(order._id)});
+   return NextResponse.json({ok:true,authorizationUrl:initialized.authorizationUrl,reference:transactionReference,message:"Secure Paystack checkout is ready. You will be redirected to complete payment."},{status:201});
+  }catch(error){
+   payment.status="failed";
+   payment.failureReason=(error instanceof Error?error.message:"Paystack checkout could not be initialized.").slice(0,1000);
+   await payment.save();
+   await log(session,"finance.paystack_checkout_initialization_failed","payment_transaction",String(payment._id),{reference:transactionReference,error:payment.failureReason}).catch(()=>undefined);
+   return fail(payment.failureReason,502);
+  }
+ }
 
  if(body.action==="bank_transfer.submit"){
   if(!settings?.bankTransferEnabled)return fail("Bank transfer is not currently enabled. Contact TGO DevStudio for payment options.",503);

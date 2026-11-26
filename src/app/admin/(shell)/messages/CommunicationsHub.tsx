@@ -51,7 +51,7 @@ export default function CommunicationsHub() {
   const listInFlight=useRef(false);
   const messagesInFlight=useRef(false);
   const lastPollingErrorToastAt=useRef(0);
-  const notifyPollingError=(message:string)=>{if(Date.now()-lastPollingErrorToastAt.current>15000){notify(message,"error");lastPollingErrorToastAt.current=Date.now();}};
+  const notifyPollingError=useCallback((message:string)=>{if(Date.now()-lastPollingErrorToastAt.current>15000){notify(message,"error");lastPollingErrorToastAt.current=Date.now();}},[]);
   const loadList=useCallback(async()=>{
     if(listInFlight.current)return;
     listInFlight.current=true;
@@ -65,7 +65,7 @@ export default function CommunicationsHub() {
     try{const params=new URLSearchParams({conversationId:id});if(searchTerm.trim())params.set("q",searchTerm.trim());const response=await fetch("/api/platform/messaging?"+params.toString(),{cache:"no-store"});const data=await response.json();if(!response.ok||data.status!=="ok")throw new Error(data.message||"Could not refresh conversation messages.");setActive(data.conversation);setMessages(data.messages||[]);setIsFounder(Boolean(data.isFounder));setCurrentUserId(String(data.currentUserId||""));if(refreshList)void loadList();}
     catch(error){notifyPollingError(error instanceof Error?error.message:"Could not refresh messages.");}
     finally{messagesInFlight.current=false;}
-  },[searchTerm,loadList]);
+  },[searchTerm,loadList,notifyPollingError]);
   const loadWhatsAppConnection=useCallback(async()=>{try{const r=await fetch("/api/platform/messaging/whatsapp-connection",{cache:"no-store"});const d=await r.json();setWaConnected(Boolean(d.connected));if(d.personalPhoneNumber)setWaForm(v=>({...v,personalPhoneNumber:d.personalPhoneNumber,consent:Boolean(d.optedIn)}));}catch{}},[]);
   useEffect(()=>{const timer=window.setTimeout(()=>{void loadList();void loadWhatsAppConnection();},0);return()=>window.clearTimeout(timer);},[loadList,loadWhatsAppConnection]);
   useEffect(()=>{const timer=setInterval(()=>{if(document.visibilityState==="visible")void loadList();},3000);return()=>clearInterval(timer);},[loadList]);

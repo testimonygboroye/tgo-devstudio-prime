@@ -147,8 +147,7 @@ export async function handleAIChat(request:NextRequest,scope:Scope,method:"GET"|
  const config=await AIChatbotConfig.findOne({scope,enabled:true}).lean();
  let providerStatus:"verified"|"unverified"|"unconfigured"=config?"unverified":"unconfigured";
  if(method==="GET"&&config){
-  const providerIds=[config.providerId,...(config.fallbacks||[]).map((item)=>item.providerId),config.fallbackProviderId].filter((id): id is Types.ObjectId => id instanceof Types.ObjectId);
-  const verifiedProviders=await AIProvider.countDocuments({_id:{$in:providerIds},enabled:true,lastTestStatus:"success",lastTestedAt:{$gte:new Date(Date.now()-24*60*60*1000)}});
+  const verifiedProviders=await AIProvider.countDocuments({enabled:true,lastTestStatus:"success",archivedAt:{$exists:false}});
   providerStatus=verifiedProviders>0?"verified":"unverified";
  }
  if(method==="GET"){

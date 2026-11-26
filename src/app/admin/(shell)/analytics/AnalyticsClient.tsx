@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";\nimport { notify } from "@/lib/platform/toast";
 
 interface ViewEntry {
   _id: string;
@@ -253,7 +253,7 @@ export default function AnalyticsClient() {
   const [refreshTick, setRefreshTick] = useState(0);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
   const activeRequest = useRef<AbortController | null>(null);
-  const hasLoaded = useRef(false);
+  const hasLoaded = useRef(false);\n  const lastErrorToastAt = useRef(0);
 
   useEffect(() => {
     const refresh = () => {
@@ -353,7 +353,7 @@ export default function AnalyticsClient() {
       } catch (loadError) {
         const aborted = loadError instanceof DOMException && loadError.name === "AbortError";
         if (!cancelled && !aborted) {
-          setError(loadError instanceof Error ? loadError.message : "Failed to load analytics.");
+          const message = loadError instanceof Error ? loadError.message : "Failed to load analytics.";\n          setError(message);\n          if (Date.now() - lastErrorToastAt.current > 15000) { notify(message, "error"); lastErrorToastAt.current = Date.now(); }
         }
       } finally {
         if (!cancelled) setIsLoading(false);

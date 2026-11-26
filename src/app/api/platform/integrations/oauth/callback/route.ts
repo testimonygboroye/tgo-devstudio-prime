@@ -37,8 +37,8 @@ export async function GET(request: NextRequest) {
   if (!stateRecord) return redirectResult("error", "unknown", "This authorization request expired or has already been used.");
 
   const providerId = stateRecord.providerId;
-  if (providerError) return redirectResult("error", providerId, "The provider authorization was cancelled or denied.");
-  if (!code || code.length > 4000) return redirectResult("error", providerId, "The provider did not return a valid authorization code.");
+  if (providerError) return redirectResult("error", providerId, "The provider authorization was cancelled or denied.", stateRecord.returnOrigin);
+  if (!code || code.length > 4000) return redirectResult("error", providerId, "The provider did not return a valid authorization code.", stateRecord.returnOrigin);
 
   const application = await IntegrationApplication.findOne({
     _id: stateRecord.applicationId,
@@ -47,12 +47,12 @@ export async function GET(request: NextRequest) {
     ownerId: stateRecord.ownerId,
     active: true,
   }).select("+clientSecretCiphertext");
-  if (!application?.clientSecretCiphertext) return redirectResult("error", providerId, "The registered OAuth application is unavailable or has no client secret.");
+  if (!application?.clientSecretCiphertext) return redirectResult("error", providerId, "The registered OAuth application is unavailable or has no client secret.", stateRecord.returnOrigin);
 
   let secret = "";
   try { secret = decryptCredentials(application.clientSecretCiphertext).clientSecret || ""; }
-  catch { return redirectResult("error", providerId, "The OAuth application secret could not be decrypted. Check integration encryption configuration."); }
-  if (!secret) return redirectResult("error", providerId, "The OAuth application secret is missing.");
+  catch { return redirectResult("error", providerId, "The OAuth application secret could not be decrypted. Check integration encryption configuration.", stateRecord.returnOrigin); }
+  if (!secret) return redirectResult("error", providerId, "The OAuth application secret is missing.", stateRecord.returnOrigin);
 
   const headers = { "Content-Type": "application/json", Accept: "application/json" };
   const timeout = AbortSignal.timeout(15000);
@@ -130,7 +130,7 @@ export async function GET(request: NextRequest) {
       module: "integrations", targetType: "IntegrationAccount", targetId: String(account._id), outcome: "success",
       metadata: { providerId, ownerType: stateRecord.ownerType, requestedPermissions: stateRecord.scopes, grantedPermissions },
     });
-    return redirectResult("success", providerId, "Account connected successfully.");
+    return redirectResult("success", providerId, "Account connected successfully.", stateRecord.returnOrigin);
   } catch (error) {
     const safeMessage = (error instanceof Error ? error.message : "OAuth authorization failed.")
       .replace(/(?:AIza[0-9A-Za-z_-]{20,}|gh[opsu]_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9_-]{20,})/g, "[redacted]")
@@ -140,6 +140,6 @@ export async function GET(request: NextRequest) {
       module: "integrations", targetType: "IntegrationApplication", targetId: String(application._id), outcome: "failure",
       metadata: { providerId, ownerType: stateRecord.ownerType, error: safeMessage },
     }).catch(() => undefined);
-    return redirectResult("error", providerId, "Account connection failed. Check the integration diagnostics.");
+    return redirectResult("error", providerId, "Account connection failed. Check the integration diagnostics.", stateRecord.returnOrigin);
   }
 }

@@ -270,20 +270,6 @@ export async function GET(request: NextRequest) {
     PageView.distinct("operatingSystem", trustedTrafficFilter),
   ]);
 
-  const onlineCountQuery: Record<string, unknown> = {
-    isInternal: { $ne: true },
-    visitorId: { $in: matchingVisitorIds },
-    lastActiveAt: { $gte: onlineSince },
-  };
-  if (search) {
-    onlineCountQuery.$or = [
-      { displayName: { $regex: search, $options: "i" } },
-      { email: { $regex: search, $options: "i" } },
-      { visitorId: { $regex: search, $options: "i" } },
-    ];
-  }
-  const onlineVisitorCount = await Visitor.countDocuments(onlineCountQuery);
-
   const visitors = await Visitor.find(visitorQuery)
     .sort({ lastSeen: -1 })
     .limit(5000)
@@ -446,18 +432,51 @@ export async function GET(request: NextRequest) {
         default: return new Date(b.lastSeen).getTime() - new Date(a.lastSeen).getTime();
       }
     })
-    .slice(0, limit)
     .map((visitor, index) => ({
       ...visitor,
       rank: index + 1,
     }));
 
-  const totalDays = dailyVisitors.length;
+  // Visitor-level filters (status, presence and search) must constrain the
+  // headline metrics as well as the visitor list. Otherwise the UI appears
+  // unchanged even though only the list has been filtered.
+  const visitorFilteredIds = formattedVisitors.map((visitor) => visitor.visitorId);
+  let finalViews = views;
+  let finalTotalCount = totalCount;
+  let finalUniqueVisitorCount = uniqueVisitors.length;
+  let finalDailyVisitors = dailyVisitors;
+  const finalOnlineVisitorCount = formattedVisitors.filter((visitor) => visitor.isOnline).length;
+
+  if (status || presence || search) {
+    const filteredMetricsMatch = {
+      ...pageViewMatch,
+      visitorId: { $in: visitorFilteredIds },
+    };
+    const [filteredViews, filteredCount, filteredUniqueIds, filteredDaily] = await Promise.all([
+      PageView.find(filteredMetricsMatch).sort({ createdAt: -1 }).limit(limit).lean(),
+      PageView.countDocuments(filteredMetricsMatch),
+      PageView.distinct("visitorId", filteredMetricsMatch),
+      PageView.aggregate([
+        { $match: filteredMetricsMatch },
+        { $project: { visitorId: 1, day: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt", timezone: "UTC" } } } },
+        { $group: { _id: { day: "$day", visitorId: "$visitorId" } } },
+        { $group: { _id: "$_id.day", visitors: { $sum: 1 } } },
+        { $sort: { _id: 1 } },
+      ]),
+    ]);
+    finalViews = filteredViews;
+    finalTotalCount = filteredCount;
+    finalUniqueVisitorCount = filteredUniqueIds.length;
+    finalDailyVisitors = filteredDaily;
+  }
+
+  const visibleVisitors = formattedVisitors.slice(0, limit);
+  const totalDays = finalDailyVisitors.length;
 
   const averageDailyVisitors =
     totalDays > 0
       ? Math.round(
-          (dailyVisitors.reduce(
+          (finalDailyVisitors.reduce(
             (sum, item) =>
               sum + Number(item.visitors),
             0
@@ -467,7 +486,7 @@ export async function GET(request: NextRequest) {
         ) / 100
       : 0;
 
-  const peakDay = dailyVisitors.reduce(
+  const peakDay = finalDailyVisitors.reduce(
     (highest, current) =>
       Number(current.visitors) >
       Number(highest?.visitors || 0)
@@ -492,7 +511,7 @@ export async function GET(request: NextRequest) {
 
   // Capture only unfiltered metrics, once per UTC day, so dashboard filters
   // cannot distort the daily comparison baseline.
-  if (!hasPageViewFilters && !search) {
+  if (!hasPageViewFilters && !search && !status && !presence) {
     after(async () => {
       try {
         await captureAnalyticsSnapshot({
@@ -520,22 +539,21 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     status: "ok",
 
-    views: views.map((view) => {
+    views: finalViews.map((view) => {
       const unverified = isLikelyGeoMismatch(view.timezone, view.countryCode);
       return { ...view, path: decodeAnalyticsLabel(view.path), host: canonicalizeDeploymentHost(view.host), country: view.country || countryName(view.countryCode), region: unverified ? undefined : formatRegionName(view.region, view.countryCode) || view.region, city: unverified ? undefined : view.city ? decodeAnalyticsLabel(view.city) : view.city };
     }),
 
-    visitors: formattedVisitors.map((visitor) => {
+    visitors: visibleVisitors.map((visitor) => {
       const unverified = isLikelyGeoMismatch(visitor.timezone, visitor.countryCode);
       return { ...visitor, deploymentHost: canonicalizeDeploymentHost(visitor.deploymentHost), country: visitor.country || countryName(visitor.countryCode), region: unverified ? undefined : formatRegionName(visitor.region, visitor.countryCode) || visitor.region, city: unverified ? undefined : visitor.city ? decodeAnalyticsLabel(visitor.city) : visitor.city, hosts: [...new Set((visitor.hosts || []).map((value) => canonicalizeDeploymentHost(value)).filter(Boolean))] };
     }),
 
-    totalCount,
+    totalCount: finalTotalCount,
 
-    uniqueVisitorCount:
-      uniqueVisitors.length,
+    uniqueVisitorCount: finalUniqueVisitorCount,
 
-    onlineVisitorCount,
+    onlineVisitorCount: finalOnlineVisitorCount,
     onlineWindowSeconds: 120,
     trafficClassification: {
       excludedAutomatedOrPreviewPageViews: excludedAutomatedPageViews,
@@ -577,5 +595,5 @@ export async function GET(request: NextRequest) {
 
     operatingSystems:
       cleanOptions(availableOperatingSystems),
-  });
+  }, { headers: { "Cache-Control": "no-store, no-cache, must-revalidate", "CDN-Cache-Control": "no-store", "Vercel-CDN-Cache-Control": "no-store" } });
 }

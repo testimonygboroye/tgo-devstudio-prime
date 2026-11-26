@@ -5,7 +5,7 @@ import ClientProfile from "@/models/ClientProfile";
 import IntegrationAccount from "@/models/IntegrationAccount";
 import IntegrationApplication from "@/models/IntegrationApplication";
 import { INTEGRATION_REGISTRY, getIntegrationProvider } from "@/lib/integrations/registry";
-import { encryptCredentials } from "@/lib/integrations/crypto";
+import { encryptCredentials, decryptCredentials } from "@/lib/integrations/crypto";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import mongoose from "mongoose";
 export const runtime="nodejs";
@@ -53,15 +53,40 @@ export async function PATCH(request:NextRequest){
  const auth=await access();if("response"in auth)return auth.response;
  let body:any;try{body=await request.json()}catch{return fail("Invalid request body.");}
  await connectToDatabase();const id=String(body.id||"");if(!mongoose.isValidObjectId(id))return fail("Invalid integration account.");
- const filter={_id:id,ownerType:auth.ownerType,ownerId:auth.ownerId};const row=await IntegrationAccount.findOne(filter);if(!row)return fail("Integration account not found in this owner scope.",404);
+ const filter={_id:id,ownerType:auth.ownerType,ownerId:auth.ownerId};const row=await IntegrationAccount.findOne(filter).select("+credentialsCiphertext");if(!row)return fail("Integration account not found in this owner scope.",404);
  if(body.action==="permissions"){
   if(typeof body.readEnabled!=="boolean"||typeof body.writeEnabled!=="boolean")return fail("Read and write permission settings are required.");
   row.readEnabled=body.readEnabled;row.writeEnabled=body.writeEnabled;
   if(Array.isArray(body.requestedPermissions))row.requestedPermissions=body.requestedPermissions.filter((x:any)=>typeof x==="string").slice(0,250);
   await row.save();
  }else if(body.action==="disconnect"||body.action==="revoke"){
-  row.status=body.action==="revoke"?"revoked":"disconnected";row.credentialsCiphertext=encryptCredentials({});row.disconnectedAt=new Date();if(body.action==="revoke")row.revokedAt=new Date();row.lastError=body.action==="revoke"?"Authorization revoked by account owner.":"Disconnected by account owner.";await row.save();
+  let remoteRevoked=false;
+  let remoteRevocationMessage="";
+  if(body.action==="revoke"&&row.authMethod==="oauth2"){
+   try{
+    const credentials=decryptCredentials(row.credentialsCiphertext);
+    const application=await IntegrationApplication.findOne({providerId:row.providerId,ownerType:auth.ownerType,ownerId:auth.ownerId,active:true,appType:"oauth_app"}).select("+clientSecretCiphertext");
+    const secret=application?.clientSecretCiphertext?decryptCredentials(application.clientSecretCiphertext).clientSecret||"": "";
+    if(row.providerId==="github"&&application&&secret&&credentials.accessToken){
+     const basic=Buffer.from(String(application.clientId)+":"+secret).toString("base64");
+     const response=await fetch("https://api.github.com/applications/"+encodeURIComponent(String(application.clientId))+"/grant",{method:"DELETE",headers:{Authorization:"Basic "+basic,Accept:"application/vnd.github+json","Content-Type":"application/json","User-Agent":"TGO-DevStudio-Prime"},body:JSON.stringify({access_token:credentials.accessToken}),signal:AbortSignal.timeout(12000),cache:"no-store"});
+     remoteRevoked=response.ok||response.status===204;
+     if(!remoteRevoked)remoteRevocationMessage="GitHub did not confirm remote token revocation (HTTP "+response.status+").";
+    }else if((row.providerId==="google-workspace"||row.providerId==="google-cloud")&&(credentials.accessToken||credentials.refreshToken)){
+     const token=String(credentials.refreshToken||credentials.accessToken);
+     const response=await fetch("https://oauth2.googleapis.com/revoke",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({token}).toString(),signal:AbortSignal.timeout(12000),cache:"no-store"});
+     remoteRevoked=response.ok;
+     if(!remoteRevoked)remoteRevocationMessage="Google did not confirm remote token revocation (HTTP "+response.status+").";
+    }else remoteRevocationMessage="Provider-side revocation is not implemented for this authorization type; local credentials were cleared.";
+   }catch(error){remoteRevocationMessage=error instanceof Error?error.message:"Remote revocation could not be confirmed.";}
+  }else if(body.action==="revoke")remoteRevocationMessage="This credential type has no provider-side revocation adapter; local credentials were cleared.";
+  row.status=body.action==="revoke"&&remoteRevoked?"revoked":"disconnected";
+  row.credentialsCiphertext=encryptCredentials({});
+  row.disconnectedAt=new Date();
+  if(remoteRevoked)row.revokedAt=new Date();
+  row.lastError=remoteRevocationMessage|| (body.action==="revoke"?"Local credentials cleared; remote revocation not confirmed.":"Disconnected by account owner.");
+  await row.save();
  }else return fail("Unsupported integration account action.");
- await writePlatformAuditEvent({actorType:"human",actorId:String(auth.session.user._id),actorLabel:auth.session.user.name,action:"integration.account_"+body.action,module:"integrations",targetType:"IntegrationAccount",targetId:String(row._id),outcome:"success",metadata:{providerId:row.providerId,accountLabel:row.accountLabel,readEnabled:row.readEnabled,writeEnabled:row.writeEnabled}});
- return NextResponse.json({account:safe(row.toObject())});
+ await writePlatformAuditEvent({actorType:"human",actorId:String(auth.session.user._id),actorLabel:auth.session.user.name,action:"integration.account_"+body.action,module:"integrations",targetType:"IntegrationAccount",targetId:String(row._id),outcome:"success",metadata:{providerId:row.providerId,accountLabel:row.accountLabel,readEnabled:row.readEnabled,writeEnabled:row.writeEnabled,remoteRevoked:body.action==="revoke"&&row.status==="revoked"}});
+ return NextResponse.json({account:safe(row.toObject()),remoteRevoked:body.action==="revoke"&&row.status==="revoked",message:body.action==="revoke"?(row.status==="revoked"?"Provider authorization revoked and local credentials cleared.":"Local credentials cleared. Provider-side revocation could not be confirmed; see the connection diagnostic."):"Account disconnected and local credentials cleared."});
 }

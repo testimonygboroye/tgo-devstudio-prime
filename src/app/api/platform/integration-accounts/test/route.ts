@@ -5,6 +5,7 @@ import ClientProfile from "@/models/ClientProfile";
 import IntegrationAccount from "@/models/IntegrationAccount";
 import {decryptCredentials} from "@/lib/integrations/crypto";
 import {writePlatformAuditEvent} from "@/lib/platform/audit";
+import { getIntegrationOAuthAccessToken } from "@/lib/integrations/oauth-token";
 import mongoose from "mongoose";
 export const runtime="nodejs";export const dynamic="force-dynamic";
 export async function POST(request:NextRequest){
@@ -15,7 +16,13 @@ export async function POST(request:NextRequest){
  await connectToDatabase();const row=await IntegrationAccount.findOne({_id:body.id,ownerType:founder?"founder":"client",ownerId:session.user._id}).select("+credentialsCiphertext");if(!row)return NextResponse.json({error:"Account connection not found."},{status:404});
  const c=decryptCredentials(row.credentialsCiphertext);const controller=AbortSignal.timeout(12000);let response:Response|undefined;let identity="";
  try{
-  if(row.providerId==="github"){response=await fetch("https://api.github.com/user",{headers:{Authorization:"Bearer "+c.token,Accept:"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"},signal:controller,cache:"no-store"});if(response.ok){const user:any=await response.json();identity=user.login||"";}}
+  if(row.authMethod==="oauth2"){
+   const auth=await getIntegrationOAuthAccessToken({accountId:String(row._id),ownerType:founder?"founder":"client",ownerId:String(session.user._id)});
+   if(row.providerId==="github"){response=await fetch("https://api.github.com/user",{headers:{Authorization:"Bearer "+auth.accessToken,Accept:"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28","User-Agent":"TGO-DevStudio-Prime"},signal:controller,cache:"no-store"});if(response.ok){const user:any=await response.json();identity=user.login||"";}}
+   else if(row.providerId==="google_workspace"||row.providerId==="google_cloud"){response=await fetch("https://openidconnect.googleapis.com/v1/userinfo",{headers:{Authorization:"Bearer "+auth.accessToken,Accept:"application/json"},signal:controller,cache:"no-store"});if(response.ok){const user:any=await response.json();identity=user.email||user.name||user.sub||"Google account";}}
+   else throw new Error("OAuth verification adapter is not available for this provider.");
+  }
+  else if(row.providerId==="github"){response=await fetch("https://api.github.com/user",{headers:{Authorization:"Bearer "+c.token,Accept:"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"},signal:controller,cache:"no-store"});if(response.ok){const user:any=await response.json();identity=user.login||"";}}
   else if(row.providerId==="supabase"){response=await fetch("https://api.supabase.com/v1/projects",{headers:{Authorization:"Bearer "+c.accessToken,Accept:"application/json"},signal:controller,cache:"no-store"});if(response.ok){const projects:any=await response.json();identity=Array.isArray(projects)?projects.length+" accessible project(s)":"Supabase account";}}
   else if(row.providerId==="cloudflare"){response=await fetch("https://api.cloudflare.com/client/v4/user/tokens/verify",{headers:{Authorization:"Bearer "+c.apiToken,Accept:"application/json"},signal:controller,cache:"no-store"});if(response.ok){const j:any=await response.json();identity=j.result?.status||"Cloudflare token";}}
   else if(row.providerId==="vercel"){response=await fetch("https://api.vercel.com/v2/user",{headers:{Authorization:"Bearer "+c.token,Accept:"application/json"},signal:controller,cache:"no-store"});if(response.ok){const j:any=await response.json();identity=j.user?.username||j.user?.name||"Vercel account";}}

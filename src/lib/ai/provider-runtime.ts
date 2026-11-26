@@ -1,6 +1,9 @@
 import { resolveProviderApiKey } from "@/lib/ai/provider-key";
 import { AIProvider } from "@/models/AIWorkforce";
 import type { AIChatbotScope } from "@/models/AIChatbot";
+import { randomUUID } from "node:crypto";
+import { connectToDatabase } from "@/lib/db";
+import AIExecutionLog from "@/models/AIExecutionLog";
 
 
 export interface AICompletion {
@@ -135,6 +138,8 @@ export async function runProviderCompletionWithFallback(
   prompt: string,
   _scope: AIChatbotScope = "admin",
 ): Promise<AICompletion> {
+  await connectToDatabase();
+  const traceId = randomUUID();
   const providers = await AIProvider.find({ enabled: true, lastTestStatus: "success", archivedAt: { $exists: false } }).select("+encryptedApiKey").lean();
   if (!providers.length) throw new Error("No active, connection-verified AI provider is available. AI employees remain enabled; add or enable a provider and retry this task.");
   const catalogues = await Promise.all(providers.map(async (provider: any) => ({ provider, models: await discoverProviderModels(provider) })));
@@ -148,12 +153,19 @@ export async function runProviderCompletionWithFallback(
     if (seen.has(identity)) continue;
     seen.add(identity);
     attempt += 1;
+    const startedAt = Date.now();
     try {
       const result = await runProviderCompletion(String(candidate.provider._id), candidate.modelName, system, prompt, true);
       if (!result.text.trim()) throw new Error("Model returned an empty response.");
+      await AIExecutionLog.create({ traceId, feature: "ai_completion", providerId: String(candidate.provider._id), providerName: candidate.provider.name, providerType: candidate.provider.provider, model: candidate.modelName, status: attempt > 1 ? "fallback" : "success", durationMs: Date.now() - startedAt, inputTokens: result.inputTokens, outputTokens: result.outputTokens, fallbackFrom: attempt > 1 ? failures[failures.length - 1]?.slice(0, 300) : undefined }).catch(() => undefined);
       return { ...result, providerId: String(candidate.provider._id), model: result.model || candidate.modelName, fallbackUsed: attempt > 1 };
     } catch (error) {
-      failures.push(candidate.provider.name + "/" + candidate.modelName + ": " + (error instanceof Error ? error.message : "Model request failed."));
+      const message = error instanceof Error ? error.message : "Model request failed.";
+      const match = message.match(/HTTP\\s+(\\d{3})/i);
+      const httpStatus = match ? Number(match[1]) : undefined;
+      const errorCode = httpStatus === 429 ? "rate_limit" : httpStatus === 401 || httpStatus === 403 ? "authentication_or_permission" : httpStatus && httpStatus >= 500 ? "provider_server_error" : /timeout|abort/i.test(message) ? "timeout" : "model_unavailable_or_request_failed";
+      failures.push(candidate.provider.name + "/" + candidate.modelName + ": " + message);
+      await AIExecutionLog.create({ traceId, feature: "ai_completion", providerId: String(candidate.provider._id), providerName: candidate.provider.name, providerType: candidate.provider.provider, model: candidate.modelName, status: "failure", durationMs: Date.now() - startedAt, httpStatus, errorCode, errorMessage: message.slice(0, 1900) }).catch(() => undefined);
     }
   }
   throw new Error("Every globally ranked available AI model failed. " + failures.slice(0, 18).join(" | ").slice(0, 1800));

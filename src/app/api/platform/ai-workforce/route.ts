@@ -421,7 +421,7 @@ export async function POST(request: NextRequest) {
       } catch (error) {
         const diagnostic = (error instanceof Error ? error.message : "Global AI routing test failed.")
           .replace(/(?:AIza[0-9A-Za-z_-]{20,}|sk-ant-[0-9A-Za-z_-]{16,}|sk-[0-9A-Za-z_-]{16,})/g, "[redacted]")
-          .replace(/(Bearer\\s+)[^\\s,;]+/gi, "$1[redacted]")
+          .replace(/(Bearer\s+)[^\s,;]+/gi, "$1[redacted]")
           .slice(0, 900);
         await writePlatformAuditEvent({ actorType: "human", actorId, actorLabel: session.user.name, action: "ai.runtime.tested", module: "ai-workforce", targetType: "AIProviderPool", targetId: "global", outcome: "failure", metadata: { error: diagnostic, durationMs: Date.now() - traceStartedAt } }).catch(() => undefined);
         return NextResponse.json({ status: "error", message: "Global AI routing test failed. " + diagnostic }, { status: 502 });

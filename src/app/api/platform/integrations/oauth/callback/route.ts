@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     { stateHash, usedAt: { $exists: false }, expiresAt: { $gt: new Date() } },
     { $set: { usedAt: new Date() } },
     { returnDocument: "after" },
-  );
+  ).select("+pkceVerifierCiphertext");
   if (!stateRecord) return redirectResult("error", "unknown", "This authorization request expired or has already been used.");
 
   const providerId = stateRecord.providerId;

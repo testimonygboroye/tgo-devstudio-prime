@@ -64,6 +64,7 @@ AIAgentSchema.index({ department: 1, enabled: 1 });
 
 export interface AITask extends Document {
   agentId: Types.ObjectId;
+  agentMemoryKey?: string;
   parentTaskId?: Types.ObjectId;
   operation?: string;
   operationPayload?: Record<string, unknown>;
@@ -87,6 +88,7 @@ export interface AITask extends Document {
 }
 const AITaskSchema = new Schema<AITask>({
   agentId: { type: Schema.Types.ObjectId, ref: "AIAgent", required: true },
+  agentMemoryKey: { type: String, maxlength: 300, index: true },
   parentTaskId: { type: Schema.Types.ObjectId, ref: "AITask" },
   operation: { type: String, maxlength: 80 },
   operationPayload: { type: Schema.Types.Mixed },

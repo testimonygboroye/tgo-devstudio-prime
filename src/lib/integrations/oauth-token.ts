@@ -23,7 +23,7 @@ export async function getIntegrationOAuthAccessToken(input: {
   const expiresAt = credentials.expiresAt ? new Date(credentials.expiresAt) : null;
   const needsRefresh = Boolean(expiresAt && expiresAt.getTime() <= Date.now() + 120000);
   if (needsRefresh) {
-    if (account.providerId !== "google_workspace" && account.providerId !== "google_cloud") {
+    if (!["google_workspace", "google_cloud", "google_search_console", "google_analytics"].includes(account.providerId)) {
       throw new Error("This provider's OAuth token refresh adapter is not available.");
     }
     const refreshToken = String(credentials.refreshToken || "");

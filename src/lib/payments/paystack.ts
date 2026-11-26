@@ -15,7 +15,7 @@ import {ensureFinanceReceipt} from "@/lib/finance/receipts";
 import {enqueueWebhookDeliveries} from "@/lib/integrations/webhooks";
 export async function verifyAndRecordPaystackPayment(reference:string){
  await connectToDatabase();
- const initial=await PaymentTransaction.findOne({reference});if(!initial)throw new Error("Payment reference was not found.");
+ const initial=await PaymentTransaction.findOne({reference});if(!initial)throw new Error("Payment reference was not found.");if(initial.provider!=="paystack")throw new Error("This transaction was not initiated through Paystack.");
  if(initial.status==="paid"){
   // A payment may have been committed successfully even if webhook enqueueing failed
   // immediately afterwards. Re-enqueue the same idempotent event on every retry.

@@ -416,7 +416,7 @@ export async function POST(request: NextRequest) {
           "admin",
         );
         const message = "Global AI routing succeeded with " + completion.model + (completion.fallbackUsed ? " after cross-provider fallback." : ".");
-        await writePlatformAuditEvent({ actorType: "human", actorId, actorLabel: session.user.name, action: "ai.runtime.tested", module: "ai-workforce", targetType: "AIProviderPool", targetId: "global", outcome: "success", metadata: { model: completion.model, providerId: completion.providerId, fallbackUsed: completion.fallbackUsed, durationMs: Date.now() - traceStartedAt } });
+        await writePlatformAuditEvent({ actorType: "human", actorId, actorLabel: session.user.name, action: "ai.runtime.tested", module: "ai-workforce", targetType: "AIProviderPool", targetId: "global", outcome: "success", metadata: { model: completion.model, providerId: completion.providerId, fallbackUsed: completion.fallbackUsed, durationMs: Date.now() - traceStartedAt } }).catch(() => undefined);
         return NextResponse.json({ status: "ok", message, model: completion.model, fallbackUsed: completion.fallbackUsed, response: completion.text.slice(0, 500) });
       } catch (error) {
         const diagnostic = (error instanceof Error ? error.message : "Global AI routing test failed.")

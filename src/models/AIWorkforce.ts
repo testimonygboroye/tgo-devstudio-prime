@@ -9,6 +9,7 @@ export interface IAIProvider extends Document {
   createdBy: string;
   lastTestedAt?: Date;
   lastTestedModel?: string;
+  apiKeyFingerprint?: string;
   lastTestStatus?: "success" | "failed";
   archivedAt?: Date;
 }
@@ -21,6 +22,7 @@ const AIProviderSchema = new Schema<IAIProvider>({
   createdBy: { type: String, required: true },
   lastTestedAt: Date,
   lastTestedModel: { type: String, maxlength: 120 },
+  apiKeyFingerprint: { type: String, select: false, maxlength: 64, index: true },
   lastTestStatus: { type: String, enum: ["success", "failed"] },
   archivedAt: { type: Date, default: undefined, index: true },
 }, { timestamps: true });

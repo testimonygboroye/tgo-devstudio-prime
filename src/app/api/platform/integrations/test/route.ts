@@ -117,6 +117,9 @@ export async function POST(request: NextRequest) {
         senderEmail: process.env.BREVO_SENDER_EMAIL || credentials.senderEmail || "",
       };
     }
+    if (providerId === "paystack") {
+      credentials = { ...credentials, secretKey: process.env.PAYSTACK_SECRET_KEY || credentials.secretKey || "", webhookSecret: process.env.PAYSTACK_WEBHOOK_SECRET || credentials.webhookSecret || "" };
+    }
     if (providerId === "twilio") {
       credentials = {
         ...credentials,

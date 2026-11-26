@@ -1,0 +1,24 @@
+import {NextRequest,NextResponse} from "next/server";
+import {getServerSession} from "@/lib/auth/serverSession";
+import {connectToDatabase} from "@/lib/db";
+import ClientProfile from "@/models/ClientProfile";
+import IntegrationApplication from "@/models/IntegrationApplication";
+import {encryptCredentials} from "@/lib/integrations/crypto";
+import {writePlatformAuditEvent} from "@/lib/platform/audit";
+import mongoose from "mongoose";
+export const runtime="nodejs";export const dynamic="force-dynamic";
+const fail=(message:string,status=400)=>NextResponse.json({error:message},{status});
+async function owner(){const session=await getServerSession();if(!session)return {response:fail("Authentication required.",401)} as const;const founder=Boolean(session.role?.isFounderRole);const client=founder?null:await ClientProfile.findOne({userId:session.user._id}).select("organizationId").lean();if(!founder&&!client)return {response:fail("Client account required.",403)} as const;return {session,ownerType:founder?"founder" as const:"client" as const,ownerId:new mongoose.Types.ObjectId(String(session.user._id))} as const;}
+function callbackAllowed(value:string){try{const url=new URL(value);if(url.protocol!=="https:")return false;const base=process.env.SITE_URL||process.env.NEXT_PUBLIC_SITE_URL||"";if(!base)return false;return url.origin===new URL(base).origin&&url.pathname.startsWith("/api/platform/integrations/");}catch{return false;}}
+export async function POST(request:NextRequest){const auth=await owner();if("response"in auth)return auth.response;let body:any;try{body=await request.json()}catch{return fail("Invalid request body.");}
+ const providerId=String(body.providerId||"").trim(),appName=String(body.appName||"").trim().slice(0,120),callbackUrl=String(body.callbackUrl||"").trim(),clientId=String(body.clientId||"").trim();
+ const appType=["oauth_app","github_app","service_account","api_client"].includes(body.appType)?body.appType:"oauth_app";
+ if(!providerId||!appName||!clientId)return fail("Provider, application name and client/application ID are required.");
+ if(!callbackAllowed(callbackUrl))return fail("Callback URL must use HTTPS and point to an approved TGO integration callback on this deployment.");
+ const scopes=Array.isArray(body.scopes)?body.scopes.filter((x:any)=>typeof x==="string"&&x.length<=250).slice(0,250):[];
+ let clientSecretCiphertext="";if(typeof body.clientSecret==="string"&&body.clientSecret.trim()){try{clientSecretCiphertext=encryptCredentials({clientSecret:body.clientSecret.trim()})}catch(e){return fail(e instanceof Error?e.message:"Secret encryption failed.",503)}}
+ await connectToDatabase();const row=await IntegrationApplication.findOneAndUpdate({providerId,ownerType:auth.ownerType,ownerId:auth.ownerId,appName},{$set:{appType,clientId,callbackUrl,scopes,active:true,...(clientSecretCiphertext?{clientSecretCiphertext}:{})},$setOnInsert:{providerId,ownerType:auth.ownerType,ownerId:auth.ownerId,appName,createdBy:auth.session.user._id},$currentDate:{}},{upsert:true,new:true,runValidators:true});
+ await writePlatformAuditEvent({actorType:"human",actorId:String(auth.session.user._id),actorLabel:auth.session.user.name,action:"integration.application_registered",module:"integrations",targetType:"IntegrationApplication",targetId:String(row._id),outcome:"success",metadata:{providerId,appName,appType,callbackUrl,scopes}});
+ return NextResponse.json({application:{id:String(row._id),providerId,appName,appType,clientId,callbackUrl,scopes,active:row.active},message:"Developer application configuration saved. Provider-side registration and callback settings must match exactly."},{status:201});
+}
+export async function PATCH(request:NextRequest){const auth=await owner();if("response"in auth)return auth.response;let body:any;try{body=await request.json()}catch{return fail("Invalid request body.");}await connectToDatabase();const id=String(body.id||"");if(!mongoose.isValidObjectId(id))return fail("Invalid application ID.");const row=await IntegrationApplication.findOne({_id:id,ownerType:auth.ownerType,ownerId:auth.ownerId});if(!row)return fail("Application not found.",404);if(body.action==="disable")row.active=false;else if(body.action==="enable")row.active=true;else return fail("Unsupported application action.");await row.save();await writePlatformAuditEvent({actorType:"human",actorId:String(auth.session.user._id),actorLabel:auth.session.user.name,action:"integration.application_"+body.action,module:"integrations",targetType:"IntegrationApplication",targetId:String(row._id),outcome:"success",metadata:{providerId:row.providerId,appName:row.appName}});return NextResponse.json({active:row.active});}

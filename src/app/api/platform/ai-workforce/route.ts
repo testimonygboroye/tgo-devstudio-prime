@@ -141,10 +141,8 @@ export async function POST(request: NextRequest) {
   }
   try {
     if (body.action === "team.provision") {
-      const provider = await AIProvider.findOne({ _id: body.providerId, enabled: true, lastTestStatus: "success" });
-      const modelName = String(body.model || "").trim();
-      if (!provider) return NextResponse.json({ status: "error", message: "Select an enabled, connection-verified AI provider." }, { status: 409 });
-      if (!modelName || modelName.length > 120 || !/^[a-zA-Z0-9._:-]+$/.test(modelName)) return NextResponse.json({ status: "error", message: "Select a valid model from the provider catalogue." }, { status: 400 });
+      // Provision TGO AI employees independently of any particular inference provider.
+      const modelName = "";
 
       const positions = await Position.find({ status: "active" })
         .populate("departmentId", "name")
@@ -206,7 +204,6 @@ export async function POST(request: NextRequest) {
           workspaceId: workspaceIds.get(definition.department),
           memoryKey: buildAgentMemoryKey({ role: definition.role, department: definition.department, workspaceId: workspaceIds.get(definition.department) }),
           positionId: definition.positionId,
-          providerId: provider._id,
           modelName,
           systemInstructions: definition.systemInstructions,
           permissions: [],
@@ -256,7 +253,6 @@ export async function POST(request: NextRequest) {
           memoryKey: buildAgentMemoryKey({ role: position, department, workspaceId, assignedUserId: personId }),
           positionId: positionDoc?._id || employee.positionId,
           assignedUserId: personId,
-          providerId: provider._id,
           modelName,
           systemInstructions: blueprint.systemInstructions + "\n\nPRIVATE ASSIGNMENT: You are assigned exclusively to the real employee " + employeeName + ". Do not disclose their private information to another employee. This personal counterpart remains limited to the same role scope and approved tools.",
           permissions: [],
@@ -272,7 +268,7 @@ export async function POST(request: NextRequest) {
         actorType: "human", actorId, actorLabel: session.user.name,
         action: "ai.workforce.provisioned", module: "ai-workforce",
         targetType: "AIWorkforce", targetId: String(provider._id), outcome: "success",
-        metadata: { createdCount, existingCount, counterpartCount, counterpartExistingCount, departments: workspaceIds.size, provider: provider.name, modelName },
+        metadata: { createdCount, existingCount, counterpartCount, counterpartExistingCount, departments: workspaceIds.size, providerIndependent: true },
       });
       return NextResponse.json({
         status: "ok", createdCount, existingCount, counterpartCount, counterpartExistingCount, departmentCount: workspaceIds.size,
@@ -354,8 +350,8 @@ export async function POST(request: NextRequest) {
       provider.enabled = false;
       provider.lastTestStatus = undefined;
       provider.lastTestedAt = undefined;
+      provider.lastTestedModel = undefined;
       await provider.save();
-      await AIAgent.updateMany({ providerId: provider._id }, { $set: { enabled: false } });
       await writePlatformAuditEvent({
         actorType: "human", actorId, actorLabel: session.user.name,
         action: "ai.provider.credential_replaced", module: "ai-workforce",
@@ -372,18 +368,19 @@ export async function POST(request: NextRequest) {
       provider.enabled = false;
       provider.archivedAt = new Date();
       await provider.save();
-      const dependent = await AIAgent.updateMany({ providerId: provider._id, enabled: true }, { $set: { enabled: false } });
-      await writePlatformAuditEvent({ actorType: "human", actorId, actorLabel: session.user.name, action: "ai.provider.archived", module: "ai-workforce", targetType: "AIProvider", targetId: String(provider._id), outcome: "success", metadata: { provider: provider.provider, name: provider.name, dependentAgentsDisabled: dependent.modifiedCount } });
-      return NextResponse.json({ status: "ok", message: "Provider archived from the active registry. Only this provider connection was retired; TGO-owned memories, role knowledge, completed work, projects, tasks and audit history remain intact and can be used by replacement agents connected to any verified provider." });
+      // Retire only the provider connection. AI employees stay enabled and are no longer
+      // associated with this provider; execution dynamically selects any healthy TGO provider.
+      const unbound = await AIAgent.updateMany({ providerId: provider._id }, { $unset: { providerId: 1 } });
+      await writePlatformAuditEvent({ actorType: "human", actorId, actorLabel: session.user.name, action: "ai.provider.archived", module: "ai-workforce", targetType: "AIProvider", targetId: String(provider._id), outcome: "success", metadata: { provider: provider.provider, name: provider.name, agentsUnbound: unbound.modifiedCount, agentsDisabled: 0 } });
+      return NextResponse.json({ status: "ok", message: "Provider connection archived. AI employees remain enabled and independent; they can use any other active, verified TGO provider. TGO memories, projects, tasks and audit history are untouched." });
     }
     if (body.action === "provider.enable" || body.action === "provider.disable") {
       const provider = await AIProvider.findById(body.providerId);
       if (!provider) return NextResponse.json({ status: "error", message: "Provider not found." }, { status: 404 });
       provider.enabled = body.action === "provider.enable";
-      if (!provider.enabled) await AIAgent.updateMany({ providerId: provider._id }, { $set: { enabled: false } });
       await provider.save();
       await writePlatformAuditEvent({ actorType: "human", actorId, action: body.action === "provider.enable" ? "ai.provider.enabled" : "ai.provider.disabled", module: "ai-workforce", targetType: "AIProvider", targetId: String(provider._id), outcome: "success" });
-      return NextResponse.json({ status: "ok", message: provider.enabled ? "Provider enabled." : "Provider disabled; dependent agents were also disabled." });
+      return NextResponse.json({ status: "ok", message: provider.enabled ? "Provider enabled and available to all AI employees." : "Provider disabled. AI employees remain enabled and will use another available verified provider." });
     }
     if (body.action === "provider.test") {
       const provider = await AIProvider.findById(body.providerId).select("+encryptedApiKey");
@@ -460,12 +457,14 @@ export async function POST(request: NextRequest) {
         if (!generationResponse.ok) throw new Error("Provider model generation request failed (HTTP " + generationResponse.status + ").");
         if (!generatedText) throw new Error("The provider accepted the request but returned no text completion.");
         provider.lastTestedAt = new Date();
+        provider.lastTestedModel = testedModel;
         provider.lastTestStatus = "success";
         await provider.save();
         await writePlatformAuditEvent({ actorType: "human", actorId, actorLabel: session.user.name, action: "ai.provider.tested", module: "ai-workforce", targetType: "AIProvider", targetId: String(provider._id), outcome: "success", metadata: { model: testedModel, statusCode, liveGeneration: true } });
         return NextResponse.json({ status: "ok", httpStatus: statusCode, model: testedModel, message: "Live generation test succeeded with " + testedModel + ". This provider can generate a real response." });
       } catch (error) {
         provider.lastTestedAt = new Date();
+        provider.lastTestedModel = undefined;
         provider.lastTestStatus = "failed";
         await provider.save();
         const diagnostic = (error instanceof Error ? error.message : "Provider generation test failed.").slice(0, 500);
@@ -476,15 +475,13 @@ export async function POST(request: NextRequest) {
       }
     }
     if (body.action === "agent.create") {
-      const provider = await AIProvider.findOne({ _id: body.providerId, enabled: true });
-      if (!provider) return NextResponse.json({ status: "error", message: "Select an enabled provider." }, { status: 400 });
-      const name = String(body.name || "").trim(), modelName = String(body.model || "").trim(), instructions = String(body.systemInstructions || "").trim();
-      if (!name || !modelName || !instructions) return NextResponse.json({ status: "error", message: "Agent name, model and system instructions are required." }, { status: 400 });
+      const name = String(body.name || "").trim(), modelName = "", instructions = String(body.systemInstructions || "").trim();
+      if (!name || !instructions) return NextResponse.json({ status: "error", message: "Agent name and system instructions are required." }, { status: 400 });
       if (body.workspaceId && !await AIWorkspace.exists({ _id: body.workspaceId, active: true })) return NextResponse.json({ status: "error", message: "Selected AI workspace is unavailable." }, { status: 404 });
       const role = String(body.role || "General assistant");
       const department = String(body.department || "Operations");
-      const agent = await AIAgent.create({ name, role, department, description: String(body.description || ""), workspaceId: body.workspaceId || undefined, memoryKey: buildAgentMemoryKey({ role, department, workspaceId: body.workspaceId }), providerId: provider._id, modelName, systemInstructions: instructions, permissions: [], requiresApproval: true, maxDailyTokens: Math.max(5000, Math.min(1000000, Number(body.maxDailyTokens) || 100000)), enabled: false, createdBy: actorId });
-      await writePlatformAuditEvent({ actorType: "human", actorId, action: "ai.agent.created", module: "ai-workforce", targetType: "AIAgent", targetId: String(agent._id), outcome: "success", metadata: { name, provider: provider.name } });
+      const agent = await AIAgent.create({ name, role, department, description: String(body.description || ""), workspaceId: body.workspaceId || undefined, memoryKey: buildAgentMemoryKey({ role, department, workspaceId: body.workspaceId }), modelName, systemInstructions: instructions, permissions: [], requiresApproval: true, maxDailyTokens: Math.max(5000, Math.min(1000000, Number(body.maxDailyTokens) || 100000)), enabled: false, createdBy: actorId });
+      await writePlatformAuditEvent({ actorType: "human", actorId, action: "ai.agent.created", module: "ai-workforce", targetType: "AIAgent", targetId: String(agent._id), outcome: "success", metadata: { name, providerIndependent: true } });
       return NextResponse.json({ status: "ok", agentId: agent._id, message: "Agent created disabled and with no operational permissions. Enablement requires a separate reviewed workflow." }, { status: 201 });
     }
     if (body.action === "agent.permissions.save") {
@@ -501,8 +498,6 @@ export async function POST(request: NextRequest) {
       const agent = await AIAgent.findById(body.agentId);
       if (!agent) return NextResponse.json({ status: "error", message: "Agent not found." }, { status: 404 });
       if (body.action === "agent.enable") {
-        const provider = await AIProvider.findOne({ _id: agent.providerId, enabled: true, lastTestStatus: "success" });
-        if (!provider) return NextResponse.json({ status: "error", message: "Test and enable the agent's provider before enabling this agent." }, { status: 409 });
         agent.enabled = true;
       } else agent.enabled = false;
       // Preserve the founder-reviewed permission set when enabling/disabling an agent.
@@ -717,7 +712,7 @@ export async function POST(request: NextRequest) {
             existingFile ? "CURRENT FILE CONTENT (preserve compatible behaviour and update this complete file):\n" + existingFile.content.slice(0, 50000) : "The target file does not exist yet. Generate a complete new file at the target path.",
             "Return only the required JSON object.",
           ].join("\n\n");
-          generatedCodeCompletion = await runProviderCompletionWithFallback(String(agent.providerId), agent.modelName, codeSystemInstructions, codePrompt, "admin");
+          generatedCodeCompletion = await runProviderCompletionWithFallback("", agent.modelName, codeSystemInstructions, codePrompt, "admin");
           const generated = parseGitHubCodeChangeResponse(generatedCodeCompletion.text);
           const roleSlug = String(agent.role || agent.name).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 20) || "developer";
           const branch = String(payload.branch || ("ai/" + roleSlug + "-" + String(task._id).slice(-8)));
@@ -770,7 +765,7 @@ export async function POST(request: NextRequest) {
         const prompt = operationResult ? task.input + "\n\nApproved business-operation result (JSON reference data):\n" + JSON.stringify(operationResult) : task.input;
         const completion = generatedCodeCompletion
           ? { ...generatedCodeCompletion, text: generatedCodeSummary + "\n\nDraft pull request created: " + generatedCodePullRequestUrl + "\nThe code is committed to an AI branch only. It has not been merged or deployed." }
-          : await runProviderCompletionWithFallback(String(agent.providerId), agent.modelName, [...TGO_AI_PLATFORM_RULES, agent.systemInstructions, memoryContext].join("\n\n"), prompt, "admin");
+          : await runProviderCompletionWithFallback("", agent.modelName, [...TGO_AI_PLATFORM_RULES, agent.systemInstructions, memoryContext].join("\n\n"), prompt, "admin");
         if (!completion.text.trim()) throw new Error("The provider returned an empty response.");
         if (task.operation === "projects.status.update") {
           const projectId = String(payload.projectId || ""), nextStatus = String(payload.status || "");

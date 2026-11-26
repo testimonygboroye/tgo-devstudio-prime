@@ -524,7 +524,7 @@ export async function POST(request: NextRequest) {
       if (operation === "clients.read_summary" && !mongoose.isValidObjectId(String(operationPayload.clientId || ""))) return NextResponse.json({ status: "error", message: "A valid client ID is required for this tool." }, { status: 400 });
       if (["projects.read_summary", "projects.status.update"].includes(operation) && !mongoose.isValidObjectId(String(operationPayload.projectId || ""))) return NextResponse.json({ status: "error", message: "A valid project ID is required for this tool." }, { status: 400 });
       if (operation === "projects.status.update" && !["active", "on_hold", "in_qa", "awaiting_client"].includes(String(operationPayload.status || ""))) return NextResponse.json({ status: "error", message: "Only non-terminal project statuses can be set by an AI agent." }, { status: 400 });
-      const task = await AITask.create({ agentId: agent._id, title, input, requestedBy: actorId, status: "awaiting_approval", ...(operation ? { operation, operationPayload } : {}) });
+      const task = await AITask.create({ agentId: agent._id, agentMemoryKey: agent.memoryKey || buildAgentMemoryKey(agent), title, input, requestedBy: actorId, status: "awaiting_approval", ...(operation ? { operation, operationPayload } : {}) });
       await writePlatformAuditEvent({ actorType: "human", actorId, action: "ai.task.queued", module: "ai-workforce", targetType: "AITask", targetId: String(task._id), outcome: "success", metadata: { agentId: String(agent._id), title } });
       return NextResponse.json({ status: "ok", taskId: task._id, message: "Task queued for human approval. No agent execution occurs before approval." }, { status: 201 });
     }
@@ -539,7 +539,7 @@ export async function POST(request: NextRequest) {
       const parent = await AITask.findById(body.taskId);
       const target = await AIAgent.findOne({ _id: body.agentId, enabled: true });
       if (!parent || !target) return NextResponse.json({ status: "error", message: "Parent task or target agent not found." }, { status: 404 });
-      const task = await AITask.create({ agentId: target._id, parentTaskId: parent._id, title: String(body.title || parent.title).slice(0, 180), input: String(body.input || parent.input).slice(0, 20000), requestedBy: actorId, status: "awaiting_approval" });
+      const task = await AITask.create({ agentId: target._id, agentMemoryKey: target.memoryKey || buildAgentMemoryKey(target), parentTaskId: parent._id, title: String(body.title || parent.title).slice(0, 180), input: String(body.input || parent.input).slice(0, 20000), requestedBy: actorId, status: "awaiting_approval" });
       await writePlatformAuditEvent({ actorType: "human", actorId, action: "ai.task.delegated", module: "ai-workforce", targetType: "AITask", targetId: String(task._id), outcome: "success", metadata: { parentTaskId: String(parent._id), agentId: String(target._id) } });
       return NextResponse.json({ status: "ok", taskId: task._id, message: "Delegated task created and placed in human approval queue." }, { status: 201 });
     }
@@ -564,6 +564,11 @@ export async function POST(request: NextRequest) {
         };
         const lineageAgents = await AIAgent.find({ $or: [{ memoryKey: agentMemoryKey }, lineageFilter] }).select("_id").lean();
         const lineageAgentIds = [...new Set([String(agent._id), ...lineageAgents.map((item) => String(item._id))])];
+        // Backfill legacy role-linked records once, so continuity survives future physical agent removal too.
+        await Promise.all([
+          AIMemory.updateMany({ scope: "agent", agentId: { $in: lineageAgentIds }, $or: [{ agentMemoryKey: { $exists: false } }, { agentMemoryKey: "" }] }, { $set: { agentMemoryKey } }),
+          AITask.updateMany({ agentId: { $in: lineageAgentIds }, $or: [{ agentMemoryKey: { $exists: false } }, { agentMemoryKey: "" }] }, { $set: { agentMemoryKey } }),
+        ]);
         const [memories, priorRoleTasks] = await Promise.all([
           AIMemory.find({
             active: true,
@@ -574,7 +579,7 @@ export async function POST(request: NextRequest) {
               { scope: "agent", agentId: { $in: lineageAgentIds } },
             ],
           }).sort({ updatedAt: -1 }).limit(20).lean(),
-          AITask.find({ agentId: { $in: lineageAgentIds }, _id: { $ne: task._id }, status: "completed", result: { $exists: true, $ne: "" } })
+          AITask.find({ $or: [{ agentMemoryKey }, { agentId: { $in: lineageAgentIds } }] , _id: { $ne: task._id }, status: "completed", result: { $exists: true, $ne: "" } })
             .select("title result completedAt").sort({ completedAt: -1 }).limit(5).lean(),
         ]);
         const sharedMemoryContext = memories.filter((m) => m.scope === "shared");

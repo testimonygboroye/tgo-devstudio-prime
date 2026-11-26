@@ -12,8 +12,8 @@ import { writePlatformAuditEvent } from "@/lib/platform/audit";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const redirectResult = (kind: "success" | "error", provider: string, message: string) => {
-  const url = new URL("/admin/integrations", getSiteUrl());
+const redirectResult = (kind: "success" | "error", provider: string, message: string, returnOrigin = getSiteUrl()) => {
+  const url = new URL("/admin/integrations", returnOrigin);
   url.searchParams.set("oauth", kind);
   url.searchParams.set("provider", provider);
   url.searchParams.set("message", message.slice(0, 180));

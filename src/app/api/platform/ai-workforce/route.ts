@@ -546,6 +546,22 @@ export async function POST(request: NextRequest) {
       await writePlatformAuditEvent({ actorType: "human", actorId, action: "ai.agent.permissions_updated", module: "ai-workforce", targetType: "AIAgent", targetId: String(agent._id), outcome: "success", metadata: { permissions: agent.permissions } });
       return NextResponse.json({ status: "ok", permissions: agent.permissions, message: "Agent tool permissions updated." });
     }
+    if (body.action === "agent.enable_text_only_all") {
+      const result = await AIAgent.updateMany(
+        { enabled: false, permissions: { $size: 0 } },
+        { $set: { enabled: true, requiresApproval: true } },
+      );
+      await writePlatformAuditEvent({
+        actorType: "human", actorId, actorLabel: session.user.name,
+        action: "ai.agents.bulk_enabled_text_only", module: "ai-workforce",
+        targetType: "AIAgent", outcome: "success",
+        metadata: { enabledCount: result.modifiedCount, businessPermissionsGranted: 0, requiresApproval: true },
+      });
+      return NextResponse.json({
+        status: "ok", enabledCount: result.modifiedCount,
+        message: result.modifiedCount + " text-only AI employees enabled. No business tools were granted; human approval remains required for governed operations.",
+      });
+    }
     if (body.action === "agent.enable" || body.action === "agent.disable") {
       const agent = await AIAgent.findById(body.agentId);
       if (!agent) return NextResponse.json({ status: "error", message: "Agent not found." }, { status: 404 });

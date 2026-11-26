@@ -72,7 +72,7 @@ export async function PATCH(request:NextRequest){
      const response=await fetch("https://api.github.com/applications/"+encodeURIComponent(String(application.clientId))+"/grant",{method:"DELETE",headers:{Authorization:"Basic "+basic,Accept:"application/vnd.github+json","Content-Type":"application/json","User-Agent":"TGO-DevStudio-Prime"},body:JSON.stringify({access_token:credentials.accessToken}),signal:AbortSignal.timeout(12000),cache:"no-store"});
      remoteRevoked=response.ok||response.status===204;
      if(!remoteRevoked)remoteRevocationMessage="GitHub did not confirm remote token revocation (HTTP "+response.status+").";
-    }else if((row.providerId==="google-workspace"||row.providerId==="google-cloud")&&(credentials.accessToken||credentials.refreshToken)){
+    }else if((row.providerId==="google_workspace"||row.providerId==="google_cloud")&&(credentials.accessToken||credentials.refreshToken)){
      const token=String(credentials.refreshToken||credentials.accessToken);
      const response=await fetch("https://oauth2.googleapis.com/revoke",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({token}).toString(),signal:AbortSignal.timeout(12000),cache:"no-store"});
      remoteRevoked=response.ok;

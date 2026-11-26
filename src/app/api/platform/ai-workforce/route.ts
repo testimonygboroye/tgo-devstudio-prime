@@ -428,10 +428,9 @@ export async function POST(request: NextRequest) {
         let googleCandidates: string[] = [];
         if (provider.provider === "google") {
           const models = Array.isArray(catalogue.models) ? catalogue.models : [];
-          const eligible = models.filter((item: any) => Array.isArray(item.supportedGenerationMethods) && item.supportedGenerationMethods.includes("generateContent"));
-          const ids: string[] = eligible.map((item: any): string => String(item.name || "").replace(/^models\//, "")).filter((id: string): boolean => Boolean(id));
-          const preferred = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-3.8-flash"];
-          googleCandidates = [...preferred.filter((id: string) => ids.includes(id)), ...ids.filter((id: string) => !preferred.includes(id))].slice(0, 5);
+          const ids: string[] = models.map((item: any): string => String(item.name || item.id || "").replace(/^models\//, "")).filter((id: string): boolean => /^gemini-/i.test(id));
+          const preferred = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite"];
+          googleCandidates = [...preferred.filter((id: string) => ids.includes(id)), ...ids.filter((id: string) => !preferred.includes(id))].slice(0, 8);
           testedModel = googleCandidates[0] || "";
         } else {
           const models = Array.isArray(catalogue.data) ? catalogue.data : [];
@@ -445,13 +444,13 @@ export async function POST(request: NextRequest) {
           let lastProviderMessage = "No Gemini model was available.";
           for (const candidate of googleCandidates) {
             testedModel = candidate;
-            generationResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(candidate) + ":generateContent", {
+            generationResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
               method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, signal: controller.signal, cache: "no-store",
-              body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "Reply with exactly: TGO live generation test successful." }] }], generationConfig: { maxOutputTokens: 24, temperature: 0 } }),
+              body: JSON.stringify({ model: candidate.replace(/^models\//, ""), input: "Reply with exactly: TGO live generation test successful.", store: false }),
             });
             const result = await generationResponse.json().catch(() => ({}));
             statusCode = generationResponse.status;
-            generatedText = (result.candidates?.[0]?.content?.parts || []).map((part: { text?: string }) => part.text || "").join("").trim();
+            generatedText = Array.isArray(result.steps) ? result.steps.filter((step: any) => step.type === "model_output").flatMap((step: any) => step.content || []).filter((part: any) => part.type === "text").map((part: any) => part.text || "").join("").trim() : String(result.output_text || "").trim();
             if (generationResponse.ok && generatedText) break;
             lastProviderMessage = String(result?.error?.message || "Provider error").slice(0, 300);
             if (![429, 500, 502, 503, 504].includes(generationResponse.status)) break;

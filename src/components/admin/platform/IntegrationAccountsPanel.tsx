@@ -7,7 +7,7 @@ type Field = { key: string; label: string; hint: string; required?: boolean };
 type Provider = { id: string; name: string; category: string; description: string; fields: Field[] };
 type Account = { id: string; providerId: string; accountLabel: string; ownerType: string; authMethod: string; credentialNames: string[]; requestedPermissions: string[]; grantedPermissions: string[]; readEnabled: boolean; writeEnabled: boolean; status: string; lastError?: string };
 type OAuthApp = { id: string; providerId: string; appName: string; clientId: string; callbackUrl: string; scopes: string[]; active: boolean };
-const oauthProviders = [{ id: "github", name: "GitHub" }, { id: "google-workspace", name: "Google Workspace" }, { id: "google-cloud", name: "Google Cloud" }];
+const oauthProviders = [{ id: "github", name: "GitHub" }, { id: "google_workspace", name: "Google Workspace" }, { id: "google_cloud", name: "Google Cloud" }];
 
 export default function IntegrationAccountsPanel() {
  const [providers,setProviders]=useState<Provider[]>([]);

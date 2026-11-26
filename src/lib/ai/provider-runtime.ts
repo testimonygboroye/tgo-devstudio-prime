@@ -16,7 +16,7 @@ export interface AICompletion {
   fallbackUsed?: boolean;
 }
 
-export async function runProviderCompletion(providerId: string, model: string, system: string, prompt: string, singleModelAttempt = false): Promise<AICompletion> {
+export async function runProviderCompletion(providerId: string, model: string, system: string, prompt: string, singleModelAttempt = false, timeoutMs = 11000): Promise<AICompletion> {
   const provider = await AIProvider.findById(providerId).select("+encryptedApiKey");
   if (!provider || !provider.enabled || provider.lastTestStatus !== "success" || provider.archivedAt) throw new Error("AI provider is not enabled and connection-verified.");
   const key = resolveProviderApiKey(provider.name, provider.provider, provider.encryptedApiKey);
@@ -58,14 +58,14 @@ export async function runProviderCompletion(providerId: string, model: string, s
       let data: any;
       if (provider.provider === "google") {
         const interactionInput = [system.trim() ? "SYSTEM INSTRUCTIONS:\n" + system.trim() : "", "USER REQUEST:\n" + prompt].filter(Boolean).join("\n\n");
-        response = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions", { method: "POST", headers, signal: AbortSignal.timeout(15000), cache: "no-store", body: JSON.stringify({ model: candidate.replace(/^models\//, ""), input: interactionInput, store: false }) });
+        response = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions", { method: "POST", headers, signal: AbortSignal.timeout(Math.min(15000, timeoutMs)), cache: "no-store", body: JSON.stringify({ model: candidate.replace(/^models\//, ""), input: interactionInput, store: false }) });
         data = await response.json().catch(() => ({}));
         if (response.ok) {
           const text = Array.isArray(data.steps) ? data.steps.filter((step: any) => step.type === "model_output").flatMap((step: any) => step.content || []).filter((part: any) => part.type === "text").map((part: any) => part.text || "").join("") : String(data.output_text || "");
           if (text.trim()) return { text, inputTokens: Number(data.usage?.total_input_tokens || data.usage?.input_tokens || 0), outputTokens: Number(data.usage?.total_output_tokens || data.usage?.output_tokens || 0), providerRequestId: data.id, model: candidate, fallbackUsed: candidate !== model };
         }
       } else if (provider.provider === "anthropic") {
-        response = await fetch(base + "/messages", { method: "POST", headers, signal: AbortSignal.timeout(11000), cache: "no-store", body: JSON.stringify({ model: candidate, system, max_tokens: 4096, temperature: 0.2, messages: [{ role: "user", content: prompt }] }) });
+        response = await fetch(base + "/messages", { method: "POST", headers, signal: AbortSignal.timeout(timeoutMs), cache: "no-store", body: JSON.stringify({ model: candidate, system, max_tokens: 4096, temperature: 0.2, messages: [{ role: "user", content: prompt }] }) });
         data = await response.json().catch(() => ({}));
         if (response.ok) {
           const text = (data.content || []).filter((part: { type?: string }) => part.type === "text").map((part: { text?: string }) => part.text || "").join("");
@@ -149,14 +149,17 @@ export async function runProviderCompletionWithFallback(
   const seen = new Set<string>();
   const failures: string[] = [];
   let attempt = 0;
+  const routingDeadline = Date.now() + 42000;
+  const maximumAttempts = 8;
   for (const candidate of candidates) {
+    if (attempt >= maximumAttempts || routingDeadline - Date.now() < 1800) break;
     const identity = String(candidate.provider._id) + ":" + candidate.modelName;
     if (seen.has(identity)) continue;
     seen.add(identity);
     attempt += 1;
     const startedAt = Date.now();
     try {
-      const result = await runProviderCompletion(String(candidate.provider._id), candidate.modelName, system, prompt, true);
+      const result = await runProviderCompletion(String(candidate.provider._id), candidate.modelName, system, prompt, true, Math.min(9000, routingDeadline - Date.now()));
       if (!result.text.trim()) throw new Error("Model returned an empty response.");
       await AIExecutionLog.create({ traceId, feature: "ai_completion", providerId: String(candidate.provider._id), providerName: candidate.provider.name, providerType: candidate.provider.provider, model: candidate.modelName, status: attempt > 1 ? "fallback" : "success", durationMs: Date.now() - startedAt, inputTokens: result.inputTokens, outputTokens: result.outputTokens, fallbackFrom: attempt > 1 ? failures[failures.length - 1]?.slice(0, 300) : undefined }).catch(() => undefined);
       return { ...result, providerId: String(candidate.provider._id), model: result.model || candidate.modelName, fallbackUsed: attempt > 1 };
@@ -169,5 +172,6 @@ export async function runProviderCompletionWithFallback(
       await AIExecutionLog.create({ traceId, feature: "ai_completion", providerId: String(candidate.provider._id), providerName: candidate.provider.name, providerType: candidate.provider.provider, model: candidate.modelName, status: "failure", durationMs: Date.now() - startedAt, httpStatus, errorCode, errorMessage: message.slice(0, 1900) }).catch(() => undefined);
     }
   }
-  throw new Error("Every globally ranked available AI model failed. " + failures.slice(0, 18).join(" | ").slice(0, 1800));
+  const reason = failures.length ? failures.slice(0, 8).join(" | ").slice(0, 1500) : "The global model routing time budget was exhausted before another candidate could be attempted.";
+  throw new Error("Every attempted globally ranked AI model failed or the routing time budget expired. " + reason);
 }

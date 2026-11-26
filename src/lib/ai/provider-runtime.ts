@@ -120,14 +120,14 @@ async function discoverProviderModels(provider: any): Promise<string[]> {
     : [String(provider.lastTestedModel || "default")];
   try {
     const response = await fetch(base + "/models", { headers, signal: AbortSignal.timeout(3500), cache: "no-store" });
-    if (!response.ok) return [...new Set([provider.lastTestedModel, ...fallback].filter(Boolean) as string[])];
+    if (!response.ok) return [...new Set([provider.lastTestedModel, ...fallback].filter(Boolean) as string[])].filter((id) => !(provider.provider === "google" && /^gemini-2\.5-pro(?:-|$)/i.test(id)));
     const body: any = await response.json().catch(() => ({}));
     const rows = Array.isArray(body.models) ? body.models : Array.isArray(body.data) ? body.data : [];
     const discovered = rows.map((row: any) => String(row.name || row.id || "").replace(/^models\//, ""))
       .filter((id: string) => id && id.length < 120)
       .filter((id: string) => !(provider.provider === "google" && /^gemini-2\.5-pro(?:-|$)/i.test(id)))
       .filter((id: string) => provider.provider === "google" ? /^gemini-/i.test(id) : provider.provider === "anthropic" ? /^claude-/i.test(id) : provider.provider === "openai" ? /^(gpt-|o[1-9]|chatgpt-)/i.test(id) : true);
-    return [...new Set([provider.lastTestedModel, ...discovered, ...fallback].filter(Boolean) as string[])].filter((id) => !(provider.provider === "google" && /^gemini-2\\.5-pro(?:-|$)/i.test(id)));
+    return [...new Set([provider.lastTestedModel, ...discovered, ...fallback].filter(Boolean) as string[])].filter((id) => !(provider.provider === "google" && /^gemini-2\.5-pro(?:-|$)/i.test(id)));
   } catch {
     return [...new Set([provider.lastTestedModel, ...fallback].filter(Boolean) as string[])];
   }

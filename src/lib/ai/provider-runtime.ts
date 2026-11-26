@@ -20,7 +20,7 @@ export async function runProviderCompletion(providerId: string, model: string, s
   const provider = await AIProvider.findById(providerId).select("+encryptedApiKey");
   if (!provider || !provider.enabled || provider.lastTestStatus !== "success" || provider.archivedAt) throw new Error("AI provider is not enabled and connection-verified.");
   const key = resolveProviderApiKey(provider.name, provider.provider, provider.encryptedApiKey);
-  const base = provider.provider === "google" ? "https://generativelanguage.googleapis.com/v1beta" : provider.provider === "openai" ? "https://api.openai.com/v1" : provider.provider === "anthropic" ? "https://api.anthropic.com/v1" : String(provider.baseUrl || "").replace(/\\/$/, "");
+  const base = provider.provider === "google" ? "https://generativelanguage.googleapis.com/v1beta" : provider.provider === "openai" ? "https://api.openai.com/v1" : provider.provider === "anthropic" ? "https://api.anthropic.com/v1" : String(provider.baseUrl || "").replace(/\/$/, "");
   const headers: Record<string, string> = provider.provider === "google"
     ? { "Content-Type": "application/json", "x-goog-api-key": key }
     : provider.provider === "anthropic"

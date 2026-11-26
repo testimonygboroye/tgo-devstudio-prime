@@ -1,12 +1,28 @@
 import { connectToDatabase } from "@/lib/db";
 import IntegrationConnection from "@/models/IntegrationConnection";
+import IntegrationAccount from "@/models/IntegrationAccount";
 import { decryptCredentials, encryptCredentials } from "@/lib/integrations/crypto";
 
 export async function getVerifiedIntegrationCredentials(providerId: string): Promise<Record<string, string> | null> {
   await connectToDatabase();
   const row = await IntegrationConnection.findOne({ providerId, status: "connected" }).select("+credentialsCiphertext");
-  if (!row || typeof row.credentialsCiphertext !== "string") return null;
-  let credentials = decryptCredentials(row.credentialsCiphertext);
+  let credentials: Record<string, string> | null = row && typeof row.credentialsCiphertext === "string"
+    ? decryptCredentials(row.credentialsCiphertext)
+    : null;
+
+  // Paystack can be connected through the newer owner-scoped Integration Account Vault.
+  // Only the founder's verified account with both read and write access may act as
+  // the TGO merchant credential; client-owned connections are never used for checkout.
+  if (providerId === "paystack" && !credentials?.secretKey) {
+    const account = await IntegrationAccount.findOne({
+      providerId: "paystack", ownerType: "founder", status: "connected",
+      readEnabled: true, writeEnabled: true,
+    }).sort({ lastVerifiedAt: -1, updatedAt: -1 }).select("+credentialsCiphertext");
+    if (account && typeof account.credentialsCiphertext === "string") {
+      credentials = decryptCredentials(account.credentialsCiphertext);
+    }
+  }
+  if (!credentials) return null;
 
   if (providerId === "google_search_console" || providerId === "google_analytics") {
     const expiresAt = Number(credentials.expiresAt || 0);

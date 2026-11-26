@@ -72,7 +72,7 @@ export async function runProviderCompletion(providerId: string, model: string, s
           if (text.trim()) return { text, inputTokens: Number(data.usage?.input_tokens || 0), outputTokens: Number(data.usage?.output_tokens || 0), providerRequestId: data.id, model: candidate, fallbackUsed: candidate !== model };
         }
       } else {
-        response = await fetch(base + "/chat/completions", { method: "POST", headers, signal: AbortSignal.timeout(11000), cache: "no-store", body: JSON.stringify({ model: candidate, temperature: 0.2, max_tokens: 4096, messages: [{ role: "system", content: system }, { role: "user", content: prompt }] }) });
+        response = await fetch(base + "/chat/completions", { method: "POST", headers, signal: AbortSignal.timeout(timeoutMs), cache: "no-store", body: JSON.stringify({ model: candidate, temperature: 0.2, max_tokens: 4096, messages: [{ role: "system", content: system }, { role: "user", content: prompt }] }) });
         data = await response.json().catch(() => ({}));
         if (response.ok) {
           const text = String(data.choices?.[0]?.message?.content || "");
@@ -90,10 +90,9 @@ export async function runProviderCompletion(providerId: string, model: string, s
 }
 
 /**
- * Runs an internal AI workflow through the founder-governed admin assistant
- * fallback chain. The agent's own provider/model always gets the first attempt;
- * the admin assistant's configured primary and ordered fallbacks are then used
- * as eligible alternatives, without duplicating the same provider.
+ * Routes every TGO AI completion through one globally ranked list of
+ * live-verified provider/model pairs. Agent identity and memory remain TGO-owned;
+ * no agent is pinned to a provider. Attempts share one bounded request budget.
  */
 function modelQualityScore(model: string): number {
   const id = model.toLowerCase();

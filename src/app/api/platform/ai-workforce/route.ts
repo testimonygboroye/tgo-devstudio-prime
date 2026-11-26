@@ -34,7 +34,7 @@ import PaymentTransaction from "@/models/PaymentTransaction";
 import FinancialLedgerEntry from "@/models/FinancialLedgerEntry";
 import IntegrationConnection from "@/models/IntegrationConnection";
 import { readGitHubRepository, readGitHubFile, writeGitHubFile, createGitHubPullRequest } from "@/lib/ai/github-tools";
-import { getAIRoleBlueprint } from "@/lib/ai/role-blueprints";
+import { getAIRoleBlueprint, getAIRolePermissions } from "@/lib/ai/role-blueprints";
 import { parseGitHubCodeChangeResponse } from "@/lib/ai/github-code-change";
 import { buildAccessibleAIAgentFilter } from "@/lib/messaging/aiAgentAccess";
 
@@ -210,7 +210,7 @@ export async function POST(request: NextRequest) {
           name: ("AI " + position.title).slice(0, 100),
           role: position.title,
           department,
-          permissions: [] as string[],
+          permissions: getAIRolePermissions(position.title),
           description: blueprint.description,
           systemInstructions: blueprint.systemInstructions,
         };
@@ -243,6 +243,8 @@ export async function POST(request: NextRequest) {
           existing.department = definition.department;
           existing.description = definition.description;
           existing.systemInstructions = definition.systemInstructions;
+          if (!Array.isArray(existing.permissions) || existing.permissions.length === 0) existing.permissions = definition.permissions;
+          existing.requiresApproval = true;
           existing.workspaceId = workspaceIds.get(definition.department);
           existing.memoryKey = buildAgentMemoryKey({ role: definition.role, department: definition.department, workspaceId: workspaceIds.get(definition.department), assignedUserId: existing.assignedUserId });
           await existing.save();
@@ -259,7 +261,7 @@ export async function POST(request: NextRequest) {
           positionId: definition.positionId,
           modelName,
           systemInstructions: definition.systemInstructions,
-          permissions: [],
+          permissions: definition.permissions,
           requiresApproval: true,
           maxDailyTokens: 100000,
           enabled: true,

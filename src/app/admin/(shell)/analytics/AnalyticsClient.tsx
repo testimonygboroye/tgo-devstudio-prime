@@ -407,35 +407,31 @@ export default function AnalyticsClient() {
       <section className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <StatCard
           label="Total page views"
-          value={data?.totalCount ?? 0}
+          value={isLoading ? "Updating…" : data?.totalCount ?? 0}
           detail="Across the selected filters"
         />
 
         <StatCard
           label="Unique visitors"
-          value={data?.uniqueVisitorCount ?? 0}
+          value={isLoading ? "Updating…" : data?.uniqueVisitorCount ?? 0}
           detail="Distinct first-party browser IDs"
         />
 
         <StatCard
           label="Online now"
-          value={data?.onlineVisitorCount ?? 0}
+          value={isLoading ? "Updating…" : data?.onlineVisitorCount ?? 0}
           detail="Active within the last 2 minutes"
         />
 
         <StatCard
           label="Average daily visitors"
-          value={
-            data?.averageDailyVisitors ?? 0
-          }
+          value={isLoading ? "Updating…" : data?.averageDailyVisitors ?? 0}
           detail="Average unique visitors per active day"
         />
 
         <StatCard
           label="Peak daily visitors"
-          value={
-            data?.peakDailyVisitors ?? 0
-          }
+          value={isLoading ? "Updating…" : data?.peakDailyVisitors ?? 0}
           detail={
             data?.peakDay
               ? `Peak: ${shortDate(data.peakDay)}`

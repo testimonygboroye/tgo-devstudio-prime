@@ -24,7 +24,7 @@ export async function getVerifiedIntegrationCredentials(providerId: string): Pro
   }
   if (!credentials) return null;
 
-  if (providerId === "google_search_console" || providerId === "google_analytics") {
+  if (row && (providerId === "google_search_console" || providerId === "google_analytics")) {
     const expiresAt = Number(credentials.expiresAt || 0);
     if ((!credentials.refreshToken && (!Number.isFinite(expiresAt) || expiresAt <= Date.now() + 60_000))) {
       row.status = "error";

@@ -503,7 +503,7 @@ export async function GET(request: NextRequest) {
         ) / 100
       : 0;
 
-  const peakDay = dailyVisitors.reduce(
+  const peakDay = finalDailyVisitors.reduce(
     (highest, current) =>
       Number(current.visitors) >
       Number(highest?.visitors || 0)
@@ -566,10 +566,9 @@ export async function GET(request: NextRequest) {
       return { ...visitor, deploymentHost: canonicalizeDeploymentHost(visitor.deploymentHost), country: visitor.country || countryName(visitor.countryCode), region: unverified ? undefined : formatRegionName(visitor.region, visitor.countryCode) || visitor.region, city: unverified ? undefined : visitor.city ? decodeAnalyticsLabel(visitor.city) : visitor.city, hosts: [...new Set((visitor.hosts || []).map((value) => canonicalizeDeploymentHost(value)).filter(Boolean))] };
     }),
 
-    totalCount,
+    totalCount: finalTotalCount,
 
-    uniqueVisitorCount:
-      uniqueVisitors.length,
+    uniqueVisitorCount: finalUniqueVisitorCount,
 
     onlineVisitorCount: finalOnlineVisitorCount,
     onlineWindowSeconds: 120,

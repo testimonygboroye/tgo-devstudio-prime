@@ -5,13 +5,14 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useCallback, useRef, useState } from "react";
 import { useSwipeSidebar } from "@/hooks/useSwipeSidebar";
-import { LayoutDashboard, UserRound, MessageSquareText, Bell, Activity, BriefcaseBusiness, Package, LifeBuoy, Menu, X, Gift, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import { LayoutDashboard, UserRound, MessageSquareText, Bell, Activity, BriefcaseBusiness, Package, LifeBuoy, Menu, X, Gift, ChevronLeft, ChevronRight, Sparkles, WalletCards } from "lucide-react";
 import ClientSignOutButton from "@/components/client/ClientSignOutButton";
 
 const groups = [
   { title: "Workspace", icon: LayoutDashboard, links: [
     { href: "/client/dashboard", label: "Overview", icon: LayoutDashboard },
     { href: "/client/services", label: "Services & projects", icon: Package },
+    { href: "/client/finance", label: "Invoices & payments", icon: WalletCards },
     { href: "/workspaces", label: "Collaboration", icon: BriefcaseBusiness },
   ]},
   { title: "Resources", icon: Sparkles, links: [

@@ -9,7 +9,7 @@ import Role from "@/models/Role";
 import { AIAgent, AITask } from "@/models/AIWorkforce";
 import EmployeeProfile from "@/models/EmployeeProfile";
 import { buildAccessibleAIAgentFilter } from "@/lib/messaging/aiAgentAccess";
-import { runProviderCompletion } from "@/lib/ai/provider-runtime";
+import { runProviderCompletionWithFallback } from "@/lib/ai/provider-runtime";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import { mirrorMessageToPersonalWhatsApp } from "@/lib/messaging/whatsappSync";
 
@@ -167,7 +167,7 @@ export async function POST(request: NextRequest) {
       try {
         const history = await UnifiedMessage.find({ conversationId, deletedAt: { $exists: false } }).sort({ createdAt: -1 }).limit(24).lean();
         const prompt = history.reverse().map((item) => (item.senderLabel || "Participant") + ": " + item.body).join("\\n\\n");
-        const completion = await runProviderCompletion(String(agent.providerId), agent.modelName, agent.systemInstructions + "\\n\\nYou are responding as " + agent.name + " in the TGO DevStudio internal communications platform. Reply conversationally. You have no external tools in this conversation; do not claim to have performed actions you did not execute.", prompt);
+        const completion = await runProviderCompletionWithFallback("", "", agent.systemInstructions + "\n\nYou are responding as " + agent.name + " in the TGO DevStudio internal communications platform. Reply conversationally. You have no external tools in this conversation; do not claim to have performed actions you did not execute.", prompt, "admin");
         task.status = "completed"; task.result = completion.text.slice(0, 50000); task.inputTokens = completion.inputTokens; task.outputTokens = completion.outputTokens; task.providerRequestId = completion.providerRequestId; task.completedAt = new Date(); await task.save();
         const reply = await UnifiedMessage.create({ conversationId, senderType: "ai", senderLabel: agent.name, body: completion.text.slice(0, 12000), status: "sent" });
         conversation.lastMessageAt = new Date(); await conversation.save();
@@ -239,7 +239,7 @@ export async function POST(request: NextRequest) {
     if (Number(usage[0]?.tokens || 0) >= agent.maxDailyTokens) return fail("The selected AI employee has reached its daily token budget.", 429);
     const task = await AITask.create({ agentId: agent._id, title: "Translate to " + targetLanguage, input: input.slice(0, 20000), requestedBy: String(actorId), status: "running", startedAt: new Date(), executionAttempts: 1, operationPayload: { source: "communications_translation", targetLanguage } });
     try {
-      const completion = await runProviderCompletion(String(agent.providerId), agent.modelName, agent.systemInstructions + "\n\nYou are performing a text-only translation task. Translate faithfully into " + targetLanguage + ". Preserve meaning, names, tone, and paragraph formatting. Do not add explanations, notes, or quotation marks; return only the translation.", input);
+      const completion = await runProviderCompletionWithFallback("", "", agent.systemInstructions + "\n\nYou are performing a text-only translation task. Translate faithfully into " + targetLanguage + ". Preserve meaning, names, tone, and paragraph formatting. Do not add explanations, notes, or quotation marks; return only the translation.", input, "admin");
       task.status = "completed"; task.result = completion.text.slice(0, 50000); task.inputTokens = completion.inputTokens; task.outputTokens = completion.outputTokens; task.providerRequestId = completion.providerRequestId; task.completedAt = new Date(); await task.save();
       await writePlatformAuditEvent({ actorType: "ai", actorId: String(agent._id), actorLabel: agent.name, action: "communications.text_translated", module: "communications", targetType: "AITask", targetId: String(task._id), outcome: "success", metadata: { targetLanguage, inputTokens: completion.inputTokens, outputTokens: completion.outputTokens } });
       return NextResponse.json({ status: "ok", translatedText: completion.text.slice(0, 12000), taskId: String(task._id), usage: { inputTokens: completion.inputTokens, outputTokens: completion.outputTokens } });

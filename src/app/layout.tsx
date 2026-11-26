@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/shared/ThemeProvider";
 import { LanguageProvider } from "@/lib/i18n/LanguageContext";
 import ServiceWorkerRegistration from "@/components/shared/ServiceWorkerRegistration";
 import NetworkStatus from "@/components/shared/NetworkStatus";
+import PlatformToastHost from "@/components/shared/PlatformToastHost";
 import { getServerLocale } from "@/lib/i18n/serverLocale";
 import { RTL_LOCALES } from "@/lib/i18n/config";
 import { getSiteUrl } from "@/lib/siteUrl";
@@ -216,6 +217,7 @@ export default async function RootLayout({
             <SeoSchemas />
             <ServiceWorkerRegistration />
             <NetworkStatus />
+            <PlatformToastHost />
             {children}
           </LanguageProvider>
         </ThemeProvider>

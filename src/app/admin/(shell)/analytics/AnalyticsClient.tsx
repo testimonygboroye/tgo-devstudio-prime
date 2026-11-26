@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { notify } from "@/lib/platform/toast";
 
 interface ViewEntry {
   _id: string;
@@ -253,12 +254,14 @@ export default function AnalyticsClient() {
   const [refreshTick, setRefreshTick] = useState(0);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
   const activeRequest = useRef<AbortController | null>(null);
+  const hasLoaded = useRef(false);
+  const lastErrorToastAt = useRef(0);
 
   useEffect(() => {
     const refresh = () => {
       if (document.visibilityState === "visible") setRefreshTick((value) => value + 1);
     };
-    const timer = window.setInterval(refresh, 30000);
+    const timer = window.setInterval(refresh, 5000);
     document.addEventListener("visibilitychange", refresh);
     return () => {
       window.clearInterval(timer);
@@ -343,6 +346,7 @@ export default function AnalyticsClient() {
 
         if (!cancelled) {
           setData(json);
+          hasLoaded.current = true;
           setSelectedVisitor((current) =>
             current ? json.visitors.find((visitor) => visitor.visitorId === current.visitorId) || current : null
           );
@@ -351,7 +355,9 @@ export default function AnalyticsClient() {
       } catch (loadError) {
         const aborted = loadError instanceof DOMException && loadError.name === "AbortError";
         if (!cancelled && !aborted) {
-          setError(loadError instanceof Error ? loadError.message : "Failed to load analytics.");
+          const message = loadError instanceof Error ? loadError.message : "Failed to load analytics.";
+          setError(message);
+          if (Date.now() - lastErrorToastAt.current > 15000) { notify(message, "error"); lastErrorToastAt.current = Date.now(); }
         }
       } finally {
         if (!cancelled) setIsLoading(false);
@@ -402,7 +408,7 @@ export default function AnalyticsClient() {
     <div className="space-y-8">
       <p className="text-xs leading-relaxed text-neutral-500">Unique visitor counts represent browser profiles, not verified individual people. A person using another browser, private browsing, a different domain, or cleared site storage can appear as a separate visitor.</p>
       <div className="flex justify-end text-xs text-neutral-600" aria-live="polite">
-        {lastUpdatedAt ? `Live data · Updated ${formatDate(lastUpdatedAt.toISOString())} · Refreshes every 30 seconds` : "Loading live analytics…"}
+        {lastUpdatedAt ? `Live data · Updated ${formatDate(lastUpdatedAt.toISOString())} · Refreshes every 5 seconds` : "Loading live analytics…"}
       </div>
       <section className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <StatCard

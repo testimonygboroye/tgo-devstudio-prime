@@ -3,8 +3,6 @@ import { Types } from "mongoose";
 import { getServerSession } from "@/lib/auth/serverSession";
 import { connectToDatabase } from "@/lib/db";
 import ClientEnquiry from "@/models/ClientEnquiry";
-import { AIChatbotConfig } from "@/models/AIChatbot";
-import { AIProvider } from "@/models/AIWorkforce";
 import Service from "@/models/Service";
 import PageContent from "@/models/PageContent";
 import { runProviderCompletionWithFallback } from "@/lib/ai/provider-runtime";
@@ -22,16 +20,12 @@ export async function POST(request: NextRequest) {
   if (!Types.ObjectId.isValid(enquiryId)) return NextResponse.json({ error: "A valid enquiry is required." }, { status: 400 });
 
   await connectToDatabase();
-  const [enquiry, config, services, policies] = await Promise.all([
+  const [enquiry, services, policies] = await Promise.all([
     ClientEnquiry.findById(enquiryId).populate("clientId", "name").lean(),
-    AIChatbotConfig.findOne({ scope: "admin", enabled: true }).lean(),
     Service.find({ publishStatus: "published" }).select("title summary").sort({ displayOrder: 1 }).limit(30).lean(),
     PageContent.find({ type: { $in: ["about", "privacy-policy", "terms-of-service", "usage-policy"] } }).select("title content").limit(8).lean(),
   ]);
   if (!enquiry) return NextResponse.json({ error: "Enquiry not found." }, { status: 404 });
-  if (!config) return NextResponse.json({ error: "Enable and configure the internal AI assistant before generating enquiry drafts." }, { status: 409 });
-  const primary = await AIProvider.findOne({ _id: config.providerId, enabled: true, lastTestStatus: "success" });
-  if (!primary) return NextResponse.json({ error: "The configured primary AI provider is not currently verified. Check AI Workforce provider settings." }, { status: 409 });
 
   const client = enquiry.clientId as unknown as { name?: string } | null;
   const system = [
@@ -58,7 +52,7 @@ export async function POST(request: NextRequest) {
   ].join("\n\n");
 
   try {
-    const completion = await runProviderCompletionWithFallback(String(config.providerId), config.modelName, system, prompt, "admin");
+    const completion = await runProviderCompletionWithFallback("", "", system, prompt, "admin");
     const draft = completion.text.trim().slice(0, 5000);
     if (!draft) throw new Error("The AI provider returned an empty draft.");
     return NextResponse.json({ draft, message: "AI draft generated. Review and edit it before saving or sending." }, { headers: { "Cache-Control": "private, no-store" } });

@@ -1,10 +1,12 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 
 function encryptionKey(): Buffer {
-  const raw = process.env.AI_ENCRYPTION_KEY;
-  if (!raw) throw new Error("AI_ENCRYPTION_KEY is not configured.");
-  const key = Buffer.from(raw, "base64");
-  if (key.length !== 32) throw new Error("AI_ENCRYPTION_KEY must be a base64-encoded 32-byte key.");
+  // Keep compatibility with deployments that already use AI_ENCRYPTION_KEY,
+  // while allowing the shared, already-provisioned integration key as fallback.
+  const raw = process.env.AI_ENCRYPTION_KEY || process.env.INTEGRATION_CREDENTIALS_KEY || "";
+  if (!raw) throw new Error("Configure AI_ENCRYPTION_KEY or INTEGRATION_CREDENTIALS_KEY as a server-side 32-byte encryption key.");
+  const key = /^[a-f0-9]{64}$/i.test(raw) ? Buffer.from(raw, "hex") : Buffer.from(raw, "base64");
+  if (key.length !== 32) throw new Error("The AI provider encryption key must be a base64-encoded 32-byte key or a 64-character hex key.");
   return key;
 }
 export function encryptProviderSecret(secret: string): string {

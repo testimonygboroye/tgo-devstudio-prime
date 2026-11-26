@@ -5,7 +5,7 @@ import { getServerSession } from "@/lib/auth/serverSession";
 import { connectToDatabase } from "@/lib/db";
 import { AIChatSession, AIChatbotConfig, AIChatbotScope } from "@/models/AIChatbot";
 import { AIProvider } from "@/models/AIWorkforce";
-import { runProviderCompletion } from "@/lib/ai/provider-runtime";
+import { runProviderCompletionWithFallback } from "@/lib/ai/provider-runtime";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import PageContent from "@/models/PageContent";
 import Service from "@/models/Service";
@@ -147,8 +147,7 @@ export async function handleAIChat(request:NextRequest,scope:Scope,method:"GET"|
  const config=await AIChatbotConfig.findOne({scope,enabled:true}).lean();
  let providerStatus:"verified"|"unverified"|"unconfigured"=config?"unverified":"unconfigured";
  if(method==="GET"&&config){
-  const providerIds=[config.providerId,...(config.fallbacks||[]).map((item)=>item.providerId),config.fallbackProviderId].filter((id): id is Types.ObjectId => id instanceof Types.ObjectId);
-  const verifiedProviders=await AIProvider.countDocuments({_id:{$in:providerIds},enabled:true,lastTestStatus:"success",lastTestedAt:{$gte:new Date(Date.now()-24*60*60*1000)}});
+  const verifiedProviders=await AIProvider.countDocuments({enabled:true,lastTestStatus:"success",archivedAt:{$exists:false}});
   providerStatus=verifiedProviders>0?"verified":"unverified";
  }
  if(method==="GET"){
@@ -190,41 +189,11 @@ export async function handleAIChat(request:NextRequest,scope:Scope,method:"GET"|
  await row.save();
  const providerFailures: Array<{ providerId: string; modelName: string; error: string }> = [];
  try{
-  const configuredFallbacks = Array.isArray(config.fallbacks) && config.fallbacks.length
-   ? config.fallbacks
-   : config.fallbackProviderId && config.fallbackModelName
-    ? [{ providerId: config.fallbackProviderId, modelName: config.fallbackModelName }]
-    : [];
-  const attempts = [{ providerId: String(config.providerId), modelName: config.modelName }, ...configuredFallbacks.map((item) => ({ providerId: String(item.providerId), modelName: item.modelName }))];
-  let completion: Awaited<ReturnType<typeof runProviderCompletion>> | null = null;
-  let fallbackUsed = false;
-  for (let index = 0; index < attempts.length; index += 1) {
-   const attempt = attempts[index];
-   try {
-    const candidate = await runProviderCompletion(attempt.providerId, attempt.modelName, system, prompt);
-    if (!candidate.text.trim()) throw new Error("Provider returned an empty response.");
-    completion = candidate;
-    fallbackUsed = index > 0;
-    break;
-   } catch (providerError) {
-    providerFailures.push({
-     providerId: attempt.providerId,
-     modelName: attempt.modelName,
-     error: (providerError instanceof Error ? providerError.message : "Provider request failed.").slice(0, 300),
-    });
-   }
-  }
-  if (!completion) {
-   try {
-    await writePlatformAuditEvent({
-     actorType: "system", actorId: "tgo-ai-gateway", actorLabel: "TGO AI Gateway",
-     action: "ai.chatbot.all_providers_failed", module: "ai-chatbots", targetType: "AIChatSession",
-     targetId: String(row._id), outcome: "failure",
-     metadata: { scope, attempts: providerFailures },
-    });
-   } catch { /* diagnostics must never expose or interrupt the public response */ }
-   throw new Error("All configured AI providers failed.");
-  }
+  // All assistant scopes use the same TGO-wide global ranking. Stored primary/fallback
+  // fields remain for backward-compatible configuration display, not runtime pinning.
+  const completion=await runProviderCompletionWithFallback("", "", system, prompt, scope);
+  if(!completion.text.trim())throw new Error("The global AI provider pool returned an empty response.");
+  const fallbackUsed=Boolean(completion.fallbackUsed);
   const assistantMessage={messageId:randomUUID(),role:"assistant" as const,content:completion.text.slice(0,8000),inputTokens:completion.inputTokens,outputTokens:completion.outputTokens,sources:context.sources.slice(0,20),createdAt:new Date()};
   row.messages.push(assistantMessage);row.dailyTokens+=completion.inputTokens+completion.outputTokens;
   if(row.messages.length>80)row.messages=row.messages.slice(-80);

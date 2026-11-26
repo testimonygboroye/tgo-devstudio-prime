@@ -8,6 +8,7 @@ import { connectToDatabase } from "@/lib/db";
 import { getSiteUrl } from "@/lib/siteUrl";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import { AIProvider, AIAgent, AITask } from "@/models/AIWorkforce";
+import { AIChatbotConfig } from "@/models/AIChatbot";
 import { UnifiedConversation, UnifiedMessage } from "@/models/UnifiedConversation";
 import { mirrorMessageToPersonalWhatsApp } from "@/lib/messaging/whatsappSync";
 import { decryptProviderSecret, encryptProviderSecret } from "@/lib/ai/provider-secrets";
@@ -22,6 +23,7 @@ import DeliveryMilestone from "@/models/DeliveryMilestone";
 import DeliveryTask from "@/models/DeliveryTask";
 import ProjectDeliverable from "@/models/ProjectDeliverable";
 import Position from "@/models/Position";
+import Department from "@/models/Department"; // Registers the Department model before Position.departmentId populate().
 import FinanceSettings from "@/models/FinanceSettings";
 import FinanceInvoice from "@/models/FinanceInvoice";
 import FinanceExpense from "@/models/FinanceExpense";
@@ -399,11 +401,49 @@ export async function POST(request: NextRequest) {
     if (body.action === "provider.enable" || body.action === "provider.disable") {
       const provider = await AIProvider.findById(body.providerId);
       if (!provider) return NextResponse.json({ status: "error", message: "Provider not found." }, { status: 404 });
+      if (body.action === "provider.enable" && provider.lastTestStatus !== "success") {
+        return NextResponse.json({ status: "error", message: "Run a successful live-generation test for this provider before enabling it." }, { status: 409 });
+      }
       provider.enabled = body.action === "provider.enable";
       await provider.save();
-      await writePlatformAuditEvent({ actorType: "human", actorId, action: body.action === "provider.enable" ? "ai.provider.enabled" : "ai.provider.disabled", module: "ai-workforce", targetType: "AIProvider", targetId: String(provider._id), outcome: "success" });
-      return NextResponse.json({ status: "ok", message: provider.enabled ? "Provider enabled and available to all AI employees." : "Provider disabled. AI employees remain enabled and will use another available verified provider." });
+      if (provider.enabled) {
+        await Promise.all((["public", "client", "admin"] as const).map((scope) =>
+          AIChatbotConfig.findOneAndUpdate(
+            { scope },
+            { $set: { enabled: true }, $setOnInsert: {
+              scope, providerId: provider._id, modelName: provider.lastTestedModel || "",
+              welcomeMessage: scope === "public" ? "Welcome to TGO DevStudio. How can I help?" : "Hello. How can I help?",
+              updatedBy: new mongoose.Types.ObjectId(actorId),
+            } },
+            { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
+          ),
+        ));
+      }
+      await writePlatformAuditEvent({ actorType: "human", actorId, action: body.action === "provider.enable" ? "ai.provider.enabled" : "ai.provider.disabled", module: "ai-workforce", targetType: "AIProvider", targetId: String(provider._id), outcome: "success", metadata: { lastTestStatus: provider.lastTestStatus, assistantsActivated: provider.enabled } });
+      return NextResponse.json({ status: "ok", message: provider.enabled ? "Provider enabled and the public, client and admin read-only assistants are activated. All AI employees can now use the global provider pool." : "Provider disabled. AI employees and assistant configurations remain enabled and will use another available verified provider." });
     }
+    if (body.action === "runtime.test") {
+      const traceStartedAt = Date.now();
+      try {
+        const completion = await runProviderCompletionWithFallback(
+          "", "",
+          "You are performing a TGO DevStudio AI runtime health check. Reply with the exact sentence requested and do not add anything else.",
+          "Reply exactly: TGO global AI router test successful.",
+          "admin",
+        );
+        const message = "Global AI routing succeeded with " + completion.model + (completion.fallbackUsed ? " after cross-provider fallback." : ".");
+        await writePlatformAuditEvent({ actorType: "human", actorId, actorLabel: session.user.name, action: "ai.runtime.tested", module: "ai-workforce", targetType: "AIProviderPool", targetId: "global", outcome: "success", metadata: { model: completion.model, providerId: completion.providerId, fallbackUsed: completion.fallbackUsed, durationMs: Date.now() - traceStartedAt } }).catch(() => undefined);
+        return NextResponse.json({ status: "ok", message, model: completion.model, fallbackUsed: completion.fallbackUsed, response: completion.text.slice(0, 500) });
+      } catch (error) {
+        const diagnostic = (error instanceof Error ? error.message : "Global AI routing test failed.")
+          .replace(/(?:AIza[0-9A-Za-z_-]{20,}|sk-ant-[0-9A-Za-z_-]{16,}|sk-[0-9A-Za-z_-]{16,})/g, "[redacted]")
+          .replace(/(Bearer\s+)[^\s,;]+/gi, "$1[redacted]")
+          .slice(0, 900);
+        await writePlatformAuditEvent({ actorType: "human", actorId, actorLabel: session.user.name, action: "ai.runtime.tested", module: "ai-workforce", targetType: "AIProviderPool", targetId: "global", outcome: "failure", metadata: { error: diagnostic, durationMs: Date.now() - traceStartedAt } }).catch(() => undefined);
+        return NextResponse.json({ status: "error", message: "Global AI routing test failed. " + diagnostic }, { status: 502 });
+      }
+    }
+
     if (body.action === "provider.test") {
       const provider = await AIProvider.findById(body.providerId).select("+encryptedApiKey");
       if (!provider) return NextResponse.json({ status: "error", message: "Provider not found." }, { status: 404 });
@@ -492,9 +532,25 @@ export async function POST(request: NextRequest) {
         provider.lastTestedAt = new Date();
         provider.lastTestedModel = testedModel;
         provider.lastTestStatus = "success";
+        // A founder-initiated live generation test is the explicit activation check.
+        // Once it succeeds, make the verified provider available to the TGO-wide router.
+        provider.enabled = true;
         await provider.save();
+        // A founder-initiated successful live test activates the three governed,
+        // read-only assistants. Existing provider/model choices are preserved.
+        await Promise.all((["public", "client", "admin"] as const).map((scope) =>
+          AIChatbotConfig.findOneAndUpdate(
+            { scope },
+            { $set: { enabled: true }, $setOnInsert: {
+              scope, providerId: provider._id, modelName: testedModel,
+              welcomeMessage: scope === "public" ? "Welcome to TGO DevStudio. How can I help?" : "Hello. How can I help?",
+              updatedBy: new mongoose.Types.ObjectId(actorId),
+            } },
+            { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
+          ),
+        ));
         await writePlatformAuditEvent({ actorType: "human", actorId, actorLabel: session.user.name, action: "ai.provider.tested", module: "ai-workforce", targetType: "AIProvider", targetId: String(provider._id), outcome: "success", metadata: { model: testedModel, statusCode, liveGeneration: true } });
-        return NextResponse.json({ status: "ok", httpStatus: statusCode, model: testedModel, message: "Live generation test succeeded with " + testedModel + ". This provider can generate a real response." });
+        return NextResponse.json({ status: "ok", httpStatus: statusCode, model: testedModel, message: "Live generation test succeeded with " + testedModel + ". The provider is enabled and the public, client and admin read-only assistants are activated." });
       } catch (error) {
         provider.lastTestedAt = new Date();
         provider.lastTestedModel = undefined;
@@ -527,6 +583,22 @@ export async function POST(request: NextRequest) {
       await agent.save();
       await writePlatformAuditEvent({ actorType: "human", actorId, action: "ai.agent.permissions_updated", module: "ai-workforce", targetType: "AIAgent", targetId: String(agent._id), outcome: "success", metadata: { permissions: agent.permissions } });
       return NextResponse.json({ status: "ok", permissions: agent.permissions, message: "Agent tool permissions updated." });
+    }
+    if (body.action === "agent.enable_text_only_all") {
+      const result = await AIAgent.updateMany(
+        { enabled: false, $or: [{ permissions: { $size: 0 } }, { permissions: { $exists: false } }] },
+        { $set: { enabled: true, requiresApproval: true } },
+      );
+      await writePlatformAuditEvent({
+        actorType: "human", actorId, actorLabel: session.user.name,
+        action: "ai.agents.bulk_enabled_text_only", module: "ai-workforce",
+        targetType: "AIAgent", outcome: "success",
+        metadata: { enabledCount: result.modifiedCount, businessPermissionsGranted: 0, requiresApproval: true },
+      });
+      return NextResponse.json({
+        status: "ok", enabledCount: result.modifiedCount,
+        message: result.modifiedCount + " text-only AI employees enabled. No business tools were granted; human approval remains required for governed operations.",
+      });
     }
     if (body.action === "agent.enable" || body.action === "agent.disable") {
       const agent = await AIAgent.findById(body.agentId);

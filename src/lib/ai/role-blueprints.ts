@@ -69,3 +69,53 @@ export function getAIRoleBlueprint(role: string, department: string): AIRoleBlue
     ].join("\n\n")
   };
 }
+
+
+/**
+ * Least-privilege tool grants for each TGO AI role. Permissions only expose
+ * operations implemented by the AI workforce tool registry; every task still
+ * enters the founder approval queue before execution.
+ */
+const ROLE_PERMISSIONS: Record<string, string[]> = {
+  "Chief Executive Officer": ["clients.read_summary", "projects.read_summary", "site.routes.health_check", "finance.summary.read", "integrations.status.read", "github.repository.read", "github.file.read"],
+  "Chief of Staff": ["clients.read_summary", "projects.read_summary", "site.routes.health_check", "finance.summary.read", "integrations.status.read"],
+  "Founder AI Executive Partner": ["clients.read_summary", "projects.read_summary", "projects.status.update", "site.routes.health_check", "finance.summary.read", "integrations.status.read", "github.repository.read", "github.file.read", "github.file.write", "github.pull_request.create", "github.code_change.propose"],
+  "Business Strategy Director": ["clients.read_summary", "projects.read_summary", "finance.summary.read"],
+  "Business Operations Manager": ["clients.read_summary", "projects.read_summary", "finance.summary.read", "integrations.status.read"],
+  "Project Operations Manager": ["projects.read_summary", "projects.status.update"],
+  "Project Manager": ["projects.read_summary", "projects.status.update"],
+  "Delivery Coordinator": ["projects.read_summary"],
+  "Client Success Director": ["clients.read_summary", "projects.read_summary"],
+  "Account Manager": ["clients.read_summary", "projects.read_summary"],
+  "Client Onboarding Specialist": ["clients.read_summary"],
+  "Client Experience Specialist": ["clients.read_summary", "projects.read_summary"],
+  "Customer Support Lead": ["clients.read_summary"],
+  "Customer Support Specialist": ["clients.read_summary"],
+  "Sales Director": ["clients.read_summary", "projects.read_summary"],
+  "Business Development Manager": ["clients.read_summary"],
+  "Finance Manager": ["finance.summary.read"],
+  "Finance Analyst": ["finance.summary.read"],
+  "Accounts Officer": ["finance.summary.read"],
+  "Chief Technology Officer": ["projects.read_summary", "site.routes.health_check", "integrations.status.read", "github.repository.read", "github.file.read", "github.file.write", "github.pull_request.create", "github.code_change.propose"],
+  "Software Engineer": ["projects.read_summary", "github.repository.read", "github.file.read", "github.file.write", "github.pull_request.create", "github.code_change.propose"],
+  "Frontend Engineer": ["projects.read_summary", "github.repository.read", "github.file.read", "github.file.write", "github.pull_request.create", "github.code_change.propose"],
+  "Backend Engineer": ["projects.read_summary", "github.repository.read", "github.file.read", "github.file.write", "github.pull_request.create", "github.code_change.propose"],
+  "Mobile Engineer": ["projects.read_summary", "github.repository.read", "github.file.read", "github.file.write", "github.pull_request.create", "github.code_change.propose"],
+  "Quality Assurance Lead": ["projects.read_summary", "site.routes.health_check", "github.repository.read", "github.file.read"],
+  "QA Engineer": ["projects.read_summary", "site.routes.health_check", "github.repository.read", "github.file.read"],
+  "Public Experience QA Specialist": ["site.routes.health_check", "github.repository.read", "github.file.read"],
+  "Client Portal QA Specialist": ["clients.read_summary", "projects.read_summary", "site.routes.health_check"],
+  "Platform QA Specialist": ["site.routes.health_check", "integrations.status.read", "github.repository.read", "github.file.read"],
+  "DevOps Architect": ["projects.read_summary", "site.routes.health_check", "integrations.status.read", "github.repository.read", "github.file.read"],
+  "Cloud Engineer": ["projects.read_summary", "site.routes.health_check", "integrations.status.read", "github.repository.read", "github.file.read"],
+  "Website Operations Lead": ["projects.read_summary", "site.routes.health_check", "integrations.status.read", "github.repository.read", "github.file.read"],
+  "Web Operations Specialist": ["site.routes.health_check", "integrations.status.read", "github.repository.read", "github.file.read"],
+  "Platform Operations Lead": ["projects.read_summary", "site.routes.health_check", "integrations.status.read", "github.repository.read", "github.file.read"],
+  "Security & Compliance Officer": ["site.routes.health_check", "integrations.status.read", "github.repository.read", "github.file.read"],
+  "Privacy & Risk Analyst": ["site.routes.health_check", "integrations.status.read"],
+  "SEO Specialist": ["site.routes.health_check"],
+};
+
+export function getAIRolePermissions(role: string): string[] {
+  return [...(ROLE_PERMISSIONS[role] || [])];
+}

@@ -6,7 +6,7 @@ export interface IIntegrationOAuthState extends Document {
   ownerType: "founder" | "client";
   ownerId: Types.ObjectId;
   userId: Types.ObjectId;
-  redirectUri: string;
+  redirectUri: string;\n  returnOrigin: string;
   scopes: string[];
   pkceVerifierCiphertext?: string;
   expiresAt: Date;
@@ -20,7 +20,7 @@ const schema = new Schema<IIntegrationOAuthState>({
   ownerType: { type: String, enum: ["founder", "client"], required: true },
   ownerId: { type: Schema.Types.ObjectId, required: true },
   userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-  redirectUri: { type: String, required: true },
+  redirectUri: { type: String, required: true },\n  returnOrigin: { type: String, required: true },
   scopes: { type: [String], default: [] },
   pkceVerifierCiphertext: { type: String, select: false },
   expiresAt: { type: Date, required: true },

@@ -9,7 +9,7 @@ export function resolveProviderApiKey(_name: string, provider: string, encrypted
   if (typeof encryptedApiKey === "string" && encryptedApiKey.trim()) {
     return decryptProviderSecret(encryptedApiKey);
   }
-  const environmentKey = provider === "google" ? process.env.GEMINI_API_KEY?.trim() : "";
+  const environmentKey = provider === "google" ? (process.env.GEMINI_API_KEY?.trim() || process.env.GOOGLE_API_KEY?.trim()) : "";
   if (environmentKey) return environmentKey;
   throw new Error("No encrypted provider credential or supported server-side environment key is configured.");
 }

@@ -154,7 +154,14 @@ export async function runProviderCompletionWithFallback(
   // The founder can explicitly import/test GEMINI_API_KEY in Vercel without
   // relying on a database provider row being enabled on every deployment.
   // Keep it as a final, provider-independent fallback; never expose the key.
-  if (process.env.GEMINI_API_KEY?.trim()) providers.push({
+  const environmentGeminiKey = process.env.GEMINI_API_KEY?.trim() || process.env.GOOGLE_API_KEY?.trim() || "";
+  if (!providers.some((provider) => provider.provider === "google")) {
+    console.warn("[TGO AI] Google provider inventory", {
+      environmentKeyConfigured: Boolean(environmentGeminiKey),
+      storedGoogleProviders: storedProviders.filter((provider) => provider.provider === "google").map((provider) => ({ enabled: provider.enabled === true, liveTestPassed: provider.lastTestStatus === "success", archived: Boolean(provider.archivedAt), disabled: Boolean(provider.disabledAt), encryptedCredentialPresent: Boolean(provider.encryptedApiKey) })),
+    });
+  }
+  if (environmentGeminiKey) providers.push({
     _id: "__gemini_environment__", name: "Gemini environment provider", provider: "google",
     encryptedApiKey: "", enabled: true, lastTestStatus: "success", lastTestedModel: "gemini-3.1-pro-preview",
   });

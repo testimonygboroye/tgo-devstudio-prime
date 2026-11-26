@@ -353,7 +353,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ status: "ok", message: "Knowledge memory archived." });
     }
     if (body.action === "provider.import_gemini_env") {
-      const apiKey = process.env.GEMINI_API_KEY;
+      const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
       if (!apiKey) return NextResponse.json({ status: "error", message: "GEMINI_API_KEY is not configured in this application's runtime environment." }, { status: 503 });
       let provider = await AIProvider.findOne({ name: "Gemini environment provider" });
       const keyCheck = await getUniqueProviderKeyFingerprint(apiKey, provider ? String(provider._id) : undefined);

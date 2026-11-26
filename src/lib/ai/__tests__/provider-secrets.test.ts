@@ -1,8 +1,12 @@
 import { decryptProviderSecret, encryptProviderSecret } from "@/lib/ai/provider-secrets";
 describe("AI provider credential encryption", () => {
   const original = process.env.AI_ENCRYPTION_KEY;
+  const originalIntegrationKey = process.env.INTEGRATION_CREDENTIALS_KEY;
   beforeEach(() => { process.env.AI_ENCRYPTION_KEY = Buffer.alloc(32, 7).toString("base64"); });
-  afterAll(() => { if (original === undefined) delete process.env.AI_ENCRYPTION_KEY; else process.env.AI_ENCRYPTION_KEY = original; });
+  afterAll(() => {
+    if (original === undefined) delete process.env.AI_ENCRYPTION_KEY; else process.env.AI_ENCRYPTION_KEY = original;
+    if (originalIntegrationKey === undefined) delete process.env.INTEGRATION_CREDENTIALS_KEY; else process.env.INTEGRATION_CREDENTIALS_KEY = originalIntegrationKey;
+  });
   it("round-trips provider secrets without storing plaintext", () => {
     const secret = "test-provider-secret";
     const encrypted = encryptProviderSecret(secret);

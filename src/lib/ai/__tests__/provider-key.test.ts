@@ -14,9 +14,15 @@ describe("AI provider credential resolution", () => {
     jest.clearAllMocks();
   });
 
-  it("uses GEMINI_API_KEY for every Google provider record, regardless of its stored display name", () => {
-    process.env.GEMINI_API_KEY = "current-environment-key";
-    expect(resolveProviderApiKey("Gemini Production", "google", "old-encrypted-value")).toBe("current-environment-key");
+  it("prefers the provider's saved encrypted key over a legacy GEMINI_API_KEY", () => {
+    process.env.GEMINI_API_KEY = "stale-environment-key";
+    expect(resolveProviderApiKey("TGO Gemini", "google", "stored-ciphertext")).toBe("decrypted-stored-key");
+    expect(decryptProviderSecret).toHaveBeenCalledWith("stored-ciphertext");
+  });
+
+  it("uses GEMINI_API_KEY only for a legacy Google record without a saved credential", () => {
+    process.env.GEMINI_API_KEY = "legacy-environment-key";
+    expect(resolveProviderApiKey("Gemini environment provider", "google", "")).toBe("legacy-environment-key");
     expect(decryptProviderSecret).not.toHaveBeenCalled();
   });
 
@@ -26,9 +32,14 @@ describe("AI provider credential resolution", () => {
     expect(decryptProviderSecret).toHaveBeenCalledWith("ciphertext");
   });
 
-  it("falls back to encrypted Google credentials when no environment key is configured", () => {
+  it("does not silently fall back to a potentially stale environment key when saved ciphertext cannot be decrypted", () => {
+    process.env.GEMINI_API_KEY = "stale-environment-key";
+    (decryptProviderSecret as jest.Mock).mockImplementationOnce(() => { throw new Error("Stored credential cannot be decrypted."); });
+    expect(() => resolveProviderApiKey("TGO Gemini", "google", "stored-ciphertext")).toThrow("Stored credential cannot be decrypted.");
+  });
+
+  it("reports a missing credential when neither a stored nor environment key exists", () => {
     delete process.env.GEMINI_API_KEY;
-    expect(resolveProviderApiKey("Gemini Production", "google", "ciphertext")).toBe("decrypted-stored-key");
-    expect(decryptProviderSecret).toHaveBeenCalledWith("ciphertext");
+    expect(() => resolveProviderApiKey("TGO Gemini", "google", "")).toThrow("No encrypted provider credential");
   });
 });

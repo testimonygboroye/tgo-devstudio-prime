@@ -154,6 +154,7 @@ export async function runProviderCompletionWithFallback(
   // The founder can explicitly import/test GEMINI_API_KEY in Vercel without
   // relying on a database provider row being enabled on every deployment.
   // Keep it as a final, provider-independent fallback; never expose the key.
+  const failures: string[] = [];
   const environmentGeminiKey = process.env.GEMINI_API_KEY?.trim() || process.env.GOOGLE_API_KEY?.trim() || "";
   if (!providers.some((provider) => provider.provider === "google")) {
     console.warn("[TGO AI] Google provider inventory", {
@@ -165,8 +166,14 @@ export async function runProviderCompletionWithFallback(
     _id: "__gemini_environment__", name: "Gemini environment provider", provider: "google",
     encryptedApiKey: "", enabled: true, lastTestStatus: "success", lastTestedModel: "gemini-3.1-pro-preview",
   });
+  const storedGoogleProviders = storedProviders.filter((provider) => provider.provider === "google");
+  if (!providers.some((provider) => provider.provider === "google")) {
+    const savedState = storedGoogleProviders.length
+      ? storedGoogleProviders.map((provider) => `enabled=${provider.enabled === true}, tested=${provider.lastTestStatus === "success"}, archived=${Boolean(provider.archivedAt)}, disabled=${Boolean(provider.disabledAt)}, credential=${Boolean(provider.encryptedApiKey)}`).join("; ")
+      : "no saved Google provider record";
+    failures.push(`Google provider is not eligible for global routing (${savedState}); GEMINI_API_KEY/GOOGLE_API_KEY runtime value is ${environmentGeminiKey ? "present" : "missing or empty"}.`);
+  }
   if (!providers.length) throw new Error("No active, connection-verified AI provider is available. AI employees remain enabled; add or enable a provider and retry this task.");
-  const failures: string[] = [];
   const catalogues = await Promise.all(providers.map(async (provider: any) => ({ provider, models: await discoverProviderModels(provider) })));
   for (const catalogue of catalogues) {
     if (catalogue.models.length) continue;

@@ -104,7 +104,9 @@ export async function POST(request: NextRequest) {
   if (!row || row.status === "disconnected") return fail("Save active credentials before testing this connection.", 409);
   let errorMessage = "";
   try {
-    const storedCredentials = decryptCredentials(row.credentialsCiphertext);
+    let storedCredentials: Record<string, string> = {};
+    try { storedCredentials = decryptCredentials(row.credentialsCiphertext); }
+    catch (error) { if (providerId !== "paystack" || !process.env.PAYSTACK_SECRET_KEY) throw error; }
     let credentials: Record<string, string> | null = providerId === "google_search_console" || providerId === "google_analytics"
       ? await getVerifiedIntegrationCredentials(providerId)
       : { ...storedCredentials };
@@ -116,6 +118,9 @@ export async function POST(request: NextRequest) {
         apiKey: process.env.BREVO_API_KEY || credentials.apiKey || "",
         senderEmail: process.env.BREVO_SENDER_EMAIL || credentials.senderEmail || "",
       };
+    }
+    if (providerId === "paystack") {
+      credentials = { ...credentials, secretKey: process.env.PAYSTACK_SECRET_KEY || credentials.secretKey || "", webhookSecret: process.env.PAYSTACK_WEBHOOK_SECRET || credentials.webhookSecret || "" };
     }
     if (providerId === "twilio") {
       credentials = {

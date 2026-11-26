@@ -5,6 +5,7 @@ import {getServerSession} from "@/lib/auth/serverSession";
 import {connectToDatabase} from "@/lib/db";
 import {writePlatformAuditEvent} from "@/lib/platform/audit";
 import FinanceSettings from "@/models/FinanceSettings";
+import IntegrationConnection from "@/models/IntegrationConnection";
 import FinanceInvoice from "@/models/FinanceInvoice";
 import FinanceExpense from "@/models/FinanceExpense";
 import FinanceRefund from "@/models/FinanceRefund";
@@ -57,8 +58,15 @@ export async function GET(){
  const summary=await FinancialLedgerEntry.aggregate([
   {$group:{_id:{currency:"$currency",accountCode:"$accountCode",direction:"$direction"},total:{$sum:"$amountMinor"},entries:{$sum:1}}},
  ]);
- const paystackCredentials=await getVerifiedIntegrationCredentials("paystack").catch(()=>null);
- const paymentConfiguration={enabled:Boolean(settings?.paystackEnabled),credentialsReady:Boolean(process.env.PAYSTACK_SECRET_KEY||paystackCredentials?.secretKey),webhookSignatureReady:Boolean(process.env.PAYSTACK_WEBHOOK_SECRET||paystackCredentials?.webhookSecret),ready:Boolean(settings?.paystackEnabled&&(process.env.PAYSTACK_SECRET_KEY||paystackCredentials?.secretKey)),webhookUrl:new URL("/api/webhooks/paystack",getPublicSiteUrl()).toString(),callbackUrl:"https://tgo-devstudio-prime.vercel.app/client/payments/callback (checkout returns to the same host the client used)"};
+ const [paystackCredentials,paystackConnection]=await Promise.all([
+  getVerifiedIntegrationCredentials("paystack").catch(()=>null),
+  IntegrationConnection.findOne({providerId:"paystack"}).select("status lastVerifiedAt").lean(),
+ ]);
+ const paystackLastVerifiedAt=paystackConnection?.lastVerifiedAt||null;
+ const verificationAge=paystackLastVerifiedAt?Date.now()-new Date(paystackLastVerifiedAt).getTime():Number.POSITIVE_INFINITY;
+ const liveVerified=paystackConnection?.status==="connected"&&verificationAge>=0&&verificationAge<=24*60*60*1000;
+ const credentialsReady=Boolean(process.env.PAYSTACK_SECRET_KEY||paystackCredentials?.secretKey);
+ const paymentConfiguration={enabled:Boolean(settings?.paystackEnabled),credentialsReady,webhookSignatureReady:Boolean(process.env.PAYSTACK_WEBHOOK_SECRET||paystackCredentials?.webhookSecret),liveVerified,lastVerifiedAt:paystackLastVerifiedAt,ready:Boolean(settings?.paystackEnabled&&credentialsReady&&liveVerified),webhookUrl:new URL("/api/webhooks/paystack",getPublicSiteUrl()).toString(),callbackUrl:"https://tgo-devstudio-prime.vercel.app/client/payments/callback (checkout returns to the same host the client used)"};
  const now=new Date();
  // GET requests remain read-only: calculate overdue labels for the response
  // instead of writing invoice/installment status changes during dashboard reads.

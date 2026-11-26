@@ -64,7 +64,7 @@ Playwright defaults to the Vercel production URL. To target another reachable en
 BASE_URL=https://your-deployment.example npm run test:e2e
 ```
 
-The CI workflow provisions MongoDB 7, runs Jest, and performs a defined ESLint path set. It does not currently run a full production build or the Playwright suite on every pull request. The browser suite can be run separately against a reachable deployment.
+The CI workflow provisions MongoDB 7, runs Jest, performs a defined ESLint path set, and runs the Next.js production build (including its TypeScript validation) on pull requests. Playwright browser E2E is intentionally gated to manual workflow dispatches and successful pushes to `main`, rather than every pull request, because it requires a reachable deployment. The workflow waits for the merged production release before running the browser suite.
 
 ## Environment configuration
 

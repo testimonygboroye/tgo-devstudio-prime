@@ -41,7 +41,7 @@ export async function runProviderCompletion(providerId: string, model: string, s
       const catalogue = await catalogueResponse.json().catch(() => ({}));
       const rows = Array.isArray(catalogue.models) ? catalogue.models : Array.isArray(catalogue.data) ? catalogue.data : [];
       for (const row of rows) {
-        const id = String(row.name || row.id || "").replace(/^models\\//, "");
+        const id = String(row.name || row.id || "").replace(/^models\//, "");
         if (!id || id.length > 120) continue;
         if (provider.provider === "google" && !/^gemini-/i.test(id)) continue;
         if (provider.provider === "openai" && !/^(gpt-|o[1-9]|chatgpt-)/i.test(id)) continue;
@@ -122,7 +122,7 @@ async function discoverProviderModels(provider: any): Promise<string[]> {
     if (!response.ok) return [...new Set([provider.lastTestedModel, ...fallback].filter(Boolean) as string[])];
     const body: any = await response.json().catch(() => ({}));
     const rows = Array.isArray(body.models) ? body.models : Array.isArray(body.data) ? body.data : [];
-    const discovered = rows.map((row: any) => String(row.name || row.id || "").replace(/^models\\//, ""))
+    const discovered = rows.map((row: any) => String(row.name || row.id || "").replace(/^models\//, ""))
       .filter((id: string) => id && id.length < 120)
       .filter((id: string) => provider.provider === "google" ? /^gemini-/i.test(id) : provider.provider === "anthropic" ? /^claude-/i.test(id) : provider.provider === "openai" ? /^(gpt-|o[1-9]|chatgpt-)/i.test(id) : true);
     return [...new Set([provider.lastTestedModel, ...discovered, ...fallback].filter(Boolean) as string[])];
@@ -162,7 +162,7 @@ export async function runProviderCompletionWithFallback(
       return { ...result, providerId: String(candidate.provider._id), model: result.model || candidate.modelName, fallbackUsed: attempt > 1 };
     } catch (error) {
       const message = error instanceof Error ? error.message : "Model request failed.";
-      const match = message.match(/HTTP\\s+(\\d{3})/i);
+      const match = message.match(/HTTP\s+(\d{3})/i);
       const httpStatus = match ? Number(match[1]) : undefined;
       const errorCode = httpStatus === 429 ? "rate_limit" : httpStatus === 401 || httpStatus === 403 ? "authentication_or_permission" : httpStatus && httpStatus >= 500 ? "provider_server_error" : /timeout|abort/i.test(message) ? "timeout" : "model_unavailable_or_request_failed";
       failures.push(candidate.provider.name + "/" + candidate.modelName + ": " + message);

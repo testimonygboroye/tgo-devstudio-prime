@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ImageOff, Sparkles } from "lucide-react";
 
 const CLOUDINARY_WIDTHS = [320, 480, 640, 960, 1280, 1600] as const;
@@ -50,15 +50,12 @@ function BrandedFallback({ alt, label, className }: { alt: string; label?: strin
 export default function SmartImage({ src, alt, label, className = "", priority = false, sizes = "100vw" }: {
   src?: string | null; alt: string; label?: string; className?: string; priority?: boolean; sizes?: string;
 }) {
-  const [failed, setFailed] = useState(false);
+  const [failedSource, setFailedSource] = useState<string | null>(null);
+  const failed = Boolean(src && failedSource === src);
 
-  // A component may be reused for a different record after its previous image
-  // failed. Reset the failure state when the source changes so the new source
-  // gets a chance to load on both Render and Vercel deployments.
-  useEffect(() => {
-    setFailed(false);
-  }, [src]);
-
+  // Keep failure state tied to the URL that failed. When a record reuses this
+  // component with a different URL, the new source is allowed to load without
+  // a synchronous state update in an effect.
   if (!src || failed) return <BrandedFallback alt={alt} label={label} className={className}/>;
   const isCloudinary = src.startsWith("https://res.cloudinary.com/") && src.includes("/image/upload/");
   const srcSet = isCloudinary
@@ -66,5 +63,5 @@ export default function SmartImage({ src, alt, label, className = "", priority =
     : undefined;
   const optimizedSrc = isCloudinary ? cloudinaryVariant(src, 960) || src : src;
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src={optimizedSrc} srcSet={srcSet} sizes={srcSet ? sizes : undefined} alt={alt} loading={priority ? "eager" : "lazy"} fetchPriority={priority ? "high" : "auto"} decoding="async" onError={() => setFailed(true)} className={className}/>;
+  return <img src={optimizedSrc} srcSet={srcSet} sizes={srcSet ? sizes : undefined} alt={alt} loading={priority ? "eager" : "lazy"} fetchPriority={priority ? "high" : "auto"} decoding="async" onError={() => setFailedSource(src)} onLoad={() => setFailedSource(null)} className={className}/>;
 }

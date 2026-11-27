@@ -34,7 +34,7 @@
 | DevOps & SRE — managed DevOps service | ₦1,200,000/month | Advertised monthly retainer starting price | LineTech pricing page |
 | Enterprise Software — custom CRM / business management software | ₦2,000,000–₦30,000,000+ | One-off planning range | LineTech 2026 outsourcing guide |
 | Systems Integration — accounting / ERP integration | ₦500,000–₦4,000,000 | Component-level one-off planning range | LineTech 2026 digital-transformation cost guide |
-| Maintenance & Support — software support retainer | ₦50,000–₦400,000/month | Monthly support range; managed-service tiers may be higher | LineTech 2026 maintenance cost guide |
+| Maintenance & Support — software support retainer | ₦50,000–₦350,000/month | Monthly support range; managed-service tiers may be higher | LineTech 2026 maintenance cost guide |
 | Maintenance & Support — app maintenance allowance | 15%–25% of original build cost/year | Percentage planning allowance, not a monthly cash price | Inventrium / Nexoris 2026 software-cost guides |
 | Modernisation & Migration — data cleaning / migration | ₦200,000–₦3,000,000 | Component-level one-off range only | LineTech 2026 digital-transformation cost guide |
 | Technical Training & Enablement | ₦150,000–₦1,500,000 | One-off training/adoption-support range | LineTech 2026 digital-transformation cost guide |

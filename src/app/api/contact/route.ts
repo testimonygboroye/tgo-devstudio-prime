@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { randomUUID } from "crypto";
 import { connectToDatabase } from "@/lib/db";
-import { notifyStaffWithPermission } from "@/lib/platform/notifications";
+import { notifyFounders } from "@/lib/platform/notifications";
 import { sendAdminPush } from "@/lib/push/server";
 import { getAdminBasePath } from "@/lib/adminPath";
 import ContactSubmission, {
@@ -168,7 +168,7 @@ export async function POST(
       visitorId,
     });
 
-  void notifyStaffWithPermission(CONTENT_TYPE, {
+  void notifyFounders({
     category: "customer-enquiry",
     title: "New customer enquiry",
     body: submission.name + " submitted a " + submission.subject + " enquiry.",

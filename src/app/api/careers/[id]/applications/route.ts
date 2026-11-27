@@ -98,7 +98,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     resumePublicId,
   });
 
-  void notifyFounders({
+  await notifyFounders({
     category: "recruitment-application",
     title: "New job application",
     body: application.applicantName + " applied for " + job.title + ".",

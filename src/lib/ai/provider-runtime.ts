@@ -163,7 +163,8 @@ export async function runProviderCompletionWithFallback(
     if (!assignedProvider || !assignedProvider.enabled || assignedProvider.lastTestStatus !== "success" || assignedProvider.lastTestedModel !== model || assignedProvider.archivedAt) {
       throw new Error("The assigned AI provider/model is no longer enabled and live-test verified. Re-test or reassign this employee before execution.");
     }
-    return runProviderCompletion(providerId, model, system, prompt, true);
+    const assignedCompletion = await runProviderCompletion(providerId, model, system, prompt, true);
+    return { ...assignedCompletion, providerId, model: assignedCompletion.model || model, fallbackUsed: false };
   }
   const traceId = randomUUID();
   const storedProviders: any[] = await AIProvider.find({}).select("+encryptedApiKey +apiKeyFingerprint").lean();

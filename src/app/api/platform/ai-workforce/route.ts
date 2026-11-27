@@ -693,6 +693,11 @@ export async function POST(request: NextRequest) {
       const agent = await AIAgent.findById(body.agentId);
       if (!agent) return NextResponse.json({ status: "error", message: "Agent not found." }, { status: 404 });
       agent.permissions = [...new Set(body.permissions as string[])];
+      agent.toolAllowlist = [...agent.permissions];
+      const readiness = evaluateAgentReadiness({ jobTitle: agent.jobTitle, department: agent.department, description: agent.description, responsibilities: agent.responsibilities, deliverables: agent.deliverables, systemInstructions: agent.systemInstructions, permissions: agent.permissions, toolAllowlist: agent.toolAllowlist, reportsToRole: agent.reportsToRole, reportsToAgentId: agent.reportsToAgentId, memoryConfig: agent.memoryConfig, executionConfig: agent.executionConfig, approvalRequirements: agent.approvalRequirements, performanceTargets: agent.performanceTargets, modelName: agent.modelName });
+      agent.operationalStatus = readiness.status;
+      agent.lastReadinessIssues = readiness.issues;
+      agent.lastReadinessCheckAt = new Date();
       await agent.save();
       await writePlatformAuditEvent({ actorType: "human", actorId, action: "ai.agent.permissions_updated", module: "ai-workforce", targetType: "AIAgent", targetId: String(agent._id), outcome: "success", metadata: { permissions: agent.permissions } });
       return NextResponse.json({ status: "ok", permissions: agent.permissions, message: "Agent tool permissions updated." });

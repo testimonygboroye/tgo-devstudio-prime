@@ -14,6 +14,7 @@ export interface AgentReadinessInput {
   approvalRequirements?: string[];
   performanceTargets?: Array<{ metric?: string; target?: number; unit?: string }>;
   modelName?: string;
+  providerVerified?: boolean;
 }
 export interface AgentReadinessResult {
   ready: boolean;
@@ -36,6 +37,7 @@ export function evaluateAgentReadiness(agent: AgentReadinessInput): AgentReadine
   if (!agent.approvalRequirements?.length) issues.push("Approval requirements are not defined.");
   if (!agent.performanceTargets?.length) issues.push("Performance monitoring targets are not defined.");
   if (!agent.modelName?.trim()) issues.push("No preferred model is configured.");
+  if (agent.providerVerified !== true) issues.push("No connection-tested AI provider is available for this employee.");
   if (!agent.permissions?.length || !agent.toolAllowlist?.length) issues.push("No role-specific operational tools and permissions are configured.");
   const notConfigured = !agent.jobTitle && !agent.department && !agent.description;
   return { ready: issues.length === 0, status: issues.length === 0 ? "ready" : notConfigured ? "not_configured" : "needs_review", issues };

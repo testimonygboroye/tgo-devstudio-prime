@@ -4,61 +4,7 @@ import { getServerSession } from "@/lib/auth/serverSession";
 import { connectToDatabase } from "@/lib/db";
 import PlatformNotification from "@/models/PlatformNotification";
 import PlatformAuditEvent from "@/models/PlatformAuditEvent";
-
-export const dynamic = "force-dynamic";
-
-async function founderSession() {
-  const session = await getServerSession();
-  if (!session) return { session: null, response: NextResponse.json({ error: "Authentication required." }, { status: 401 }) };
-  if (!session.role?.isFounderRole) return { session: null, response: NextResponse.json({ error: "Founder access required." }, { status: 403 }) };
-  return { session, response: null };
-}
-
-export async function GET(request: NextRequest) {
-  const auth = await founderSession();
-  if (auth.response) return auth.response;
-  if (!auth.session) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
-  await connectToDatabase();
-  const limitValue = Number(request.nextUrl.searchParams.get("limit") || 20);
-  const limit = Number.isFinite(limitValue) ? Math.min(50, Math.max(1, Math.floor(limitValue))) : 20;
-  const notifications = await PlatformNotification.find({ recipientId: auth.session.user._id })
-    .sort({ createdAt: -1 }).limit(limit)
-    .select("category title body href readAt createdAt").lean();
-  const unreadCount = await PlatformNotification.countDocuments({ recipientId: auth.session.user._id, readAt: { $exists: false } });
-  const response = NextResponse.json({
-    notifications: notifications.map((item) => ({
-      id: String(item._id), category: item.category, title: item.title, body: item.body,
-      href: item.href || null, readAt: item.readAt?.toISOString() || null, createdAt: item.createdAt.toISOString(),
-    })),
-    unreadCount,
-  });
-  response.headers.set("Cache-Control", "private, no-store, max-age=0");
-  return response;
-}
-
-export async function PATCH(request: NextRequest) {
-  const auth = await founderSession();
-  if (auth.response || !auth.session) return auth.response;
-  let body: { id?: unknown; markAllRead?: unknown };
-  try { body = await request.json(); } catch { return NextResponse.json({ error: "Invalid request body." }, { status: 400 }); }
-  await connectToDatabase();
-  const filter = { recipientId: auth.session.user._id, readAt: { $exists: false } };
-  let modifiedCount = 0;
-  if (body.markAllRead === true) {
-    const result = await PlatformNotification.updateMany(filter, { $set: { readAt: new Date() } });
-    modifiedCount = result.modifiedCount;
-  } else if (typeof body.id === "string" && Types.ObjectId.isValid(body.id)) {
-    const result = await PlatformNotification.updateOne({ _id: body.id, ...filter }, { $set: { readAt: new Date() } });
-    modifiedCount = result.modifiedCount;
-  } else {
-    return NextResponse.json({ error: "Provide a notification id or markAllRead: true." }, { status: 400 });
-  }
-  if (modifiedCount > 0) {
-    await PlatformAuditEvent.create({
-      actorType: "human", actorId: String(auth.session.user._id), actorLabel: auth.session.user.name,
-      action: body.markAllRead === true ? "notifications.mark_all_read" : "notification.mark_read",
-      module: "notifications", outcome: "success", metadata: { count: modifiedCount },
-    });
-  }
-  return NextResponse.json({ success: true, modifiedCount });
-}
+export const dynamic="force-dynamic";
+async function sessionAuth(){const session=await getServerSession();if(!session)return {session:null,response:NextResponse.json({error:"Authentication required."},{status:401})};return {session,response:null};}
+export async function GET(request:NextRequest){const auth=await sessionAuth();if(auth.response)return auth.response;if(!auth.session)return NextResponse.json({error:"Authentication required."},{status:401});await connectToDatabase();const p=request.nextUrl.searchParams;const n=Number(p.get("limit")||30);const limit=Number.isFinite(n)?Math.min(100,Math.max(1,Math.floor(n))):30;const state=p.get("state")||"all";const filter:Record<string,unknown>={recipientId:auth.session.user._id};if(state==="unread")filter.readAt={$exists:false};if(state==="action"){filter.requiresAction=true;filter.status="open";}if(state==="resolved")filter.status="resolved";const [items,unreadCount,actionRequiredCount,totalCount]=await Promise.all([PlatformNotification.find(filter).sort({createdAt:-1}).limit(limit).select("category title body href actionLabel priority requiresAction status readAt resolvedAt createdAt").lean(),PlatformNotification.countDocuments({recipientId:auth.session.user._id,readAt:{$exists:false},status:{$ne:"dismissed"}}),PlatformNotification.countDocuments({recipientId:auth.session.user._id,requiresAction:true,status:"open"}),PlatformNotification.countDocuments({recipientId:auth.session.user._id,status:{$ne:"dismissed"}})]);const response=NextResponse.json({notifications:items.map(x=>({id:String(x._id),category:x.category,title:x.title,body:x.body,href:x.href||null,actionLabel:x.actionLabel||"View details",priority:x.priority||"normal",requiresAction:Boolean(x.requiresAction),status:x.status||"open",readAt:x.readAt?.toISOString()||null,resolvedAt:x.resolvedAt?.toISOString()||null,createdAt:x.createdAt.toISOString()})),unreadCount,actionRequiredCount,totalCount});response.headers.set("Cache-Control","private, no-store, max-age=0");return response;}
+export async function PATCH(request:NextRequest){const auth=await sessionAuth();if(auth.response)return auth.response;if(!auth.session)return NextResponse.json({error:"Authentication required."},{status:401});let body:{id?:unknown;action?:unknown;markAllRead?:unknown};try{body=await request.json();}catch{return NextResponse.json({error:"Invalid request body."},{status:400});}await connectToDatabase();const recipientId=auth.session.user._id;let modifiedCount=0;let action="";if(body.markAllRead===true){const r=await PlatformNotification.updateMany({recipientId,readAt:{$exists:false},status:{$ne:"dismissed"}},{$set:{readAt:new Date()}});modifiedCount=r.modifiedCount;action="notifications.mark_all_read";}else if(typeof body.id==="string"&&Types.ObjectId.isValid(body.id)){const item=await PlatformNotification.findOne({_id:body.id,recipientId});if(!item)return NextResponse.json({error:"Notification not found."},{status:404});const op=String(body.action||"read");if(op==="read"){if(!item.readAt)item.readAt=new Date();}else if(op==="resolve"){item.status="resolved";item.resolvedAt=new Date();item.resolvedBy=String(recipientId);if(!item.readAt)item.readAt=new Date();}else if(op==="reopen"){item.status="open";item.resolvedAt=undefined;item.resolvedBy=undefined;}else if(op==="dismiss"){item.status="dismissed";if(!item.readAt)item.readAt=new Date();}else return NextResponse.json({error:"Unsupported notification action."},{status:400});await item.save();modifiedCount=1;action="notification."+op;}else return NextResponse.json({error:"Provide a notification id or markAllRead: true."},{status:400});if(modifiedCount)await PlatformAuditEvent.create({actorType:"human",actorId:String(recipientId),actorLabel:auth.session.user.name,action,module:"notifications",outcome:"success",metadata:{count:modifiedCount}});return NextResponse.json({success:true,modifiedCount});}

@@ -8,6 +8,7 @@ import User from "@/models/User";
 import SupportSettings from "@/models/SupportSettings";
 import {sendSupportNotification} from "@/lib/support/notifications";
 import { sendSupportWhatsAppToClient } from "@/lib/messaging/whatsappSync";
+import { notifyUser, notifyFounders } from "@/lib/platform/notifications";
 
 export const dynamic = "force-dynamic";
 function fail(error:string,status=400){return NextResponse.json({ok:false,error},{status});}
@@ -71,6 +72,60 @@ export async function PATCH(request:NextRequest){
     if(ticket.priority==="low"||ticket.priority==="normal")ticket.priority="high";
   }else return fail("Unsupported support action.");
   await ticket.save();
+  if(action==="reply"){
+    await notifyUser(ticket.clientId, {
+      category:"customer-support-reply",
+      title:"TGO Support replied",
+      body:"A support team member replied to "+ticket.reference+".",
+      href:"/client/support",
+      actionLabel:"Read support reply",
+      priority:"high",
+      requiresAction:true,
+      dedupeKey:"support-staff-reply:"+String(ticket._id)+":"+String(ticket.messages.length),
+      sourceType:"SupportTicket",
+      sourceId:String(ticket._id),
+    }).catch(error=>console.error("[Notifications] Client support reply notification failed:",error));
+  }
+  if(action==="assign"&&ticket.assignedTo){
+    await notifyUser(ticket.assignedTo, {
+      category:"support-assignment",
+      title:"Support ticket assigned to you",
+      body:"You have been assigned "+ticket.reference+".",
+      href:"/admin/support",
+      actionLabel:"Open assigned ticket",
+      priority:"high",
+      requiresAction:true,
+      dedupeKey:"support-assignment:"+String(ticket._id)+":"+String(ticket.assignedTo),
+      sourceType:"SupportTicket",
+      sourceId:String(ticket._id),
+    }).catch(error=>console.error("[Notifications] Staff support assignment notification failed:",error));
+  }
+  if(action==="escalate"){
+    await notifyFounders({
+      category:"support-escalation",
+      title:"Customer support ticket escalated",
+      body:ticket.reference+" has been escalated to level "+ticket.escalationLevel+".",
+      href:"/admin/support",
+      actionLabel:"Review escalation",
+      priority:"urgent",
+      requiresAction:true,
+      dedupeKey:"support-escalation:"+String(ticket._id)+":"+String(ticket.escalationLevel),
+      sourceType:"SupportTicket",
+      sourceId:String(ticket._id),
+    }).catch(error=>console.error("[Notifications] Support escalation notification failed:",error));
+  }
+  if(action==="update"&&["resolved","closed"].includes(ticket.status)){
+    await notifyUser(ticket.clientId, {
+      category:"customer-support-status",
+      title:"Your support request was updated",
+      body:ticket.reference+" is now "+ticket.status+".",
+      href:"/client/support",
+      actionLabel:"View support request",
+      priority:"normal",
+      sourceType:"SupportTicket",
+      sourceId:String(ticket._id),
+    }).catch(error=>console.error("[Notifications] Client support status notification failed:",error));
+  }
   let whatsappDelivery: { sent: boolean; reason?: string } | null = null;
   if(action==="reply"){
     const replyText = typeof body.message === "string" ? body.message.trim() : "";

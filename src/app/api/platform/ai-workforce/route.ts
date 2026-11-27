@@ -280,17 +280,6 @@ export async function POST(request: NextRequest) {
           continue;
         }
         const readiness = evaluateAgentReadiness({
-          jobTitle: definition.role, department: definition.department, description: definition.description,
-          responsibilities: definition.responsibilities, deliverables: definition.deliverables,
-          systemInstructions: definition.systemInstructions, permissions: definition.permissions,
-          toolAllowlist: definition.permissions, reportsToRole: definition.reportsToRole,
-          memoryConfig: { enabled: true, identityKey: buildAgentMemoryKey({ role: definition.role, department: definition.department }), sharedMemoryScopes: ["company-approved", "department-approved"] },
-          executionConfig: { maxConcurrentTasks: 1, timeoutSeconds: 120, maxDailyTokens: 100000 },
-          approvalRequirements: ["external_communications", "financial_actions", "production_changes", "permission_changes", "legal_or_hr_decisions"],
-          performanceTargets: [{ metric: "task_completion_rate", target: 90, unit: "percent" }, { metric: "human_rework_rate", target: 10, unit: "percent_max" }],
-          modelName,
-        });
-        const readiness = evaluateAgentReadiness({
           jobTitle: definition.role,
           department: definition.department,
           description: definition.description,

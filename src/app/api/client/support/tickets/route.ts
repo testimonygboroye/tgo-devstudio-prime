@@ -47,7 +47,7 @@ export async function POST(request:NextRequest){
     messages:[{senderId:session.user._id,senderType:"client",body:description,attachments:[],createdAt:now}],
   });
 
-  void notifyFounders({
+  await notifyFounders({
     category: "customer-support",
     title: "New customer support request",
     body: session.user.name + " opened " + ticket.reference + ": " + ticket.subject,
@@ -89,7 +89,7 @@ export async function PATCH(request:NextRequest){
     ticket.status="waiting_on_team";
     await ticket.save();
 
-    void notifyFounders({
+    await notifyFounders({
       category: "customer-support",
       title: "Customer replied to support",
       body: session.user.name + " replied to " + ticket.reference + ".",

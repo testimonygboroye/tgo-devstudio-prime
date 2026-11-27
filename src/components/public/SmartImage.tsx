@@ -18,7 +18,7 @@ export default function SmartImage({ src, alt, label, className = "", priority =
   const [failed, setFailed] = useState(false);
   if (!src || failed) return (
     <div className={"tgo-image-fallback " + className} role="img" aria-label={alt}>
-      <img src="/images/illustrations/brand-fallback.svg" alt="" aria-hidden="true" className="tgo-image-fallback-art" />
+      <svg viewBox="0 0 1200 800" role="presentation" aria-hidden="true" className="tgo-image-fallback-art"><rect width="1200" height="800" fill="#080D1B"/><circle cx="600" cy="400" r="255" fill="none" stroke="#5B2EE8" strokeWidth="7" opacity=".38"/><circle cx="600" cy="400" r="205" fill="none" stroke="#2EC5F0" strokeWidth="5" opacity=".32"/><circle cx="600" cy="400" r="155" fill="none" stroke="#5B2EE8" strokeWidth="4" opacity=".3"/><path d="m600 230 150 86v172l-150 86-150-86V316l150-86Z" fill="none" stroke="#5B2EE8" strokeWidth="7"/><path d="m600 315 76 44v88l-76 44-76-44v-88l76-44Z" fill="#2EC5F0" fillOpacity=".16" stroke="#2EC5F0" strokeWidth="4"/><path d="m524 359 76 44 76-44M600 403v88" stroke="#B9F1FF" strokeWidth="4"/><circle cx="600" cy="400" r="5" fill="#fff"/></svg>
       <div className="tgo-image-fallback-grid" aria-hidden="true" />
       <span className="tgo-image-fallback-mark" aria-hidden="true"><Sparkles size={20}/></span>
       <span className="tgo-image-fallback-caption">

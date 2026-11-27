@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { connectToDatabase } from "@/lib/db";
-import { notifyStaffWithPermission } from "@/lib/platform/notifications";
+import { notifyFounders } from "@/lib/platform/notifications";
 import { sendAdminPush } from "@/lib/push/server";
 import { getAdminBasePath } from "@/lib/adminPath";
 import JobOpening from "@/models/JobOpening";
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     resumePublicId,
   });
 
-  void notifyStaffWithPermission(CONTENT_TYPE, {
+  void notifyFounders({
     category: "recruitment-application",
     title: "New job application",
     body: application.applicantName + " applied for " + job.title + ".",

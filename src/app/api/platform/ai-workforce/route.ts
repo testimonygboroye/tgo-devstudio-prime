@@ -953,7 +953,7 @@ export async function POST(request: NextRequest) {
       if (!task) return NextResponse.json({ status: "error", message: "Task is not queued, was not approved, or is already running." }, { status: 409 });
       try {
         const agent = await AIAgent.findOne({ _id: task.agentId, enabled: true });
-        const providerVerified = Boolean(await AIProvider.exists({ enabled: true, lastTestStatus: "success", archivedAt: { $exists: false } }));
+        const providerVerified = agent ? Boolean(await getVerifiedAgentProvider(agent)) : false;
         if (!agent || agent.requiresApproval !== true || !providerVerified) throw new Error("Agent is disabled, has no connection-tested provider, or its approval policy is invalid. Complete the readiness review before execution.");
         const currentReadiness = evaluateAgentReadiness({ jobTitle: agent.jobTitle, department: agent.department, description: agent.description, responsibilities: agent.responsibilities, deliverables: agent.deliverables, systemInstructions: agent.systemInstructions, permissions: agent.permissions, toolAllowlist: agent.toolAllowlist, reportsToRole: agent.reportsToRole, reportsToAgentId: agent.reportsToAgentId, memoryConfig: agent.memoryConfig, executionConfig: agent.executionConfig, approvalRequirements: agent.approvalRequirements, performanceTargets: agent.performanceTargets, modelName: agent.modelName, providerVerified });
         if (!currentReadiness.ready || agent.operationalStatus !== "ready") throw new Error("Agent is not currently operationally ready: " + currentReadiness.issues.join(" "));

@@ -535,9 +535,9 @@ export async function POST(request: NextRequest) {
       await provider.save();
       // Retire only the provider connection. AI employees stay enabled and are no longer
       // associated with this provider; execution dynamically selects any healthy TGO provider.
-      const unbound = await AIAgent.updateMany({ providerId: provider._id }, { $unset: { providerId: 1 } });
+      const unbound = await AIAgent.updateMany({ providerId: provider._id }, { $unset: { providerId: 1 }, $set: { operationalStatus: "needs_review", lastReadinessCheckAt: new Date() }, $addToSet: { lastReadinessIssues: "The assigned AI provider was archived. Assign and connection-test another provider before resuming this employee." } });
       await writePlatformAuditEvent({ actorType: "human", actorId, actorLabel: session.user.name, action: "ai.provider.archived", module: "ai-workforce", targetType: "AIProvider", targetId: String(provider._id), outcome: "success", metadata: { provider: provider.provider, name: provider.name, agentsUnbound: unbound.modifiedCount, agentsDisabled: 0 } });
-      return NextResponse.json({ status: "ok", message: "Provider connection archived. AI employees remain enabled and independent; they can use any other active, verified TGO provider. TGO memories, projects, tasks and audit history are untouched." });
+      return NextResponse.json({ status: "ok", message: "Provider connection archived. AI employees remain disabled from new task execution until each is assigned a different connection-tested provider and passes readiness again. TGO memories, projects, tasks and audit history are untouched." });
     }
     if (body.action === "provider.enable" || body.action === "provider.disable") {
       const provider = await AIProvider.findById(body.providerId);
@@ -795,7 +795,7 @@ export async function POST(request: NextRequest) {
       if (!task) return NextResponse.json({ status: "error", message: "Task is not queued, was not approved, or is already running." }, { status: 409 });
       try {
         const agent = await AIAgent.findOne({ _id: task.agentId, enabled: true });
-        const providerVerified = Boolean(await AIProvider.exists({ enabled: true, lastTestStatus: "success", archivedAt: { $exists: false } }));
+        const providerVerified = agent ? Boolean(await getVerifiedAgentProvider(agent)) : false;
         if (!agent || agent.requiresApproval !== true || !providerVerified) throw new Error("Agent is disabled, has no connection-tested provider, or its approval policy is invalid. Complete the readiness review before execution.");
         const currentReadiness = evaluateAgentReadiness({ jobTitle: agent.jobTitle, department: agent.department, description: agent.description, responsibilities: agent.responsibilities, deliverables: agent.deliverables, systemInstructions: agent.systemInstructions, permissions: agent.permissions, toolAllowlist: agent.toolAllowlist, reportsToRole: agent.reportsToRole, reportsToAgentId: agent.reportsToAgentId, memoryConfig: agent.memoryConfig, executionConfig: agent.executionConfig, approvalRequirements: agent.approvalRequirements, performanceTargets: agent.performanceTargets, modelName: agent.modelName, providerVerified });
         if (!currentReadiness.ready || agent.operationalStatus !== "ready") throw new Error("Agent is not currently operationally ready: " + currentReadiness.issues.join(" "));

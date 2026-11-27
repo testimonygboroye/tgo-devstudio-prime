@@ -126,6 +126,10 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
   "Research Analyst": ["clients.read_summary", "projects.read_summary", "finance.summary.read"],
   "Intelligence Analyst": ["clients.read_summary", "projects.read_summary", "finance.summary.read", "integrations.status.read"],
   "UX Researcher": ["clients.read_summary", "projects.read_summary"],
+  "People Operations Manager": ["workforce.directory.read", "workforce.recruitment.read"],
+  "Recruitment Coordinator": ["workforce.recruitment.read"],
+  "Legal & Governance Manager": ["governance.contracts.read"],
+  "Contracts & Policy Specialist": ["governance.contracts.read"],
 };
 
 export function getAIRolePermissions(role: string): string[] {

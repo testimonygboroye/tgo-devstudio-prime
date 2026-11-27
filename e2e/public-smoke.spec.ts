@@ -365,10 +365,19 @@ test("every published URL in the XML sitemap returns a successful page", async (
   const sitemapUrls = [...xml.matchAll(/<loc>(.*?)<\/loc>/g)]
     .map(match => match[1].replace(/&amp;/g, "&").trim())
     .filter(Boolean);
-  const origin = new URL(String(test.info().project.use.baseURL || "https://tgo-devstudio-prime.vercel.app")).origin;
-  const internalUrls = [...new Set(sitemapUrls.filter(value => {
-    try { return new URL(value).origin === origin; } catch { return false; }
-  }))];
+  const baseUrl = new URL(String(test.info().project.use.baseURL || "https://tgo-devstudio-prime.vercel.app"));
+  const canonicalOrigin = new URL(process.env.SITE_URL || baseUrl.origin).origin;
+  const internalUrls = [...new Set(sitemapUrls
+    .filter(value => {
+      try {
+        const origin = new URL(value).origin;
+        return origin === baseUrl.origin || origin === canonicalOrigin;
+      } catch { return false; }
+    })
+    .map(value => {
+      const parsed = new URL(value);
+      return new URL(parsed.pathname + parsed.search, baseUrl).toString();
+    }))];
   expect(internalUrls.length).toBeGreaterThan(0);
   const failures: string[] = [];
   for (let index = 0; index < internalUrls.length; index += 8) {

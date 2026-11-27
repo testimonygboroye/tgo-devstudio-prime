@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ImageOff, Sparkles } from "lucide-react";
 
 const CLOUDINARY_WIDTHS = [320, 480, 640, 960, 1280, 1600] as const;
@@ -51,6 +51,14 @@ export default function SmartImage({ src, alt, label, className = "", priority =
   src?: string | null; alt: string; label?: string; className?: string; priority?: boolean; sizes?: string;
 }) {
   const [failed, setFailed] = useState(false);
+
+  // A component may be reused for a different record after its previous image
+  // failed. Reset the failure state when the source changes so the new source
+  // gets a chance to load on both Render and Vercel deployments.
+  useEffect(() => {
+    setFailed(false);
+  }, [src]);
+
   if (!src || failed) return <BrandedFallback alt={alt} label={label} className={className}/>;
   const isCloudinary = src.startsWith("https://res.cloudinary.com/") && src.includes("/image/upload/");
   const srcSet = isCloudinary

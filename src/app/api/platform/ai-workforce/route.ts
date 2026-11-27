@@ -37,7 +37,7 @@ import PaymentTransaction from "@/models/PaymentTransaction";
 import FinancialLedgerEntry from "@/models/FinancialLedgerEntry";
 import IntegrationConnection from "@/models/IntegrationConnection";
 import { readGitHubRepository, readGitHubFile, writeGitHubFile, createGitHubPullRequest } from "@/lib/ai/github-tools";
-import { getAIRoleBlueprint, getAIRolePermissions } from "@/lib/ai/role-blueprints";
+import { AI_ROLE_BLUEPRINT_NAMES, getAIRoleBlueprint, getAIRolePermissions } from "@/lib/ai/role-blueprints";
 import { parseGitHubCodeChangeResponse } from "@/lib/ai/github-code-change";
 import { buildAccessibleAIAgentFilter } from "@/lib/messaging/aiAgentAccess";
 import { evaluateAgentReadiness } from "@/lib/ai/agent-readiness";
@@ -198,7 +198,19 @@ export async function POST(request: NextRequest) {
         .lean();
       if (!positions.length) return NextResponse.json({ status: "error", message: "Create and activate workforce positions before provisioning AI role counterparts." }, { status: 409 });
       const positionsById = new Map(positions.map((position) => [String(position._id), position] as const));
-      const definitions = positions.map((position) => {
+      type ProvisionDefinition = {
+        positionId?: mongoose.Types.ObjectId;
+        name: string;
+        role: string;
+        department: string;
+        permissions: string[];
+        description: string;
+        responsibilities: string[];
+        deliverables: string[];
+        reportsToRole: string;
+        systemInstructions: string;
+      };
+      const definitions: ProvisionDefinition[] = positions.map((position) => {
         const department = String((position.departmentId as unknown as { name?: string })?.name || "General Operations");
         const blueprint = getAIRoleBlueprint(position.title, department);
         const reportingId = String((position as unknown as { reportsToPositionId?: unknown }).reportsToPositionId || "");
@@ -216,6 +228,131 @@ export async function POST(request: NextRequest) {
           systemInstructions: blueprint.systemInstructions,
         };
       });
+
+      // The role catalogue is the source of truth for AI roles. Active human
+      // Position records enrich matching roles with their real department and
+      // reporting line, but a missing human Position must not silently remove
+      // an approved AI role from the provisioned workforce.
+      const fallbackDepartments: Record<string, string> = {
+        "Chief Executive Officer": "Executive Office",
+        "Business Strategy Director": "Executive Office",
+        "Chief of Staff": "Executive Office",
+        "Founder AI Executive Partner": "Executive Office",
+        "Chief Technology Officer": "Technology & Engineering",
+        "DevOps Architect": "Technology & Engineering",
+        "Cloud Engineer": "Technology & Engineering",
+        "Software Engineer": "Technology & Engineering",
+        "Backend Engineer": "Technology & Engineering",
+        "Frontend Engineer": "Technology & Engineering",
+        "Mobile Engineer": "Technology & Engineering",
+        "Client Success Director": "Client Success",
+        "Account Manager": "Client Success",
+        "Client Onboarding Specialist": "Client Success",
+        "Customer Support Lead": "Client Success",
+        "Customer Support Specialist": "Client Success",
+        "Client Experience Specialist": "Client Success",
+        "Content Director": "Content & Marketing",
+        "Content Editor": "Content & Marketing",
+        "Marketing Director": "Content & Marketing",
+        "Marketing Specialist": "Content & Marketing",
+        "SEO Specialist": "Content & Marketing",
+        "Sales Director": "Sales & Partnerships",
+        "Business Development Manager": "Sales & Partnerships",
+        "Finance Manager": "Finance",
+        "Finance Analyst": "Finance",
+        "Accounts Officer": "Finance",
+        "Business Operations Manager": "Operations & Delivery",
+        "Project Manager": "Operations & Delivery",
+        "Project Operations Manager": "Operations & Delivery",
+        "Delivery Coordinator": "Operations & Delivery",
+        "Platform Operations Lead": "Operations & Delivery",
+        "Website Operations Lead": "Operations & Delivery",
+        "Web Operations Specialist": "Operations & Delivery",
+        "Legal & Governance Manager": "Governance & Risk",
+        "Contracts & Policy Specialist": "Governance & Risk",
+        "Security & Compliance Officer": "Governance & Risk",
+        "Privacy & Risk Analyst": "Governance & Risk",
+        "People Operations Manager": "People & Culture",
+        "Recruitment Coordinator": "People & Culture",
+        "Research Lead": "Research & Intelligence",
+        "Research Analyst": "Research & Intelligence",
+        "Intelligence Analyst": "Research & Intelligence",
+        "UX Researcher": "Research & Intelligence",
+        "Quality Assurance Lead": "Quality Assurance",
+        "QA Engineer": "Quality Assurance",
+        "Platform QA Specialist": "Quality Assurance",
+        "Public Experience QA Specialist": "Quality Assurance",
+        "Client Portal QA Specialist": "Quality Assurance",
+      };
+      const fallbackReporting: Record<string, string> = {
+        "Chief Executive Officer": "Founder",
+        "Business Strategy Director": "Chief Executive Officer",
+        "Chief of Staff": "Founder",
+        "Founder AI Executive Partner": "Founder",
+        "Chief Technology Officer": "Chief Executive Officer",
+        "DevOps Architect": "Chief Technology Officer",
+        "Cloud Engineer": "Chief Technology Officer",
+        "Software Engineer": "Chief Technology Officer",
+        "Backend Engineer": "Chief Technology Officer",
+        "Frontend Engineer": "Chief Technology Officer",
+        "Mobile Engineer": "Chief Technology Officer",
+        "Client Success Director": "Chief Executive Officer",
+        "Account Manager": "Client Success Director",
+        "Client Onboarding Specialist": "Client Success Director",
+        "Customer Support Lead": "Client Success Director",
+        "Customer Support Specialist": "Customer Support Lead",
+        "Client Experience Specialist": "Client Success Director",
+        "Content Director": "Marketing Director",
+        "Content Editor": "Content Director",
+        "Marketing Director": "Chief Executive Officer",
+        "Marketing Specialist": "Marketing Director",
+        "SEO Specialist": "Marketing Director",
+        "Sales Director": "Chief Executive Officer",
+        "Business Development Manager": "Sales Director",
+        "Finance Manager": "Chief Executive Officer",
+        "Finance Analyst": "Finance Manager",
+        "Accounts Officer": "Finance Manager",
+        "Business Operations Manager": "Chief Executive Officer",
+        "Project Manager": "Business Operations Manager",
+        "Project Operations Manager": "Business Operations Manager",
+        "Delivery Coordinator": "Project Manager",
+        "Platform Operations Lead": "Business Operations Manager",
+        "Website Operations Lead": "Platform Operations Lead",
+        "Web Operations Specialist": "Website Operations Lead",
+        "Legal & Governance Manager": "Chief Executive Officer",
+        "Contracts & Policy Specialist": "Legal & Governance Manager",
+        "Security & Compliance Officer": "Legal & Governance Manager",
+        "Privacy & Risk Analyst": "Security & Compliance Officer",
+        "People Operations Manager": "Chief Executive Officer",
+        "Recruitment Coordinator": "People Operations Manager",
+        "Research Lead": "Chief Executive Officer",
+        "Research Analyst": "Research Lead",
+        "Intelligence Analyst": "Research Lead",
+        "UX Researcher": "Research Lead",
+        "Quality Assurance Lead": "Chief Technology Officer",
+        "QA Engineer": "Quality Assurance Lead",
+        "Platform QA Specialist": "Quality Assurance Lead",
+        "Public Experience QA Specialist": "Quality Assurance Lead",
+        "Client Portal QA Specialist": "Quality Assurance Lead",
+      };
+      const provisionedRoles = new Set(definitions.map((definition) => definition.role));
+      for (const role of AI_ROLE_BLUEPRINT_NAMES) {
+        if (provisionedRoles.has(role)) continue;
+        const department = fallbackDepartments[role] || "General Operations";
+        const blueprint = getAIRoleBlueprint(role, department);
+        definitions.push({
+          name: ("AI " + role).slice(0, 100),
+          role,
+          department,
+          permissions: getAIRolePermissions(role),
+          description: blueprint.description,
+          responsibilities: blueprint.responsibilities,
+          deliverables: blueprint.deliverables,
+          reportsToRole: fallbackReporting[role] || "Founder / Department Leadership",
+          systemInstructions: blueprint.systemInstructions,
+        });
+        provisionedRoles.add(role);
+      }
 
       const workspaceIds = new Map<string, mongoose.Types.ObjectId>();
       for (const department of [...new Set(definitions.map((item) => item.department))]) {
@@ -235,7 +372,7 @@ export async function POST(request: NextRequest) {
       let createdCount = 0;
       let existingCount = 0;
       for (const definition of definitions) {
-        let existing = await AIAgent.findOne({ positionId: definition.positionId, createdBy: actorId, assignedUserId: { $exists: false } });
+        let existing = definition.positionId ? await AIAgent.findOne({ positionId: definition.positionId, createdBy: actorId, assignedUserId: { $exists: false } }) : null;
         if (!existing) existing = await AIAgent.findOne({ role: definition.role, department: definition.department, createdBy: actorId, assignedUserId: { $exists: false } });
         if (existing) {
           existing.positionId = definition.positionId;

@@ -50,6 +50,15 @@ export interface IAIAgent extends Document {
   enabled: boolean;
   disabledAt?: Date;
   createdBy: string;
+  jobDescription?: string;
+  responsibilities?: string[];
+  reportingToRole?: string;
+  operationalTools?: string[];
+  approvalPolicy?: { defaultRequired: boolean; sensitiveActions: string[]; autonomousActions: string[] };
+  memorySettings?: { enabled: boolean; scope: "role" | "private" | "shared"; retentionDays?: number; writeRequiresApproval: boolean };
+  performanceTargets?: { metric: string; target: string; reviewCadence: "daily" | "weekly" | "monthly" }[];
+  operatingStatus?: "draft" | "ready" | "paused" | "needs_review";
+  lastReadinessCheckAt?: Date;
 }
 const AIAgentSchema = new Schema<IAIAgent>({
   name: { type: String, required: true, trim: true, maxlength: 100 },
@@ -70,6 +79,15 @@ const AIAgentSchema = new Schema<IAIAgent>({
   enabled: { type: Boolean, default: false },
   disabledAt: { type: Date, default: undefined, index: true },
   createdBy: { type: String, required: true },
+  jobDescription: { type: String, default: "", maxlength: 5000 },
+  responsibilities: { type: [String], default: [] },
+  reportingToRole: { type: String, default: "Founder", maxlength: 120 },
+  operationalTools: { type: [String], default: [] },
+  approvalPolicy: { type: new Schema({ defaultRequired: { type: Boolean, default: true }, sensitiveActions: { type: [String], default: ["finance.payment", "finance.refund", "production.deploy", "access.permissions.change", "external.message.send"] }, autonomousActions: { type: [String], default: [] } }, { _id: false }), default: () => ({}) },
+  memorySettings: { type: new Schema({ enabled: { type: Boolean, default: true }, scope: { type: String, enum: ["role", "private", "shared"], default: "role" }, retentionDays: { type: Number, min: 1 }, writeRequiresApproval: { type: Boolean, default: true } }, { _id: false }), default: () => ({}) },
+  performanceTargets: { type: [new Schema({ metric: { type: String, required: true }, target: { type: String, required: true }, reviewCadence: { type: String, enum: ["daily", "weekly", "monthly"], default: "weekly" } }, { _id: false })], default: [] },
+  operatingStatus: { type: String, enum: ["draft", "ready", "paused", "needs_review"], default: "draft", index: true },
+  lastReadinessCheckAt: Date,
 }, { timestamps: true });
 AIAgentSchema.index({ department: 1, enabled: 1 });
 

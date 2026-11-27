@@ -372,7 +372,7 @@ export async function POST(request: NextRequest) {
           existing.name = (employeeName + " — AI " + position).slice(0, 100);
           existing.role = position; existing.department = department; existing.jobTitle = position;
           existing.description = privateDescription; existing.responsibilities = blueprint.responsibilities; existing.deliverables = blueprint.deliverables;
-          existing.reportsToRole = "Department Manager / Founder"; existing.workspaceId = workspaceId;
+          existing.reportsToRole = reportsToRole; existing.workspaceId = workspaceId;
           existing.positionId = positionDoc?._id || employee.positionId; existing.memoryKey = existing.memoryKey || memoryKey;
           existing.modelName = modelName; if (verifiedProvider?._id) existing.providerId = verifiedProvider._id as mongoose.Types.ObjectId;
           existing.systemInstructions = privateInstructions; existing.permissions = permissions; existing.toolAllowlist = permissions;
@@ -396,7 +396,7 @@ export async function POST(request: NextRequest) {
           responsibilities: blueprint.responsibilities,
           deliverables: blueprint.deliverables,
           jobTitle: position,
-          reportsToRole: "Department Manager / Founder",
+          reportsToRole,
           providerId: verifiedProvider?._id,
           permissions,
           toolAllowlist: permissions,

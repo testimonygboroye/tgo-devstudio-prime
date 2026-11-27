@@ -23,6 +23,9 @@ import DeliveryProject from "@/models/DeliveryProject";
 import DeliveryMilestone from "@/models/DeliveryMilestone";
 import DeliveryTask from "@/models/DeliveryTask";
 import ProjectDeliverable from "@/models/ProjectDeliverable";
+import JobOpening from "@/models/JobOpening";
+import JobApplication from "@/models/JobApplication";
+import CommercialContract from "@/models/CommercialContract";
 import Position from "@/models/Position";
 import Department from "@/models/Department"; // Registers the Department model before Position.departmentId populate().
 import FinanceSettings from "@/models/FinanceSettings";
@@ -809,7 +812,27 @@ export async function POST(request: NextRequest) {
         let generatedCodeCompletion: Awaited<ReturnType<typeof runProviderCompletionWithFallback>> | null = null;
         let generatedCodeSummary = "";
         let generatedCodePullRequestUrl = "";
-        if (task.operation === "clients.read_summary") {
+        if (task.operation === "workforce.directory.read") {
+          if (!agent.permissions.includes("workforce.directory.read")) throw new Error("Agent lacks workforce.directory.read permission.");
+          const records = await EmployeeProfile.find({ employmentStatus: "active", accessSuspendedByWorkforce: { $ne: true } })
+            .populate("userId", "name")
+            .populate("departmentId", "name")
+            .populate("positionId", "title")
+            .select("userId employeeCode departmentId positionId employmentStatus startDate")
+            .sort({ createdAt: -1 }).limit(200).lean();
+          operationResult = { activeEmployeeCount: records.length, employees: records.map((record: any) => ({ employeeCode: record.employeeCode, name: record.userId?.name || "Employee", department: record.departmentId?.name || "Unassigned", jobTitle: record.positionId?.title || "Unassigned", startDate: record.startDate })) };
+        } else if (task.operation === "workforce.recruitment.read") {
+          if (!agent.permissions.includes("workforce.recruitment.read")) throw new Error("Agent lacks workforce.recruitment.read permission.");
+          const [openings, applications] = await Promise.all([
+            JobOpening.find({ publishStatus: "published" }).select("title department employmentType locationType").sort({ updatedAt: -1 }).limit(100).lean(),
+            JobApplication.find({}).populate("jobOpening", "title department").select("applicantName status createdAt jobOpening").sort({ createdAt: -1 }).limit(100).lean(),
+          ]);
+          operationResult = { publishedOpenings: openings, applications: applications.map((item: any) => ({ applicantName: item.applicantName, status: item.status, appliedAt: item.createdAt, position: item.jobOpening?.title || "Position no longer available", department: item.jobOpening?.department || "" })) };
+        } else if (task.operation === "governance.contracts.read") {
+          if (!agent.permissions.includes("governance.contracts.read")) throw new Error("Agent lacks governance.contracts.read permission.");
+          const contracts = await CommercialContract.find({}).select("reference title status issuedAt acceptedAt clientId").sort({ updatedAt: -1 }).limit(100).lean();
+          operationResult = { contractCount: contracts.length, contracts };
+        } else if (task.operation === "clients.read_summary") {
           if (!agent.permissions.includes("clients.read_summary")) throw new Error("Agent lacks clients.read_summary permission.");
           const clientId = String(payload.clientId || "");
           if (!/^[a-f0-9]{24}$/i.test(clientId)) throw new Error("A valid client ID is required for this operation.");

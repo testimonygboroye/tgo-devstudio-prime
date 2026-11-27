@@ -8,6 +8,8 @@ import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import ClientActivity from "@/models/ClientActivity";
 import SupportSettings from "@/models/SupportSettings";
 import {sendSupportNotification} from "@/lib/support/notifications";
+import { notifyFounders } from "@/lib/platform/notifications";
+import { getAdminBasePath } from "@/lib/adminPath";
 
 export const dynamic = "force-dynamic";
 const CATEGORIES = ["General enquiry", "Project delivery", "Billing and payments", "Account access", "Technical issue", "Other"];
@@ -44,6 +46,19 @@ export async function POST(request:NextRequest){
     resolutionDueAt:new Date(now.getTime()+resolutionHours*3600000),
     messages:[{senderId:session.user._id,senderType:"client",body:description,attachments:[],createdAt:now}],
   });
+
+  void notifyFounders({
+    category: "customer-support",
+    title: "New customer support request",
+    body: session.user.name + " opened " + ticket.reference + ": " + ticket.subject,
+    href: getAdminBasePath() + "/support",
+    actionLabel: "Open support request",
+    priority: priority === "urgent" ? "urgent" : "high",
+    requiresAction: true,
+    dedupeKey: "support-ticket:" + String(ticket._id),
+    sourceType: "SupportTicket",
+    sourceId: String(ticket._id),
+  }).catch(error => console.error("[Notifications] New support ticket notification failed:", error));
   await Promise.all([
     writePlatformAuditEvent({actorType:"human",actorId:String(session.user._id),actorLabel:session.user.name,action:"support.ticket_created",module:"support",targetType:"support_ticket",targetId:String(ticket._id),outcome:"success",metadata:{reference:ticket.reference,category,priority}}),
     ClientActivity.create({clientId:session.user._id,actorId:session.user._id,actorType:"client",action:"client.support_ticket_created",summary:"Created support ticket "+ticket.reference,metadata:{ticketId:String(ticket._id)}}),
@@ -73,6 +88,19 @@ export async function PATCH(request:NextRequest){
     ticket.messages.push({senderId:session.user._id,senderType:"client",body:message,attachments:[],createdAt:now});
     ticket.status="waiting_on_team";
     await ticket.save();
+
+    void notifyFounders({
+      category: "customer-support",
+      title: "Customer replied to support",
+      body: session.user.name + " replied to " + ticket.reference + ".",
+      href: getAdminBasePath() + "/support",
+      actionLabel: "Read customer reply",
+      priority: "high",
+      requiresAction: true,
+      dedupeKey: "support-reply:" + String(ticket._id) + ":" + String(ticket.messages.length),
+      sourceType: "SupportTicket",
+      sourceId: String(ticket._id),
+    }).catch(error => console.error("[Notifications] Support reply notification failed:", error));
     await Promise.all([
       writePlatformAuditEvent({actorType:"human",actorId:String(session.user._id),actorLabel:session.user.name,action:"support.client_replied",module:"support",targetType:"support_ticket",targetId:String(ticket._id),outcome:"success",metadata:{reference:ticket.reference}}),
       ClientActivity.create({clientId:session.user._id,actorId:session.user._id,actorType:"client",action:"client.support_ticket_replied",summary:"Replied to support ticket "+ticket.reference,metadata:{ticketId:String(ticket._id)}}),

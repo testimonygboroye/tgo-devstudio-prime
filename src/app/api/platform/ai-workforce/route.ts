@@ -1079,7 +1079,7 @@ export async function POST(request: NextRequest) {
           notifyUser(task.requestedBy, {
             category: "ai-task-failed",
             title: "AI employee needs attention",
-            body: agent?.name + " could not complete: " + task.title,
+            body: "An AI employee could not complete: " + task.title,
             href: getAdminBasePath() + "/ai-workforce",
             actionLabel: "Review failed task",
             priority: "high",
@@ -1091,7 +1091,7 @@ export async function POST(request: NextRequest) {
           notifyFounders({
             category: "ai-task-failed",
             title: "AI workforce task failed",
-            body: agent?.name + " could not complete: " + task.title,
+            body: "An AI employee could not complete: " + task.title,
             href: getAdminBasePath() + "/ai-workforce",
             actionLabel: "Review failed task",
             priority: "high",

@@ -352,7 +352,6 @@ export async function POST(request: NextRequest) {
         const personId = person?._id || (employee.userId as unknown as mongoose.Types.ObjectId);
         if (!personId || !mongoose.isValidObjectId(String(personId))) continue;
         const existing = await AIAgent.findOne({ assignedUserId: personId });
-        if (existing) { counterpartExistingCount += 1; continue; }
         const department = String((employee.departmentId as unknown as { name?: string })?.name || "General Operations");
         const positionDoc = employee.positionId as unknown as { _id?: mongoose.Types.ObjectId; title?: string };
         const position = String(positionDoc?.title || "Team Member");
@@ -368,13 +367,36 @@ export async function POST(request: NextRequest) {
           workspaceIds.set(department, workspaceId);
         }
         const employeeName = String(person?.name || employee.employeeCode || "Employee").trim();
+        const permissions = getAIRolePermissions(position);
+        const memoryKey = buildAgentMemoryKey({ role: position, department, workspaceId, assignedUserId: personId });
+        const memoryConfig = { enabled: true, identityKey: memoryKey, sharedMemoryScopes: ["company-approved", "department-approved"], privateMemoryEnabled: true, retentionDays: 365 };
+        const executionConfig = { maxConcurrentTasks: 1, maxRetries: 2, timeoutSeconds: 120, maxDailyTokens: 50000, maxDailySpendNaira: 0, scheduleEnabled: false };
+        const approvalRequirements = ["external_communications", "financial_actions", "production_changes", "permission_changes", "legal_or_hr_decisions"];
+        const performanceTargets = [{ metric: "task_completion_rate", target: 90, unit: "percent" }, { metric: "human_rework_rate", target: 10, unit: "percent_max" }];
+        const privateDescription = "Private AI counterpart assigned to one active employee. " + blueprint.description;
+        const privateInstructions = blueprint.systemInstructions + "\n\nPRIVATE ASSIGNMENT: You are assigned exclusively to the real employee " + employeeName + ". Do not disclose their private information to another employee. This personal counterpart remains limited to the same role scope and approved tools.";
+        const readiness = evaluateAgentReadiness({ jobTitle: position, department, description: privateDescription, responsibilities: blueprint.responsibilities, deliverables: blueprint.deliverables, systemInstructions: privateInstructions, permissions, toolAllowlist: permissions, reportsToRole: "Department Manager / Founder", memoryConfig, executionConfig, approvalRequirements, performanceTargets, modelName });
+        if (existing) {
+          existing.name = (employeeName + " — AI " + position).slice(0, 100);
+          existing.role = position; existing.department = department; existing.jobTitle = position;
+          existing.description = privateDescription; existing.responsibilities = blueprint.responsibilities; existing.deliverables = blueprint.deliverables;
+          existing.reportsToRole = "Department Manager / Founder"; existing.workspaceId = workspaceId;
+          existing.positionId = positionDoc?._id || employee.positionId; existing.memoryKey = existing.memoryKey || memoryKey;
+          existing.modelName = modelName; if (verifiedProvider?._id) existing.providerId = verifiedProvider._id as mongoose.Types.ObjectId;
+          existing.systemInstructions = privateInstructions; existing.permissions = permissions; existing.toolAllowlist = permissions;
+          existing.approvalRequirements = approvalRequirements; existing.autonomyLevel = "approved_tasks";
+          existing.memoryConfig = memoryConfig; existing.executionConfig = executionConfig; existing.performanceTargets = performanceTargets;
+          existing.operationalStatus = readiness.status; existing.lastReadinessIssues = readiness.issues; existing.lastReadinessCheckAt = new Date();
+          existing.requiresApproval = true; existing.requiresHumanReview = true; existing.enabled = false;
+          await existing.save(); counterpartExistingCount += 1; continue;
+        }
         await AIAgent.create({
           name: (employeeName + " — AI " + position).slice(0, 100),
           role: position,
           department,
-          description: "Private AI counterpart assigned to one active employee. " + blueprint.description,
+          description: privateDescription,
           workspaceId,
-          memoryKey: buildAgentMemoryKey({ role: position, department, workspaceId, assignedUserId: personId }),
+          memoryKey,
           positionId: positionDoc?._id || employee.positionId,
           assignedUserId: personId,
           modelName,

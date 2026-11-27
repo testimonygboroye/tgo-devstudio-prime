@@ -8,3 +8,5 @@
 - No application code changed. Added a dated status report on `docs/engineering-status-20261127`.
 - No tests/builds were run locally; no deployment occurred.
 - Next: review current main for reproducible defects, keep Render and Vercel paths compatible, and track open PR decisions without merging automatically.
+
+- PR #87 status-report branch CI passed unit tests, lint, typecheck and production build; Semgrep also passed (runs 46016014705 and 46016014634). Browser E2E was skipped because no merged release was selected.

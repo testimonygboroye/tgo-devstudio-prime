@@ -168,7 +168,7 @@ export async function POST(
       visitorId,
     });
 
-  void notifyFounders({
+  await notifyFounders({
     category: "customer-enquiry",
     title: "New customer enquiry",
     body: submission.name + " submitted a " + submission.subject + " enquiry.",

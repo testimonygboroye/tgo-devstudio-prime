@@ -4,6 +4,7 @@ export interface PromotionalPriceInput {
   promotionPrice?: number;
   promotionStartsAt?: Date | string;
   promotionEndsAt?: Date | string;
+  promotionDescription?: string;
 }
 export interface ResolvedPrice {
   amount: number;
@@ -31,7 +32,7 @@ export function resolveCommercialPrice(input: PromotionalPriceInput, now = new D
     amount: active ? Number(input.promotionPrice) : Number(input.price),
     currencyAmountBeforePromotion: active ? Number(input.originalPrice ?? input.price) : null,
     promotionActive: active,
-    promotionDescription: "",
+    promotionDescription: active ? String(input.promotionDescription || "") : "",
     promotionStartsAt: starts,
     promotionEndsAt: ends,
   };

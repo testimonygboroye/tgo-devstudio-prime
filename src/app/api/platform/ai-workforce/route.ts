@@ -41,6 +41,8 @@ import { AI_ROLE_BLUEPRINT_NAMES, getAIRoleBlueprint, getAIRolePermissions } fro
 import { parseGitHubCodeChangeResponse } from "@/lib/ai/github-code-change";
 import { buildAccessibleAIAgentFilter } from "@/lib/messaging/aiAgentAccess";
 import { evaluateAgentReadiness } from "@/lib/ai/agent-readiness";
+import { notifyUser, notifyFounders } from "@/lib/platform/notifications";
+import { getAdminBasePath } from "@/lib/adminPath";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -1204,6 +1206,16 @@ export async function POST(request: NextRequest) {
         task.providerRequestId = completion.providerRequestId;
         task.completedAt = new Date();
         await task.save();
+        await notifyUser(task.requestedBy, {
+          category: "ai-task-completed",
+          title: "AI employee completed a task",
+          body: agent.name + " completed: " + task.title,
+          href: getAdminBasePath() + "/ai-workforce",
+          actionLabel: "Review AI result",
+          priority: "normal",
+          sourceType: "AITask",
+          sourceId: String(task._id),
+        }).catch((error) => console.error("[Notifications] AI task completion notification failed:", error));
         if (["communications", "ai_conversation", "whatsapp_ai_conversation"].includes(String(payload.source || "")) && mongoose.Types.ObjectId.isValid(String(payload.conversationId || ""))) {
           const conversation = await UnifiedConversation.findOne({ _id: String(payload.conversationId), memberIds: task.requestedBy });
           if (conversation) {
@@ -1221,6 +1233,32 @@ export async function POST(request: NextRequest) {
         task.error = isFounder ? technicalError : "The AI service is temporarily unavailable. Please retry later or contact the founder.";
         task.completedAt = new Date();
         await task.save();
+        await Promise.all([
+          notifyUser(task.requestedBy, {
+            category: "ai-task-failed",
+            title: "AI employee needs attention",
+            body: "An AI employee could not complete: " + task.title,
+            href: getAdminBasePath() + "/ai-workforce",
+            actionLabel: "Review failed task",
+            priority: "high",
+            requiresAction: true,
+            dedupeKey: "ai-task-failed:" + String(task._id),
+            sourceType: "AITask",
+            sourceId: String(task._id),
+          }),
+          notifyFounders({
+            category: "ai-task-failed",
+            title: "AI workforce task failed",
+            body: "An AI employee could not complete: " + task.title,
+            href: getAdminBasePath() + "/ai-workforce",
+            actionLabel: "Review failed task",
+            priority: "high",
+            requiresAction: true,
+            dedupeKey: "ai-task-failed-founder:" + String(task._id),
+            sourceType: "AITask",
+            sourceId: String(task._id),
+          }),
+        ]).catch((notificationError) => console.error("[Notifications] AI task failure notification failed:", notificationError));
         const failedPayload = (task.operationPayload || {}) as Record<string, unknown>;
         if (["communications", "ai_conversation", "whatsapp_ai_conversation"].includes(String(failedPayload.source || "")) && mongoose.Types.ObjectId.isValid(String(failedPayload.conversationId || ""))) {
           const conversation = await UnifiedConversation.findById(String(failedPayload.conversationId));

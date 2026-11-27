@@ -21,7 +21,7 @@ export const MARKET_BENCHMARK_RESEARCH: ResearchedMarketBenchmark[] = [
     serviceNames: ["Custom Business Website"],
     benchmark: {
       low: 150000, high: 2500000, typical: 1325000, currency: "NGN", checkedAt: "2026-11-27",
-      methodology: "Broad business-website comparison: the lower bound reflects a five-provider Nigerian entry business-site sample (₦150,000–₦500,000); the upper bound reflects a published Nigerian agency custom-designed business-site range (₦800,000–₦2,500,000+). The midpoint is a calculated range midpoint, not an observed average. Scope and page count must be matched before quoting.",
+      methodology: "Broad business-website comparison: the lower bound reflects a five-provider Nigerian entry business-site sample (₦150,000–₦500,000); the upper bound reflects a published Nigerian agency custom-designed business-site range (₦800,000–₦2,500,000+). The upper source tier is open-ended (₦2,500,000+), so the stored high value is not a hard ceiling. The midpoint is a calculated range midpoint, not an observed average. Scope and page count must be matched before quoting.",
       sources: [
         { label: "Etchpoint — What a Website Actually Costs in Nigeria (21 Aug 2026)", url: "https://etchpoint.com/what-a-website-costs/", note: "Reports ₦150,000–₦500,000 entry business-site prices across five Nigerian providers." },
         { label: "LineTech — Outsourcing Software Development in Nigeria (2026)", url: "https://www.linestech.com.ng/blog/outsourcing-software-development-in-nigeria/", note: "Reports ₦800,000–₦2,500,000+ for agency custom-designed business websites." },

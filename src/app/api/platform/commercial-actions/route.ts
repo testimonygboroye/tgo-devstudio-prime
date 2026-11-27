@@ -13,6 +13,7 @@ import ProjectQualityReview from "@/models/ProjectQualityReview";
 import ConsultationBooking from "@/models/ConsultationBooking";
 import ProjectChangeRequest from "@/models/ProjectChangeRequest";
 import { awardEngagementPoints } from "@/lib/engagement/award";
+import { notifyUser } from "@/lib/platform/notifications";
 function fail(message:string,status=400){return NextResponse.json({ok:false,error:message},{status});}
 function validId(value:unknown):value is string{return typeof value==="string"&&Types.ObjectId.isValid(value);}
 export async function POST(request:NextRequest){
@@ -32,6 +33,8 @@ export async function POST(request:NextRequest){
    if(!gate.allowed)return fail(`Release blocked: ${gate.reason}`,409);
    if(!milestone)return fail("Milestone not found.",404);
    item.status="released";item.releasedAt=new Date();await item.save();milestone.status="released";milestone.releasedAt=new Date();await milestone.save();
+   const deliveryProject=await DeliveryProject.findById(item.projectId).select("clientId reference");
+   if(deliveryProject?.clientId)await notifyUser(deliveryProject.clientId,{category:"project-deliverable",title:"A project deliverable is ready",body:"A new deliverable has been released for project "+(deliveryProject.reference||String(deliveryProject._id))+".",href:"/client/services",actionLabel:"View project deliverable",priority:"high",requiresAction:true,sourceType:"ProjectDeliverable",sourceId:String(item._id)}).catch(error=>console.error("[Notifications] Client deliverable notification failed:",error));
    await audit("delivery.progressive_release_completed","project_deliverable",String(item._id),{milestoneId:String(milestone._id)});
    return NextResponse.json({ok:true,item,message:"Deliverable released after all required gates passed."});
   }
@@ -40,7 +43,10 @@ export async function POST(request:NextRequest){
     if(!isFounder){const project=await DeliveryProject.findOne({_id:item.projectId,$or:[{projectManager:session.user._id},{teamMembers:session.user._id}]});if(!project)return fail("You are not assigned to this project.",403);}
    if(typeof body.status!=="string"||!["planned","active","in_qa","awaiting_payment","blocked","completed"].includes(body.status))return fail("Invalid milestone status.");
    if(body.status==="completed"&&item.status!=="released")return fail("A milestone can only be completed after its deliverables are released.");
-   item.status=body.status as typeof item.status;await item.save();await audit("delivery.milestone_status_changed","delivery_milestone",String(item._id),{status:item.status});return NextResponse.json({ok:true,item});
+   item.status=body.status as typeof item.status;await item.save();
+   const deliveryProject=await DeliveryProject.findById(item.projectId).select("clientId reference");
+   if(deliveryProject?.clientId&&["active","blocked","awaiting_payment","completed","released"].includes(item.status))await notifyUser(deliveryProject.clientId,{category:"project-milestone",title:"Project milestone updated",body:"A milestone for project "+(deliveryProject.reference||String(deliveryProject._id))+" is now "+item.status+".",href:"/client/services",actionLabel:"View project progress",priority:item.status==="blocked"?"high":"normal",requiresAction:item.status==="blocked",sourceType:"DeliveryMilestone",sourceId:String(item._id)}).catch(error=>console.error("[Notifications] Client milestone notification failed:",error));
+   await audit("delivery.milestone_status_changed","delivery_milestone",String(item._id),{status:item.status});return NextResponse.json({ok:true,item});
   }
   if(action==="project.update"){
     if(!isFounder)return fail("Only the founder can change the overall project lifecycle.",403);
@@ -51,7 +57,9 @@ export async function POST(request:NextRequest){
     if(tasks||milestones||deliverables)return fail("Completion blocked until all tasks, milestones and deliverables are complete.");
     project.completedAt=new Date();
    }else project.completedAt=undefined;
-   project.status=body.status as typeof project.status;await project.save();if(body.status==="completed"){await CommercialOrder.updateOne({_id:project.orderId},{$set:{status:"completed"}});if(project.clientId)await awardEngagementPoints({clientId:String(project.clientId),eventKey:"project-completed:"+String(project._id),eventType:"project_completed",metadata:{projectId:String(project._id),orderId:String(project.orderId)}});}
+   project.status=body.status as typeof project.status;await project.save();
+   if(project.clientId)await notifyUser(project.clientId,{category:"project-status",title:"Your project status changed",body:(project.reference||String(project._id))+" is now "+project.status+".",href:"/client/services",actionLabel:"View project",priority:["on_hold","awaiting_client"].includes(project.status)?"high":"normal",requiresAction:["awaiting_client"].includes(project.status),sourceType:"DeliveryProject",sourceId:String(project._id)}).catch(error=>console.error("[Notifications] Client project status notification failed:",error));
+   if(body.status==="completed"){await CommercialOrder.updateOne({_id:project.orderId},{$set:{status:"completed"}});if(project.clientId)await awardEngagementPoints({clientId:String(project.clientId),eventKey:"project-completed:"+String(project._id),eventType:"project_completed",metadata:{projectId:String(project._id),orderId:String(project.orderId)}});}
    await audit("delivery.project_status_changed","delivery_project",String(project._id),{status:project.status});return NextResponse.json({ok:true,item:project});
   }
   if(action==="consultation.update"){
@@ -63,7 +71,9 @@ export async function POST(request:NextRequest){
    const item=await ProjectChangeRequest.findById(String(body.id));if(!item)return fail("Change request not found.",404);if(!isFounder){const project=await DeliveryProject.findOne({_id:item.projectId,projectManager:session.user._id});if(!project)return fail("Only the project manager or founder can decide this change request.",403);}item.status=body.status as typeof item.status;item.decisionBy=session.user._id;item.decisionAt=new Date();if(body.impactOnCost!==undefined)item.impactOnCost=Math.max(0,Number(body.impactOnCost));if(body.impactOnDays!==undefined)item.impactOnDays=Math.max(0,Number(body.impactOnDays));await item.save();await audit("delivery.change_request_decided","project_change_request",String(item._id),{status:item.status});return NextResponse.json({ok:true,item});
   }
   if(action==="task.update"){
-   if(!validId(body.id)||typeof body.status!=="string"||!["todo","in_progress","blocked","in_review","done"].includes(body.status))return fail("Valid task and status are required.");const item=await DeliveryTask.findById(String(body.id));if(!item)return fail("Task not found.",404);if(!isFounder){const assigned=item.assigneeIds.some(id=>String(id)===String(session.user._id));const manager=await DeliveryProject.exists({_id:item.projectId,projectManager:session.user._id});if(!assigned&&!manager)return fail("You can only update tasks assigned to you or managed by you.",403);}item.status=body.status as typeof item.status;item.completedAt=body.status==="done"?new Date():undefined;await item.save();await audit("delivery.task_updated","delivery_task",String(item._id),{status:item.status});return NextResponse.json({ok:true,item});
+   if(!validId(body.id)||typeof body.status!=="string"||!["todo","in_progress","blocked","in_review","done"].includes(body.status))return fail("Valid task and status are required.");const item=await DeliveryTask.findById(String(body.id));if(!item)return fail("Task not found.",404);if(!isFounder){const assigned=item.assigneeIds.some(id=>String(id)===String(session.user._id));const manager=await DeliveryProject.exists({_id:item.projectId,projectManager:session.user._id});if(!assigned&&!manager)return fail("You can only update tasks assigned to you or managed by you.",403);}item.status=body.status as typeof item.status;item.completedAt=body.status==="done"?new Date():undefined;await item.save();
+   if(["done","blocked","in_review"].includes(item.status)){const deliveryProject=await DeliveryProject.findById(item.projectId).select("clientId reference");if(deliveryProject?.clientId)await notifyUser(deliveryProject.clientId,{category:"project-task",title:"Project task updated",body:"A task in "+(deliveryProject.reference||String(deliveryProject._id))+" is now "+item.status+".",href:"/client/services",actionLabel:"View project progress",priority:item.status==="blocked"?"high":"normal",requiresAction:item.status==="blocked",sourceType:"DeliveryTask",sourceId:String(item._id)}).catch(error=>console.error("[Notifications] Client task notification failed:",error));}
+   await audit("delivery.task_updated","delivery_task",String(item._id),{status:item.status});return NextResponse.json({ok:true,item});
   }
   if(action==="qa.review"){
    if(!validId(body.projectId)||!validId(body.deliverableId)||!Array.isArray(body.checklist)||!body.checklist.length)return fail("Project, deliverable and QA checklist are required.");

@@ -3,8 +3,6 @@
 import { useEffect, useState } from "react";
 import { ImageOff, Sparkles } from "lucide-react";
 
-const CLOUDINARY_WIDTHS = [320, 480, 640, 960, 1280, 1600] as const;
-
 function cloudinaryVariant(src: string, width: number) {
   if (!src.startsWith("https://res.cloudinary.com/")) return null;
   const marker = "/image/upload/";
@@ -12,7 +10,7 @@ function cloudinaryVariant(src: string, width: number) {
   return src.replace(marker, marker + `f_auto,q_auto:good,c_limit,w_${width}/`);
 }
 
-export default function SmartImage({ src, alt, label, className = "", priority = false, sizes = "100vw" }: {
+export default function SmartImage({ src, alt, label, className = "", priority = false }: {
   src?: string | null; alt: string; label?: string; className?: string; priority?: boolean; sizes?: string;
 }) {
   const [failed, setFailed] = useState(false);

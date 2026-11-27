@@ -20,6 +20,7 @@ import {
   PlugZap,
   Megaphone,
   Search,
+  PackageCheck,
 } from "lucide-react";
 
 interface AdminSidebarProps {

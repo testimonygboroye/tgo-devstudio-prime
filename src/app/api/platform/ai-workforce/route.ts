@@ -196,7 +196,8 @@ export async function POST(request: NextRequest) {
   try {
     if (body.action === "team.provision") {
       // Provision TGO AI employees independently of any particular inference provider.
-      const modelName = "";
+      const verifiedProvider = await AIProvider.findOne({ enabled: true, lastTestStatus: "success", archivedAt: { $exists: false } }).sort({ lastTestedAt: -1 }).lean();
+      const modelName = String(verifiedProvider?.lastTestedModel || "");
 
       const positions = await Position.find({ status: "active" })
         .populate("departmentId", "name")
@@ -251,7 +252,11 @@ export async function POST(request: NextRequest) {
           existing.description = definition.description;
           existing.responsibilities = definition.responsibilities;
           existing.deliverables = definition.deliverables;
-          existing.jobTitle = definition.role;\n          if (verifiedProvider?._id) existing.providerId = verifiedProvider._id as mongoose.Types.ObjectId;\n          existing.modelName = modelName;
+          existing.jobTitle = definition.role;
+          if (verifiedProvider?._id) existing.providerId = verifiedProvider._id as mongoose.Types.ObjectId;
+          existing.modelName = modelName;
+          if (verifiedProvider?._id) existing.providerId = verifiedProvider._id as mongoose.Types.ObjectId;
+          existing.modelName = modelName;
           existing.reportsToRole = definition.reportsToRole;
           existing.systemInstructions = definition.systemInstructions;
           existing.permissions = definition.permissions;
@@ -297,6 +302,7 @@ export async function POST(request: NextRequest) {
           memoryKey: buildAgentMemoryKey({ role: definition.role, department: definition.department, workspaceId: workspaceIds.get(definition.department) }),
           positionId: definition.positionId,
           modelName,
+          providerId: verifiedProvider?._id,
           systemInstructions: definition.systemInstructions,
           permissions: definition.permissions,
           toolAllowlist: definition.permissions,

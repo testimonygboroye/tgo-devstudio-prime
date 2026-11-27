@@ -135,12 +135,12 @@ export async function GET() {
     { $set: { enabled: true } },
   );
   if (legacyProviderActivation.modifiedCount > 0) {
-    const verifiedProvider = await AIProvider.findOne({ enabled: true, lastTestStatus: "success", archivedAt: { $exists: false } }).sort({ lastTestedAt: -1 }).lean();
+    const verifiedProvider = await AIProvider.findOne({ enabled: true, lastTestStatus: "success", lastTestedModel: { $type: "string", $ne: "" }, archivedAt: { $exists: false } }).sort({ lastTestedAt: -1 }).lean();
     await Promise.all((["public", "client", "admin"] as const).map((scope) =>
       AIChatbotConfig.findOneAndUpdate(
         { scope },
         { $set: { enabled: true }, $setOnInsert: {
-          scope, providerId: verifiedProvider?._id,
+          scope, providerId: verifiedProvider?._id && modelName ? verifiedProvider._id : undefined,
           modelName: verifiedProvider?.lastTestedModel || "",
           welcomeMessage: scope === "public" ? "Welcome to TGO DevStudio. How can I help?" : "Hello. How can I help?",
           updatedBy: new mongoose.Types.ObjectId(String(session.user._id)),
@@ -260,7 +260,8 @@ export async function POST(request: NextRequest) {
           existing.responsibilities = definition.responsibilities;
           existing.deliverables = definition.deliverables;
           existing.jobTitle = definition.role;
-          if (verifiedProvider?._id) existing.providerId = verifiedProvider._id as mongoose.Types.ObjectId;
+          if (verifiedProvider?._id && modelName) existing.providerId = verifiedProvider._id as mongoose.Types.ObjectId;
+          else existing.providerId = undefined;
           existing.modelName = modelName;
           existing.reportsToRole = definition.reportsToRole;
           existing.systemInstructions = definition.systemInstructions;
@@ -271,7 +272,7 @@ export async function POST(request: NextRequest) {
           existing.memoryConfig = { enabled: true, identityKey: existing.memoryKey || buildAgentMemoryKey({ role: definition.role, department: definition.department }), sharedMemoryScopes: ["company-approved", "department-approved"], privateMemoryEnabled: true, retentionDays: 365 };
           existing.executionConfig = { maxConcurrentTasks: 1, maxRetries: 2, timeoutSeconds: 120, maxDailyTokens: existing.maxDailyTokens || 100000, maxDailySpendNaira: 0, scheduleEnabled: false };
           existing.performanceTargets = [{ metric: "task_completion_rate", target: 90, unit: "percent" }, { metric: "human_rework_rate", target: 10, unit: "percent_max" }];
-          const readiness = evaluateAgentReadiness({ jobTitle: existing.jobTitle, department: existing.department, description: existing.description, responsibilities: existing.responsibilities, deliverables: existing.deliverables, systemInstructions: existing.systemInstructions, permissions: existing.permissions, toolAllowlist: existing.toolAllowlist, reportsToRole: existing.reportsToRole, memoryConfig: existing.memoryConfig, executionConfig: existing.executionConfig, approvalRequirements: existing.approvalRequirements, performanceTargets: existing.performanceTargets, modelName: existing.modelName, providerVerified: Boolean(verifiedProvider?._id) });
+          const readiness = evaluateAgentReadiness({ jobTitle: existing.jobTitle, department: existing.department, description: existing.description, responsibilities: existing.responsibilities, deliverables: existing.deliverables, systemInstructions: existing.systemInstructions, permissions: existing.permissions, toolAllowlist: existing.toolAllowlist, reportsToRole: existing.reportsToRole, memoryConfig: existing.memoryConfig, executionConfig: existing.executionConfig, approvalRequirements: existing.approvalRequirements, performanceTargets: existing.performanceTargets, modelName: existing.modelName, providerVerified: Boolean(verifiedProvider?._id && modelName) });
           existing.operationalStatus = readiness.status;
           existing.lastReadinessIssues = readiness.issues;
           existing.lastReadinessCheckAt = new Date();

@@ -1,10 +1,10 @@
 "use client";
-import {useEffect,useState} from "react";
+import {useCallback,useEffect,useState} from "react";
 type Service=Record<string,any>;
 const box="w-full rounded-xl border border-white/10 bg-[#0b1228] px-3 py-2.5 text-sm text-white";
 export default function CommercialCatalogueEditor(){const [items,setItems]=useState<Service[]>([]),[selected,setSelected]=useState<Service|null>(null),[packageJson,setPackageJson]=useState("[]"),[benchmarkJson,setBenchmarkJson]=useState('{"low":0,"high":0,"typical":0,"currency":"NGN","methodology":"","sources":[]}'),[busy,setBusy]=useState(false),[notice,setNotice]=useState("");
-async function load(){const r=await fetch("/api/platform/commercial?resource=services&limit=200",{cache:"no-store"});const d=await r.json();if(r.ok)setItems(d.items||[]);else setNotice(d.error||"Could not load services.");}
-useEffect(()=>{void load()},[]);
+const load=useCallback(async()=>{const r=await fetch("/api/platform/commercial?resource=services&limit=200",{cache:"no-store"});const d=await r.json();if(r.ok)setItems(d.items||[]);else setNotice(d.error||"Could not load services.");},[]);
+useEffect(()=>{void load()},[load]);
 function field(k:string,v:any){setSelected((s)=>s?({...s,[k]:v}):s)}
 function list(v:string){return v.split("\n").map(x=>x.trim()).filter(Boolean)}
 async function save(){if(!selected)return;setBusy(true);setNotice("");try{const packages=JSON.parse(packageJson);const marketBenchmark=JSON.parse(benchmarkJson);if(!Array.isArray(packages))throw new Error("Packages must be a JSON array.");if(!marketBenchmark||typeof marketBenchmark!=="object"||!Array.isArray(marketBenchmark.sources||[]))throw new Error("Market benchmark must be a valid JSON object with a sources array.");const payload={...selected,packages,marketBenchmark};const r=await fetch("/api/platform/commercial",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:selected._id?"service.update":"service.create",...payload,id:selected._id})});const d=await r.json();if(!r.ok)throw new Error(d.error||"Save failed");setNotice("Catalogue service saved.");setSelected(null);await load()}catch(e){setNotice(e instanceof Error?e.message:"Save failed")}finally{setBusy(false)}}

@@ -242,6 +242,7 @@ jobs:
           src/lib/ai/agent-readiness.ts
           src/lib/ai/role-blueprints.ts
           src/app/api/platform/ai-workforce/route.ts
+          src/components/admin/AIWorkforceManager.tsx
           src/lib/commercial/catalogue-slugs.ts
           'src/app/(public)/services/catalogue/family/[slug]/page.tsx'
           'src/app/(public)/services/catalogue/category/[slug]/page.tsx'

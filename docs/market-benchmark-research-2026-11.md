@@ -68,7 +68,7 @@ These are deliberately marked unverified rather than assigned invented prices. A
 7. LineTech pricing page, cloud and DevOps packages: https://www.linestech.com.ng/pricing/
 8. DPX Digital Network, “How Much Does It Cost to Build an App in Nigeria? (2026 Price Guide),” updated 25 November 2026: https://dpx.com.ng/app-development-cost-nigeria/
 9. Inventrium, “How Much Does Mobile App Development Cost in Nigeria? (2026 Price Guide),” last updated June 2026: https://www.inventrium.net/guides/mobile-app-development-cost-nigeria
-10. Nexoris, “Custom Software Development Cost in Nigeria 2026,” updated 1 October 2026: https://nexoristech.com/insights/custom-software-development-cost-nigeria/
+10. Nivarix, “Custom Software Development Cost in Nigeria 2026,” updated 1 October 2026: https://nexoristech.com/insights/custom-software-development-cost-nigeria/
 
 11. DigitalX, “UI/UX Design Packages,” published Nigerian project prices: https://www.digitalx.com.ng/uiux-design
 12. MZ Technologies, “UI/UX Design Pricing,” published Nigerian project prices: https://mztech.com.ng/ui-ux-design.html

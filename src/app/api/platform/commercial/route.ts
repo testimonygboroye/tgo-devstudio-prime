@@ -83,8 +83,9 @@ export async function POST(request:NextRequest) {
           skipped.push(research.serviceNames[0] + ": no exact catalogue service match");
           continue;
         }
-        if ((service.marketBenchmark?.sources || []).length > 0) {
-          skipped.push(service.name + ": existing benchmark evidence preserved");
+        const existingBenchmark = service.marketBenchmark;
+        if ((existingBenchmark?.sources || []).length > 0 || Number(existingBenchmark?.low || 0) > 0 || Number(existingBenchmark?.high || 0) > 0 || Number(existingBenchmark?.typical || 0) > 0) {
+          skipped.push(service.name + ": existing benchmark data preserved");
           continue;
         }
         service.marketBenchmark = { ...research.benchmark, checkedAt: new Date(research.benchmark.checkedAt) };

@@ -334,6 +334,12 @@ export async function POST(request: NextRequest) {
         "Public Experience QA Specialist": "Quality Assurance Lead",
         "Client Portal QA Specialist": "Quality Assurance Lead",
       };
+      for (const definition of definitions) {
+        if (definition.reportsToRole === "Founder / Department Leadership" && fallbackReporting[definition.role]) {
+          definition.reportsToRole = fallbackReporting[definition.role];
+        }
+      }
+
       const provisionedRoles = new Set(definitions.map((definition) => definition.role));
       for (const role of AI_ROLE_BLUEPRINT_NAMES) {
         if (provisionedRoles.has(role)) continue;

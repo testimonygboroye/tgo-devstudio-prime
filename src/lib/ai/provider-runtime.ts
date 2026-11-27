@@ -149,8 +149,8 @@ async function discoverProviderModels(provider: any): Promise<string[]> {
 
 /** TGO-wide model router: one global ranking across every verified provider/model. */
 export async function runProviderCompletionWithFallback(
-  _providerId: string,
-  _model: string,
+  providerId: string,
+  model: string,
   system: string,
   prompt: string,
   _scope: AIChatbotScope = "admin",

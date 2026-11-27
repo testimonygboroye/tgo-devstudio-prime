@@ -18,3 +18,12 @@ export async function notifyFounders(input:Omit<CreatePlatformNotificationInput,
  const users=await User.find({role:{$in:roles.map(role=>role._id)},accountType:"staff",isBanned:false}).select("_id").lean();
  return notifyUsers(users.map(user=>user._id),input);
 }
+
+export async function notifyPermissionHolders(contentTypeKey:string,input:Omit<CreatePlatformNotificationInput,"recipientId">){
+ await connectToDatabase();
+ const permissionPath=`contentPermissions.${contentTypeKey}.viewAnalytics`;
+ const roles=await Role.find({$or:[{isFounderRole:true},{[permissionPath]:true}]}).select("_id").lean();
+ if(!roles.length)return[];
+ const users=await User.find({role:{$in:roles.map(role=>role._id)},accountType:"staff",isBanned:false}).select("_id").lean();
+ return notifyUsers(users.map(user=>user._id),input);
+}

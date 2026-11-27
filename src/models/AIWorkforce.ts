@@ -29,49 +29,113 @@ const AIProviderSchema = new Schema<IAIProvider>({
   disabledAt: { type: Date, default: undefined, index: true },
 }, { timestamps: true });
 AIProviderSchema.index({ name: 1 }, { unique: true });
-// Atomic cross-provider duplicate-key protection. Archived providers release their key.
 AIProviderSchema.index({ apiKeyFingerprint: 1 }, { unique: true, partialFilterExpression: { apiKeyFingerprint: { $type: "string" }, archivedAt: { $exists: false } } });
 
 export interface IAIAgent extends Document {
   name: string;
   role: string;
   department: string;
+  jobTitle?: string;
   workspaceId?: Types.ObjectId;
   memoryKey?: string;
   positionId?: Types.ObjectId;
   assignedUserId?: Types.ObjectId;
+  reportsToAgentId?: Types.ObjectId;
+  reportsToRole?: string;
   description: string;
+  responsibilities: string[];
+  deliverables: string[];
   providerId?: Types.ObjectId;
   modelName: string;
+  fallbackModelNames: string[];
   systemInstructions: string;
   permissions: string[];
+  toolAllowlist: string[];
   requiresApproval: boolean;
+  approvalRequirements: string[];
+  autonomyLevel: "draft_only" | "approved_tasks" | "bounded";
+  memoryConfig: {
+    enabled: boolean;
+    identityKey: string;
+    sharedMemoryScopes: string[];
+    privateMemoryEnabled: boolean;
+    retentionDays: number;
+  };
+  executionConfig: {
+    maxConcurrentTasks: number;
+    maxRetries: number;
+    timeoutSeconds: number;
+    maxDailyTokens: number;
+    maxDailySpendNaira: number;
+    scheduleEnabled: boolean;
+  };
+  performanceTargets: Array<{ metric: string; target: number; unit: string }>;
+  operationalStatus: "not_configured" | "needs_review" | "ready" | "suspended";
+  lastReadinessCheckAt?: Date;
+  lastReadinessIssues: string[];
+  requiresHumanReview: boolean;
   maxDailyTokens: number;
   enabled: boolean;
   disabledAt?: Date;
   createdBy: string;
 }
+const MemoryConfigSchema = new Schema({
+  enabled: { type: Boolean, default: true },
+  identityKey: { type: String, maxlength: 300 },
+  sharedMemoryScopes: { type: [String], default: ["company-approved"] },
+  privateMemoryEnabled: { type: Boolean, default: true },
+  retentionDays: { type: Number, default: 365, min: 1, max: 3650 },
+}, { _id: false });
+const ExecutionConfigSchema = new Schema({
+  maxConcurrentTasks: { type: Number, default: 1, min: 1, max: 10 },
+  maxRetries: { type: Number, default: 2, min: 0, max: 10 },
+  timeoutSeconds: { type: Number, default: 120, min: 10, max: 900 },
+  maxDailyTokens: { type: Number, default: 100000, min: 5000, max: 1000000 },
+  maxDailySpendNaira: { type: Number, default: 0, min: 0 },
+  scheduleEnabled: { type: Boolean, default: false },
+}, { _id: false });
+const PerformanceTargetSchema = new Schema({
+  metric: { type: String, required: true, maxlength: 80 },
+  target: { type: Number, required: true },
+  unit: { type: String, required: true, maxlength: 40 },
+}, { _id: false });
 const AIAgentSchema = new Schema<IAIAgent>({
   name: { type: String, required: true, trim: true, maxlength: 100 },
   role: { type: String, required: true, maxlength: 100 },
   department: { type: String, required: true, maxlength: 100 },
+  jobTitle: { type: String, trim: true, maxlength: 120 },
   workspaceId: { type: Schema.Types.ObjectId, ref: "AIWorkspace" },
   memoryKey: { type: String, maxlength: 300, index: true },
   positionId: { type: Schema.Types.ObjectId, ref: "Position", index: true },
   assignedUserId: { type: Schema.Types.ObjectId, ref: "User", index: true },
-  description: { type: String, default: "", maxlength: 1000 },
-  // Legacy display hint only. Agents are not bound to a provider; runtime routes across all healthy TGO providers.
+  reportsToAgentId: { type: Schema.Types.ObjectId, ref: "AIAgent", index: true },
+  reportsToRole: { type: String, maxlength: 120 },
+  description: { type: String, default: "", maxlength: 2000 },
+  responsibilities: { type: [String], default: [] },
+  deliverables: { type: [String], default: [] },
   providerId: { type: Schema.Types.ObjectId, ref: "AIProvider", required: false, index: true },
   modelName: { type: String, default: "", maxlength: 120 },
-  systemInstructions: { type: String, required: true, maxlength: 12000 },
+  fallbackModelNames: { type: [String], default: [] },
+  systemInstructions: { type: String, required: true, maxlength: 20000 },
   permissions: { type: [String], default: [] },
+  toolAllowlist: { type: [String], default: [] },
   requiresApproval: { type: Boolean, default: true },
+  approvalRequirements: { type: [String], default: ["external_communications", "financial_actions", "production_changes", "permission_changes", "legal_or_hr_decisions"] },
+  autonomyLevel: { type: String, enum: ["draft_only", "approved_tasks", "bounded"], default: "draft_only" },
+  memoryConfig: { type: MemoryConfigSchema, default: () => ({}) },
+  executionConfig: { type: ExecutionConfigSchema, default: () => ({}) },
+  performanceTargets: { type: [PerformanceTargetSchema], default: [] },
+  operationalStatus: { type: String, enum: ["not_configured", "needs_review", "ready", "suspended"], default: "not_configured", index: true },
+  lastReadinessCheckAt: Date,
+  lastReadinessIssues: { type: [String], default: [] },
+  requiresHumanReview: { type: Boolean, default: true },
   maxDailyTokens: { type: Number, default: 100000, min: 5000, max: 1000000 },
   enabled: { type: Boolean, default: false },
   disabledAt: { type: Date, default: undefined, index: true },
   createdBy: { type: String, required: true },
 }, { timestamps: true });
 AIAgentSchema.index({ department: 1, enabled: 1 });
+AIAgentSchema.index({ operationalStatus: 1, department: 1 });
 
 export interface AITask extends Document {
   agentId: Types.ObjectId;

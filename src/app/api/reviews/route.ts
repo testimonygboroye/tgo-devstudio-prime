@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { connectToDatabase } from "@/lib/db";
+import { notifyFounders } from "@/lib/platform/notifications";
 import { sendAdminPush } from "@/lib/push/server";
 import { getAdminBasePath } from "@/lib/adminPath";
 import Review from "@/models/Review";
@@ -171,6 +172,19 @@ export async function POST(request: NextRequest) {
     targetLabelSnapshot,
     customLabel: targetRequiresCustomLabel(resolvedTargetType) ? customLabel!.trim() : undefined,
   });
+
+  await notifyFounders({
+    category: "testimonial-review",
+    title: "New testimonial awaiting moderation",
+    body: review.submitterName + " submitted a " + review.rating + "-star review.",
+    href: getAdminBasePath() + "/reviews",
+    actionLabel: "Moderate testimonial",
+    priority: "high",
+    requiresAction: true,
+    dedupeKey: "review-submission:" + review._id.toString(),
+    sourceType: "Review",
+    sourceId: review._id.toString(),
+  }).catch((error) => console.error("[Notifications] Review notification failed:", error));
 
   const finalLabel = targetRequiresCustomLabel(resolvedTargetType)
     ? review.customLabel!

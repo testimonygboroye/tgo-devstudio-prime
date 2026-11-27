@@ -9,6 +9,7 @@ import SupportSettings from "@/models/SupportSettings";
 import {sendSupportNotification} from "@/lib/support/notifications";
 import { sendSupportWhatsAppToClient } from "@/lib/messaging/whatsappSync";
 import { notifyUser, notifyFounders } from "@/lib/platform/notifications";
+import { getAdminBasePath } from "@/lib/adminPath";
 
 export const dynamic = "force-dynamic";
 function fail(error:string,status=400){return NextResponse.json({ok:false,error},{status});}
@@ -91,7 +92,7 @@ export async function PATCH(request:NextRequest){
       category:"support-assignment",
       title:"Support ticket assigned to you",
       body:"You have been assigned "+ticket.reference+".",
-      href:"/admin/support",
+      href:getAdminBasePath()+"/support",
       actionLabel:"Open assigned ticket",
       priority:"high",
       requiresAction:true,
@@ -105,7 +106,7 @@ export async function PATCH(request:NextRequest){
       category:"support-escalation",
       title:"Customer support ticket escalated",
       body:ticket.reference+" has been escalated to level "+ticket.escalationLevel+".",
-      href:"/admin/support",
+      href:getAdminBasePath()+"/support",
       actionLabel:"Review escalation",
       priority:"urgent",
       requiresAction:true,

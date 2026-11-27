@@ -29,23 +29,49 @@ for (const route of publicRoutes) {
   });
 }
 
-test("commercial catalogue contains all 21 distinct service lines and package prices", async ({ page }) => {
+test("commercial catalogue exposes all published services and packages through its family hierarchy", async ({ page }) => {
   await page.goto("/services/catalogue", { waitUntil: "domcontentloaded" });
-  const cards = page.locator(".catalogue-card");
-  await expect(cards).toHaveCount(21);
-  await expect(page.getByRole("heading", { name: "AI Solutions & Intelligent Automation" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Software Maintenance & Managed Support" })).toBeVisible();
-  const serviceNames = await cards.locator("h2, h3").allTextContents();
-  expect(new Set(serviceNames.map(name => name.trim())).size).toBe(21);
-  const packages = page.locator(".catalogue-package");
-  await expect(packages).toHaveCount(62);
-  await expect(page.locator(".catalogue-billing-label").filter({ hasText: "/ month" })).toHaveCount(5);
-  await expect(page.locator(".catalogue-billing-label").filter({ hasText: "Custom scope" })).toHaveCount(55);
-  const prices = await packages.locator("strong").allTextContents();
-  expect(prices).toHaveLength(62);
-  expect(prices.every(price => /₦|NGN/.test(price))).toBe(true);
-  const descriptions = await packages.locator("p").allTextContents();
-  expect(descriptions.every(description => description.trim().length > 20)).toBe(true);
+  const familyLinks = page.locator('a[href^="/services/catalogue/family/"]');
+  await expect(familyLinks.first()).toBeVisible();
+  const familyHrefs = await familyLinks.evaluateAll(links => links.map(link => (link as HTMLAnchorElement).getAttribute("href")).filter((href): href is string => Boolean(href)));
+  const categoryHrefs = new Set<string>();
+  for (const href of familyHrefs) {
+    await page.goto(href, { waitUntil: "domcontentloaded" });
+    const categoryLinks = page.locator('a[href^="/services/catalogue/category/"]');
+    const links = await categoryLinks.evaluateAll(items => items.map(link => (link as HTMLAnchorElement).getAttribute("href")).filter((value): value is string => Boolean(value)));
+    links.forEach(link => categoryHrefs.add(link));
+  }
+  expect(categoryHrefs.size).toBeGreaterThan(0);
+
+  const serviceNames: string[] = [];
+  const summaries: string[] = [];
+  const packageLabels: string[] = [];
+  const billingModels: Array<string | null> = [];
+  for (const href of categoryHrefs) {
+    await page.goto(href, { waitUntil: "domcontentloaded" });
+    const cards = page.locator(".catalogue-service-card");
+    await expect(cards.first()).toBeVisible();
+    for (let index = 0; index < await cards.count(); index += 1) {
+      const card = cards.nth(index);
+      serviceNames.push((await card.locator("h2").innerText()).trim());
+      summaries.push((await card.locator("p").first().innerText()).trim());
+      const packages = card.locator(".catalogue-package");
+      for (let packageIndex = 0; packageIndex < await packages.count(); packageIndex += 1) {
+        const item = packages.nth(packageIndex);
+        packageLabels.push((await item.innerText()).trim());
+        billingModels.push(await item.getAttribute("data-billing-model"));
+      }
+    }
+  }
+  expect(serviceNames).toHaveLength(21);
+  expect(new Set(serviceNames).size).toBe(21);
+  expect(serviceNames).toContain("AI Solutions & Intelligent Automation");
+  expect(serviceNames).toContain("Software Maintenance & Managed Support");
+  expect(packageLabels).toHaveLength(62);
+  expect(packageLabels.every(label => /₦|NGN|Custom quote/.test(label))).toBe(true);
+  expect(billingModels.filter(model => model === "monthly")).toHaveLength(5);
+  expect(billingModels.filter(model => model === "custom")).toHaveLength(55);
+  expect(summaries.every(summary => summary.length > 20)).toBe(true);
 });
 
 test("public capabilities are deduplicated and expanded", async ({ page }) => {

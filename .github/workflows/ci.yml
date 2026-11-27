@@ -239,6 +239,12 @@ jobs:
           src/models/TeamMember.ts
           src/lib/db.ts
           src/lib/ai/chatbot-runtime.ts
+          src/lib/ai/agent-readiness.ts
+          src/lib/ai/role-blueprints.ts
+          src/app/api/platform/ai-workforce/route.ts
+          src/lib/commercial/catalogue-slugs.ts
+          'src/app/(public)/services/catalogue/family/[slug]/page.tsx'
+          'src/app/(public)/services/catalogue/category/[slug]/page.tsx'
           src/lib/integrations/credentials.ts
           src/app/api/platform/integrations/test/route.ts
           src/app/api/platform/integrations/google/authorize/route.ts
@@ -309,7 +315,7 @@ jobs:
           BASE_URL: ${{ inputs.base_url || vars.TGO_E2E_BASE_URL || env.SITE_URL || 'https://tgo-devstudio-prime.onrender.com' }}
 
       - name: Run browser E2E against Vercel production
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: npx playwright test
         env:
           BASE_URL: https://tgo-devstudio-prime.vercel.app

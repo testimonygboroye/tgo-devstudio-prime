@@ -32,7 +32,7 @@ export const MARKET_BENCHMARK_RESEARCH: ResearchedMarketBenchmark[] = [
     serviceNames: ["Custom Web Application"],
     benchmark: {
       low: 1500000, high: 10000000, typical: 5750000, currency: "NGN", checkedAt: "2026-11-27",
-      methodology: "Published Nigerian planning range for custom web application projects. Covers focused tools through complex platforms; the midpoint is arithmetic only and must not be treated as a market mean. Multi-role workflows, payment integrations, security, data migration and scale change the quote materially.",
+      methodology: "Published Nigerian planning range for custom web application projects. Covers focused tools through complex platforms. The source reports an open-ended ₦10,000,000+ upper tier, so ₦10,000,000 is not a ceiling. The midpoint is arithmetic only and must not be treated as a market mean. Multi-role workflows, payment integrations, security, data migration and scale change the quote materially.",
       sources: [
         { label: "LineTech — Custom Web Application Development in Nigeria (2026)", url: "https://www.linestech.com.ng/blog/custom-web-application-development-in-nigeria/", note: "Reports ₦1,500,000–₦10,000,000+ by scope tier." },
         { label: "Nivarix — Custom Software Development Cost in Nigeria (28 Sep 2026)", url: "https://nivarix.com/insights/custom-software-development-cost-nigeria", note: "Reports focused tools at ₦1.5m–₦6m and business web applications at ₦6m–₦20m." },
@@ -53,7 +53,7 @@ export const MARKET_BENCHMARK_RESEARCH: ResearchedMarketBenchmark[] = [
   {
     serviceNames: ["Software Maintenance & Managed Support"],
     benchmark: {
-      low: 50000, high: 400000, typical: 225000, currency: "NGN", checkedAt: "2026-11-27",
+      low: 50000, high: 350000, typical: 200000, currency: "NGN", checkedAt: "2026-11-27",
       methodology: "Monthly Nigerian software-support retainer range for basic through standard support. The midpoint is arithmetic only, not a market average. 24/7 coverage, infrastructure operations, guaranteed response times and dedicated engineering capacity may exceed this band and must be quoted separately.",
       sources: [
         { label: "LineTech — Software Maintenance Costs in Nigeria (2026)", url: "https://www.linestech.com.ng/blog/software-maintenance-costs-in-nigeria/", note: "Lists basic support at ₦50,000–₦120,000/month and standard retainers at ₦120,000–₦350,000/month; managed service at ₦350,000–₦900,000+." },

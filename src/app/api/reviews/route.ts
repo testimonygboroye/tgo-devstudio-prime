@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { connectToDatabase } from "@/lib/db";
-import { notifyStaffWithPermission } from "@/lib/platform/notifications";
+import { notifyFounders } from "@/lib/platform/notifications";
 import { sendAdminPush } from "@/lib/push/server";
 import { getAdminBasePath } from "@/lib/adminPath";
 import Review from "@/models/Review";
@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
     customLabel: targetRequiresCustomLabel(resolvedTargetType) ? customLabel!.trim() : undefined,
   });
 
-  void notifyStaffWithPermission(CONTENT_TYPE, {
+  void notifyFounders({
     category: "testimonial-review",
     title: "New testimonial awaiting moderation",
     body: review.submitterName + " submitted a " + review.rating + "-star review.",

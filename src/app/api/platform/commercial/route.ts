@@ -97,7 +97,7 @@ export async function POST(request:NextRequest) {
     if(action==="service.update") {
       if(!validId(body.id))return fail("Valid service id required.");
       const service=await CommercialService.findById(body.id);if(!service)return fail("Service not found.",404);
-      for(const key of ["name","family","familySlug","category","categorySlug","summary","description","problemSolved","useCases","targetCustomers","scope","technologies","process","deliverables","exclusions","estimatedTimeline","marketBenchmark","status","pricingModel","currency","packages","customRequestEnabled","consultationEnabled","deliveryTemplate"])if(body[key]!==undefined)service.set(key,body[key]); service.version += 1;
+      for(const key of ["name","slug","family","familySlug","category","categorySlug","summary","description","problemSolved","useCases","targetCustomers","scope","technologies","process","deliverables","exclusions","estimatedTimeline","marketBenchmark","status","pricingModel","currency","packages","customRequestEnabled","consultationEnabled","deliveryTemplate"])if(body[key]!==undefined)service.set(key,body[key]); service.version += 1;
       await service.save();await audit(session,"commercial.service_updated","commercial_service",String(service._id),{fields:Object.keys(body)});
       return NextResponse.json({ok:true,item:service});
     }

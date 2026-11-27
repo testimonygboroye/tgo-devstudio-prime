@@ -187,6 +187,33 @@ export async function handleAIChat(request:NextRequest,scope:Scope,method:"GET"|
  row.messages.push(userMessage);
  row.dailyRequests+=1;
  await row.save();
+ if (scope === "public" && /price|package|pricing|how much|cost/i.test(question)) {
+  const requested = [
+    { service: "Custom Business Website", packageName: "Launch" },
+    { service: "Custom Web Application", packageName: "Application MVP" },
+    { service: "AI Solutions & Intelligent Automation", packageName: "Knowledge Assistant" },
+    { service: "Software Maintenance & Managed Support", packageName: "Essential Care" },
+  ];
+  const services = (context.data as { commercialServices?: Array<{ name: string; packages?: Array<{ name: string; summary?: string; price: number; currency: string; billingModel: string; features?: string[] }> }> }).commercialServices || [];
+  const rows = requested.map(item => {
+    const service = services.find(entry => entry.name.toLowerCase() === item.service.toLowerCase());
+    const pkg = service?.packages?.find(entry => entry.name.toLowerCase() === item.packageName.toLowerCase());
+    return service && pkg && Number.isFinite(Number(pkg.price)) && Number(pkg.price) > 0 ? { ...item, service, pkg } : null;
+  });
+  if (rows.every((row): row is NonNullable<typeof row> => Boolean(row))) {
+    const money = (value: number, currency: string) => new Intl.NumberFormat("en-NG", { style: "currency", currency: currency || "NGN", maximumFractionDigits: 0 }).format(value);
+    const answer = "Published catalogue lookup — these are the current prices stored in TGO DevStudio's published service catalogue:\n\n" + rows.map(row => {
+      const period = row.pkg.billingModel === "monthly" ? " per month" : row.pkg.billingModel === "hourly" ? " per hour" : row.pkg.billingModel === "custom" ? " (scoped quotation)" : " one-time";
+      const inclusions = (row.pkg.features || []).slice(0, 4);
+      return row.service.name + " — " + row.pkg.name + ": " + money(Number(row.pkg.price), row.pkg.currency) + period + (inclusions.length ? "\nIncludes: " + inclusions.join("; ") : "");
+    }).join("\n\n") + "\n\nPrices are retrieved directly from the published catalogue; the final scope and any optional add-ons are confirmed before an order is placed.";
+    const assistantMessage = { messageId: randomUUID(), role: "assistant" as const, content: answer.slice(0, 8000), inputTokens: 0, outputTokens: 0, sources: context.sources.slice(0, 20), createdAt: new Date() };
+    row.messages.push(assistantMessage);
+    if (row.messages.length > 80) row.messages = row.messages.slice(-80);
+    await row.save();
+    return attachPublicCookie(json({ message: assistantMessage, sources: context.sources.slice(0, 20), usage: { inputTokens: 0, outputTokens: 0, catalogueLookup: true } }), scope, token);
+  }
+}
  const providerFailures: Array<{ providerId: string; modelName: string; error: string }> = [];
  try{
   // All assistant scopes use the same TGO-wide global ranking. Stored primary/fallback

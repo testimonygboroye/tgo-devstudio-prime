@@ -15,7 +15,7 @@ describe("AI employee operational readiness", () => {
       memoryConfig: { enabled: true, identityKey: "tgo-role:marketing:director", sharedMemoryScopes: ["company-approved"] },
       executionConfig: { maxConcurrentTasks: 1, timeoutSeconds: 120, maxDailyTokens: 50000 },
       approvalRequirements: ["external_communications"], performanceTargets: [{ metric: "completion", target: 90, unit: "percent" }],
-      modelName: "configured-model",
+      modelName: "configured-model", providerVerified: true,
     });
     expect(result.ready).toBe(true);
     expect(result.status).toBe("ready");

@@ -116,16 +116,10 @@ export async function GET() {
   // successful founder-tested providers and permission-free AI employees were left
   // disabled by the old defaults. Promote only those legacy records. New manual
   // disables are stamped with disabledAt and are never overridden by this migration.
-  const [legacyProviderActivation, legacyAgentActivation] = await Promise.all([
-    AIProvider.updateMany(
-      { enabled: false, lastTestStatus: "success", lastTestedAt: { $exists: true }, archivedAt: { $exists: false }, disabledAt: { $exists: false } },
-      { $set: { enabled: true } },
-    ),
-    AIAgent.updateMany(
-      { enabled: false, disabledAt: { $exists: false }, $or: [{ permissions: { $size: 0 } }, { permissions: { $exists: false } }] },
-      { $set: { enabled: true, requiresApproval: true } },
-    ),
-  ]);
+  const legacyProviderActivation = await AIProvider.updateMany(
+    { enabled: false, lastTestStatus: "success", lastTestedAt: { $exists: true }, archivedAt: { $exists: false }, disabledAt: { $exists: false } },
+    { $set: { enabled: true } },
+  );
   if (legacyProviderActivation.modifiedCount > 0) {
     const verifiedProvider = await AIProvider.findOne({ enabled: true, lastTestStatus: "success", archivedAt: { $exists: false } }).sort({ lastTestedAt: -1 }).lean();
     await Promise.all((["public", "client", "admin"] as const).map((scope) =>
@@ -142,10 +136,6 @@ export async function GET() {
     ));
     await writePlatformAuditEvent({ actorType: "human", actorId: String(session.user._id), actorLabel: session.user.name, action: "ai.legacy_verified_providers_activated", module: "ai-workforce", targetType: "AIProviderPool", targetId: "global", outcome: "success", metadata: { activatedCount: legacyProviderActivation.modifiedCount, reason: "legacy successful live tests before provider auto-activation was introduced" } }).catch(() => undefined);
   }
-  if (legacyAgentActivation.modifiedCount > 0) {
-    await writePlatformAuditEvent({ actorType: "human", actorId: String(session.user._id), actorLabel: session.user.name, action: "ai.legacy_text_only_agents_activated", module: "ai-workforce", targetType: "AIAgent", targetId: "legacy-text-only", outcome: "success", metadata: { activatedCount: legacyAgentActivation.modifiedCount, permissionsGranted: 0, requiresApproval: true } }).catch(() => undefined);
-  }
-
   const [providers, agents, tasks, workspaces, memories] = await Promise.all([
     AIProvider.find({ archivedAt: { $exists: false } }).select("-encryptedApiKey").sort({ createdAt: -1 }).lean(),
     AIAgent.find().populate("providerId", "name provider").sort({ createdAt: -1 }).lean(),
@@ -267,7 +257,7 @@ export async function POST(request: NextRequest) {
           existing.memoryConfig = { enabled: true, identityKey: existing.memoryKey || buildAgentMemoryKey({ role: definition.role, department: definition.department }), sharedMemoryScopes: ["company-approved", "department-approved"], privateMemoryEnabled: true, retentionDays: 365 };
           existing.executionConfig = { maxConcurrentTasks: 1, maxRetries: 2, timeoutSeconds: 120, maxDailyTokens: existing.maxDailyTokens || 100000, maxDailySpendNaira: 0, scheduleEnabled: false };
           existing.performanceTargets = [{ metric: "task_completion_rate", target: 90, unit: "percent" }, { metric: "human_rework_rate", target: 10, unit: "percent_max" }];
-          const readiness = evaluateAgentReadiness({ jobTitle: existing.jobTitle, department: existing.department, description: existing.description, responsibilities: existing.responsibilities, deliverables: existing.deliverables, systemInstructions: existing.systemInstructions, permissions: existing.permissions, toolAllowlist: existing.toolAllowlist, reportsToRole: existing.reportsToRole, memoryConfig: existing.memoryConfig, executionConfig: existing.executionConfig, approvalRequirements: existing.approvalRequirements, performanceTargets: existing.performanceTargets, modelName: existing.modelName });
+          const readiness = evaluateAgentReadiness({ jobTitle: existing.jobTitle, department: existing.department, description: existing.description, responsibilities: existing.responsibilities, deliverables: existing.deliverables, systemInstructions: existing.systemInstructions, permissions: existing.permissions, toolAllowlist: existing.toolAllowlist, reportsToRole: existing.reportsToRole, memoryConfig: existing.memoryConfig, executionConfig: existing.executionConfig, approvalRequirements: existing.approvalRequirements, performanceTargets: existing.performanceTargets, modelName: existing.modelName, providerVerified: Boolean(verifiedProvider?._id) });
           existing.operationalStatus = readiness.status;
           existing.lastReadinessIssues = readiness.issues;
           existing.lastReadinessCheckAt = new Date();
@@ -294,6 +284,7 @@ export async function POST(request: NextRequest) {
           approvalRequirements: ["external_communications", "financial_actions", "production_changes", "permission_changes", "legal_or_hr_decisions"],
           performanceTargets: [{ metric: "task_completion_rate", target: 90, unit: "percent" }, { metric: "human_rework_rate", target: 10, unit: "percent_max" }],
           modelName,
+          providerVerified: Boolean(verifiedProvider?._id),
         });
         await AIAgent.create({
           name: definition.name,
@@ -367,7 +358,7 @@ export async function POST(request: NextRequest) {
         const performanceTargets = [{ metric: "task_completion_rate", target: 90, unit: "percent" }, { metric: "human_rework_rate", target: 10, unit: "percent_max" }];
         const privateDescription = "Private AI counterpart assigned to one active employee. " + blueprint.description;
         const privateInstructions = blueprint.systemInstructions + "\n\nPRIVATE ASSIGNMENT: You are assigned exclusively to the real employee " + employeeName + ". Do not disclose their private information to another employee. This personal counterpart remains limited to the same role scope and approved tools.";
-        const readiness = evaluateAgentReadiness({ jobTitle: position, department, description: privateDescription, responsibilities: blueprint.responsibilities, deliverables: blueprint.deliverables, systemInstructions: privateInstructions, permissions, toolAllowlist: permissions, reportsToRole, memoryConfig, executionConfig, approvalRequirements, performanceTargets, modelName });
+        const readiness = evaluateAgentReadiness({ jobTitle: position, department, description: privateDescription, responsibilities: blueprint.responsibilities, deliverables: blueprint.deliverables, systemInstructions: privateInstructions, permissions, toolAllowlist: permissions, reportsToRole, memoryConfig, executionConfig, approvalRequirements, performanceTargets, modelName, providerVerified: Boolean(verifiedProvider?._id) });
         if (existing) {
           existing.name = (employeeName + " — AI " + position).slice(0, 100);
           existing.role = position; existing.department = department; existing.jobTitle = position;
@@ -723,7 +714,7 @@ export async function POST(request: NextRequest) {
       if (!agent) return NextResponse.json({ status: "error", message: "Agent not found." }, { status: 404 });
       agent.permissions = [...new Set(body.permissions as string[])];
       agent.toolAllowlist = [...agent.permissions];
-      const readiness = evaluateAgentReadiness({ jobTitle: agent.jobTitle, department: agent.department, description: agent.description, responsibilities: agent.responsibilities, deliverables: agent.deliverables, systemInstructions: agent.systemInstructions, permissions: agent.permissions, toolAllowlist: agent.toolAllowlist, reportsToRole: agent.reportsToRole, reportsToAgentId: agent.reportsToAgentId, memoryConfig: agent.memoryConfig, executionConfig: agent.executionConfig, approvalRequirements: agent.approvalRequirements, performanceTargets: agent.performanceTargets, modelName: agent.modelName });
+      const readiness = evaluateAgentReadiness({ jobTitle: agent.jobTitle, department: agent.department, description: agent.description, responsibilities: agent.responsibilities, deliverables: agent.deliverables, systemInstructions: agent.systemInstructions, permissions: agent.permissions, toolAllowlist: agent.toolAllowlist, reportsToRole: agent.reportsToRole, reportsToAgentId: agent.reportsToAgentId, memoryConfig: agent.memoryConfig, executionConfig: agent.executionConfig, approvalRequirements: agent.approvalRequirements, performanceTargets: agent.performanceTargets, modelName: agent.modelName, providerVerified: Boolean(await AIProvider.exists({ enabled: true, lastTestStatus: "success", archivedAt: { $exists: false } })) });
       agent.operationalStatus = readiness.status;
       agent.lastReadinessIssues = readiness.issues;
       agent.lastReadinessCheckAt = new Date();
@@ -732,25 +723,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ status: "ok", permissions: agent.permissions, message: "Agent tool permissions updated." });
     }
     if (body.action === "agent.enable_text_only_all") {
-      const result = await AIAgent.updateMany(
-        { enabled: false, disabledAt: { $exists: false }, $or: [{ permissions: { $size: 0 } }, { permissions: { $exists: false } }] },
-        { $set: { enabled: true, requiresApproval: true } },
-      );
-      await writePlatformAuditEvent({
-        actorType: "human", actorId, actorLabel: session.user.name,
-        action: "ai.agents.bulk_enabled_text_only", module: "ai-workforce",
-        targetType: "AIAgent", outcome: "success",
-        metadata: { enabledCount: result.modifiedCount, businessPermissionsGranted: 0, requiresApproval: true },
-      });
-      return NextResponse.json({
-        status: "ok", enabledCount: result.modifiedCount,
-        message: result.modifiedCount + " text-only AI employees enabled. No business tools were granted; human approval remains required for governed operations.",
-      });
+      return NextResponse.json({ status: "error", message: "Bulk activation is disabled. Every AI employee must pass an individual provider, model, memory, permissions, approval and operational-readiness review before activation." }, { status: 409 });
     }
     if (body.action === "agent.enable" || body.action === "agent.disable") {
       const agent = await AIAgent.findById(body.agentId);
       if (!agent) return NextResponse.json({ status: "error", message: "Agent not found." }, { status: 404 });
       if (body.action === "agent.enable") {
+        const providerVerified = Boolean(await AIProvider.exists({ enabled: true, lastTestStatus: "success", archivedAt: { $exists: false } }));
+        const readiness = evaluateAgentReadiness({ jobTitle: agent.jobTitle, department: agent.department, description: agent.description, responsibilities: agent.responsibilities, deliverables: agent.deliverables, systemInstructions: agent.systemInstructions, permissions: agent.permissions, toolAllowlist: agent.toolAllowlist, reportsToRole: agent.reportsToRole, reportsToAgentId: agent.reportsToAgentId, memoryConfig: agent.memoryConfig, executionConfig: agent.executionConfig, approvalRequirements: agent.approvalRequirements, performanceTargets: agent.performanceTargets, modelName: agent.modelName, providerVerified });
+        agent.operationalStatus = readiness.status; agent.lastReadinessIssues = readiness.issues; agent.lastReadinessCheckAt = new Date();
         if (agent.operationalStatus !== "ready") return NextResponse.json({ status: "error", message: "This AI employee cannot be enabled until every readiness requirement is satisfied.", issues: agent.lastReadinessIssues || [] }, { status: 409 });
         agent.enabled = true;
         agent.disabledAt = undefined;
@@ -790,6 +771,7 @@ export async function POST(request: NextRequest) {
       const parent = await AITask.findById(body.taskId);
       const target = await AIAgent.findOne({ _id: body.agentId, enabled: true });
       if (!parent || !target) return NextResponse.json({ status: "error", message: "Parent task or target agent not found." }, { status: 404 });
+      if (target.operationalStatus !== "ready" || !await AIProvider.exists({ enabled: true, lastTestStatus: "success", archivedAt: { $exists: false } })) return NextResponse.json({ status: "error", message: "The delegated AI employee is not operationally ready or has no connection-tested provider." }, { status: 409 });
       const task = await AITask.create({ agentId: target._id, agentMemoryKey: target.memoryKey || buildAgentMemoryKey(target), parentTaskId: parent._id, title: String(body.title || parent.title).slice(0, 180), input: String(body.input || parent.input).slice(0, 20000), requestedBy: actorId, status: "awaiting_approval" });
       await writePlatformAuditEvent({ actorType: "human", actorId, action: "ai.task.delegated", module: "ai-workforce", targetType: "AITask", targetId: String(task._id), outcome: "success", metadata: { parentTaskId: String(parent._id), agentId: String(target._id) } });
       return NextResponse.json({ status: "ok", taskId: task._id, message: "Delegated task created and placed in human approval queue." }, { status: 201 });
@@ -799,7 +781,10 @@ export async function POST(request: NextRequest) {
       if (!task) return NextResponse.json({ status: "error", message: "Task is not queued, was not approved, or is already running." }, { status: 409 });
       try {
         const agent = await AIAgent.findOne({ _id: task.agentId, enabled: true });
-        if (!agent || agent.requiresApproval !== true || agent.operationalStatus !== "ready") throw new Error("Agent is disabled, not operationally ready, or its approval policy is invalid. Complete the readiness review before execution.");
+        const providerVerified = Boolean(await AIProvider.exists({ enabled: true, lastTestStatus: "success", archivedAt: { $exists: false } }));
+        if (!agent || agent.requiresApproval !== true || !providerVerified) throw new Error("Agent is disabled, has no connection-tested provider, or its approval policy is invalid. Complete the readiness review before execution.");
+        const currentReadiness = evaluateAgentReadiness({ jobTitle: agent.jobTitle, department: agent.department, description: agent.description, responsibilities: agent.responsibilities, deliverables: agent.deliverables, systemInstructions: agent.systemInstructions, permissions: agent.permissions, toolAllowlist: agent.toolAllowlist, reportsToRole: agent.reportsToRole, reportsToAgentId: agent.reportsToAgentId, memoryConfig: agent.memoryConfig, executionConfig: agent.executionConfig, approvalRequirements: agent.approvalRequirements, performanceTargets: agent.performanceTargets, modelName: agent.modelName, providerVerified });
+        if (!currentReadiness.ready || agent.operationalStatus !== "ready") throw new Error("Agent is not currently operationally ready: " + currentReadiness.issues.join(" "));
         const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0);
                 task.inputTokens = Math.ceil(task.input.length / 4);
         task.outputTokens = 4096;

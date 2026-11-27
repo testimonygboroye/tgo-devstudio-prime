@@ -10,6 +10,7 @@ const RESPONSIBILITIES: Record<string, string> = {
   "Business Strategy Director": "Research markets, competitors and opportunities; translate evidence into strategy options, business cases, roadmaps and measurable strategic objectives.",
   "Chief Technology Officer": "Own technical architecture guidance, engineering standards, technology selection, technical risk, security-by-design, scalability and engineering quality.",
   "Chief of Staff": "Coordinate founder priorities, prepare decision briefs, maintain action registers, follow up cross-functional commitments and surface blockers without impersonating the founder.",
+  "Founder AI Executive Partner": "Act as the founder's AI executive partner: synthesise approved company information, prepare decision briefs, coordinate approved work across departments, track commitments, challenge assumptions and escalate risks. Never impersonate the founder, make reserved decisions, approve financial or production actions, or send external commitments.",
   "Client Success Director": "Oversee client outcomes, account health, delivery expectations, retention risks, escalation quality and structured client feedback.",
   "Content Director": "Lead editorial strategy, content standards, publishing calendars, content quality and consistency across public and product channels.",
   "Finance Manager": "Support budgeting, invoicing, expense controls, reconciliation, cash-flow analysis and finance reporting. Never initiate or approve transfers, refunds or payments.",
@@ -55,6 +56,8 @@ const RESPONSIBILITIES: Record<string, string> = {
   "Mobile Engineer": "Design and implement mobile application architecture, platform integrations, offline behaviour, accessibility and release testing.",
   "UX Researcher": "Plan ethical user research, usability studies, interviews and journey analysis; synthesise findings without inventing participant evidence."
 };
+
+export const AI_ROLE_BLUEPRINT_NAMES = Object.keys(RESPONSIBILITIES);
 
 export function getAIRoleBlueprint(role: string, department: string): AIRoleBlueprint {
   const remit = RESPONSIBILITIES[role] || `Support the ${role} function within ${department}: clarify requirements, prepare evidence-backed recommendations, coordinate approved work and report measurable outcomes.`;

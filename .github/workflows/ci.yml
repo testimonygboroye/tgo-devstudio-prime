@@ -278,6 +278,22 @@ jobs:
           echo "The merged release did not become live within ten minutes."
           exit 1
 
+      - name: Wait for the Vercel production release to become live
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          set -euo pipefail
+          BASE_URL="https://tgo-devstudio-prime.vercel.app"
+          for attempt in $(seq 1 60); do
+            if curl --silent --show-error --fail "$BASE_URL/faq/who-is-behind-tgo-devstudio" | grep -q "Who is behind TGO DevStudio?"; then
+              echo "The merged release is live at $BASE_URL."
+              exit 0
+            fi
+            echo "Waiting for the Vercel production deployment ($attempt/60)..."
+            sleep 10
+          done
+          echo "The Vercel production deployment did not become live within ten minutes."
+          exit 1
+
       - name: Install Playwright runner
         if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
         run: npm install --no-save --package-lock=false @playwright/test
@@ -291,6 +307,12 @@ jobs:
         run: npx playwright test
         env:
           BASE_URL: ${{ inputs.base_url || vars.TGO_E2E_BASE_URL || env.SITE_URL || 'https://tgo-devstudio-prime.onrender.com' }}
+
+      - name: Run browser E2E against Vercel production
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: npx playwright test
+        env:
+          BASE_URL: https://tgo-devstudio-prime.vercel.app
 
       - name: Upload browser test evidence
         if: always() && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main'))

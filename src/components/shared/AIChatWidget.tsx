@@ -76,7 +76,9 @@ export default function AIChatWidget({ scope, adminBasePath = "/admin", showLaun
       setServiceStatus("live-success");
     } catch (cause) {
       setServiceStatus("unavailable");
-      setError(cause instanceof Error ? cause.message : "The assistant is temporarily unavailable.");
+      const failureMessage = cause instanceof Error ? cause.message : "The assistant is temporarily unavailable.";
+      setMessages((current) => [...current, { messageId: "failure-" + Date.now(), role: "assistant", content: failureMessage.includes("temporarily unavailable") ? failureMessage : "The AI service is temporarily unavailable. Please try again shortly." }]);
+      setError(failureMessage);
     } finally { setBusy(false); }
   }
 

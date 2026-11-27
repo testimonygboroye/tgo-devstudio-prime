@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- provider SDK and dynamic Mongoose payload boundaries are validated at runtime in this route. */
 import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { randomUUID } from "node:crypto";

@@ -163,7 +163,7 @@ export const MARKET_BENCHMARK_RESEARCH: ResearchedMarketBenchmark[] = [
     serviceNames: ["Technical SEO & Optimisation", "Technical SEO & Website Optimisation", "SEO & Website Optimisation"],
     benchmark: {
       low: 150000, high: 500000, typical: 325000, currency: "NGN", checkedAt: "2026-11-27",
-      methodology: "Monthly retainer band for established Nigerian agencies. Wider market prices can range from about ₦50,000/month to ₦1,500,000+/month for highly competitive campaigns; this stored typical band is the established-agency segment, not a universal rate. One-off technical audits are priced separately.",
+      methodology: "Monthly retainer band for established Nigerian agencies. Wider market prices can range from about ₦50,000/month to ₦1,500,000+/month for highly competitive campaigns; this stored typical band is the established-agency segment, not a universal rate. One-off technical audits are priced separately. The midpoint is arithmetic only, not a market average.",
       sources: [
         { label: "KD Tech NG — SEO Cost Nigeria (15 Jul 2026)", url: "https://www.kdtechng.com/tech-blog/seo-cost-nigeria", note: "Reports most established agencies around ₦150,000–₦500,000/month, with larger campaigns above ₦1.5m." },
         { label: "Nivarix — SEO Cost Nigeria 2026 (8 Oct 2026)", url: "https://nivarix.com/insights/seo-cost-nigeria-2026", note: "Reports common freelancer/small-agency work around ₦100,000–₦500,000/month and larger campaigns ₦500,000–₦1.5m+." },

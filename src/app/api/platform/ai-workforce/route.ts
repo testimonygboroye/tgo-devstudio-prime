@@ -518,13 +518,14 @@ export async function POST(request: NextRequest) {
       provider.lastTestedAt = undefined;
       provider.lastTestedModel = undefined;
       await provider.save();
+      const affectedAgents = await AIAgent.updateMany({ providerId: provider._id }, { $set: { operationalStatus: "needs_review", lastReadinessCheckAt: new Date() }, $addToSet: { lastReadinessIssues: "Assigned provider credentials were replaced. Run a successful live-generation test and provision this team again before resuming the employee." } });
       await writePlatformAuditEvent({
         actorType: "human", actorId, actorLabel: session.user.name,
         action: "ai.provider.credential_replaced", module: "ai-workforce",
         targetType: "AIProvider", targetId: String(provider._id), outcome: "success",
-        metadata: { provider: provider.provider, name: provider.name, dependentAgentsDisabled: false },
+        metadata: { provider: provider.provider, name: provider.name, dependentAgentsMarkedForReview: affectedAgents.modifiedCount },
       });
-      return NextResponse.json({ status: "ok", message: "API key encrypted and replaced. This provider is temporarily unavailable until a live generation test succeeds; AI employees remain enabled and can route to other healthy models and providers." });
+      return NextResponse.json({ status: "ok", message: "API key encrypted and replaced. Employees assigned to this provider are marked for review and blocked from new tasks until the key passes a live-generation test and team provisioning refreshes their model assignment." });
     }
     if (body.action === "provider.archive") {
       const providerId = String(body.providerId || "");

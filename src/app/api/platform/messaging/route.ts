@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
     }
     const message = await UnifiedMessage.create({ conversationId, senderType: "human", senderId: actorId, senderLabel: actorName, body: content, status: "sent", readBy: [actorId], threadRootId, attachments, messageType: attachments.some((item) => item.mimeType.startsWith("audio/")) ? "audio" : attachments.length ? "file" : "text" });
 
-    void notifyUsers(conversation.memberIds.filter((id) => String(id) !== String(actorId)), {
+    await notifyUsers(conversation.memberIds.filter((id) => String(id) !== String(actorId)), {
       category: "message",
       title: "New workspace message",
       body: actorName + " sent a message in " + (conversation.title || "a conversation") + ".",
@@ -187,7 +187,7 @@ export async function POST(request: NextRequest) {
         conversation.lastMessageAt = new Date(); await conversation.save();
         await mirrorMessageToPersonalWhatsApp(conversation, reply);
 
-        void notifyUser(actorId, {
+        await notifyUser(actorId, {
           category: "ai-message",
           title: agent.name + " replied",
           body: "Your AI employee has completed a response in " + (conversation.title || "your conversation") + ".",
@@ -249,7 +249,7 @@ export async function POST(request: NextRequest) {
     const task = await AITask.create({ agentId, title: String(body.title || input.slice(0, 120)).slice(0, 180), input, status: agent.requiresApproval ? "awaiting_approval" : "queued", requestedBy: String(actorId), operationPayload: { source: "communications", conversationId: conversationId || undefined } });
 
     if (task.status === "awaiting_approval") {
-      void notifyFounders({
+      await notifyFounders({
         category: "ai-approval",
         title: "AI task requires approval",
         body: actorName + " assigned a task to " + agent.name + " that requires founder approval.",

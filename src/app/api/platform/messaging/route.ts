@@ -12,6 +12,8 @@ import { buildAccessibleAIAgentFilter } from "@/lib/messaging/aiAgentAccess";
 import { runProviderCompletionWithFallback } from "@/lib/ai/provider-runtime";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import { mirrorMessageToPersonalWhatsApp } from "@/lib/messaging/whatsappSync";
+import { notifyUser, notifyUsers, notifyFounders } from "@/lib/platform/notifications";
+import { getAdminBasePath } from "@/lib/adminPath";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -145,6 +147,18 @@ export async function POST(request: NextRequest) {
       threadRootId = root.threadRootId || root._id;
     }
     const message = await UnifiedMessage.create({ conversationId, senderType: "human", senderId: actorId, senderLabel: actorName, body: content, status: "sent", readBy: [actorId], threadRootId, attachments, messageType: attachments.some((item) => item.mimeType.startsWith("audio/")) ? "audio" : attachments.length ? "file" : "text" });
+
+    void notifyUsers(conversation.memberIds.filter((id) => String(id) !== String(actorId)), {
+      category: "message",
+      title: "New workspace message",
+      body: actorName + " sent a message in " + (conversation.title || "a conversation") + ".",
+      href: getAdminBasePath() + "/messages?conversationId=" + String(conversation._id),
+      actionLabel: "Open conversation",
+      priority: "normal",
+      dedupeKey: undefined,
+      sourceType: "UnifiedConversation",
+      sourceId: String(conversation._id),
+    }).catch((error) => console.error("[Notifications] Workspace message notification failed:", error));
     conversation.lastMessageAt = new Date();
     await conversation.save();
     await mirrorMessageToPersonalWhatsApp(conversation, message);
@@ -172,6 +186,17 @@ export async function POST(request: NextRequest) {
         const reply = await UnifiedMessage.create({ conversationId, senderType: "ai", senderLabel: agent.name, body: completion.text.slice(0, 12000), status: "sent" });
         conversation.lastMessageAt = new Date(); await conversation.save();
         await mirrorMessageToPersonalWhatsApp(conversation, reply);
+
+        void notifyUser(actorId, {
+          category: "ai-message",
+          title: agent.name + " replied",
+          body: "Your AI employee has completed a response in " + (conversation.title || "your conversation") + ".",
+          href: getAdminBasePath() + "/messages?conversationId=" + String(conversation._id),
+          actionLabel: "Read AI response",
+          priority: "normal",
+          sourceType: "AITask",
+          sourceId: String(task._id),
+        }).catch((error) => console.error("[Notifications] AI response notification failed:", error));
         await writePlatformAuditEvent({ actorType: "ai", actorId: String(agent._id), actorLabel: agent.name, action: "ai.conversation.replied", module: "communications", targetType: "AITask", targetId: String(task._id), outcome: "success", metadata: { conversationId, inputTokens: completion.inputTokens, outputTokens: completion.outputTokens } });
         return NextResponse.json({ status: "ok", message: { id: String(reply._id), body: reply.body, createdAt: reply.createdAt, senderLabel: agent.name, senderType: "ai" }, taskId: String(task._id), taskStatus: "completed" }, { status: 201 });
       } catch (error) {
@@ -222,6 +247,21 @@ export async function POST(request: NextRequest) {
     const conversationId = typeof body.conversationId === "string" ? body.conversationId : "";
     if (conversationId && (!Types.ObjectId.isValid(conversationId) || !await UnifiedConversation.exists({ _id: conversationId, memberIds: actorId }))) return forbiddenResponse("You can only assign AI work from a conversation you belong to.");
     const task = await AITask.create({ agentId, title: String(body.title || input.slice(0, 120)).slice(0, 180), input, status: agent.requiresApproval ? "awaiting_approval" : "queued", requestedBy: String(actorId), operationPayload: { source: "communications", conversationId: conversationId || undefined } });
+
+    if (task.status === "awaiting_approval") {
+      void notifyFounders({
+        category: "ai-approval",
+        title: "AI task requires approval",
+        body: actorName + " assigned a task to " + agent.name + " that requires founder approval.",
+        href: getAdminBasePath() + "/ai-workforce",
+        actionLabel: "Review AI task",
+        priority: "high",
+        requiresAction: true,
+        dedupeKey: "ai-task-approval:" + String(task._id),
+        sourceType: "AITask",
+        sourceId: String(task._id),
+      }).catch((error) => console.error("[Notifications] AI approval notification failed:", error));
+    }
     await writePlatformAuditEvent({ actorType: "human", actorId: String(actorId), actorLabel: actorName, action: "ai.task.assigned_from_communications", module: "communications", targetType: "AITask", targetId: String(task._id), outcome: "success", metadata: { agentId, status: task.status } });
     return NextResponse.json({ status: "ok", taskId: String(task._id), taskStatus: task.status, message: "Task recorded in the AI workforce queue." }, { status: 201 });
   }

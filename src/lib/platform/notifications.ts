@@ -13,7 +13,7 @@ export async function notifyAccountType(accountType:"staff"|"client",input:Omit<
 export async function notifyStaffWithPermission(contentType:string,input:Omit<CreatePlatformNotificationInput,"recipientId">){
  await connectToDatabase();
  const roles=await Role.find({});
- const allowed=roles.filter(role=>role.isFounderRole||Object.values(role.contentPermissions?.get(contentType)||{}).some(Boolean)).map(role=>role._id);
+ const allowed=roles.filter(role=>role.isFounderRole||role.contentPermissions?.get(contentType)?.viewAnalytics === true).map(role=>role._id);
  if(!allowed.length)return[];
  const users=await User.find({role:{$in:allowed},accountType:"staff",isBanned:false}).select("_id").lean();
  return notifyUsers(users.map(user=>user._id),input);

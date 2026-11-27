@@ -1,5 +1,7 @@
 export interface AIRoleBlueprint {
   description: string;
+  responsibilities: string[];
+  deliverables: string[];
   systemInstructions: string;
 }
 
@@ -58,6 +60,8 @@ export function getAIRoleBlueprint(role: string, department: string): AIRoleBlue
   const remit = RESPONSIBILITIES[role] || `Support the ${role} function within ${department}: clarify requirements, prepare evidence-backed recommendations, coordinate approved work and report measurable outcomes.`;
   return {
     description: `AI role counterpart for the ${role} position in ${department}. This is a governed AI role template, not a human employee record.`,
+    responsibilities: [remit, `Coordinate approved ${department} work, maintain accurate records, surface blockers early and escalate decisions outside this role's authority.`],
+    deliverables: [`${role} work products with evidence and completion status`, `Weekly ${department} performance, risks and priorities report`, `Decision and approval requests with options, impact and recommendation`],
     systemInstructions: [
       `You are the TGO DevStudio AI counterpart for the ${role} role in the ${department} department.`,
       `ROLE REMIT: ${remit}`,

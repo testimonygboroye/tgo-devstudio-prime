@@ -170,4 +170,29 @@ export const MARKET_BENCHMARK_RESEARCH: ResearchedMarketBenchmark[] = [
       ],
     },
   },
+
+  {
+    serviceNames: ["Cloud & DevOps Audit", "DevOps & SRE Audit", "DevOps Audit"],
+    benchmark: {
+      low: 1500000, high: 1500000, typical: 1500000, currency: "NGN", checkedAt: "2026-11-27",
+      methodology: "Single publicly advertised Nigerian cloud and DevOps audit package starting price, not a market average or a complete implementation budget. Midpoint is not applicable to this single-price observation; scope is 2–3 weeks.",
+      sources: [{ label: "LineTech — Cloud & DevOps Pricing", url: "https://www.linestech.com.ng/pricing/", note: "Cloud & DevOps Audit package: ₦1,500,000, one-off, 2–3 weeks." }],
+    },
+  },
+  {
+    serviceNames: ["Managed DevOps Service", "DevOps as a Service", "Managed DevOps"],
+    benchmark: {
+      low: 1200000, high: 1200000, typical: 1200000, currency: "NGN", checkedAt: "2026-11-27",
+      methodology: "Single publicly advertised Nigerian managed DevOps retainer starting price, not a market average. Midpoint is not applicable to this single-price observation; published package starts at 60 engineering hours per month and actual service-level scope must be confirmed.",
+      sources: [{ label: "LineTech — Cloud & DevOps Pricing", url: "https://www.linestech.com.ng/pricing/", note: "Managed DevOps / DevOps as a Service starts at ₦1,200,000 per month." }],
+    },
+  },
+  {
+    serviceNames: ["Data Cleaning & Migration", "Data Migration & Modernisation", "Data Migration"],
+    benchmark: {
+      low: 200000, high: 3000000, typical: 1600000, currency: "NGN", checkedAt: "2026-11-27",
+      methodology: "Component-level Nigerian reference for data cleaning and migration only; full application modernisation, re-platforming and legacy replacement need separate scope. Midpoint is arithmetic only, not a market average.",
+      sources: [{ label: "LineTech — Digital Transformation Cost in Nigeria (2026)", url: "https://www.linestech.com.ng/blog/digital-transformation-cost-in-nigeria/", note: "Data cleaning and migration: ₦200,000–₦3,000,000." }],
+    },
+  },
 ];

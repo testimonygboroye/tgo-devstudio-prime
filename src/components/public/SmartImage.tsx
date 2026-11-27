@@ -20,5 +20,5 @@ export default function SmartImage({ src, alt, label, className = "", priority =
     : undefined;
   const optimizedSrc = isCloudinary ? cloudinaryVariant(imageSrc, 960) || imageSrc : imageSrc;
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src={optimizedSrc} srcSet={srcSet} sizes={srcSet ? sizes : undefined} alt={alt} loading={priority ? "eager" : "lazy"} fetchPriority={priority ? "high" : "auto"} decoding="async" onError={(event) => { const image = event.currentTarget; if (image.dataset.tgoFallbackApplied === "true") return; image.dataset.tgoFallbackApplied = "true"; image.removeAttribute("srcSet"); image.src = "/images/illustrations/brand-fallback.svg"; }} className={className}/>;
+  return <img src={optimizedSrc} srcSet={srcSet} sizes={srcSet ? sizes : undefined} alt={alt} title={label || undefined} loading={priority ? "eager" : "lazy"} fetchPriority={priority ? "high" : "auto"} decoding="async" onError={(event) => { const image = event.currentTarget; if (image.dataset.tgoFallbackApplied === "true") return; image.dataset.tgoFallbackApplied = "true"; image.removeAttribute("srcSet"); image.src = "/images/illustrations/brand-fallback.svg"; }} className={className}/>;
 }

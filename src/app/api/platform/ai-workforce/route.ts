@@ -550,6 +550,9 @@ export async function POST(request: NextRequest) {
       provider.enabled = body.action === "provider.enable";
       provider.disabledAt = provider.enabled ? undefined : new Date();
       await provider.save();
+      if (!provider.enabled) {
+        await AIAgent.updateMany({ providerId: provider._id }, { $set: { operationalStatus: "needs_review", lastReadinessCheckAt: new Date() }, $addToSet: { lastReadinessIssues: "The assigned AI provider is disabled. Enable and live-test it, then provision the team again before resuming this employee." } });
+      }
       if (provider.enabled) {
         await Promise.all((["public", "client", "admin"] as const).map((scope) =>
           AIChatbotConfig.findOneAndUpdate(

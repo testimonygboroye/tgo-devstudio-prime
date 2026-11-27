@@ -346,7 +346,7 @@ export async function POST(request: NextRequest) {
       const activeEmployees = await EmployeeProfile.find({
         employmentStatus: "active",
         accessSuspendedByWorkforce: { $ne: true },
-      }).populate("userId", "name").populate("departmentId", "name").populate("positionId", "title").lean();
+      }).populate("userId", "name").populate("departmentId", "name").populate("positionId", "title reportsToPositionId").lean();
       for (const employee of activeEmployees) {
         const person = employee.userId as unknown as { _id?: mongoose.Types.ObjectId; name?: string } | null;
         const personId = person?._id || (employee.userId as unknown as mongoose.Types.ObjectId);
@@ -356,6 +356,9 @@ export async function POST(request: NextRequest) {
         const positionDoc = employee.positionId as unknown as { _id?: mongoose.Types.ObjectId; title?: string };
         const position = String(positionDoc?.title || "Team Member");
         const blueprint = getAIRoleBlueprint(position, department);
+        const reportingId = String((positionDoc as unknown as { reportsToPositionId?: unknown }).reportsToPositionId || "");
+        const reportingPosition = reportingId ? positionsById.get(reportingId) : undefined;
+        const reportsToRole = reportingPosition?.title || "Founder / Department Leadership";
         let workspaceId = workspaceIds.get(department);
         if (!workspaceId) {
           const workspace = await AIWorkspace.findOneAndUpdate(
@@ -375,7 +378,7 @@ export async function POST(request: NextRequest) {
         const performanceTargets = [{ metric: "task_completion_rate", target: 90, unit: "percent" }, { metric: "human_rework_rate", target: 10, unit: "percent_max" }];
         const privateDescription = "Private AI counterpart assigned to one active employee. " + blueprint.description;
         const privateInstructions = blueprint.systemInstructions + "\n\nPRIVATE ASSIGNMENT: You are assigned exclusively to the real employee " + employeeName + ". Do not disclose their private information to another employee. This personal counterpart remains limited to the same role scope and approved tools.";
-        const readiness = evaluateAgentReadiness({ jobTitle: position, department, description: privateDescription, responsibilities: blueprint.responsibilities, deliverables: blueprint.deliverables, systemInstructions: privateInstructions, permissions, toolAllowlist: permissions, reportsToRole: "Department Manager / Founder", memoryConfig, executionConfig, approvalRequirements, performanceTargets, modelName });
+        const readiness = evaluateAgentReadiness({ jobTitle: position, department, description: privateDescription, responsibilities: blueprint.responsibilities, deliverables: blueprint.deliverables, systemInstructions: privateInstructions, permissions, toolAllowlist: permissions, reportsToRole, memoryConfig, executionConfig, approvalRequirements, performanceTargets, modelName });
         if (existing) {
           existing.name = (employeeName + " — AI " + position).slice(0, 100);
           existing.role = position; existing.department = department; existing.jobTitle = position;

@@ -11,15 +11,6 @@ export async function notifyUsers(ids:Array<string|Types.ObjectId>,input:Omit<Cr
 export async function notifyRole(roleSlug:string,input:Omit<CreatePlatformNotificationInput,"recipientId">){await connectToDatabase();const role=await Role.findOne({slug:roleSlug}).select("_id").lean();if(!role)return[];const users=await User.find({role:role._id,accountType:"staff",isBanned:false}).select("_id").lean();return notifyUsers(users.map(u=>u._id),input);}
 export async function notifyAccountType(accountType:"staff"|"client",input:Omit<CreatePlatformNotificationInput,"recipientId">){await connectToDatabase();const users=await User.find({accountType,isBanned:false}).select("_id").lean();return notifyUsers(users.map(u=>u._id),input);}
 
-export async function notifyStaffWithPermission(contentType:string,input:Omit<CreatePlatformNotificationInput,"recipientId">){
- await connectToDatabase();
- const roles=await Role.find({});
- const allowed=roles.filter(role=>role.isFounderRole||role.contentPermissions?.get(contentType)?.viewAnalytics === true).map(role=>role._id);
- if(!allowed.length)return[];
- const users=await User.find({role:{$in:allowed},accountType:"staff",isBanned:false}).select("_id").lean();
- return notifyUsers(users.map(user=>user._id),input);
-}
-
 export async function notifyFounders(input:Omit<CreatePlatformNotificationInput,"recipientId">){
  await connectToDatabase();
  const roles=await Role.find({isFounderRole:true}).select("_id").lean();

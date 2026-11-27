@@ -368,7 +368,7 @@ export async function POST(request: NextRequest) {
         const performanceTargets = [{ metric: "task_completion_rate", target: 90, unit: "percent" }, { metric: "human_rework_rate", target: 10, unit: "percent_max" }];
         const privateDescription = "Private AI counterpart assigned to one active employee. " + blueprint.description;
         const privateInstructions = blueprint.systemInstructions + "\n\nPRIVATE ASSIGNMENT: You are assigned exclusively to the real employee " + employeeName + ". Do not disclose their private information to another employee. This personal counterpart remains limited to the same role scope and approved tools.";
-        const readiness = evaluateAgentReadiness({ jobTitle: position, department, description: privateDescription, responsibilities: blueprint.responsibilities, deliverables: blueprint.deliverables, systemInstructions: privateInstructions, permissions, toolAllowlist: permissions, reportsToRole, memoryConfig, executionConfig, approvalRequirements, performanceTargets, modelName });
+        const readiness = evaluateAgentReadiness({ jobTitle: position, department, description: privateDescription, responsibilities: blueprint.responsibilities, deliverables: blueprint.deliverables, systemInstructions: privateInstructions, permissions, toolAllowlist: permissions, reportsToRole, memoryConfig, executionConfig, approvalRequirements, performanceTargets, modelName, providerVerified: Boolean(verifiedProvider?._id) });
         if (existing) {
           existing.name = (employeeName + " — AI " + position).slice(0, 100);
           existing.role = position; existing.department = department; existing.jobTitle = position;
@@ -781,6 +781,7 @@ export async function POST(request: NextRequest) {
       const parent = await AITask.findById(body.taskId);
       const target = await AIAgent.findOne({ _id: body.agentId, enabled: true });
       if (!parent || !target) return NextResponse.json({ status: "error", message: "Parent task or target agent not found." }, { status: 404 });
+      if (target.operationalStatus !== "ready" || !await AIProvider.exists({ enabled: true, lastTestStatus: "success", archivedAt: { $exists: false } })) return NextResponse.json({ status: "error", message: "The delegated AI employee is not operationally ready or has no connection-tested provider." }, { status: 409 });
       const task = await AITask.create({ agentId: target._id, agentMemoryKey: target.memoryKey || buildAgentMemoryKey(target), parentTaskId: parent._id, title: String(body.title || parent.title).slice(0, 180), input: String(body.input || parent.input).slice(0, 20000), requestedBy: actorId, status: "awaiting_approval" });
       await writePlatformAuditEvent({ actorType: "human", actorId, action: "ai.task.delegated", module: "ai-workforce", targetType: "AITask", targetId: String(task._id), outcome: "success", metadata: { parentTaskId: String(parent._id), agentId: String(target._id) } });
       return NextResponse.json({ status: "ok", taskId: task._id, message: "Delegated task created and placed in human approval queue." }, { status: 201 });
@@ -790,7 +791,10 @@ export async function POST(request: NextRequest) {
       if (!task) return NextResponse.json({ status: "error", message: "Task is not queued, was not approved, or is already running." }, { status: 409 });
       try {
         const agent = await AIAgent.findOne({ _id: task.agentId, enabled: true });
-        if (!agent || agent.requiresApproval !== true || agent.operationalStatus !== "ready") throw new Error("Agent is disabled, not operationally ready, or its approval policy is invalid. Complete the readiness review before execution.");
+        const providerVerified = Boolean(await AIProvider.exists({ enabled: true, lastTestStatus: "success", archivedAt: { $exists: false } }));
+        if (!agent || agent.requiresApproval !== true || !providerVerified) throw new Error("Agent is disabled, has no connection-tested provider, or its approval policy is invalid. Complete the readiness review before execution.");
+        const currentReadiness = evaluateAgentReadiness({ jobTitle: agent.jobTitle, department: agent.department, description: agent.description, responsibilities: agent.responsibilities, deliverables: agent.deliverables, systemInstructions: agent.systemInstructions, permissions: agent.permissions, toolAllowlist: agent.toolAllowlist, reportsToRole: agent.reportsToRole, reportsToAgentId: agent.reportsToAgentId, memoryConfig: agent.memoryConfig, executionConfig: agent.executionConfig, approvalRequirements: agent.approvalRequirements, performanceTargets: agent.performanceTargets, modelName: agent.modelName, providerVerified });
+        if (!currentReadiness.ready || agent.operationalStatus !== "ready") throw new Error("Agent is not currently operationally ready: " + currentReadiness.issues.join(" "));
         const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0);
                 task.inputTokens = Math.ceil(task.input.length / 4);
         task.outputTokens = 4096;

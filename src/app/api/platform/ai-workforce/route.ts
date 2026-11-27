@@ -116,16 +116,10 @@ export async function GET() {
   // successful founder-tested providers and permission-free AI employees were left
   // disabled by the old defaults. Promote only those legacy records. New manual
   // disables are stamped with disabledAt and are never overridden by this migration.
-  const [legacyProviderActivation, legacyAgentActivation] = await Promise.all([
-    AIProvider.updateMany(
-      { enabled: false, lastTestStatus: "success", lastTestedAt: { $exists: true }, archivedAt: { $exists: false }, disabledAt: { $exists: false } },
-      { $set: { enabled: true } },
-    ),
-    AIAgent.updateMany(
-      { enabled: false, disabledAt: { $exists: false }, $or: [{ permissions: { $size: 0 } }, { permissions: { $exists: false } }] },
-      { $set: { enabled: true, requiresApproval: true } },
-    ),
-  ]);
+  const legacyProviderActivation = await AIProvider.updateMany(
+    { enabled: false, lastTestStatus: "success", lastTestedAt: { $exists: true }, archivedAt: { $exists: false }, disabledAt: { $exists: false } },
+    { $set: { enabled: true } },
+  );
   if (legacyProviderActivation.modifiedCount > 0) {
     const verifiedProvider = await AIProvider.findOne({ enabled: true, lastTestStatus: "success", archivedAt: { $exists: false } }).sort({ lastTestedAt: -1 }).lean();
     await Promise.all((["public", "client", "admin"] as const).map((scope) =>
@@ -142,10 +136,6 @@ export async function GET() {
     ));
     await writePlatformAuditEvent({ actorType: "human", actorId: String(session.user._id), actorLabel: session.user.name, action: "ai.legacy_verified_providers_activated", module: "ai-workforce", targetType: "AIProviderPool", targetId: "global", outcome: "success", metadata: { activatedCount: legacyProviderActivation.modifiedCount, reason: "legacy successful live tests before provider auto-activation was introduced" } }).catch(() => undefined);
   }
-  if (legacyAgentActivation.modifiedCount > 0) {
-    await writePlatformAuditEvent({ actorType: "human", actorId: String(session.user._id), actorLabel: session.user.name, action: "ai.legacy_text_only_agents_activated", module: "ai-workforce", targetType: "AIAgent", targetId: "legacy-text-only", outcome: "success", metadata: { activatedCount: legacyAgentActivation.modifiedCount, permissionsGranted: 0, requiresApproval: true } }).catch(() => undefined);
-  }
-
   const [providers, agents, tasks, workspaces, memories] = await Promise.all([
     AIProvider.find({ archivedAt: { $exists: false } }).select("-encryptedApiKey").sort({ createdAt: -1 }).lean(),
     AIAgent.find().populate("providerId", "name provider").sort({ createdAt: -1 }).lean(),

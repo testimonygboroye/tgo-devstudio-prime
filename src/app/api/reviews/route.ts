@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
     customLabel: targetRequiresCustomLabel(resolvedTargetType) ? customLabel!.trim() : undefined,
   });
 
-  void notifyFounders({
+  await notifyFounders({
     category: "testimonial-review",
     title: "New testimonial awaiting moderation",
     body: review.submitterName + " submitted a " + review.rating + "-star review.",

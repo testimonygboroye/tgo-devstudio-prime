@@ -992,7 +992,7 @@ export async function POST(request: NextRequest) {
             existingFile ? "CURRENT FILE CONTENT (preserve compatible behaviour and update this complete file):\n" + existingFile.content.slice(0, 50000) : "The target file does not exist yet. Generate a complete new file at the target path.",
             "Return only the required JSON object.",
           ].join("\n\n");
-          generatedCodeCompletion = await runProviderCompletionWithFallback("", agent.modelName, codeSystemInstructions, codePrompt, "admin");
+          generatedCodeCompletion = await runProviderCompletionWithFallback(String(agent.providerId || ""), agent.modelName, codeSystemInstructions, codePrompt, "admin");
           const generated = parseGitHubCodeChangeResponse(generatedCodeCompletion.text);
           const roleSlug = String(agent.role || agent.name).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 20) || "developer";
           const branch = String(payload.branch || ("ai/" + roleSlug + "-" + String(task._id).slice(-8)));
@@ -1045,7 +1045,7 @@ export async function POST(request: NextRequest) {
         const prompt = operationResult ? task.input + "\n\nApproved business-operation result (JSON reference data):\n" + JSON.stringify(operationResult) : task.input;
         const completion = generatedCodeCompletion
           ? { ...generatedCodeCompletion, text: generatedCodeSummary + "\n\nDraft pull request created: " + generatedCodePullRequestUrl + "\nThe code is committed to an AI branch only. It has not been merged or deployed." }
-          : await runProviderCompletionWithFallback("", agent.modelName, [...TGO_AI_PLATFORM_RULES, agent.systemInstructions, memoryContext].join("\n\n"), prompt, "admin");
+          : await runProviderCompletionWithFallback(String(agent.providerId || ""), agent.modelName, [...TGO_AI_PLATFORM_RULES, agent.systemInstructions, memoryContext].join("\n\n"), prompt, "admin");
         if (!completion.text.trim()) throw new Error("The provider returned an empty response.");
         if (task.operation === "projects.status.update") {
           const projectId = String(payload.projectId || ""), nextStatus = String(payload.status || "");

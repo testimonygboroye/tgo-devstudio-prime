@@ -14,6 +14,8 @@ import {connectToDatabase} from "@/lib/db";
 import {getVerifiedIntegrationCredentials} from "@/lib/integrations/credentials";
 import {awardEngagementPoints} from "@/lib/engagement/award";
 import {EngagementRedemption} from "@/models/Engagement";
+import { notifyUser, notifyFounders } from "@/lib/platform/notifications";
+import { getAdminBasePath } from "@/lib/adminPath";
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
 
@@ -41,6 +43,10 @@ export async function POST(request:NextRequest){
    payment.status="failed";payment.failureReason=String(data.gateway_response||"Paystack reported a failed charge.").slice(0,1000);await payment.save();
    if(payment.couponCode)await EngagementRedemption.updateOne({couponCode:payment.couponCode,couponStatus:"reserved",couponPaymentReference:failedReference},{$set:{couponStatus:"issued"},$unset:{couponPaymentReference:1}});
    await writePlatformAuditEvent({actorType:"system",actorId:"paystack-webhook",actorLabel:"Paystack failed charge webhook",action:"commerce.payment_failed",module:"finance",targetType:"payment_transaction",targetId:String(payment._id),outcome:"failure",metadata:{reference:failedReference}});
+   await Promise.all([
+    notifyUser(payment.clientId,{category:"payment-failed",title:"Payment could not be completed",body:"Your payment "+failedReference+" was not successful. You can review the payment in your client portal.",href:"/client/finance",actionLabel:"Review payment",priority:"high",requiresAction:true,sourceType:"PaymentTransaction",sourceId:String(payment._id)}),
+    notifyFounders({category:"payment-failed",title:"Customer payment failed",body:"Paystack reported a failed payment: "+failedReference+".",href:getAdminBasePath()+"/finance",actionLabel:"Review payment",priority:"high",sourceType:"PaymentTransaction",sourceId:String(payment._id)}),
+   ]).catch(error=>console.error("[Notifications] Failed payment notifications could not be saved:",error));
   }
   return NextResponse.json({received:true,processed:Boolean(payment)});
  }
@@ -51,6 +57,10 @@ export async function POST(request:NextRequest){
   if(payload.event==="refund.failed"){
    refund.status="failed";refund.failureReason=String(data.failure_reason||data.message||"Paystack reported that the refund failed.");await refund.save();
    await writePlatformAuditEvent({actorType:"system",actorId:"paystack-webhook",actorLabel:"Paystack refund webhook",action:"finance.refund_failed",module:"finance",targetType:"finance_refund",targetId:String(refund._id),outcome:"failure",metadata:{reference:refund.reference,providerRefundId}});
+   await Promise.all([
+    notifyUser(refund.clientId,{category:"refund-failed",title:"Refund could not be completed",body:"Your refund "+refund.reference+" could not be completed. TGO Support will review it.",href:"/client/finance",actionLabel:"View refund",priority:"high",requiresAction:true,sourceType:"FinanceRefund",sourceId:String(refund._id)}),
+    notifyFounders({category:"refund-failed",title:"Customer refund failed",body:"Refund "+refund.reference+" failed at the payment provider.",href:getAdminBasePath()+"/finance",actionLabel:"Review refund",priority:"urgent",requiresAction:true,sourceType:"FinanceRefund",sourceId:String(refund._id)}),
+   ]).catch(error=>console.error("[Notifications] Failed refund notifications could not be saved:",error));
    return NextResponse.json({received:true,processed:true});
   }
   if(payload.event==="refund.pending"||payload.event==="refund.processing"){
@@ -78,6 +88,10 @@ export async function POST(request:NextRequest){
    });
   }finally{await dbSession.endSession();}
   await writePlatformAuditEvent({actorType:"system",actorId:"paystack-webhook",actorLabel:"Paystack refund webhook",action:"finance.refund_processed",module:"finance",targetType:"finance_refund",targetId:String(refund._id),outcome:"success",metadata:{reference:refund.reference,providerRefundId}});
+  await Promise.all([
+   notifyUser(refund.clientId,{category:"refund-processed",title:"Your refund has been processed",body:"Refund "+refund.reference+" has been processed.",href:"/client/finance",actionLabel:"View refund",priority:"normal",sourceType:"FinanceRefund",sourceId:String(refund._id)}),
+   notifyFounders({category:"refund-processed",title:"Customer refund processed",body:"Refund "+refund.reference+" was processed successfully.",href:getAdminBasePath()+"/finance",actionLabel:"View refund",priority:"normal",sourceType:"FinanceRefund",sourceId:String(refund._id)}),
+  ]).catch(error=>console.error("[Notifications] Refund notifications could not be saved:",error));
   return NextResponse.json({received:true,processed:true});
  }
  if(payload.event!=="charge.success")return NextResponse.json({received:true,ignored:true});
@@ -88,6 +102,10 @@ export async function POST(request:NextRequest){
   if(payment.clientId){await awardEngagementPoints({clientId:String(payment.clientId),eventKey:"payment-verified:"+String(payment._id),eventType:"payment_verified",metadata:{paymentTransactionId:String(payment._id),reference}});}
   if((payment as unknown as {couponCode?:string}).couponCode){await EngagementRedemption.findOneAndUpdate({couponCode:(payment as unknown as {couponCode:string}).couponCode,couponStatus:"reserved",couponPaymentReference:reference},{$set:{couponStatus:"used"}});}
   try{await writePlatformAuditEvent({actorType:"system",actorId:"paystack-webhook",actorLabel:"Paystack payment webhook",action:"commerce.payment_webhook_verified",module:"finance",targetType:"payment_transaction",targetId:String(payment._id),outcome:"success",metadata:{reference,providerTransactionId:payment.providerTransactionId}});}catch(auditError){console.error("Paystack webhook audit write failed",auditError);}
+  await Promise.all([
+   notifyUser(payment.clientId,{category:"payment-confirmed",title:"Payment confirmed",body:"Your payment "+reference+" has been confirmed.",href:"/client/finance",actionLabel:"View payment",priority:"normal",sourceType:"PaymentTransaction",sourceId:String(payment._id)}),
+   notifyFounders({category:"payment-received",title:"Customer payment received",body:"A payment was verified successfully: "+reference+".",href:getAdminBasePath()+"/finance",actionLabel:"View payment",priority:"normal",sourceType:"PaymentTransaction",sourceId:String(payment._id)}),
+  ]).catch(error=>console.error("[Notifications] Successful payment notifications could not be saved:",error));
   return NextResponse.json({received:true,processed:true});
  }catch(error){return NextResponse.json({error:error instanceof Error?error.message:"Payment verification failed."},{status:409});}
 }

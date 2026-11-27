@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import { Types } from "mongoose";
 import { getServerSession } from "@/lib/auth/serverSession";
+import { notifyUser, notifyUsers } from "@/lib/platform/notifications";
 import { connectToDatabase } from "@/lib/db";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import CommercialService from "@/models/CommercialService";
@@ -167,6 +168,7 @@ export async function POST(request:NextRequest) {
       const proposal=await CommercialProposal.findById(body.id);if(!proposal)return fail("Proposal not found.",404);
       if(proposal.status!=="draft")return fail("Only draft proposals can be issued.");
       proposal.status="sent";await proposal.save();await audit(session,"sales.proposal_issued","commercial_proposal",String(proposal._id),{reference:proposal.reference});
+      if(proposal.clientId)await notifyUser(proposal.clientId,{category:"proposal-issued",title:"A project proposal is ready",body:"Proposal "+proposal.reference+" is ready for your review.",href:"/client/services",actionLabel:"Review proposal",priority:"high",requiresAction:true,dedupeKey:"proposal-issued:"+String(proposal._id),sourceType:"CommercialProposal",sourceId:String(proposal._id)}).catch(error=>console.error("[Notifications] Proposal notification failed:",error));
       return NextResponse.json({ok:true,item:proposal});
     }
     if(action==="quote.create") {
@@ -174,6 +176,7 @@ export async function POST(request:NextRequest) {
       const proposal=await CommercialProposal.findById(body.proposalId);if(!proposal||!["sent","accepted"].includes(proposal.status))return fail("A sent or accepted proposal is required.");
       const quote=await CommercialQuote.create({reference:reference("QUOT"),proposalId:proposal._id,leadId:proposal.leadId,clientId:proposal.clientId,currency:proposal.currency,subtotal:proposal.subtotal,discount:proposal.discount,tax:proposal.tax,total:proposal.total,lineItems:proposal.lines.map((l:any)=>({description:l.description,quantity:l.quantity,unitPrice:l.unitPrice,amount:l.amount})),status:"issued",validUntil:body.validUntil?new Date(body.validUntil):proposal.validUntil,createdBy:session.user._id});
       await audit(session,"sales.quote_issued","commercial_quote",String(quote._id),{reference:quote.reference,total:quote.total});
+      if(quote.clientId)await notifyUser(quote.clientId,{category:"quote-issued",title:"A quotation is ready",body:"Quotation "+quote.reference+" is ready for your review.",href:"/client/services",actionLabel:"Review quotation",priority:"high",requiresAction:true,dedupeKey:"quote-issued:"+String(quote._id),sourceType:"CommercialQuote",sourceId:String(quote._id)}).catch(error=>console.error("[Notifications] Quotation notification failed:",error));
       return NextResponse.json({ok:true,item:quote},{status:201});
     }
     if(action==="contract.create") {
@@ -183,6 +186,7 @@ export async function POST(request:NextRequest) {
       if(typeof body.terms!=="string"||body.terms.trim().length<30)return fail("Contract terms must contain at least 30 characters.");
       const contract=await CommercialContract.create({reference:reference("CONT"),proposalId:proposal._id,quoteId:quote._id,leadId:quote.leadId,clientId:quote.clientId,title:String(body.title||proposal.title),terms:body.terms.trim(),status:"issued",issuedAt:new Date(),createdBy:session.user._id});
       await audit(session,"sales.contract_issued","commercial_contract",String(contract._id),{reference:contract.reference});
+      if(contract.clientId)await notifyUser(contract.clientId,{category:"contract-issued",title:"A contract is ready for your review",body:"Contract "+contract.reference+" has been issued for your review and acceptance.",href:"/client/services",actionLabel:"Review contract",priority:"urgent",requiresAction:true,dedupeKey:"contract-issued:"+String(contract._id),sourceType:"CommercialContract",sourceId:String(contract._id)}).catch(error=>console.error("[Notifications] Contract notification failed:",error));
       return NextResponse.json({ok:true,item:contract},{status:201});
     }
     if(action==="order.create") {
@@ -193,6 +197,7 @@ export async function POST(request:NextRequest) {
       const order=await CommercialOrder.create({reference:reference("ORD"),clientId:contract.clientId,leadId:contract.leadId,proposalId:proposal._id,quoteId:quote._id,contractId:contract._id,title:proposal.title,amount:quote.total,currency:quote.currency,status:"pending",paymentStatus:"unconfigured",createdBy:session.user._id});
       const lead=await SalesLead.findById(contract.leadId);if(lead){lead.stage="won";await lead.save();}
       await audit(session,"commerce.order_created","commercial_order",String(order._id),{reference:order.reference,amount:order.amount,paymentStatus:order.paymentStatus});
+      await notifyUser(order.clientId,{category:"order-created",title:"Your order is confirmed",body:"Order "+order.reference+" has been created and is ready for the next step.",href:"/client/services",actionLabel:"View order",priority:"high",requiresAction:true,dedupeKey:"order-created:"+String(order._id),sourceType:"CommercialOrder",sourceId:String(order._id)}).catch(error=>console.error("[Notifications] Order notification failed:",error));
       return NextResponse.json({ok:true,item:order},{status:201});
     }
     if(action==="project.create") {
@@ -233,6 +238,10 @@ export async function POST(request:NextRequest) {
         order.status=previousOrderStatus;await order.save();throw error;
       }
       await audit(session,"delivery.project_created","delivery_project",String(project._id),{reference:project.reference,orderId:String(order._id),templateKey:template?.key||null,workspaceId:workspace?._id?String(workspace._id):null});
+      await Promise.all([
+        notifyUser(order.clientId,{category:"project-created",title:"Your delivery project is ready",body:"Project "+project.reference+" has been created with a private collaboration workspace.",href:"/client/projects",actionLabel:"Open project",priority:"high",requiresAction:true,dedupeKey:"project-created-client:"+String(project._id),sourceType:"DeliveryProject",sourceId:String(project._id)}),
+        notifyUsers([...(projectManager?[projectManager]:[]),...teamIds],{category:"project-assignment",title:"You have been assigned to a project",body:"You have been added to "+project.reference+" — "+project.name+".",href:"/workspaces",actionLabel:"Open project workspace",priority:"high",requiresAction:true,dedupeKey:"project-assignment:"+String(project._id),sourceType:"DeliveryProject",sourceId:String(project._id)}),
+      ]).catch(error=>console.error("[Notifications] Project provisioning notifications failed:",error));
       return NextResponse.json({ok:true,item:project,workspace:{id:String(workspace?._id),name:workspace?.name,href:"/workspaces"}},{status:201});
     }
     if(action==="milestone.create") {

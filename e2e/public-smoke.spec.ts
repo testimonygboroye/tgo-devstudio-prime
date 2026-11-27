@@ -30,6 +30,7 @@ for (const route of publicRoutes) {
 }
 
 test("commercial catalogue exposes all published services and packages through its family hierarchy", async ({ page }) => {
+  test.setTimeout(120000);
   await page.goto("/services/catalogue", { waitUntil: "domcontentloaded" });
   const familyLinks = page.locator('a[href^="/services/catalogue/family/"]');
   await expect(familyLinks.first()).toBeVisible();

@@ -6,6 +6,7 @@ import { getServerSession } from "@/lib/auth/serverSession";
 import { connectToDatabase } from "@/lib/db";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import CommercialService from "@/models/CommercialService";
+import { MARKET_BENCHMARK_RESEARCH } from "@/lib/commercial/market-benchmark-research";
 import SalesLead from "@/models/SalesLead";
 import User from "@/models/User";
 import CommercialProposal from "@/models/CommercialProposal";
@@ -73,6 +74,34 @@ export async function POST(request:NextRequest) {
   let body:Record<string,any>;try{body=await request.json();}catch{return fail("Invalid request body.");}
   const action=String(body.action||"");
   try {
+    if (action === "service.benchmarks.import_research") {
+      let updated = 0;
+      const skipped: string[] = [];
+      for (const research of MARKET_BENCHMARK_RESEARCH) {
+        const service = await CommercialService.findOne({ name: { $in: research.serviceNames } });
+        if (!service) {
+          skipped.push(research.serviceNames[0] + ": no exact catalogue service match");
+          continue;
+        }
+        if ((service.marketBenchmark?.sources || []).length > 0) {
+          skipped.push(service.name + ": existing benchmark evidence preserved");
+          continue;
+        }
+        service.marketBenchmark = { ...research.benchmark, checkedAt: new Date(research.benchmark.checkedAt) };
+        service.version = Math.max(1, Number(service.version || 1)) + 1;
+        await service.save();
+        updated += 1;
+      }
+      await audit(session, "commercial.market_benchmarks.imported", "CommercialService", "market-benchmark-research-2026-11", {
+        updated, skipped,
+        sourceCount: MARKET_BENCHMARK_RESEARCH.reduce((count, item) => count + item.benchmark.sources.length, 0),
+        checkedAt: "2026-11-27",
+      });
+      return NextResponse.json({
+        ok: true, updated, skipped,
+        message: updated + " sourced market benchmark record(s) imported. Existing evidence was not overwritten; unsupported service families remain custom-quote until verified research is added.",
+      });
+    }
     if(action==="template.create") {
       if(typeof body.name!=="string"||body.name.trim().length<3||typeof body.category!=="string"||!body.category.trim()||!Array.isArray(body.milestones)||!body.milestones.length)return fail("Template name, category and at least one milestone are required.");
       const template=await ProjectTemplate.create({key:String(body.key||body.name).toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,""),name:body.name.trim(),category:body.category.trim(),description:String(body.description||""),status:body.status==="active"?"active":"draft",milestones:body.milestones.map((m:any)=>({title:String(m.title||"").trim(),description:String(m.description||""),amount:Math.max(0,Number(m.amount||0)),currency:String(m.currency||body.currency||"USD").toUpperCase(),clientApprovalRequired:m.clientApprovalRequired!==false,tasks:Array.isArray(m.tasks)?m.tasks.map((t:any)=>({title:String(t.title||"").trim(),description:String(t.description||""),priority:["low","normal","high","urgent"].includes(t.priority)?t.priority:"normal"})):[]})),createdBy:session.user._id});

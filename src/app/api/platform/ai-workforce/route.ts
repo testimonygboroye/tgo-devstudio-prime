@@ -140,7 +140,7 @@ export async function GET() {
       AIChatbotConfig.findOneAndUpdate(
         { scope },
         { $set: { enabled: true }, $setOnInsert: {
-          scope, providerId: verifiedProvider?._id && modelName ? verifiedProvider._id : undefined,
+          scope, providerId: verifiedProvider?._id && verifiedProvider.lastTestedModel ? verifiedProvider._id : undefined,
           modelName: verifiedProvider?.lastTestedModel || "",
           welcomeMessage: scope === "public" ? "Welcome to TGO DevStudio. How can I help?" : "Hello. How can I help?",
           updatedBy: new mongoose.Types.ObjectId(String(session.user._id)),

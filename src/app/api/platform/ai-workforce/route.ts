@@ -196,7 +196,6 @@ export async function POST(request: NextRequest) {
         .populate("departmentId", "name")
         .sort({ level: 1, title: 1 })
         .lean();
-      if (!positions.length) return NextResponse.json({ status: "error", message: "Create and activate workforce positions before provisioning AI role counterparts." }, { status: 409 });
       const positionsById = new Map(positions.map((position) => [String(position._id), position] as const));
       type ProvisionDefinition = {
         positionId?: mongoose.Types.ObjectId;
@@ -545,14 +544,30 @@ export async function POST(request: NextRequest) {
         counterpartCount += 1;
       }
 
+      // Resolve actual AI-to-AI reporting references after all standard and private
+      // counterparts exist. The role label remains available for human-readable
+      // reporting even when the manager is the human founder rather than an AI role.
+      const standardAgents = await AIAgent.find({ createdBy: actorId, assignedUserId: { $exists: false } })
+        .select("_id role reportsToRole").lean();
+      const standardAgentByRole = new Map(standardAgents.map((agent) => [String(agent.role), agent] as const));
+      const provisionedAgents = await AIAgent.find({ createdBy: actorId })
+        .select("_id role reportsToRole assignedUserId").lean();
+      await Promise.all(provisionedAgents.map((agent) => {
+        const manager = standardAgentByRole.get(String(agent.reportsToRole || ""));
+        if (manager && String(manager._id) !== String(agent._id)) {
+          return AIAgent.updateOne({ _id: agent._id }, { $set: { reportsToAgentId: manager._id } });
+        }
+        return AIAgent.updateOne({ _id: agent._id }, { $unset: { reportsToAgentId: 1 } });
+      }));
+
       await writePlatformAuditEvent({
         actorType: "human", actorId, actorLabel: session.user.name,
         action: "ai.workforce.provisioned", module: "ai-workforce",
         targetType: "AIWorkforce", targetId: actorId, outcome: "success",
-        metadata: { createdCount, existingCount, counterpartCount, counterpartExistingCount, departments: workspaceIds.size, providerIndependent: true },
+        metadata: { createdCount, existingCount, counterpartCount, counterpartExistingCount, departments: workspaceIds.size, roleBlueprintCount: AI_ROLE_BLUEPRINT_NAMES.length, roleCounterpartCount: definitions.length, providerIndependent: true },
       });
       return NextResponse.json({
-        status: "ok", createdCount, existingCount, counterpartCount, counterpartExistingCount, departmentCount: workspaceIds.size,
+        status: "ok", createdCount, existingCount, counterpartCount, counterpartExistingCount, departmentCount: workspaceIds.size, roleBlueprintCount: AI_ROLE_BLUEPRINT_NAMES.length, roleCounterpartCount: definitions.length,
         message: createdCount + " AI department employees and " + counterpartCount + " private employee counterparts provisioned. All remain disabled until individually reviewed and enabled.",
       });
     }

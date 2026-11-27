@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { randomUUID } from "crypto";
 import { connectToDatabase } from "@/lib/db";
+import { notifyStaffWithPermission } from "@/lib/platform/notifications";
 import { sendAdminPush } from "@/lib/push/server";
 import { getAdminBasePath } from "@/lib/adminPath";
 import ContactSubmission, {
@@ -166,6 +167,19 @@ export async function POST(
       message: message.trim(),
       visitorId,
     });
+
+  void notifyStaffWithPermission(CONTENT_TYPE, {
+    category: "customer-enquiry",
+    title: "New customer enquiry",
+    body: submission.name + " submitted a " + submission.subject + " enquiry.",
+    href: getAdminBasePath() + "/contact",
+    actionLabel: "Review enquiry",
+    priority: "high",
+    requiresAction: true,
+    dedupeKey: "contact-submission:" + submission._id.toString(),
+    sourceType: "ContactSubmission",
+    sourceId: submission._id.toString(),
+  }).catch((error) => console.error("[Notifications] Contact enquiry notification failed:", error));
 
   if (visitorId) {
     await Visitor.findOneAndUpdate(

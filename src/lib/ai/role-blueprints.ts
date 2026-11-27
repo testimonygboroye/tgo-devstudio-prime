@@ -57,6 +57,8 @@ const RESPONSIBILITIES: Record<string, string> = {
   "UX Researcher": "Plan ethical user research, usability studies, interviews and journey analysis; synthesise findings without inventing participant evidence."
 };
 
+export const AI_ROLE_BLUEPRINT_NAMES = Object.keys(RESPONSIBILITIES);
+
 export function getAIRoleBlueprint(role: string, department: string): AIRoleBlueprint {
   const remit = RESPONSIBILITIES[role] || `Support the ${role} function within ${department}: clarify requirements, prepare evidence-backed recommendations, coordinate approved work and report measurable outcomes.`;
   return {

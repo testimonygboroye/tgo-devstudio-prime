@@ -95,6 +95,7 @@ export async function POST(request:NextRequest) {
       if(typeof body.preferredAt==="string"&&body.preferredAt&&(!Number.isFinite(new Date(body.preferredAt).getTime())||new Date(body.preferredAt)<new Date()))return fail("Choose a future preferred date and time.");
       const booking=await ConsultationBooking.create({clientId:user._id,firstName:user.firstName||firstName,middleName:user.middleName,lastName:user.lastName||lastName,email:user.email,phone:typeof body.phone==="string"?body.phone:"",topic:body.topic.trim(),details:typeof body.details==="string"?body.details:"",preferredAt:typeof body.preferredAt==="string"&&body.preferredAt?new Date(body.preferredAt):undefined,timezone:typeof body.timezone==="string"?body.timezone:"Africa/Lagos",meetingMode:typeof body.meetingMode==="string"&&["online","phone","in_person"].includes(body.meetingMode)?body.meetingMode as "online"|"phone"|"in_person":"online",status:"requested",provider:"manual"});
       await logClient(session,"client.consultation_requested","consultation_booking",String(booking._id),"Client requested a consultation.",{topic:booking.topic,preferredAt:booking.preferredAt?.toISOString()||null});
+      await notifyFounders({category:"consultation-request",title:"New client consultation request",body:user.name+" requested a consultation about "+booking.topic+".",href:getAdminBasePath()+"/commercial",actionLabel:"Review consultation",priority:"high",requiresAction:true,dedupeKey:"consultation-request:"+String(booking._id),sourceType:"ConsultationBooking",sourceId:String(booking._id)}).catch(error=>console.error("[Notifications] Consultation request notification failed:",error));
       return NextResponse.json({ok:true,message:"Your consultation request has been received. The team will confirm a time.",item:booking},{status:201});
     }
     if(action==="contract.accept") {
@@ -130,6 +131,7 @@ export async function POST(request:NextRequest) {
       if(typeof body.title!=="string"||body.title.trim().length<4||typeof body.description!=="string"||body.description.trim().length<20)return fail("Enter a change title and explain the requested change (at least 20 characters).");
       const change=await ProjectChangeRequest.create({projectId:project._id,clientId:user._id,requestedBy:user._id,title:body.title.trim(),description:body.description.trim(),currency:"USD",status:"submitted"});
       await logClient(session,"client.change_request_submitted","project_change_request",String(change._id),"Client submitted a project change request.",{projectId:String(project._id)});
+      await notifyFounders({category:"project-change-request",title:"Client submitted a project change request",body:user.name+" requested a change to project "+(project.reference||String(project._id))+".",href:getAdminBasePath()+"/commercial",actionLabel:"Assess change request",priority:"high",requiresAction:true,dedupeKey:"project-change-request:"+String(change._id),sourceType:"ProjectChangeRequest",sourceId:String(change._id)}).catch(error=>console.error("[Notifications] Change request notification failed:",error));
       return NextResponse.json({ok:true,message:"Your change request has been submitted for impact assessment.",item:change},{status:201});
     }
     if(action==="project.review"){
@@ -144,6 +146,7 @@ export async function POST(request:NextRequest) {
       const review=await ProjectClientReview.create({projectId:project._id,clientId:user._id,rating,title,feedback,status:"submitted",submittedAt:new Date()});
       await awardEngagementPoints({clientId:String(user._id),eventKey:"project-review:"+String(review._id),eventType:"review_submitted",metadata:{projectId:String(project._id),reviewId:String(review._id),rating}});
       await logClient(session,"client.project_review_submitted","project_client_review",String(review._id),"Client submitted a completed-project review.",{projectId:String(project._id),rating});
+      await notifyFounders({category:"client-project-review",title:"New client project review",body:user.name+" submitted a "+rating+"-star project review.",href:getAdminBasePath()+"/reviews",actionLabel:"Moderate project review",priority:"high",requiresAction:true,dedupeKey:"client-project-review:"+String(review._id),sourceType:"ProjectClientReview",sourceId:String(review._id)}).catch(error=>console.error("[Notifications] Client project review notification failed:",error));
       return NextResponse.json({ok:true,message:"Thank you. Your project review has been submitted for moderation.",item:review},{status:201});
     }
     return fail("Unsupported client commercial action.");

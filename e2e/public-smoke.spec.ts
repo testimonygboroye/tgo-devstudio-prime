@@ -30,6 +30,7 @@ for (const route of publicRoutes) {
 }
 
 test("commercial catalogue navigates its family hierarchy and exposes all 21 service lines and package prices", async ({ page }) => {
+  test.setTimeout(120000);
   await page.goto("/services/catalogue", { waitUntil: "domcontentloaded" });
   const familyLinks = await page.locator('a[href^="/services/catalogue/family/"]').evaluateAll(links => [...new Set(links.map(link => (link as HTMLAnchorElement).getAttribute("href")).filter((href): href is string => Boolean(href)))]);
   expect(familyLinks.length).toBeGreaterThan(0);

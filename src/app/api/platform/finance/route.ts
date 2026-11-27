@@ -28,6 +28,7 @@ import {getPaymentProvider} from "@/lib/payments/provider";
 import {sendNotificationEmail} from "@/lib/email/sendEmail";
 import {getPublicSiteUrl} from "@/lib/site-url";
 import {getVerifiedIntegrationCredentials} from "@/lib/integrations/credentials";
+import { notifyUser } from "@/lib/platform/notifications";
 
 export const dynamic="force-dynamic";
 const PAYSTACK_CURRENCIES_BY_COUNTRY:Record<string,string[]>={NG:["NGN","USD"],GH:["GHS"],KE:["KES","USD"],ZA:["ZAR"],CI:["XOF"]};
@@ -156,6 +157,7 @@ export async function POST(request:NextRequest){
     try{const site=getPublicSiteUrl();await sendNotificationEmail({toEmail:client.email,toName:client.name,subject:`TGO DevStudio invoice ${invoice.reference}`,htmlContent:`<div style="font-family:Arial,sans-serif;color:#172033"><h2>Your TGO DevStudio invoice is ready</h2><p>Hello ${escapeHtml(client.name)},</p><p>Invoice <strong>${invoice.reference}</strong> for ${invoice.currency} ${fromMinorUnits(invoice.totalMinor,invoice.currency).toLocaleString()} is available in your client portal.</p><p><a href="${site}/client/services">Open your client portal</a></p></div>`});}catch(emailError){console.error("Invoice notification email failed",emailError);}
    }
    await audit(session,"finance.invoice_issued","finance_invoice",String(invoice._id),{reference:invoice.reference});
+   await notifyUser(invoice.clientId,{category:"invoice-issued",title:"A new invoice is ready",body:"Invoice "+invoice.reference+" has been issued and is available in your client portal.",href:"/client/finance",actionLabel:"View invoice",priority:"high",requiresAction:true,dedupeKey:"invoice-issued:"+String(invoice._id),sourceType:"FinanceInvoice",sourceId:String(invoice._id)}).catch(error=>console.error("[Notifications] Client invoice notification failed:",error));
    return NextResponse.json({ok:true,item:invoice,message:"Invoice issued. The client portal now shows the invoice."});
   }
   if(action==="expense.create"){

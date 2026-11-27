@@ -694,6 +694,7 @@ export async function POST(request: NextRequest) {
       const agent = await AIAgent.findById(body.agentId);
       if (!agent) return NextResponse.json({ status: "error", message: "Agent not found." }, { status: 404 });
       if (body.action === "agent.enable") {
+        if (agent.operationalStatus !== "ready") return NextResponse.json({ status: "error", message: "This AI employee cannot be enabled until every readiness requirement is satisfied.", issues: agent.lastReadinessIssues || [] }, { status: 409 });
         agent.enabled = true;
         agent.disabledAt = undefined;
       } else { agent.enabled = false; agent.disabledAt = new Date(); }
@@ -707,6 +708,7 @@ export async function POST(request: NextRequest) {
     if (body.action === "task.enqueue") {
       const agent = await AIAgent.findOne({ _id: body.agentId, enabled: true });
       if (!agent) return NextResponse.json({ status: "error", message: "Agent is unavailable or disabled." }, { status: 400 });
+      if (agent.operationalStatus !== "ready") return NextResponse.json({ status: "error", message: "This AI employee is not operationally ready and cannot receive new work.", issues: agent.lastReadinessIssues || [] }, { status: 409 });
       const title = String(body.title || "").trim(), input = String(body.input || "").trim();
       if (!title || !input) return NextResponse.json({ status: "error", message: "Task title and instructions are required." }, { status: 400 });
       const operation = body.operation ? String(body.operation) : "";

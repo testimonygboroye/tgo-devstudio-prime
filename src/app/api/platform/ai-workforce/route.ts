@@ -251,7 +251,7 @@ export async function POST(request: NextRequest) {
           existing.description = definition.description;
           existing.responsibilities = definition.responsibilities;
           existing.deliverables = definition.deliverables;
-          existing.jobTitle = definition.role;
+          existing.jobTitle = definition.role;\n          if (verifiedProvider?._id) existing.providerId = verifiedProvider._id as mongoose.Types.ObjectId;\n          existing.modelName = modelName;
           existing.reportsToRole = definition.reportsToRole;
           existing.systemInstructions = definition.systemInstructions;
           existing.permissions = definition.permissions;

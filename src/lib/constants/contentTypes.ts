@@ -14,6 +14,11 @@ export const MANAGED_CONTENT_TYPES = [
   { key: "bookACallSettings", label: "Book a Call Settings" },
   { key: "stackItems", label: "Stack Items" },
   { key: "helpArticles", label: "Help Articles" },
+  { key: "customerSupport", label: "Customer Support" },
+  { key: "consultations", label: "Consultation Requests" },
+  { key: "projectChanges", label: "Project Change Requests" },
+  { key: "aiWorkforce", label: "AI Workforce & Feedback" },
+  { key: "finance", label: "Finance & Payment Events" },
   { key: "newsletterSubscribers", label: "Newsletter Subscribers" },
   { key: "faqItems", label: "FAQ Items" },
 ] as const;

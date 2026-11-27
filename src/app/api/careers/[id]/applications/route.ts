@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { connectToDatabase } from "@/lib/db";
+import { notifyStaffWithPermission } from "@/lib/platform/notifications";
 import { sendAdminPush } from "@/lib/push/server";
 import { getAdminBasePath } from "@/lib/adminPath";
 import JobOpening from "@/models/JobOpening";
@@ -96,6 +97,19 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     resumeUrl,
     resumePublicId,
   });
+
+  void notifyStaffWithPermission(CONTENT_TYPE, {
+    category: "recruitment-application",
+    title: "New job application",
+    body: application.applicantName + " applied for " + job.title + ".",
+    href: getAdminBasePath() + "/applications",
+    actionLabel: "Review application",
+    priority: "high",
+    requiresAction: true,
+    dedupeKey: "job-application:" + application._id.toString(),
+    sourceType: "JobApplication",
+    sourceId: application._id.toString(),
+  }).catch((error) => console.error("[Notifications] Job application notification failed:", error));
 
   after(async () => {
     try {

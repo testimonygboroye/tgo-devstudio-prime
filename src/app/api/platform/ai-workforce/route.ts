@@ -37,6 +37,7 @@ import { readGitHubRepository, readGitHubFile, writeGitHubFile, createGitHubPull
 import { getAIRoleBlueprint, getAIRolePermissions } from "@/lib/ai/role-blueprints";
 import { parseGitHubCodeChangeResponse } from "@/lib/ai/github-code-change";
 import { buildAccessibleAIAgentFilter } from "@/lib/messaging/aiAgentAccess";
+import { evaluateAgentReadiness } from "@/lib/ai/agent-readiness";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -211,7 +212,10 @@ export async function POST(request: NextRequest) {
           role: position.title,
           department,
           permissions: getAIRolePermissions(position.title),
-          description: blueprint.description,
+          description: String(position.description || blueprint.description),
+          responsibilities: [blueprint.description],
+          deliverables: ["Completed role tasks with evidence", "Weekly department status and risk report", "Escalations requiring founder or manager decision"],
+          reportsToRole: "Department Manager / Founder",
           systemInstructions: blueprint.systemInstructions,
         };
       });
@@ -242,8 +246,23 @@ export async function POST(request: NextRequest) {
           existing.role = definition.role;
           existing.department = definition.department;
           existing.description = definition.description;
+          existing.responsibilities = definition.responsibilities;
+          existing.deliverables = definition.deliverables;
+          existing.jobTitle = definition.role;
+          existing.reportsToRole = definition.reportsToRole;
           existing.systemInstructions = definition.systemInstructions;
           existing.permissions = definition.permissions;
+          existing.toolAllowlist = definition.permissions;
+          existing.approvalRequirements = ["external_communications", "financial_actions", "production_changes", "permission_changes", "legal_or_hr_decisions"];
+          existing.autonomyLevel = "approved_tasks";
+          existing.memoryConfig = { enabled: true, identityKey: existing.memoryKey || buildAgentMemoryKey({ role: definition.role, department: definition.department }), sharedMemoryScopes: ["company-approved", "department-approved"], privateMemoryEnabled: true, retentionDays: 365 };
+          existing.executionConfig = { maxConcurrentTasks: 1, maxRetries: 2, timeoutSeconds: 120, maxDailyTokens: existing.maxDailyTokens || 100000, maxDailySpendNaira: 0, scheduleEnabled: false };
+          existing.performanceTargets = [{ metric: "task_completion_rate", target: 90, unit: "percent" }, { metric: "human_rework_rate", target: 10, unit: "percent_max" }];
+          const readiness = evaluateAgentReadiness({ jobTitle: existing.jobTitle, department: existing.department, description: existing.description, responsibilities: existing.responsibilities, deliverables: existing.deliverables, systemInstructions: existing.systemInstructions, permissions: existing.permissions, toolAllowlist: existing.toolAllowlist, reportsToRole: existing.reportsToRole, memoryConfig: existing.memoryConfig, executionConfig: existing.executionConfig, approvalRequirements: existing.approvalRequirements, performanceTargets: existing.performanceTargets, modelName: existing.modelName });
+          existing.operationalStatus = readiness.status;
+          existing.lastReadinessIssues = readiness.issues;
+          existing.lastReadinessCheckAt = new Date();
+          existing.requiresHumanReview = true;
           existing.requiresApproval = true;
           existing.workspaceId = workspaceIds.get(definition.department);
           existing.memoryKey = buildAgentMemoryKey({ role: definition.role, department: definition.department, workspaceId: workspaceIds.get(definition.department), assignedUserId: existing.assignedUserId });
@@ -256,15 +275,28 @@ export async function POST(request: NextRequest) {
           role: definition.role,
           department: definition.department,
           description: definition.description,
+          jobTitle: definition.role,
+          responsibilities: definition.responsibilities,
+          deliverables: definition.deliverables,
+          reportsToRole: definition.reportsToRole,
           workspaceId: workspaceIds.get(definition.department),
           memoryKey: buildAgentMemoryKey({ role: definition.role, department: definition.department, workspaceId: workspaceIds.get(definition.department) }),
           positionId: definition.positionId,
           modelName,
           systemInstructions: definition.systemInstructions,
           permissions: definition.permissions,
-          requiresApproval: true,
+          toolAllowlist: definition.permissions,
+          approvalRequirements: ["external_communications", "financial_actions", "production_changes", "permission_changes", "legal_or_hr_decisions"],
+          autonomyLevel: "approved_tasks",
+          memoryConfig: { enabled: true, identityKey: buildAgentMemoryKey({ role: definition.role, department: definition.department }), sharedMemoryScopes: ["company-approved", "department-approved"], privateMemoryEnabled: true, retentionDays: 365 },
+          executionConfig: { maxConcurrentTasks: 1, maxRetries: 2, timeoutSeconds: 120, maxDailyTokens: 100000, maxDailySpendNaira: 0, scheduleEnabled: false },
+          performanceTargets: [{ metric: "task_completion_rate", target: 90, unit: "percent" }, { metric: "human_rework_rate", target: 10, unit: "percent_max" }],
+          operationalStatus: definition.permissions.length ? "needs_review" : "needs_review",
+          lastReadinessIssues: ["Provider/model must be configured and tested.", "Founder must review role-specific tools and reporting line."],
+          lastReadinessCheckAt: new Date(),
+          requiresHumanReview: true,
           maxDailyTokens: 100000,
-          enabled: true,
+          enabled: false,
           createdBy: actorId,
         });
         createdCount += 1;

@@ -38,6 +38,10 @@
 | Maintenance & Support — app maintenance allowance | 15%–25% of original build cost/year | Percentage planning allowance, not a monthly cash price | Inventrium / Nexoris 2026 software-cost guides |
 | Modernisation & Migration — data cleaning / migration | ₦200,000–₦3,000,000 | Component-level one-off range only | LineTech 2026 digital-transformation cost guide |
 | Technical Training & Enablement | ₦150,000–₦1,500,000 | One-off training/adoption-support range | LineTech 2026 digital-transformation cost guide |
+| UI/UX & Product Design | ₦120,000–₦1,200,000 | UX audit through enterprise product design; one-off project range | DigitalX and MZ Technologies published Nigerian package prices |
+| Cybersecurity | ₦150,000–₦2,000,000 | One-off security audit and penetration-test range; complex red-team work can be much higher | Inventrium 2026 cybersecurity guide; 6030 Technologies penetration-testing guide |
+| Technical SEO & Optimisation | ₦150,000–₦500,000/month | Established-agency monthly retainer band; audits are separate | KD Tech NG and Nivarix 2026 SEO pricing guides |
+
 
 ## Families that must remain custom-quote / benchmark-unverified
 
@@ -45,12 +49,9 @@ The sources reviewed did not provide sufficiently comparable, independently chec
 
 - Desktop Software Development
 - SaaS & Digital Products (standalone subscription products vary by seat, usage and support; do not confuse SaaS subscription price with product engineering cost)
-- UI/UX & Product Design
 - AI Agents (distinct from a basic chatbot or knowledge-base assistant)
 - Cloud Infrastructure implementation (separate from cloud hosting bills and a DevOps audit)
-- Cybersecurity assessments / penetration testing
 - Quality Assurance & Software Testing
-- Technical SEO & Optimisation
 - IoT & Connected Systems
 - Advanced Digital Technologies (blockchain, AR/VR and similar specialist work)
 
@@ -68,6 +69,13 @@ These are deliberately marked unverified rather than assigned invented prices. A
 8. DPX Digital Network, “How Much Does It Cost to Build an App in Nigeria? (2026 Price Guide),” updated 25 November 2026: https://dpx.com.ng/app-development-cost-nigeria/
 9. Inventrium, “How Much Does Mobile App Development Cost in Nigeria? (2026 Price Guide),” last updated June 2026: https://www.inventrium.net/guides/mobile-app-development-cost-nigeria
 10. Nexoris, “Custom Software Development Cost in Nigeria 2026,” updated 1 October 2026: https://nexoristech.com/insights/custom-software-development-cost-nigeria/
+
+11. DigitalX, “UI/UX Design Packages,” published Nigerian project prices: https://www.digitalx.com.ng/uiux-design
+12. MZ Technologies, “UI/UX Design Pricing,” published Nigerian project prices: https://mztech.com.ng/ui-ux-design.html
+13. Inventrium, “Cybersecurity Cost in Nigeria (2026 Prices),” updated June 2026: https://www.inventrium.net/guides/cybersecurity-cost-nigeria
+14. 6030 Technologies, “Penetration Testing in Nigeria: Costs & Compliance (2026)”: https://6030technologies.com/penetration-testing-in-nigeria-and-costs/
+15. KD Tech NG, “How Much Does SEO Cost in Nigeria? (2026 Prices),” 15 July 2026: https://www.kdtechng.com/tech-blog/seo-cost-nigeria
+16. Nivarix, “SEO Cost in Nigeria 2026,” 8 October 2026: https://nivarix.com/insights/seo-cost-nigeria-2026
 
 ## Catalogue entry policy
 

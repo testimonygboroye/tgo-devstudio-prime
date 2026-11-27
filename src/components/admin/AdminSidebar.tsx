@@ -20,6 +20,7 @@ import {
   PlugZap,
   Megaphone,
   Search,
+  PackageCheck,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -58,6 +59,7 @@ const NAV_GROUPS = [
   ]},
   { title: "Website & Creative Studio", items: [
     { label: "Content Studio", hrefSuffix: "/content-studio", icon: Image, badgeKey: null },
+    { label: "Commercial Catalogue", hrefSuffix: "/commercial-catalogue", icon: PackageCheck, badgeKey: null },
   ]},
   { title: "Security, Compliance & Administration", items: [
     { label: "Security & Administration", hrefSuffix: "/security-administration", icon: ShieldCheck, badgeKey: null },
@@ -97,6 +99,7 @@ const NAV_ROUTE_ALIASES: Record<string, string> = {
   "/public-pages": "/content-studio",
   "/site-settings": "/content-studio",
   "/services": "/content-studio",
+  "/commercial-catalogue": "/content-studio",
   "/case-studies": "/content-studio",
   "/process": "/content-studio",
   "/team": "/content-studio",
@@ -125,6 +128,7 @@ const NAV_SEARCH_TERMS: Record<string, string[]> = {
   "/sales-client-relations": ["clients", "client management", "enquiries", "contact submissions", "book a call", "commercial", "sales", "delivery", "proposals", "contracts", "projects"],
   "/communications": ["messages", "conversations", "support", "tickets", "newsletter", "whatsapp", "internal communication", "ai task conversations"],
   "/people-operations": ["workforce", "employees", "users", "access", "invitations", "recruitment", "applications", "business operations", "payroll", "compensation", "training", "documents", "vault", "workspaces", "roles"],
+  "/commercial-catalogue": ["commercial catalogue","service families","service categories","packages","pricing","promotions","benchmarks"],
   "/content-studio": ["homepage", "site pages", "legal", "accessibility", "privacy policy", "terms", "cookies", "landing pages", "services", "case studies", "process", "team", "blog", "careers", "faqs", "reviews", "technology stack", "media library", "homepage media", "media collections", "advertising"],
   "/security-administration": ["security", "two factor", "2fa", "privacy", "requests", "audit", "settings", "theme", "language", "notifications", "help", "guide", "knowledge base", "availability"],
 };

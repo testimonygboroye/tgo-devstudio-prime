@@ -23,6 +23,9 @@ import DeliveryProject from "@/models/DeliveryProject";
 import DeliveryMilestone from "@/models/DeliveryMilestone";
 import DeliveryTask from "@/models/DeliveryTask";
 import ProjectDeliverable from "@/models/ProjectDeliverable";
+import JobOpening from "@/models/JobOpening";
+import JobApplication from "@/models/JobApplication";
+import CommercialContract from "@/models/CommercialContract";
 import Position from "@/models/Position";
 import Department from "@/models/Department"; // Registers the Department model before Position.departmentId populate().
 import FinanceSettings from "@/models/FinanceSettings";
@@ -37,6 +40,7 @@ import { readGitHubRepository, readGitHubFile, writeGitHubFile, createGitHubPull
 import { getAIRoleBlueprint, getAIRolePermissions } from "@/lib/ai/role-blueprints";
 import { parseGitHubCodeChangeResponse } from "@/lib/ai/github-code-change";
 import { buildAccessibleAIAgentFilter } from "@/lib/messaging/aiAgentAccess";
+import { evaluateAgentReadiness } from "@/lib/ai/agent-readiness";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -195,23 +199,30 @@ export async function POST(request: NextRequest) {
   try {
     if (body.action === "team.provision") {
       // Provision TGO AI employees independently of any particular inference provider.
-      const modelName = "";
+      const verifiedProvider = await AIProvider.findOne({ enabled: true, lastTestStatus: "success", archivedAt: { $exists: false } }).sort({ lastTestedAt: -1 }).lean();
+      const modelName = String(verifiedProvider?.lastTestedModel || "");
 
       const positions = await Position.find({ status: "active" })
         .populate("departmentId", "name")
         .sort({ level: 1, title: 1 })
         .lean();
       if (!positions.length) return NextResponse.json({ status: "error", message: "Create and activate workforce positions before provisioning AI role counterparts." }, { status: 409 });
+      const positionsById = new Map(positions.map((position) => [String(position._id), position] as const));
       const definitions = positions.map((position) => {
         const department = String((position.departmentId as unknown as { name?: string })?.name || "General Operations");
         const blueprint = getAIRoleBlueprint(position.title, department);
+        const reportingId = String((position as unknown as { reportsToPositionId?: unknown }).reportsToPositionId || "");
+        const reportingPosition = reportingId ? positionsById.get(reportingId) : undefined;
         return {
           positionId: position._id as mongoose.Types.ObjectId,
           name: ("AI " + position.title).slice(0, 100),
           role: position.title,
           department,
           permissions: getAIRolePermissions(position.title),
-          description: blueprint.description,
+          description: String(position.description || blueprint.description),
+          responsibilities: blueprint.responsibilities,
+          deliverables: blueprint.deliverables,
+          reportsToRole: reportingPosition?.title || "Founder / Department Leadership",
           systemInstructions: blueprint.systemInstructions,
         };
       });
@@ -242,8 +253,25 @@ export async function POST(request: NextRequest) {
           existing.role = definition.role;
           existing.department = definition.department;
           existing.description = definition.description;
+          existing.responsibilities = definition.responsibilities;
+          existing.deliverables = definition.deliverables;
+          existing.jobTitle = definition.role;
+          if (verifiedProvider?._id) existing.providerId = verifiedProvider._id as mongoose.Types.ObjectId;
+          existing.modelName = modelName;
+          existing.reportsToRole = definition.reportsToRole;
           existing.systemInstructions = definition.systemInstructions;
           existing.permissions = definition.permissions;
+          existing.toolAllowlist = definition.permissions;
+          existing.approvalRequirements = ["external_communications", "financial_actions", "production_changes", "permission_changes", "legal_or_hr_decisions"];
+          existing.autonomyLevel = "approved_tasks";
+          existing.memoryConfig = { enabled: true, identityKey: existing.memoryKey || buildAgentMemoryKey({ role: definition.role, department: definition.department }), sharedMemoryScopes: ["company-approved", "department-approved"], privateMemoryEnabled: true, retentionDays: 365 };
+          existing.executionConfig = { maxConcurrentTasks: 1, maxRetries: 2, timeoutSeconds: 120, maxDailyTokens: existing.maxDailyTokens || 100000, maxDailySpendNaira: 0, scheduleEnabled: false };
+          existing.performanceTargets = [{ metric: "task_completion_rate", target: 90, unit: "percent" }, { metric: "human_rework_rate", target: 10, unit: "percent_max" }];
+          const readiness = evaluateAgentReadiness({ jobTitle: existing.jobTitle, department: existing.department, description: existing.description, responsibilities: existing.responsibilities, deliverables: existing.deliverables, systemInstructions: existing.systemInstructions, permissions: existing.permissions, toolAllowlist: existing.toolAllowlist, reportsToRole: existing.reportsToRole, memoryConfig: existing.memoryConfig, executionConfig: existing.executionConfig, approvalRequirements: existing.approvalRequirements, performanceTargets: existing.performanceTargets, modelName: existing.modelName });
+          existing.operationalStatus = readiness.status;
+          existing.lastReadinessIssues = readiness.issues;
+          existing.lastReadinessCheckAt = new Date();
+          existing.requiresHumanReview = true;
           existing.requiresApproval = true;
           existing.workspaceId = workspaceIds.get(definition.department);
           existing.memoryKey = buildAgentMemoryKey({ role: definition.role, department: definition.department, workspaceId: workspaceIds.get(definition.department), assignedUserId: existing.assignedUserId });
@@ -251,20 +279,50 @@ export async function POST(request: NextRequest) {
           existingCount += 1;
           continue;
         }
+        const readiness = evaluateAgentReadiness({
+          jobTitle: definition.role,
+          department: definition.department,
+          description: definition.description,
+          responsibilities: definition.responsibilities,
+          deliverables: definition.deliverables,
+          systemInstructions: definition.systemInstructions,
+          permissions: definition.permissions,
+          toolAllowlist: definition.permissions,
+          reportsToRole: definition.reportsToRole,
+          memoryConfig: { enabled: true, identityKey: buildAgentMemoryKey({ role: definition.role, department: definition.department }), sharedMemoryScopes: ["company-approved", "department-approved"] },
+          executionConfig: { maxConcurrentTasks: 1, timeoutSeconds: 120, maxDailyTokens: 100000 },
+          approvalRequirements: ["external_communications", "financial_actions", "production_changes", "permission_changes", "legal_or_hr_decisions"],
+          performanceTargets: [{ metric: "task_completion_rate", target: 90, unit: "percent" }, { metric: "human_rework_rate", target: 10, unit: "percent_max" }],
+          modelName,
+        });
         await AIAgent.create({
           name: definition.name,
           role: definition.role,
           department: definition.department,
           description: definition.description,
+          jobTitle: definition.role,
+          responsibilities: definition.responsibilities,
+          deliverables: definition.deliverables,
+          reportsToRole: definition.reportsToRole,
           workspaceId: workspaceIds.get(definition.department),
           memoryKey: buildAgentMemoryKey({ role: definition.role, department: definition.department, workspaceId: workspaceIds.get(definition.department) }),
           positionId: definition.positionId,
           modelName,
+          providerId: verifiedProvider?._id,
           systemInstructions: definition.systemInstructions,
           permissions: definition.permissions,
-          requiresApproval: true,
+          toolAllowlist: definition.permissions,
+          approvalRequirements: ["external_communications", "financial_actions", "production_changes", "permission_changes", "legal_or_hr_decisions"],
+          autonomyLevel: "approved_tasks",
+          memoryConfig: { enabled: true, identityKey: buildAgentMemoryKey({ role: definition.role, department: definition.department }), sharedMemoryScopes: ["company-approved", "department-approved"], privateMemoryEnabled: true, retentionDays: 365 },
+          executionConfig: { maxConcurrentTasks: 1, maxRetries: 2, timeoutSeconds: 120, maxDailyTokens: 100000, maxDailySpendNaira: 0, scheduleEnabled: false },
+          performanceTargets: [{ metric: "task_completion_rate", target: 90, unit: "percent" }, { metric: "human_rework_rate", target: 10, unit: "percent_max" }],
+          operationalStatus: readiness.status,
+          lastReadinessIssues: readiness.issues,
+          lastReadinessCheckAt: new Date(),
+          requiresHumanReview: true,
           maxDailyTokens: 100000,
-          enabled: true,
+          enabled: false,
           createdBy: actorId,
         });
         createdCount += 1;
@@ -277,17 +335,19 @@ export async function POST(request: NextRequest) {
       const activeEmployees = await EmployeeProfile.find({
         employmentStatus: "active",
         accessSuspendedByWorkforce: { $ne: true },
-      }).populate("userId", "name").populate("departmentId", "name").populate("positionId", "title").lean();
+      }).populate("userId", "name").populate("departmentId", "name").populate("positionId", "title reportsToPositionId").lean();
       for (const employee of activeEmployees) {
         const person = employee.userId as unknown as { _id?: mongoose.Types.ObjectId; name?: string } | null;
         const personId = person?._id || (employee.userId as unknown as mongoose.Types.ObjectId);
         if (!personId || !mongoose.isValidObjectId(String(personId))) continue;
         const existing = await AIAgent.findOne({ assignedUserId: personId });
-        if (existing) { counterpartExistingCount += 1; continue; }
         const department = String((employee.departmentId as unknown as { name?: string })?.name || "General Operations");
         const positionDoc = employee.positionId as unknown as { _id?: mongoose.Types.ObjectId; title?: string };
         const position = String(positionDoc?.title || "Team Member");
         const blueprint = getAIRoleBlueprint(position, department);
+        const reportingId = String((positionDoc as unknown as { reportsToPositionId?: unknown }).reportsToPositionId || "");
+        const reportingPosition = reportingId ? positionsById.get(reportingId) : undefined;
+        const reportsToRole = reportingPosition?.title || "Founder / Department Leadership";
         let workspaceId = workspaceIds.get(department);
         if (!workspaceId) {
           const workspace = await AIWorkspace.findOneAndUpdate(
@@ -299,19 +359,57 @@ export async function POST(request: NextRequest) {
           workspaceIds.set(department, workspaceId);
         }
         const employeeName = String(person?.name || employee.employeeCode || "Employee").trim();
+        const permissions = getAIRolePermissions(position);
+        const memoryKey = buildAgentMemoryKey({ role: position, department, workspaceId, assignedUserId: personId });
+        const memoryConfig = { enabled: true, identityKey: memoryKey, sharedMemoryScopes: ["company-approved", "department-approved"], privateMemoryEnabled: true, retentionDays: 365 };
+        const executionConfig = { maxConcurrentTasks: 1, maxRetries: 2, timeoutSeconds: 120, maxDailyTokens: 50000, maxDailySpendNaira: 0, scheduleEnabled: false };
+        const approvalRequirements = ["external_communications", "financial_actions", "production_changes", "permission_changes", "legal_or_hr_decisions"];
+        const performanceTargets = [{ metric: "task_completion_rate", target: 90, unit: "percent" }, { metric: "human_rework_rate", target: 10, unit: "percent_max" }];
+        const privateDescription = "Private AI counterpart assigned to one active employee. " + blueprint.description;
+        const privateInstructions = blueprint.systemInstructions + "\n\nPRIVATE ASSIGNMENT: You are assigned exclusively to the real employee " + employeeName + ". Do not disclose their private information to another employee. This personal counterpart remains limited to the same role scope and approved tools.";
+        const readiness = evaluateAgentReadiness({ jobTitle: position, department, description: privateDescription, responsibilities: blueprint.responsibilities, deliverables: blueprint.deliverables, systemInstructions: privateInstructions, permissions, toolAllowlist: permissions, reportsToRole, memoryConfig, executionConfig, approvalRequirements, performanceTargets, modelName });
+        if (existing) {
+          existing.name = (employeeName + " — AI " + position).slice(0, 100);
+          existing.role = position; existing.department = department; existing.jobTitle = position;
+          existing.description = privateDescription; existing.responsibilities = blueprint.responsibilities; existing.deliverables = blueprint.deliverables;
+          existing.reportsToRole = reportsToRole; existing.workspaceId = workspaceId;
+          existing.positionId = positionDoc?._id || employee.positionId; existing.memoryKey = existing.memoryKey || memoryKey;
+          existing.modelName = modelName; if (verifiedProvider?._id) existing.providerId = verifiedProvider._id as mongoose.Types.ObjectId;
+          existing.systemInstructions = privateInstructions; existing.permissions = permissions; existing.toolAllowlist = permissions;
+          existing.approvalRequirements = approvalRequirements; existing.autonomyLevel = "approved_tasks";
+          existing.memoryConfig = memoryConfig; existing.executionConfig = executionConfig; existing.performanceTargets = performanceTargets;
+          existing.operationalStatus = readiness.status; existing.lastReadinessIssues = readiness.issues; existing.lastReadinessCheckAt = new Date();
+          existing.requiresApproval = true; existing.requiresHumanReview = true;
+          await existing.save(); counterpartExistingCount += 1; continue;
+        }
         await AIAgent.create({
           name: (employeeName + " — AI " + position).slice(0, 100),
           role: position,
           department,
-          description: "Private AI counterpart assigned to one active employee. " + blueprint.description,
+          description: privateDescription,
           workspaceId,
-          memoryKey: buildAgentMemoryKey({ role: position, department, workspaceId, assignedUserId: personId }),
+          memoryKey,
           positionId: positionDoc?._id || employee.positionId,
           assignedUserId: personId,
           modelName,
-          systemInstructions: blueprint.systemInstructions + "\n\nPRIVATE ASSIGNMENT: You are assigned exclusively to the real employee " + employeeName + ". Do not disclose their private information to another employee. This personal counterpart remains limited to the same role scope and approved tools.",
-          permissions: [],
+          systemInstructions: privateInstructions,
+          responsibilities: blueprint.responsibilities,
+          deliverables: blueprint.deliverables,
+          jobTitle: position,
+          reportsToRole,
+          providerId: verifiedProvider?._id,
+          permissions,
+          toolAllowlist: permissions,
+          approvalRequirements,
+          autonomyLevel: "approved_tasks",
+          memoryConfig,
+          executionConfig,
+          performanceTargets,
+          operationalStatus: readiness.status,
+          lastReadinessIssues: readiness.issues,
+          lastReadinessCheckAt: new Date(),
           requiresApproval: true,
+          requiresHumanReview: true,
           maxDailyTokens: 50000,
           enabled: false,
           createdBy: actorId,
@@ -624,6 +722,11 @@ export async function POST(request: NextRequest) {
       const agent = await AIAgent.findById(body.agentId);
       if (!agent) return NextResponse.json({ status: "error", message: "Agent not found." }, { status: 404 });
       agent.permissions = [...new Set(body.permissions as string[])];
+      agent.toolAllowlist = [...agent.permissions];
+      const readiness = evaluateAgentReadiness({ jobTitle: agent.jobTitle, department: agent.department, description: agent.description, responsibilities: agent.responsibilities, deliverables: agent.deliverables, systemInstructions: agent.systemInstructions, permissions: agent.permissions, toolAllowlist: agent.toolAllowlist, reportsToRole: agent.reportsToRole, reportsToAgentId: agent.reportsToAgentId, memoryConfig: agent.memoryConfig, executionConfig: agent.executionConfig, approvalRequirements: agent.approvalRequirements, performanceTargets: agent.performanceTargets, modelName: agent.modelName });
+      agent.operationalStatus = readiness.status;
+      agent.lastReadinessIssues = readiness.issues;
+      agent.lastReadinessCheckAt = new Date();
       await agent.save();
       await writePlatformAuditEvent({ actorType: "human", actorId, action: "ai.agent.permissions_updated", module: "ai-workforce", targetType: "AIAgent", targetId: String(agent._id), outcome: "success", metadata: { permissions: agent.permissions } });
       return NextResponse.json({ status: "ok", permissions: agent.permissions, message: "Agent tool permissions updated." });
@@ -648,6 +751,7 @@ export async function POST(request: NextRequest) {
       const agent = await AIAgent.findById(body.agentId);
       if (!agent) return NextResponse.json({ status: "error", message: "Agent not found." }, { status: 404 });
       if (body.action === "agent.enable") {
+        if (agent.operationalStatus !== "ready") return NextResponse.json({ status: "error", message: "This AI employee cannot be enabled until every readiness requirement is satisfied.", issues: agent.lastReadinessIssues || [] }, { status: 409 });
         agent.enabled = true;
         agent.disabledAt = undefined;
       } else { agent.enabled = false; agent.disabledAt = new Date(); }
@@ -661,11 +765,12 @@ export async function POST(request: NextRequest) {
     if (body.action === "task.enqueue") {
       const agent = await AIAgent.findOne({ _id: body.agentId, enabled: true });
       if (!agent) return NextResponse.json({ status: "error", message: "Agent is unavailable or disabled." }, { status: 400 });
+      if (agent.operationalStatus !== "ready") return NextResponse.json({ status: "error", message: "This AI employee is not operationally ready and cannot receive new work.", issues: agent.lastReadinessIssues || [] }, { status: 409 });
       const title = String(body.title || "").trim(), input = String(body.input || "").trim();
       if (!title || !input) return NextResponse.json({ status: "error", message: "Task title and instructions are required." }, { status: 400 });
       const operation = body.operation ? String(body.operation) : "";
       const operationPayload = body.operationPayload && typeof body.operationPayload === "object" && !Array.isArray(body.operationPayload) ? body.operationPayload as Record<string, unknown> : {};
-      if (operation && (!["clients.read_summary", "projects.read_summary", "projects.status.update", "site.routes.health_check", "finance.summary.read", "integrations.status.read", "github.repository.read", "github.file.read", "github.file.write", "github.pull_request.create", "github.code_change.propose"].includes(operation) || !agent.permissions.includes(operation))) return NextResponse.json({ status: "error", message: "This agent has not been granted the selected business-operation permission." }, { status: 403 });
+      if (operation && (!["clients.read_summary", "projects.read_summary", "projects.status.update", "site.routes.health_check", "finance.summary.read", "integrations.status.read", "github.repository.read", "github.file.read", "github.file.write", "github.pull_request.create", "github.code_change.propose", "workforce.directory.read", "workforce.recruitment.read", "governance.contracts.read"].includes(operation) || !agent.permissions.includes(operation))) return NextResponse.json({ status: "error", message: "This agent has not been granted the selected business-operation permission." }, { status: 403 });
       if (operation && JSON.stringify(operationPayload).length > 4000) return NextResponse.json({ status: "error", message: "Business-operation parameters are too large." }, { status: 400 });
       if (operation === "clients.read_summary" && !mongoose.isValidObjectId(String(operationPayload.clientId || ""))) return NextResponse.json({ status: "error", message: "A valid client ID is required for this tool." }, { status: 400 });
       if (["projects.read_summary", "projects.status.update"].includes(operation) && !mongoose.isValidObjectId(String(operationPayload.projectId || ""))) return NextResponse.json({ status: "error", message: "A valid project ID is required for this tool." }, { status: 400 });
@@ -694,7 +799,7 @@ export async function POST(request: NextRequest) {
       if (!task) return NextResponse.json({ status: "error", message: "Task is not queued, was not approved, or is already running." }, { status: 409 });
       try {
         const agent = await AIAgent.findOne({ _id: task.agentId, enabled: true });
-        if (!agent || agent.requiresApproval !== true) throw new Error("Agent is disabled or its approval policy is invalid.");
+        if (!agent || agent.requiresApproval !== true || agent.operationalStatus !== "ready") throw new Error("Agent is disabled, not operationally ready, or its approval policy is invalid. Complete the readiness review before execution.");
         const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0);
                 task.inputTokens = Math.ceil(task.input.length / 4);
         task.outputTokens = 4096;
@@ -741,7 +846,27 @@ export async function POST(request: NextRequest) {
         let generatedCodeCompletion: Awaited<ReturnType<typeof runProviderCompletionWithFallback>> | null = null;
         let generatedCodeSummary = "";
         let generatedCodePullRequestUrl = "";
-        if (task.operation === "clients.read_summary") {
+        if (task.operation === "workforce.directory.read") {
+          if (!agent.permissions.includes("workforce.directory.read")) throw new Error("Agent lacks workforce.directory.read permission.");
+          const records = await EmployeeProfile.find({ employmentStatus: "active", accessSuspendedByWorkforce: { $ne: true } })
+            .populate("userId", "name")
+            .populate("departmentId", "name")
+            .populate("positionId", "title")
+            .select("userId employeeCode departmentId positionId employmentStatus startDate")
+            .sort({ createdAt: -1 }).limit(200).lean();
+          operationResult = { activeEmployeeCount: records.length, employees: records.map((record: any) => ({ employeeCode: record.employeeCode, name: record.userId?.name || "Employee", department: record.departmentId?.name || "Unassigned", jobTitle: record.positionId?.title || "Unassigned", startDate: record.startDate })) };
+        } else if (task.operation === "workforce.recruitment.read") {
+          if (!agent.permissions.includes("workforce.recruitment.read")) throw new Error("Agent lacks workforce.recruitment.read permission.");
+          const [openings, applications] = await Promise.all([
+            JobOpening.find({ publishStatus: "published" }).select("title department employmentType locationType").sort({ updatedAt: -1 }).limit(100).lean(),
+            JobApplication.find({}).populate("jobOpening", "title department").select("applicantName status createdAt jobOpening").sort({ createdAt: -1 }).limit(100).lean(),
+          ]);
+          operationResult = { publishedOpenings: openings, applications: applications.map((item: any) => ({ applicantName: item.applicantName, status: item.status, appliedAt: item.createdAt, position: item.jobOpening?.title || "Position no longer available", department: item.jobOpening?.department || "" })) };
+        } else if (task.operation === "governance.contracts.read") {
+          if (!agent.permissions.includes("governance.contracts.read")) throw new Error("Agent lacks governance.contracts.read permission.");
+          const contracts = await CommercialContract.find({}).select("reference title status issuedAt acceptedAt clientId").sort({ updatedAt: -1 }).limit(100).lean();
+          operationResult = { contractCount: contracts.length, contracts };
+        } else if (task.operation === "clients.read_summary") {
           if (!agent.permissions.includes("clients.read_summary")) throw new Error("Agent lacks clients.read_summary permission.");
           const clientId = String(payload.clientId || "");
           if (!/^[a-f0-9]{24}$/i.test(clientId)) throw new Error("A valid client ID is required for this operation.");

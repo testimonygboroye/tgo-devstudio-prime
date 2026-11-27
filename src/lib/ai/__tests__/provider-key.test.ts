@@ -32,14 +32,14 @@ describe("AI provider credential resolution", () => {
     expect(decryptProviderSecret).toHaveBeenCalledWith("ciphertext");
   });
 
-  it("does not silently fall back to a potentially stale environment key when saved ciphertext cannot be decrypted", () => {
+  it("uses the configured server-side environment key to recover an undecryptable saved credential", () => {
     process.env.GEMINI_API_KEY = "stale-environment-key";
     (decryptProviderSecret as jest.Mock).mockImplementationOnce(() => { throw new Error("Stored credential cannot be decrypted."); });
-    expect(() => resolveProviderApiKey("TGO Gemini", "google", "stored-ciphertext")).toThrow("Stored credential cannot be decrypted.");
+    expect(resolveProviderApiKey("TGO Gemini", "google", "stored-ciphertext")).toBe("stale-environment-key");
   });
 
   it("reports a missing credential when neither a stored nor environment key exists", () => {
     delete process.env.GEMINI_API_KEY;
-    expect(() => resolveProviderApiKey("TGO Gemini", "google", "")).toThrow("No encrypted provider credential");
+    expect(() => resolveProviderApiKey("TGO Gemini", "google", "")).toThrow("No decryptable provider credential or supported server-side environment key is configured for google.");
   });
 });

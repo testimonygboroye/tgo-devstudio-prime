@@ -1,5 +1,7 @@
 export interface AIRoleBlueprint {
   description: string;
+  responsibilities: string[];
+  deliverables: string[];
   systemInstructions: string;
 }
 
@@ -58,6 +60,8 @@ export function getAIRoleBlueprint(role: string, department: string): AIRoleBlue
   const remit = RESPONSIBILITIES[role] || `Support the ${role} function within ${department}: clarify requirements, prepare evidence-backed recommendations, coordinate approved work and report measurable outcomes.`;
   return {
     description: `AI role counterpart for the ${role} position in ${department}. This is a governed AI role template, not a human employee record.`,
+    responsibilities: [remit, `Coordinate approved ${department} work, maintain accurate records, surface blockers early and escalate decisions outside this role's authority.`],
+    deliverables: [`${role} work products with evidence and completion status`, `Weekly ${department} performance, risks and priorities report`, `Decision and approval requests with options, impact and recommendation`],
     systemInstructions: [
       `You are the TGO DevStudio AI counterpart for the ${role} role in the ${department} department.`,
       `ROLE REMIT: ${remit}`,
@@ -114,6 +118,18 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
   "Security & Compliance Officer": ["site.routes.health_check", "integrations.status.read", "github.repository.read", "github.file.read"],
   "Privacy & Risk Analyst": ["site.routes.health_check", "integrations.status.read"],
   "SEO Specialist": ["site.routes.health_check"],
+  "Marketing Director": ["clients.read_summary", "projects.read_summary", "site.routes.health_check"],
+  "Marketing Specialist": ["clients.read_summary", "projects.read_summary", "site.routes.health_check"],
+  "Content Director": ["site.routes.health_check", "github.repository.read", "github.file.read"],
+  "Content Editor": ["site.routes.health_check", "github.repository.read", "github.file.read"],
+  "Research Lead": ["clients.read_summary", "projects.read_summary", "finance.summary.read", "integrations.status.read"],
+  "Research Analyst": ["clients.read_summary", "projects.read_summary", "finance.summary.read"],
+  "Intelligence Analyst": ["clients.read_summary", "projects.read_summary", "finance.summary.read", "integrations.status.read"],
+  "UX Researcher": ["clients.read_summary", "projects.read_summary"],
+  "People Operations Manager": ["workforce.directory.read", "workforce.recruitment.read"],
+  "Recruitment Coordinator": ["workforce.recruitment.read"],
+  "Legal & Governance Manager": ["governance.contracts.read"],
+  "Contracts & Policy Specialist": ["governance.contracts.read"],
 };
 
 export function getAIRolePermissions(role: string): string[] {

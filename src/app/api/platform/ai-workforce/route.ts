@@ -387,7 +387,7 @@ export async function POST(request: NextRequest) {
           existing.approvalRequirements = approvalRequirements; existing.autonomyLevel = "approved_tasks";
           existing.memoryConfig = memoryConfig; existing.executionConfig = executionConfig; existing.performanceTargets = performanceTargets;
           existing.operationalStatus = readiness.status; existing.lastReadinessIssues = readiness.issues; existing.lastReadinessCheckAt = new Date();
-          existing.requiresApproval = true; existing.requiresHumanReview = true; existing.enabled = false;
+          existing.requiresApproval = true; existing.requiresHumanReview = true;
           await existing.save(); counterpartExistingCount += 1; continue;
         }
         await AIAgent.create({
@@ -400,9 +400,24 @@ export async function POST(request: NextRequest) {
           positionId: positionDoc?._id || employee.positionId,
           assignedUserId: personId,
           modelName,
-          systemInstructions: blueprint.systemInstructions + "\n\nPRIVATE ASSIGNMENT: You are assigned exclusively to the real employee " + employeeName + ". Do not disclose their private information to another employee. This personal counterpart remains limited to the same role scope and approved tools.",
-          permissions: [],
+          systemInstructions: privateInstructions,
+          responsibilities: blueprint.responsibilities,
+          deliverables: blueprint.deliverables,
+          jobTitle: position,
+          reportsToRole: "Department Manager / Founder",
+          providerId: verifiedProvider?._id,
+          permissions,
+          toolAllowlist: permissions,
+          approvalRequirements,
+          autonomyLevel: "approved_tasks",
+          memoryConfig,
+          executionConfig,
+          performanceTargets,
+          operationalStatus: readiness.status,
+          lastReadinessIssues: readiness.issues,
+          lastReadinessCheckAt: new Date(),
           requiresApproval: true,
+          requiresHumanReview: true,
           maxDailyTokens: 50000,
           enabled: false,
           createdBy: actorId,

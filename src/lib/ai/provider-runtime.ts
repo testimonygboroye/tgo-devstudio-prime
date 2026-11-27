@@ -156,6 +156,15 @@ export async function runProviderCompletionWithFallback(
   _scope: AIChatbotScope = "admin",
 ): Promise<AICompletion> {
   await connectToDatabase();
+  // A non-empty provider/model pair is an explicit assignment (AI employee or configured assistant).
+  // Honor that exact tested pair; only unassigned global health checks use the cross-provider pool.
+  if (providerId && model) {
+    const assignedProvider = await AIProvider.findById(providerId).select("+encryptedApiKey");
+    if (!assignedProvider || !assignedProvider.enabled || assignedProvider.lastTestStatus !== "success" || assignedProvider.lastTestedModel !== model || assignedProvider.archivedAt) {
+      throw new Error("The assigned AI provider/model is no longer enabled and live-test verified. Re-test or reassign this employee before execution.");
+    }
+    return runProviderCompletion(providerId, model, system, prompt, true);
+  }
   const traceId = randomUUID();
   const storedProviders: any[] = await AIProvider.find({}).select("+encryptedApiKey +apiKeyFingerprint").lean();
   // Mongoose legacy rows can store archivedAt as null. `$exists:false` would

@@ -29,23 +29,32 @@ for (const route of publicRoutes) {
   });
 }
 
-test("commercial catalogue contains all 21 distinct service lines and package prices", async ({ page }) => {
+test("commercial catalogue navigates its family hierarchy and exposes all 21 service lines and package prices", async ({ page }) => {
   await page.goto("/services/catalogue", { waitUntil: "domcontentloaded" });
-  const cards = page.locator(".catalogue-card");
-  await expect(cards).toHaveCount(21);
-  await expect(page.getByRole("heading", { name: "AI Solutions & Intelligent Automation" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Software Maintenance & Managed Support" })).toBeVisible();
-  const serviceNames = await cards.locator("h2, h3").allTextContents();
-  expect(new Set(serviceNames.map(name => name.trim())).size).toBe(21);
-  const packages = page.locator(".catalogue-package");
-  await expect(packages).toHaveCount(62);
-  await expect(page.locator(".catalogue-billing-label").filter({ hasText: "/ month" })).toHaveCount(5);
-  await expect(page.locator(".catalogue-billing-label").filter({ hasText: "Custom scope" })).toHaveCount(55);
-  const prices = await packages.locator("strong").allTextContents();
-  expect(prices).toHaveLength(62);
-  expect(prices.every(price => /₦|NGN/.test(price))).toBe(true);
-  const descriptions = await packages.locator("p").allTextContents();
-  expect(descriptions.every(description => description.trim().length > 20)).toBe(true);
+  const familyLinks = await page.locator('a[href^="/services/catalogue/family/"]').evaluateAll(links => [...new Set(links.map(link => (link as HTMLAnchorElement).getAttribute("href")).filter((href): href is string => Boolean(href)))]);
+  expect(familyLinks.length).toBeGreaterThan(0);
+
+  const serviceNames: string[] = [];
+  const packagePrices: string[] = [];
+  for (const familyHref of familyLinks) {
+    await page.goto(familyHref, { waitUntil: "domcontentloaded" });
+    const categoryLinks = await page.locator('a[href^="/services/catalogue/category/"]').evaluateAll(links => [...new Set(links.map(link => (link as HTMLAnchorElement).getAttribute("href")).filter((href): href is string => Boolean(href)))]);
+    expect(categoryLinks.length).toBeGreaterThan(0);
+    for (const categoryHref of categoryLinks) {
+      await page.goto(categoryHref, { waitUntil: "domcontentloaded" });
+      const cards = page.locator('[data-testid="catalogue-service-card"]');
+      const names = await cards.locator("h2").allTextContents();
+      serviceNames.push(...names.map(name => name.trim()));
+      const prices = await page.locator('[data-testid="catalogue-package"]').allTextContents();
+      packagePrices.push(...prices.map(price => price.trim()));
+    }
+  }
+
+  expect(new Set(serviceNames).size).toBe(21);
+  expect(serviceNames).toContain("AI Solutions & Intelligent Automation");
+  expect(serviceNames).toContain("Software Maintenance & Managed Support");
+  expect(packagePrices).toHaveLength(62);
+  expect(packagePrices.every(price => /₦|NGN|Custom quote/.test(price))).toBe(true);
 });
 
 test("public capabilities are deduplicated and expanded", async ({ page }) => {

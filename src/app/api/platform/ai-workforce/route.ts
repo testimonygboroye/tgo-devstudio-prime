@@ -255,8 +255,6 @@ export async function POST(request: NextRequest) {
           existing.jobTitle = definition.role;
           if (verifiedProvider?._id) existing.providerId = verifiedProvider._id as mongoose.Types.ObjectId;
           existing.modelName = modelName;
-          if (verifiedProvider?._id) existing.providerId = verifiedProvider._id as mongoose.Types.ObjectId;
-          existing.modelName = modelName;
           existing.reportsToRole = definition.reportsToRole;
           existing.systemInstructions = definition.systemInstructions;
           existing.permissions = definition.permissions;
@@ -289,6 +287,22 @@ export async function POST(request: NextRequest) {
           performanceTargets: [{ metric: "task_completion_rate", target: 90, unit: "percent" }, { metric: "human_rework_rate", target: 10, unit: "percent_max" }],
           modelName,
         });
+        const readiness = evaluateAgentReadiness({
+          jobTitle: definition.role,
+          department: definition.department,
+          description: definition.description,
+          responsibilities: definition.responsibilities,
+          deliverables: definition.deliverables,
+          systemInstructions: definition.systemInstructions,
+          permissions: definition.permissions,
+          toolAllowlist: definition.permissions,
+          reportsToRole: definition.reportsToRole,
+          memoryConfig: { enabled: true, identityKey: buildAgentMemoryKey({ role: definition.role, department: definition.department }), sharedMemoryScopes: ["company-approved", "department-approved"] },
+          executionConfig: { maxConcurrentTasks: 1, timeoutSeconds: 120, maxDailyTokens: 100000 },
+          approvalRequirements: ["external_communications", "financial_actions", "production_changes", "permission_changes", "legal_or_hr_decisions"],
+          performanceTargets: [{ metric: "task_completion_rate", target: 90, unit: "percent" }, { metric: "human_rework_rate", target: 10, unit: "percent_max" }],
+          modelName,
+        });
         await AIAgent.create({
           name: definition.name,
           role: definition.role,
@@ -311,8 +325,8 @@ export async function POST(request: NextRequest) {
           memoryConfig: { enabled: true, identityKey: buildAgentMemoryKey({ role: definition.role, department: definition.department }), sharedMemoryScopes: ["company-approved", "department-approved"], privateMemoryEnabled: true, retentionDays: 365 },
           executionConfig: { maxConcurrentTasks: 1, maxRetries: 2, timeoutSeconds: 120, maxDailyTokens: 100000, maxDailySpendNaira: 0, scheduleEnabled: false },
           performanceTargets: [{ metric: "task_completion_rate", target: 90, unit: "percent" }, { metric: "human_rework_rate", target: 10, unit: "percent_max" }],
-          operationalStatus: definition.permissions.length ? "needs_review" : "needs_review",
-          lastReadinessIssues: ["Provider/model must be configured and tested.", "Founder must review role-specific tools and reporting line."],
+          operationalStatus: readiness.status,
+          lastReadinessIssues: readiness.issues,
           lastReadinessCheckAt: new Date(),
           requiresHumanReview: true,
           maxDailyTokens: 100000,

@@ -373,14 +373,14 @@ export async function POST(request: NextRequest) {
         const performanceTargets = [{ metric: "task_completion_rate", target: 90, unit: "percent" }, { metric: "human_rework_rate", target: 10, unit: "percent_max" }];
         const privateDescription = "Private AI counterpart assigned to one active employee. " + blueprint.description;
         const privateInstructions = blueprint.systemInstructions + "\n\nPRIVATE ASSIGNMENT: You are assigned exclusively to the real employee " + employeeName + ". Do not disclose their private information to another employee. This personal counterpart remains limited to the same role scope and approved tools.";
-        const readiness = evaluateAgentReadiness({ jobTitle: position, department, description: privateDescription, responsibilities: blueprint.responsibilities, deliverables: blueprint.deliverables, systemInstructions: privateInstructions, permissions, toolAllowlist: permissions, reportsToRole, memoryConfig, executionConfig, approvalRequirements, performanceTargets, modelName, providerVerified: Boolean(verifiedProvider?._id) });
+        const readiness = evaluateAgentReadiness({ jobTitle: position, department, description: privateDescription, responsibilities: blueprint.responsibilities, deliverables: blueprint.deliverables, systemInstructions: privateInstructions, permissions, toolAllowlist: permissions, reportsToRole, memoryConfig, executionConfig, approvalRequirements, performanceTargets, modelName, providerVerified: Boolean(verifiedProvider?._id && modelName) });
         if (existing) {
           existing.name = (employeeName + " — AI " + position).slice(0, 100);
           existing.role = position; existing.department = department; existing.jobTitle = position;
           existing.description = privateDescription; existing.responsibilities = blueprint.responsibilities; existing.deliverables = blueprint.deliverables;
           existing.reportsToRole = reportsToRole; existing.workspaceId = workspaceId;
           existing.positionId = positionDoc?._id || employee.positionId; existing.memoryKey = existing.memoryKey || memoryKey;
-          existing.modelName = modelName; if (verifiedProvider?._id) existing.providerId = verifiedProvider._id as mongoose.Types.ObjectId;
+          existing.modelName = modelName; if (verifiedProvider?._id && modelName) existing.providerId = verifiedProvider._id as mongoose.Types.ObjectId; else existing.providerId = undefined;
           existing.systemInstructions = privateInstructions; existing.permissions = permissions; existing.toolAllowlist = permissions;
           existing.approvalRequirements = approvalRequirements; existing.autonomyLevel = "approved_tasks";
           existing.memoryConfig = memoryConfig; existing.executionConfig = executionConfig; existing.performanceTargets = performanceTargets;

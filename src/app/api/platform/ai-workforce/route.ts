@@ -203,9 +203,12 @@ export async function POST(request: NextRequest) {
         .sort({ level: 1, title: 1 })
         .lean();
       if (!positions.length) return NextResponse.json({ status: "error", message: "Create and activate workforce positions before provisioning AI role counterparts." }, { status: 409 });
+      const positionsById = new Map(positions.map((position) => [String(position._id), position]));
       const definitions = positions.map((position) => {
         const department = String((position.departmentId as unknown as { name?: string })?.name || "General Operations");
         const blueprint = getAIRoleBlueprint(position.title, department);
+        const reportingId = String((position as unknown as { reportsToPositionId?: unknown }).reportsToPositionId || "");
+        const reportingPosition = reportingId ? positionsById.get(reportingId) : undefined;
         return {
           positionId: position._id as mongoose.Types.ObjectId,
           name: ("AI " + position.title).slice(0, 100),
@@ -213,9 +216,9 @@ export async function POST(request: NextRequest) {
           department,
           permissions: getAIRolePermissions(position.title),
           description: String(position.description || blueprint.description),
-          responsibilities: [blueprint.description],
-          deliverables: ["Completed role tasks with evidence", "Weekly department status and risk report", "Escalations requiring founder or manager decision"],
-          reportsToRole: "Department Manager / Founder",
+          responsibilities: blueprint.responsibilities,
+          deliverables: blueprint.deliverables,
+          reportsToRole: reportingPosition?.title || "Founder / Department Leadership",
           systemInstructions: blueprint.systemInstructions,
         };
       });

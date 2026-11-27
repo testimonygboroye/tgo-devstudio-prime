@@ -204,7 +204,7 @@ export async function POST(request: NextRequest) {
         .sort({ level: 1, title: 1 })
         .lean();
       if (!positions.length) return NextResponse.json({ status: "error", message: "Create and activate workforce positions before provisioning AI role counterparts." }, { status: 409 });
-      const positionsById = new Map(positions.map((position) => [String(position._id), position]));
+      const positionsById = new Map(positions.map((position) => [String(position._id), position] as const));
       const definitions = positions.map((position) => {
         const department = String((position.departmentId as unknown as { name?: string })?.name || "General Operations");
         const blueprint = getAIRoleBlueprint(position.title, department);

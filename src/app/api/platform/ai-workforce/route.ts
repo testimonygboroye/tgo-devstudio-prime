@@ -740,7 +740,7 @@ export async function POST(request: NextRequest) {
       if (!task) return NextResponse.json({ status: "error", message: "Task is not queued, was not approved, or is already running." }, { status: 409 });
       try {
         const agent = await AIAgent.findOne({ _id: task.agentId, enabled: true });
-        if (!agent || agent.requiresApproval !== true) throw new Error("Agent is disabled or its approval policy is invalid.");
+        if (!agent || agent.requiresApproval !== true || agent.operationalStatus !== "ready") throw new Error("Agent is disabled, not operationally ready, or its approval policy is invalid. Complete the readiness review before execution.");
         const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0);
                 task.inputTokens = Math.ceil(task.input.length / 4);
         task.outputTokens = 4096;

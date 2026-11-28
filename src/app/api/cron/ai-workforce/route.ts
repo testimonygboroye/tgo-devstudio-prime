@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
             { $or: [
               { scope: "agent", agentId: agent._id },
               ...(agent.memoryConfig.identityKey ? [{ scope: "agent", agentMemoryKey: agent.memoryConfig.identityKey }] : []),
-              { scope: "shared", ...memoryScope, $or: [{ tags: { $in: sharedScopes } }, { tags: { $size: 0 } }] },
+              { scope: "shared", $and: [memoryScope, { $or: [{ tags: { $in: sharedScopes } }, { tags: { $size: 0 } }] }] },
             ] },
           ],
         }).sort({ updatedAt: -1 }).limit(20).select("title content scope tags").lean()

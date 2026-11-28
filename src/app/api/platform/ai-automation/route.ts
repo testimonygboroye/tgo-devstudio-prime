@@ -43,7 +43,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   const auth = await founder();
-  if (auth.response || !auth.session) return auth.response;
+  if (auth.response || !auth.session) return auth.response || NextResponse.json({ error: "Authentication required." }, { status: 401 });
   let body: Record<string, unknown>;
   try { body = await request.json(); } catch { return NextResponse.json({ error: "Invalid request body." }, { status: 400 }); }
   await connectToDatabase();

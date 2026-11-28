@@ -67,18 +67,19 @@ export async function GET(request: NextRequest) {
     const memoryScope = agent.workspaceId
       ? { $or: [{ workspaceId: agent.workspaceId }, { workspaceId: { $exists: false } }] }
       : { workspaceId: { $exists: false } };
+    const memoryAccess = [
+      { scope: "agent", agentId: agent._id },
+      ...(agent.memoryConfig?.identityKey ? [{ scope: "agent", agentMemoryKey: agent.memoryConfig.identityKey }] : []),
+      { scope: "shared", $and: [memoryScope, { $or: [{ tags: { $in: sharedScopes } }, { tags: { $size: 0 } }] }] },
+    ];
     const memories = agent.memoryConfig?.enabled
-      ? await AIMemory.find({
-          active: true,
-          $and: [
+      ? await AIMemory.find()
+          .where("active").equals(true)
+          .and([
             { $or: [{ expiresAt: { $exists: false } }, { expiresAt: { $gt: now } }] },
-            { $or: [
-              { scope: "agent", agentId: agent._id },
-              ...(agent.memoryConfig.identityKey ? [{ scope: "agent", agentMemoryKey: agent.memoryConfig.identityKey }] : []),
-              { scope: "shared", $and: [memoryScope, { $or: [{ tags: { $in: sharedScopes } }, { tags: { $size: 0 } }] }] },
-            ] },
-          ],
-        }).sort({ updatedAt: -1 }).limit(20).select("title content scope tags").lean()
+            { $or: memoryAccess },
+          ])
+          .sort({ updatedAt: -1 }).limit(20).select("title content scope tags").lean()
       : [];
     const memoryContext = memories.map((memory, index) => "MEMORY " + (index + 1) + " — " + memory.title + "\n" + String(memory.content).slice(0, 2500)).join("\n\n").slice(0, 14000);
 

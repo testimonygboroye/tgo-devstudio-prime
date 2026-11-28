@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { FilterQuery } from "mongoose";
 import { connectToDatabase } from "@/lib/db";
 import { AIAgent, AITask } from "@/models/AIWorkforce";
-import { AIMemory } from "@/models/AIKnowledge";
+import { AIMemory, type IAIMemory } from "@/models/AIKnowledge";
 import AIAutomationSchedule from "@/models/AIAutomationSchedule";
 import { runProviderCompletionWithFallback } from "@/lib/ai/provider-runtime";
 import { notifyFounders } from "@/lib/platform/notifications";
@@ -72,13 +73,15 @@ export async function GET(request: NextRequest) {
       ...(agent.memoryConfig?.identityKey ? [{ scope: "agent" as const, agentMemoryKey: agent.memoryConfig.identityKey }] : []),
       { scope: "shared" as const, $and: [memoryScope, { $or: [{ tags: { $in: sharedScopes } }, { tags: { $size: 0 } }] }] },
     ];
+    const memoryFilter: FilterQuery<IAIMemory> = {
+      active: true,
+      $and: [
+        { $or: [{ expiresAt: { $exists: false } }, { expiresAt: { $gt: now } }] },
+        { $or: memoryAccess },
+      ],
+    };
     const memories = agent.memoryConfig?.enabled
-      ? await AIMemory.find()
-          .where("active").equals(true)
-          .and([
-            { $or: [{ expiresAt: { $exists: false } }, { expiresAt: { $gt: now } }] },
-            { $or: memoryAccess },
-          ])
+      ? await AIMemory.find(memoryFilter)
           .sort({ updatedAt: -1 }).limit(20).select("title content scope tags").lean()
       : [];
     const memoryContext = memories.map((memory, index) => "MEMORY " + (index + 1) + " — " + memory.title + "\n" + String(memory.content).slice(0, 2500)).join("\n\n").slice(0, 14000);

@@ -21,7 +21,7 @@ export default async function UniversalWorkspacesPage() {
   return (
     <div className="min-h-screen bg-[#080d20] text-white">
       {isClient
-        ? <ClientPortalNav name={session.user.name} email={session.user.email} />
+        ? <><ClientPortalNav name={session.user.name} email={session.user.email} /><NotificationBell href="/client/notifications" /></>
         : <><SiteHeader /><NotificationBell href="/workforce/notifications" /></>}
       <WorkspacesClient />
       <SiteFooter />

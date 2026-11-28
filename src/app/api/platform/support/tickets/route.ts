@@ -5,7 +5,7 @@ import { connectToDatabase } from "@/lib/db";
 import SupportTicket from "@/models/SupportTicket";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import User from "@/models/User";
-import SupportSettings from "@/models/SupportSettings";
+import SupportSettings from "@/models/SupportSettings";\nimport { pauseSupportResolutionClock, resumeSupportResolutionClock } from "@/lib/support/sla";
 import {sendSupportNotification} from "@/lib/support/notifications";
 import { sendSupportWhatsAppToClient } from "@/lib/messaging/whatsappSync";
 import { notifyUser, notifyFounders } from "@/lib/platform/notifications";

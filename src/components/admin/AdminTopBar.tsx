@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import HelpSearchPopup from "@/components/shared/HelpSearchPopup";
 import { ArrowLeft } from "lucide-react";
+import { NotificationBell } from "@/components/shared/NotificationCentre";
 import { useRouter } from "next/navigation";
 
 const SECTION_LABELS: Record<string, string> = {
@@ -59,6 +60,7 @@ export default function AdminTopBar() {
 
   const adminSegments =
     adminIndex >= 0 ? segments.slice(adminIndex + 1) : segments.slice(1);
+  const adminRoot = "/" + segments.slice(0, adminIndex >= 0 ? adminIndex + 1 : 1).join("/");
 
   const sectionKey = adminSegments[0] ?? "";
   const subpageKey = adminSegments[1] ?? "";
@@ -98,6 +100,7 @@ export default function AdminTopBar() {
       </div>
 
       <div className="flex items-center gap-3">
+        <NotificationBell href={adminRoot + "/notifications"} className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:bg-[var(--surface-hover)]" />
         <button type="button" aria-label="Go back" onClick={() => { if (window.history.length > 1) router.back(); else router.push("/"); }} className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]">
           <ArrowLeft size={20} />
         </button>

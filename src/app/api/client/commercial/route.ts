@@ -89,8 +89,9 @@ export async function POST(request:NextRequest) {
       if(body.serviceId&&!service)return fail("The selected service is no longer available.",404);
       if(service&&!service.customRequestEnabled)return fail("Custom requests are not enabled for this service.");
       const lead=await SalesLead.create({clientId:user._id,firstName:user.firstName||firstName,middleName:user.middleName,lastName:user.lastName||lastName,email:user.email,phone:typeof body.phone==="string"?body.phone:"",organization:typeof body.organization==="string"?body.organization:"",serviceId:service?._id,source:"client_portal",stage:"new",currency:service?.currency||"USD",notes:`REQUEST: ${body.title.trim()}\n\n${body.description.trim()}`});
-      await logClient(session,"client.commercial_request_submitted","sales_lead",String(lead._id),"Client submitted a new service or project request.",{serviceId:service?String(service._id):null});
-      return NextResponse.json({ok:true,message:"Your request has been submitted. Our team will review it and follow up.",reference:String(lead._id)},{status:201});
+      await logClient(session,"client.commercial_request_submitted","sales_lead",String(lead._id),"Client submitted a new service or project request.",{serviceId:service?String(service._id):null,leadId:String(lead._id),source:"client_portal"});
+      await notifyFounders({category:"client-project-request",title:"New client project request",body:user.name+" submitted a project request: "+body.title.trim()+".",href:getAdminBasePath()+"/commercial",actionLabel:"Review client request",priority:"urgent",requiresAction:true,dedupeKey:"client-project-request:"+String(lead._id),sourceType:"SalesLead",sourceId:String(lead._id)}).catch(error=>console.error("[Notifications] Client project request notification failed:",error));
+      return NextResponse.json({ok:true,message:"Your request has been submitted. Our team will review it and follow up.",reference:String(lead._id),leadId:String(lead._id),status:"new"},{status:201});
     }
     if(action==="consultation.request") {
       if(typeof body.topic!=="string"||body.topic.trim().length<4)return fail("Enter the consultation topic.");

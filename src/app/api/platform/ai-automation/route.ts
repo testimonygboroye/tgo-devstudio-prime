@@ -53,13 +53,7 @@ export async function POST(request: NextRequest) {
     if (!Types.ObjectId.isValid(agentId)) return NextResponse.json({ error: "A valid AI employee is required." }, { status: 400 });
     const agent = await AIAgent.findById(agentId);
     if (!agent) return NextResponse.json({ error: "AI employee not found." }, { status: 404 });
-    if (!agent.providerId || !agent.modelName) {
-      agent.operationalStatus = "needs_review";
-      agent.lastReadinessCheckAt = new Date();
-      agent.lastReadinessIssues = [...(agent.lastReadinessIssues || []).filter((issue) => !issue.toLowerCase().includes("provider")), "No exact provider/model assignment is configured."];
-      await agent.save();
-      return NextResponse.json({ success: false, status: agent.operationalStatus, issues: agent.lastReadinessIssues }, { status: 409 });
-    }
+    // The TGO-wide router selects a live model; no per-agent provider/model pin is required.
     try {
       const completion = await runProviderCompletionWithFallback(
         String(agent.providerId),
@@ -68,7 +62,7 @@ export async function POST(request: NextRequest) {
         "TGO employee live provider verification. Reply exactly: TGO_EMPLOYEE_PROVIDER_TEST_OK",
         "admin"
       );
-      if (!completion.text.trim()) throw new Error("The assigned provider returned an empty response.");
+      if (!completion.text.trim()) throw new Error("The global AI router returned an empty response.");
       const readiness = evaluateAgentReadiness({
         jobTitle: agent.jobTitle, department: agent.department, description: agent.description,
         responsibilities: agent.responsibilities, deliverables: agent.deliverables,
@@ -104,7 +98,7 @@ export async function POST(request: NextRequest) {
     const schedule = await AIAutomationSchedule.findById(body.scheduleId);
     if (!schedule) return NextResponse.json({ error: "Schedule not found." }, { status: 404 });
     const agent = await AIAgent.findById(schedule.agentId);
-    if (!agent || !agent.enabled || agent.operationalStatus !== "ready" || !agent.providerId || !agent.modelName) return NextResponse.json({ error: "This employee is not operationally ready with an assigned provider/model. Resolve the readiness issues before enabling automation." }, { status: 409 });
+    if (!agent || !agent.enabled || agent.operationalStatus !== "ready") return NextResponse.json({ error: "This employee is not operationally ready. Resolve the readiness issues before enabling automation." }, { status: 409 });
     schedule.enabled = true; schedule.nextRunAt = new Date(Date.now() + schedule.intervalMinutes * 60000); schedule.lastError = ""; await schedule.save();
     agent.executionConfig.scheduleEnabled = true; await agent.save();
     return NextResponse.json({ success: true, scheduleId: String(schedule._id), enabled: true });
@@ -120,7 +114,7 @@ export async function POST(request: NextRequest) {
   if (!Number.isInteger(intervalMinutes) || intervalMinutes < 15 || intervalMinutes > 10080) return NextResponse.json({ error: "Choose an interval between 15 minutes and 7 days." }, { status: 400 });
   const agent = await AIAgent.findById(agentId);
   if (!agent) return NextResponse.json({ error: "AI employee not found." }, { status: 404 });
-  if (!agent.enabled || agent.operationalStatus !== "ready" || !agent.providerId || !agent.modelName) return NextResponse.json({ error: "This employee must be enabled, marked ready and assigned a verified provider/model before recurring automation can be configured." }, { status: 409 });
+  if (!agent.enabled || agent.operationalStatus !== "ready") return NextResponse.json({ error: "This employee must be enabled and marked operationally ready before recurring automation can be configured." }, { status: 409 });
   const now = new Date();
   const schedule = await AIAutomationSchedule.findOneAndUpdate(
     { agentId: agent._id },

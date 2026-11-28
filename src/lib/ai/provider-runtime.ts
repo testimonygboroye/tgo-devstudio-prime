@@ -5,6 +5,7 @@ import type { AIChatbotScope } from "@/models/AIChatbot";
 import { randomUUID } from "node:crypto";
 import { connectToDatabase } from "@/lib/db";
 import AIExecutionLog from "@/models/AIExecutionLog";
+import { isProviderWideFailure } from "@/lib/ai/provider-failure";
 
 
 export interface AICompletion {
@@ -66,6 +67,38 @@ export async function runProviderCompletion(providerId: string, model: string, s
         if (response.ok) {
           const text = Array.isArray(data.steps) ? data.steps.filter((step: any) => step.type === "model_output").flatMap((step: any) => step.content || []).filter((part: any) => part.type === "text").map((part: any) => part.text || "").join("") : String(data.output_text || "");
           if (text.trim()) return { text, inputTokens: Number(data.usage?.total_input_tokens || data.usage?.input_tokens || 0), outputTokens: Number(data.usage?.total_output_tokens || data.usage?.output_tokens || 0), providerRequestId: data.id, model: candidate, fallbackUsed: candidate !== model };
+        }
+        // Keep the recommended Interactions API as the primary path, but retain
+        // generateContent compatibility for older/preview catalogue entries or
+        // temporary Interactions API model incompatibilities. This prevents one
+        // unsupported model endpoint from taking an otherwise healthy Gemini
+        // provider offline for every TGO chatbot and AI employee.
+        if ([400, 404, 405, 501].includes(response.status)) {
+          const legacyResponse = await fetch(base + "/models/" + encodeURIComponent(candidate.replace("models/", "")) + ":generateContent", {
+            method: "POST",
+            headers,
+            signal: AbortSignal.timeout(timeoutMs),
+            cache: "no-store",
+            body: JSON.stringify({
+              systemInstruction: { parts: [{ text: system }] },
+              contents: [{ role: "user", parts: [{ text: prompt }] }],
+              generationConfig: { temperature: 0.2, maxOutputTokens: 4096 },
+            }),
+          });
+          const legacyData = await legacyResponse.json().catch(() => ({}));
+          if (legacyResponse.ok) {
+            const legacyText = (legacyData.candidates?.[0]?.content?.parts || []).map((part: any) => String(part.text || "")).join("");
+            if (legacyText.trim()) return {
+              text: legacyText,
+              inputTokens: Number(legacyData.usageMetadata?.promptTokenCount || 0),
+              outputTokens: Number(legacyData.usageMetadata?.candidatesTokenCount || 0),
+              providerRequestId: legacyData.responseId,
+              model: candidate,
+              fallbackUsed: candidate !== model,
+            };
+          }
+          failures.push(candidate + " (Interactions HTTP " + response.status + "; generateContent HTTP " + legacyResponse.status + "): " + String(legacyData?.error?.message || data?.error?.message || "Both Gemini generation endpoints failed.").slice(0, 260));
+          continue;
         }
       } else if (provider.provider === "anthropic") {
         response = await fetch(base + "/messages", { method: "POST", headers, signal: AbortSignal.timeout(timeoutMs), cache: "no-store", body: JSON.stringify({ model: candidate, system, max_tokens: 4096, temperature: 0.2, messages: [{ role: "user", content: prompt }] }) });
@@ -239,7 +272,9 @@ export async function runProviderCompletionWithFallback(
   }
   const candidates = catalogues.flatMap(({ provider, models }) => models
     .filter((modelName) => supportsTextGenerationModel(provider.provider, modelName))
-    .map((modelName) => ({ provider, modelName, score: modelQualityScore(modelName) })))
+    // Prefer each provider’s exact live-tested model as the first known-good candidate;
+    // if it is now unavailable, the router continues through the quality-ranked sibling models.
+    .map((modelName) => ({ provider, modelName, score: modelQualityScore(modelName) + (modelName === provider.lastTestedModel ? 100 : 0) })))
     .sort((a, b) => b.score - a.score || a.modelName.localeCompare(b.modelName));
   const seen = new Set<string>();
   const providerAttempts = new Map<string, number>();
@@ -269,7 +304,7 @@ export async function runProviderCompletionWithFallback(
       const match = message.match(/HTTP\s+(\d{3})/i);
       const httpStatus = match ? Number(match[1]) : undefined;
       const errorCode = httpStatus === 429 ? "rate_limit" : httpStatus === 401 || httpStatus === 403 ? "authentication_or_permission" : httpStatus && httpStatus >= 500 ? "provider_server_error" : /timeout|abort/i.test(message) ? "timeout" : "model_unavailable_or_request_failed";
-      if (httpStatus === 429 || httpStatus === 401 || httpStatus === 403 || (httpStatus !== undefined && httpStatus >= 500)) unavailableProviders.add(providerKey);
+      if (isProviderWideFailure(httpStatus)) unavailableProviders.add(providerKey);
       failures.push(candidate.provider.name + "/" + candidate.modelName + ": " + message);
       await AIExecutionLog.create({ traceId, feature: "ai_completion", ...(String(candidate.provider._id) === "__gemini_environment__" ? {} : { providerId: String(candidate.provider._id) }), providerName: candidate.provider.name, providerType: candidate.provider.provider, model: candidate.modelName, status: "failure", durationMs: Date.now() - startedAt, httpStatus, errorCode, errorMessage: message.slice(0, 1900) }).catch(() => undefined);
     }

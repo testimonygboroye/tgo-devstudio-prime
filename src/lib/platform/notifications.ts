@@ -47,6 +47,7 @@ const NOTIFICATION_PERMISSION_BY_CATEGORY: Record<string, string> = {
   "proposal-issued": "commercial",
   "quote-issued": "commercial",
   "contract-issued": "commercial",
+  "client-project-request": "commercial",
   "order-created": "commercial",
   "invoice-issued": "finance",
   "payment-failed": "finance",

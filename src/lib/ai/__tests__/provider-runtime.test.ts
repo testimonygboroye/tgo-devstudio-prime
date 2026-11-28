@@ -1,4 +1,5 @@
 import { buildProviderAttempts } from "@/lib/ai/provider-attempts";
+import { isProviderWideFailure } from "@/lib/ai/provider-failure";
 
 describe("AI employee provider fallback order", () => {
   it("tries the agent's assigned provider before the admin chatbot chain", () => {
@@ -39,5 +40,16 @@ describe("AI employee provider fallback order", () => {
       { providerId: "admin-primary", modelName: "admin-model" },
       { providerId: "legacy-backup", modelName: "legacy-model" },
     ]);
+  });
+});
+
+
+describe("AI provider failure scope", () => {
+  it("disables a provider only for credential or permission failures", () => {
+    expect(isProviderWideFailure(401)).toBe(true);
+    expect(isProviderWideFailure(403)).toBe(true);
+    expect(isProviderWideFailure(429)).toBe(false);
+    expect(isProviderWideFailure(500)).toBe(false);
+    expect(isProviderWideFailure(undefined)).toBe(false);
   });
 });

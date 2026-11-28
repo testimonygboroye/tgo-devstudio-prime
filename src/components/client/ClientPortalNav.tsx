@@ -7,6 +7,7 @@ import { useCallback, useRef, useState } from "react";
 import { useSwipeSidebar } from "@/hooks/useSwipeSidebar";
 import { LayoutDashboard, UserRound, MessageSquareText, Bell, Activity, BriefcaseBusiness, Package, LifeBuoy, Menu, X, Gift, ChevronLeft, ChevronRight, Sparkles, WalletCards } from "lucide-react";
 import ClientSignOutButton from "@/components/client/ClientSignOutButton";
+import { NotificationBell } from "@/components/shared/NotificationCentre";
 
 const groups = [
   { title: "Workspace", icon: LayoutDashboard, links: [
@@ -73,7 +74,7 @@ export default function ClientPortalNav({ name, email }: { name: string; email: 
         <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-transparent p-0.5"><Image src="/logo.png" alt="TGO DevStudio logo" width={36} height={36} className="h-full w-full object-contain"/></span>
         <span><span className="block text-sm font-bold text-white">TGO DevStudio</span><span className="block text-[9px] uppercase tracking-[.15em] text-cyan-300">Client workspace</span></span>
       </Link>
-      <div className="flex items-center gap-2"><ClientSignOutButton/><button type="button" aria-label={mobileOpen ? "Close navigation" : "Open navigation"} aria-expanded={mobileOpen} onClick={() => setMobileOpen(v => !v)} className="rounded-xl border border-white/10 p-2 text-slate-200 hover:bg-white/10">{mobileOpen ? <X size={18}/> : <Menu size={18}/>}</button></div>
+      <div className="flex items-center gap-2"><NotificationBell href="/client/notifications" className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[.04] text-slate-200 hover:bg-white/10" /><ClientSignOutButton/><button type="button" aria-label={mobileOpen ? "Close navigation" : "Open navigation"} aria-expanded={mobileOpen} onClick={() => setMobileOpen(v => !v)} className="rounded-xl border border-white/10 p-2 text-slate-200 hover:bg-white/10">{mobileOpen ? <X size={18}/> : <Menu size={18}/>}</button></div>
     </header>
     {mobileOpen && <div ref={backdropRef} className="fixed inset-0 z-50 bg-[#070b19]/80 backdrop-blur-sm lg:hidden" onClick={() => setMobileOpen(false)}>
       <aside ref={drawerRef} className="flex h-full w-[min(86vw,20rem)] flex-col border-r border-white/10 bg-[#0b1024] p-4 shadow-2xl" onClick={event => event.stopPropagation()}>

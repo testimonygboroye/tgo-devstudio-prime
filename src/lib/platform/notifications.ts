@@ -109,7 +109,7 @@ export async function notifyRole(roleSlug: string, input: Omit<CreatePlatformNot
 export async function notifyAccountType(accountType: "staff" | "client", input: Omit<CreatePlatformNotificationInput, "recipientId">) {
   await connectToDatabase();
   const users = await User.find({ accountType, isBanned: false }).select("_id").lean();
-  return notifyUsers(users.map((user) => user._id), input);
+  return notifyUsersDirect(users.map((user) => user._id), input);
 }
 
 /** Explicit founder-facing producer; module viewers are included automatically. */

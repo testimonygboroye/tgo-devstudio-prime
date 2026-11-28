@@ -25,11 +25,11 @@ export function resumeSupportResolutionClock(ticket: SlaTicket, now = new Date()
   const inferredPause = [...(ticket.messages || [])]
     .reverse()
     .find((message) => message.senderType === "staff" || message.senderType === "ai")?.createdAt;
-  const pauseStart = ticket.slaPausedAt || (inferredPause ? new Date(inferredPause) : undefined);
+  const pauseStart = ticket.slaPausedAt || (inferredPause ? (inferredPause instanceof Date ? inferredPause : new Date(inferredPause)) : undefined);
 
   if (pauseStart && Number.isFinite(pauseStart.getTime())) {
     const pausedFor = Math.max(0, now.getTime() - pauseStart.getTime());
-    ticket.resolutionDueAt = new Date(new Date(ticket.resolutionDueAt).getTime() + pausedFor);
+    ticket.resolutionDueAt = new Date(ticket.resolutionDueAt.getTime() + pausedFor);
     ticket.slaPausedDurationMs = Math.max(0, ticket.slaPausedDurationMs || 0) + pausedFor;
   }
 

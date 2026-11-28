@@ -31,7 +31,7 @@ async function verifyGitHubActionsToken(token: string) {
   const keys = await getGitHubJwks();
   const jwk = keys.find((key) => key.kid === header.kid && key.kty === "RSA");
   if (!jwk) return false;
-  const publicKey = createPublicKey({ key: jwk, format: "jwk" });
+  const publicKey = createPublicKey({ key: jwk, format: "jwk" } as unknown as Parameters<typeof createPublicKey>[0]);
   const validSignature = verifySignature(
     "RSA-SHA256",
     Buffer.from(headerPart + "." + payloadPart),

@@ -18,6 +18,8 @@ export default function AIAutomationScheduler() {
   const [busy,setBusy] = useState(false);
   const [error,setError] = useState("");
   const [notice,setNotice] = useState("");
+  const [verification,setVerification] = useState<Record<string,string>>({});
+  const [verifyingAll,setVerifyingAll] = useState(false);
   const [form,setForm] = useState({agentId:"",title:"Daily operational review",prompt:"Review the information explicitly provided in this task. Produce a concise report with findings, risks, recommended next steps and decisions that require founder approval. Do not claim to have accessed external systems or live data.",intervalMinutes:1440});
 
   const load = useCallback(async(silent=false) => {
@@ -61,6 +63,38 @@ export default function AIAutomationScheduler() {
     finally{setBusy(false);}
   }
 
+  async function verifyAgent(agentId:string) {
+    setVerification(current=>({...current,[agentId]:"Testing assigned provider/model…"}));
+    try {
+      const response=await fetch("/api/platform/ai-automation",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"verify-agent",agentId})});
+      const json=await response.json();
+      const result=json.success ? (json.status==="ready"?"Live provider test passed · employee ready":"Live provider test passed · configuration still needs attention") : (json.error||json.issues?.join(" ")||"Provider test failed.");
+      setVerification(current=>({...current,[agentId]:result}));
+      await load(true);
+    } catch(e) {setVerification(current=>({...current,[agentId]:e instanceof Error?e.message:"Provider test failed."}));}
+  }
+
+  async function verifyAllAssigned() {
+    const assigned=data.agents.filter(agent=>agent.providerId&&agent.modelName);
+    if(!assigned.length){setError("No employees have an assigned provider/model to test.");return;}
+    setVerifyingAll(true);setNotice("");
+    let passed=0,failed=0;
+    for(let index=0;index<assigned.length;index++){
+      const agent=assigned[index];
+      setVerification(current=>({...current,[agent.id]:"Testing "+(index+1)+" of "+assigned.length+"…"}));
+      try {
+        const response=await fetch("/api/platform/ai-automation",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"verify-agent",agentId:agent.id})});
+        const json=await response.json();
+        if(json.success)passed++;else failed++;
+        setVerification(current=>({...current,[agent.id]:json.success?(json.status==="ready"?"Live test passed · ready":"Provider passed · role configuration needs attention"):(json.error||json.issues?.join(" ")||"Provider test failed.")}));
+      } catch(e) {failed++;setVerification(current=>({...current,[agent.id]:e instanceof Error?e.message:"Provider test failed."}));}
+      await load(true);
+      if(index<assigned.length-1)await new Promise(resolve=>window.setTimeout(resolve,4000));
+    }
+    setNotice("Employee verification finished: "+passed+" provider test(s) passed, "+failed+" failed. Employees without an assigned provider/model were not testable yet.");
+    setVerifyingAll(false);
+  }
+
   const eligible=data.agents.filter(a=>a.enabled&&a.operationalStatus==="ready"&&a.providerId&&a.modelName);
   return <section className="space-y-4 rounded-2xl border border-cyan-400/20 bg-slate-950/50 p-5">
     <div className="flex flex-wrap items-center justify-between gap-3">
@@ -93,6 +127,12 @@ export default function AIAutomationScheduler() {
         })}
       </div>
     </div>
+    <section className="space-y-3 rounded-xl border border-white/10 bg-black/20 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="font-semibold text-white">Employee-by-employee live verification</h3><p className="mt-1 text-xs text-slate-400">Tests each employee's exact assigned provider/model with a small live generation, records provider diagnostics, and recalculates role readiness. Employees without a provider/model assignment are shown as not testable yet.</p></div><button type="button" disabled={verifyingAll||busy||!data.agents.some(a=>a.providerId&&a.modelName)} onClick={()=>void verifyAllAssigned()} className="min-h-10 rounded-lg border border-cyan-400/30 px-3 py-2 text-xs font-semibold text-cyan-200 disabled:opacity-50">{verifyingAll?"Verifying employees…":"Verify all assigned employees"}</button></div>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {data.agents.map(agent=><div key={agent.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 p-3"><div className="min-w-0"><p className="truncate text-sm font-medium text-slate-200">{agent.name}</p><p className="text-[10px] text-slate-500">{agent.department} · {agent.operationalStatus} · {agent.providerId?agent.modelName||"Model missing":"Provider not assigned"}</p>{verification[agent.id]&&<p className="mt-1 text-[11px] text-cyan-200">{verification[agent.id]}</p>}</div><button type="button" disabled={busy||verifyingAll||!agent.providerId||!agent.modelName} onClick={()=>void verifyAgent(agent.id)} className="min-h-9 rounded-lg border border-white/10 px-2.5 py-1.5 text-[11px] text-slate-200 disabled:opacity-40">Test provider</button></div>)}
+      </div>
+    </section>
     <div className="flex items-start gap-2 rounded-xl border border-emerald-400/15 bg-emerald-400/5 p-3 text-xs leading-5 text-emerald-100"><ShieldCheck size={16} className="mt-0.5 shrink-0"/> Every scheduled run is recorded in the AI task history and provider diagnostics. Provider failures, disabled employees, readiness failures and daily token-budget limits are reported rather than silently marked complete.</div>
   </section>;
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { authorizePlatformCron } from "@/lib/platform/cronAuth";
 import mongoose from "mongoose";
 import { connectToDatabase } from "@/lib/db";
 import { EngagementEvent, EngagementProfile, EngagementRedemption } from "@/models/Engagement";
@@ -7,9 +8,7 @@ import { tierForLifetimePoints } from "@/lib/engagement/tiers";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 export async function GET(request: NextRequest) {
-  const secret = process.env.PLATFORM_AUTOMATION_CRON_SECRET || process.env.CRON_SECRET;
-  if (!secret) return NextResponse.json({ error: "Scheduled engagement expiry is not configured." }, { status: 503 });
-  if (request.headers.get("authorization") !== "Bearer " + secret) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!(await authorizePlatformCron(request))) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   await connectToDatabase();
   const now = new Date();
   const due = await EngagementEvent.find({ points: { $gt: 0 }, expiresAt: { $lte: now }, expiredAt: { $exists: false } }).sort({ expiresAt: 1 }).limit(500).lean();

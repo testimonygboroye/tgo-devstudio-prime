@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { authorizePlatformCron } from "@/lib/platform/cronAuth";
 import { connectToDatabase } from "@/lib/db";
 import { AIAgent, AITask } from "@/models/AIWorkforce";
 import { AIMemory } from "@/models/AIKnowledge";
@@ -12,10 +13,7 @@ export const runtime = "nodejs";
 const MAX_SCHEDULES_PER_TICK = 5;
 
 export async function GET(request: NextRequest) {
-  const secret = process.env.PLATFORM_AUTOMATION_CRON_SECRET || process.env.CRON_SECRET;
-  if (!secret) return NextResponse.json({ error: "AI workforce automation is not configured." }, { status: 503 });
-  if (request.headers.get("authorization") !== `Bearer ${secret}`) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-
+  if (!(await authorizePlatformCron(request))) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   await connectToDatabase();
   const now = new Date();
   const due = await AIAutomationSchedule.find({ enabled: true, nextRunAt: { $lte: now } }).sort({ nextRunAt: 1 }).limit(MAX_SCHEDULES_PER_TICK).select("_id").lean();

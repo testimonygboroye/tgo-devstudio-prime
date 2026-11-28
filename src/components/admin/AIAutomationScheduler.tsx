@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import type { FormEvent } from "react";
 import { Clock3, Pause, Play, RefreshCw, Save, ShieldCheck } from "lucide-react";
 
 type Agent = { id:string; name:string; role:string; department:string; enabled:boolean; operationalStatus:string; providerId:string; modelName:string; readinessIssues:string[] };
@@ -38,7 +39,7 @@ export default function AIAutomationScheduler() {
     return ()=>{window.clearInterval(timer);document.removeEventListener("visibilitychange",onVisible);};
   },[load]);
 
-  async function submit(event:React.FormEvent<HTMLFormElement>) {
+  async function submit(event:FormEvent<HTMLFormElement>) {
     event.preventDefault();setBusy(true);setNotice("");setError("");
     try {
       const response=await fetch("/api/platform/ai-automation",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(form)});

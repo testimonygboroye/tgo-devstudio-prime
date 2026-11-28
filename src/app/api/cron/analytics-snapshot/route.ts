@@ -9,7 +9,8 @@ export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   if (!(await authorizePlatformCron(request))) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-  await connectToDatabase();
+  try {
+    await connectToDatabase();
 
     const trustedTrafficFilter = {
       isInternal: { $ne: true },

@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
         "TGO employee live provider verification. Reply exactly: TGO_EMPLOYEE_PROVIDER_TEST_OK",
         "admin"
       );
-      if (!completion.text.trim()) throw new Error("The assigned provider returned an empty response.");
+      if (!completion.text.trim()) throw new Error("The global AI router returned an empty response.");
       const readiness = evaluateAgentReadiness({
         jobTitle: agent.jobTitle, department: agent.department, description: agent.description,
         responsibilities: agent.responsibilities, deliverables: agent.deliverables,
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
   if (!Number.isInteger(intervalMinutes) || intervalMinutes < 15 || intervalMinutes > 10080) return NextResponse.json({ error: "Choose an interval between 15 minutes and 7 days." }, { status: 400 });
   const agent = await AIAgent.findById(agentId);
   if (!agent) return NextResponse.json({ error: "AI employee not found." }, { status: 404 });
-  if (!agent.enabled || agent.operationalStatus !== "ready" || !agent.providerId || !agent.modelName) return NextResponse.json({ error: "This employee must be enabled, marked ready and assigned a verified provider/model before recurring automation can be configured." }, { status: 409 });
+  if (!agent.enabled || agent.operationalStatus !== "ready") return NextResponse.json({ error: "This employee must be enabled and marked operationally ready before recurring automation can be configured." }, { status: 409 });
   const now = new Date();
   const schedule = await AIAutomationSchedule.findOneAndUpdate(
     { agentId: agent._id },

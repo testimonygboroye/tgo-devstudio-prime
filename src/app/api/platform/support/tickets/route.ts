@@ -5,7 +5,8 @@ import { connectToDatabase } from "@/lib/db";
 import SupportTicket from "@/models/SupportTicket";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import User from "@/models/User";
-import SupportSettings from "@/models/SupportSettings";\nimport { pauseSupportResolutionClock, resumeSupportResolutionClock } from "@/lib/support/sla";
+import SupportSettings from "@/models/SupportSettings";
+import { pauseSupportResolutionClock, resumeSupportResolutionClock } from "@/lib/support/sla";
 import {sendSupportNotification} from "@/lib/support/notifications";
 import { sendSupportWhatsAppToClient } from "@/lib/messaging/whatsappSync";
 import { notifyUser, notifyFounders } from "@/lib/platform/notifications";
@@ -130,7 +131,8 @@ export async function PATCH(request:NextRequest){
   let whatsappDelivery: { sent: boolean; reason?: string } | null = null;
   if(action==="reply"){
     const replyText = typeof body.message === "string" ? body.message.trim() : "";
-    whatsappDelivery = await sendSupportWhatsAppToClient(ticket.clientId, ticket._id, "TGO Support · " + ticket.reference + "\\n" + replyText);
+    whatsappDelivery = await sendSupportWhatsAppToClient(ticket.clientId, ticket._id, "TGO Support · " + ticket.reference + "\
+" + replyText);
     const ticketClient=await User.findById(ticket.clientId).select("email name").lean();
     const settings=await SupportSettings.findOne({key:"global"}).lean();
     if(settings?.notifications?.emailEnabled!==false&&ticketClient?.email)void sendSupportNotification({toEmail:ticketClient.email,toName:ticketClient.name,subject:"TGO Support replied to "+ticket.reference,message:"A support team member has replied. Sign in to your client portal to read the message and respond."}).catch(e=>console.error("Support reply email failed",e));

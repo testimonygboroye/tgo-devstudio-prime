@@ -4,6 +4,7 @@ import type { Types } from "mongoose";
 import { sanitizePlatformMetadata } from "@/platform/audit/sanitize";
 import User from "@/models/User";
 import Role from "@/models/Role";
+import { getAdminBasePath } from "@/lib/adminPath";
 
 export interface CreatePlatformNotificationInput {
   recipientId: string | Types.ObjectId;
@@ -62,10 +63,11 @@ async function roleRecipients(category: string) {
   const roleFilter: Record<string, unknown> = permissionKey
     ? { $or: [{ isFounderRole: true }, { [`contentPermissions.${permissionKey}.viewAnalytics`]: true }] }
     : { isFounderRole: true };
-  const roles = await Role.find(roleFilter).select("_id").lean();
+  const roles = await Role.find(roleFilter).select("_id isFounderRole").lean();
   if (!roles.length) return [];
-  const users = await User.find({ role: { $in: roles.map((role) => role._id) }, accountType: "staff", isBanned: false }).select("_id").lean();
-  return users.map((user) => String(user._id));
+  const roleById = new Map(roles.map((role) => [String(role._id), Boolean(role.isFounderRole)]));
+  const users = await User.find({ role: { $in: roles.map((role) => role._id) }, accountType: "staff", isBanned: false }).select("_id role").lean();
+  return users.map((user) => ({ id: String(user._id), isFounder: roleById.get(String(user.role)) === true }));
 }
 
 async function notifyUsersDirect(ids: Array<string | Types.ObjectId>, input: Omit<CreatePlatformNotificationInput, "recipientId">) {
@@ -114,5 +116,10 @@ export async function notifyAccountType(accountType: "staff" | "client", input: 
 /** Explicit founder-facing producer; module viewers are included automatically. */
 export async function notifyFounders(input: Omit<CreatePlatformNotificationInput, "recipientId">) {
   const recipients = await roleRecipients(input.category);
-  return notifyUsersDirect(recipients, input);
+  return Promise.all(recipients.map((recipient) => notifyUsersDirect(
+    [recipient.id],
+    recipient.isFounder
+      ? input
+      : { ...input, href: getAdminBasePath() + "/notifications", actionLabel: "View notification details" }
+  )));
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { LayoutDashboard, ClipboardCheck, UserRoundCog, CalendarCheck, BriefcaseBusiness, ArrowLeft } from "lucide-react";
 import { getAdminBasePath } from "@/lib/adminPath";
+import { NotificationBell } from "@/components/shared/NotificationCentre";
 
 const links = [
   { href: "/workforce", label: "My workspace", icon: LayoutDashboard },
@@ -15,7 +16,7 @@ export default function WorkforceLayout({ children }: { children: React.ReactNod
     <header className="sticky top-0 z-40 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)]/95 backdrop-blur">
       <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-3 sm:px-6">
         <Link href="/workforce" className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-cyan-500 font-bold text-white">T</span><span><span className="block text-sm font-bold">TGO DevStudio Prime</span><span className="block text-[10px] font-semibold uppercase tracking-[.18em] text-cyan-400">Workforce Portal</span></span></Link>
-        <Link href={getAdminBasePath()+"/dashboard"} className="rounded-xl border border-[var(--border-subtle)] px-3 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:border-cyan-400/40">Administration <ArrowLeft size={13} className="ml-1 inline"/></Link>
+        <div className="flex items-center gap-2"><NotificationBell href="/workforce/notifications" className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-[var(--text-primary)]"/><Link href={getAdminBasePath()+"/dashboard"} className="rounded-xl border border-[var(--border-subtle)] px-3 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:border-cyan-400/40">Administration <ArrowLeft size={13} className="ml-1 inline"/></Link></div>
       </div>
     </header>
     <div className="mx-auto grid max-w-[1600px] gap-6 px-4 py-5 sm:px-6 md:grid-cols-[230px_minmax(0,1fr)] md:py-7">

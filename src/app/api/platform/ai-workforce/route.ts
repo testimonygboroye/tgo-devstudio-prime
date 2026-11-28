@@ -1230,7 +1230,19 @@ export async function POST(request: NextRequest) {
           priority: "normal",
           sourceType: "AITask",
           sourceId: String(task._id),
+          dedupeKey: "ai-task-completed:" + String(task._id),
         }).catch((error) => console.error("[Notifications] AI task completion notification failed:", error));
+        await notifyFounders({
+          category: "ai-task-completed",
+          title: "AI employee completed a task",
+          body: agent.name + " completed: " + task.title,
+          href: getAdminBasePath() + "/ai-workforce",
+          actionLabel: "Review AI result",
+          priority: "normal",
+          sourceType: "AITask",
+          sourceId: String(task._id),
+          dedupeKey: "ai-task-completed:" + String(task._id),
+        }).catch((error) => console.error("[Notifications] AI workforce completion fan-out failed:", error));
         if (["communications", "ai_conversation", "whatsapp_ai_conversation"].includes(String(payload.source || "")) && mongoose.Types.ObjectId.isValid(String(payload.conversationId || ""))) {
           const conversation = await UnifiedConversation.findOne({ _id: String(payload.conversationId), memberIds: task.requestedBy });
           if (conversation) {
@@ -1269,7 +1281,7 @@ export async function POST(request: NextRequest) {
             actionLabel: "Review failed task",
             priority: "high",
             requiresAction: true,
-            dedupeKey: "ai-task-failed-founder:" + String(task._id),
+            dedupeKey: "ai-task-failed:" + String(task._id),
             sourceType: "AITask",
             sourceId: String(task._id),
           }),

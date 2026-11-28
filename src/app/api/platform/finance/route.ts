@@ -28,7 +28,8 @@ import {getPaymentProvider} from "@/lib/payments/provider";
 import {sendNotificationEmail} from "@/lib/email/sendEmail";
 import {getPublicSiteUrl} from "@/lib/site-url";
 import {getVerifiedIntegrationCredentials} from "@/lib/integrations/credentials";
-import { notifyUser } from "@/lib/platform/notifications";
+import { notifyUser, notifyFounders } from "@/lib/platform/notifications";
+import { getAdminBasePath } from "@/lib/adminPath";
 
 export const dynamic="force-dynamic";
 const PAYSTACK_CURRENCIES_BY_COUNTRY:Record<string,string[]>={NG:["NGN","USD"],GH:["GHS"],KE:["KES","USD"],ZA:["ZAR"],CI:["XOF"]};
@@ -158,6 +159,7 @@ export async function POST(request:NextRequest){
    }
    await audit(session,"finance.invoice_issued","finance_invoice",String(invoice._id),{reference:invoice.reference});
    await notifyUser(invoice.clientId,{category:"invoice-issued",title:"A new invoice is ready",body:"Invoice "+invoice.reference+" has been issued and is available in your client portal.",href:"/client/finance",actionLabel:"View invoice",priority:"high",requiresAction:true,dedupeKey:"invoice-issued:"+String(invoice._id),sourceType:"FinanceInvoice",sourceId:String(invoice._id)}).catch(error=>console.error("[Notifications] Client invoice notification failed:",error));
+   await notifyFounders({category:"invoice-issued",title:"A client invoice was issued",body:"Invoice "+invoice.reference+" was issued and requires finance oversight.",href:getAdminBasePath()+"/finance",actionLabel:"Review invoice",priority:"normal",sourceType:"FinanceInvoice",sourceId:String(invoice._id),dedupeKey:"invoice-issued:"+String(invoice._id)}).catch(error=>console.error("[Notifications] Finance invoice notification failed:",error));
    return NextResponse.json({ok:true,item:invoice,message:"Invoice issued. The client portal now shows the invoice."});
   }
   if(action==="expense.create"){

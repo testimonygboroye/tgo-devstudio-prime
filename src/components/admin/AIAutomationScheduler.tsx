@@ -47,7 +47,7 @@ export default function AIAutomationScheduler() {
       const response=await fetch("/api/platform/ai-automation",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(form)});
       const json=await response.json();
       if(!response.ok) throw new Error(json.error||"Could not save automation schedule.");
-      setNotice("Recurring schedule saved. The first run will be picked up by the scheduler on its next five-minute cycle.");
+      setNotice("Recurring schedule saved. The first run becomes due after the selected interval; the scheduler checks for due work every five minutes.");
       await load(true);
     } catch(e) {setError(e instanceof Error?e.message:"Could not save automation schedule.");}
     finally {setBusy(false);}

@@ -43,15 +43,31 @@ async function verifyGitHubActionsToken(token: string) {
   const now = Math.floor(Date.now() / 1000);
   const audience = Array.isArray(claims.aud) ? claims.aud : [claims.aud];
   const expectedWorkflow = "testimonygboroye/tgo-devstudio-prime/.github/workflows/platform-automation.yml@refs/heads/main";
-  return claims.iss === "https://token.actions.githubusercontent.com"
-    && audience.includes("tgo-platform-automation")
-    && claims.repository === "testimonygboroye/tgo-devstudio-prime"
-    && claims.repository_owner === "testimonygboroye"
-    && claims.ref === "refs/heads/main"
-    && claims.workflow_ref === expectedWorkflow
-    && typeof claims.exp === "number" && claims.exp > now
-    && typeof claims.iat === "number" && claims.iat <= now + 60
-    && (typeof claims.nbf !== "number" || claims.nbf <= now + 30);
+  const checks = {
+    issuer: claims.iss === "https://token.actions.githubusercontent.com",
+    audience: audience.includes("tgo-platform-automation"),
+    repository: claims.repository === "testimonygboroye/tgo-devstudio-prime",
+    owner: claims.repository_owner === "testimonygboroye",
+    ref: claims.ref === "refs/heads/main",
+    workflow: claims.workflow_ref === expectedWorkflow,
+    expiry: typeof claims.exp === "number" && claims.exp > now,
+    issuedAt: typeof claims.iat === "number" && claims.iat <= now + 60,
+    notBefore: typeof claims.nbf !== "number" || claims.nbf <= now + 30,
+  };
+  if (Object.values(checks).some((valid) => !valid)) {
+    console.error("[Platform Cron Auth] GitHub OIDC claims rejected", {
+      checks,
+      issuer: claims.iss,
+      audience: claims.aud,
+      repository: claims.repository,
+      repositoryOwner: claims.repository_owner,
+      ref: claims.ref,
+      workflowRef: claims.workflow_ref,
+      subject: claims.sub,
+      jobWorkflowRef: claims.job_workflow_ref,
+    });
+  }
+  return Object.values(checks).every(Boolean);
 }
 
 /**

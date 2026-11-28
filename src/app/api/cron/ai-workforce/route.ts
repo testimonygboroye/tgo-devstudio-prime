@@ -68,9 +68,9 @@ export async function GET(request: NextRequest) {
       ? { $or: [{ workspaceId: agent.workspaceId }, { workspaceId: { $exists: false } }] }
       : { workspaceId: { $exists: false } };
     const memoryAccess = [
-      { scope: "agent", agentId: agent._id },
-      ...(agent.memoryConfig?.identityKey ? [{ scope: "agent", agentMemoryKey: agent.memoryConfig.identityKey }] : []),
-      { scope: "shared", $and: [memoryScope, { $or: [{ tags: { $in: sharedScopes } }, { tags: { $size: 0 } }] }] },
+      { scope: "agent" as const, agentId: agent._id },
+      ...(agent.memoryConfig?.identityKey ? [{ scope: "agent" as const, agentMemoryKey: agent.memoryConfig.identityKey }] : []),
+      { scope: "shared" as const, $and: [memoryScope, { $or: [{ tags: { $in: sharedScopes } }, { tags: { $size: 0 } }] }] },
     ];
     const memories = agent.memoryConfig?.enabled
       ? await AIMemory.find()

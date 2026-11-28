@@ -99,18 +99,13 @@ export async function runProviderCompletion(providerId: string, model: string, s
  */
 function modelQualityScore(model: string): number {
   const id = model.toLowerCase();
-  // Prefer the lower-cost Gemini Flash-Lite family for the default global
-  // assistant route. Pro/preview models may have zero free-tier quota.
-  if (/^gemini-/.test(id)) {
-    if (/flash-lite/.test(id)) return 115;
-    if (/flash/.test(id)) return 95;
-    if (/pro/.test(id)) return 65;
-  }
+  // Provider-neutral capability heuristic. Live completion success is the
+  // availability gate; a failed model is skipped for the next ranked candidate.
   let score = 50;
-  if (/opus|pro|o3|o1|gpt-4\.1(?!-mini|-nano)|gpt-4o(?!-mini)|sonnet-4/i.test(id)) score += 45;
-  if (/sonnet|gpt-4|deepseek-r1|qwen.*max/i.test(id)) score += 25;
-  if (/haiku|mini|nano|lite|small|fast/i.test(id)) score -= 18;
-  if (/preview|experimental|latest/i.test(id)) score -= 4;
+  if (/opus|gpt-5|o3|o1|gemini.*pro|deepseek-r1|qwen.*max/i.test(id)) score += 45;
+  if (/sonnet|gpt-4[.]1(?!-mini|-nano)|gpt-4o(?!-mini)|deepseek-v3/i.test(id)) score += 30;
+  if (/haiku|mini|nano|lite|small|flash|fast/i.test(id)) score -= 12;
+  if (/preview|experimental/i.test(id)) score -= 5;
   return score;
 }
 async function discoverProviderModels(provider: any): Promise<string[]> {
@@ -156,16 +151,10 @@ export async function runProviderCompletionWithFallback(
   _scope: AIChatbotScope = "admin",
 ): Promise<AICompletion> {
   await connectToDatabase();
-  // A non-empty provider/model pair is an explicit assignment (AI employee or configured assistant).
-  // Honor that exact tested pair; only unassigned global health checks use the cross-provider pool.
-  if (providerId && model) {
-    const assignedProvider = await AIProvider.findById(providerId).select("+encryptedApiKey");
-    if (!assignedProvider || !assignedProvider.enabled || assignedProvider.lastTestStatus !== "success" || assignedProvider.lastTestedModel !== model || assignedProvider.archivedAt) {
-      throw new Error("The assigned AI provider/model is no longer enabled and live-test verified. Re-test or reassign this employee before execution.");
-    }
-    const assignedCompletion = await runProviderCompletion(providerId, model, system, prompt, true);
-    return { ...assignedCompletion, providerId, model: assignedCompletion.model || model, fallbackUsed: false };
-  }
+  // Legacy assignment fields are retained for compatibility but never pin execution.
+  // Every chatbot, employee and automation uses the same live cross-provider pool.
+  void providerId;
+  void model;
   const traceId = randomUUID();
   const storedProviders: any[] = await AIProvider.find({}).select("+encryptedApiKey +apiKeyFingerprint").lean();
   // Mongoose legacy rows can store archivedAt as null. `$exists:false` would
@@ -250,7 +239,7 @@ export async function runProviderCompletionWithFallback(
   }
   const candidates = catalogues.flatMap(({ provider, models }) => models
     .filter((modelName) => supportsTextGenerationModel(provider.provider, modelName))
-    .map((modelName) => ({ provider, modelName, score: modelQualityScore(modelName) + (modelName === provider.lastTestedModel ? 160 : 0) })))
+    .map((modelName) => ({ provider, modelName, score: modelQualityScore(modelName) })))
     .sort((a, b) => b.score - a.score || a.modelName.localeCompare(b.modelName));
   const seen = new Set<string>();
   let attempt = 0;

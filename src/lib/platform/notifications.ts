@@ -4,7 +4,6 @@ import type { Types } from "mongoose";
 import { sanitizePlatformMetadata } from "@/platform/audit/sanitize";
 import User from "@/models/User";
 import Role from "@/models/Role";
-import { getAdminBasePath } from "@/lib/adminPath";
 
 export interface CreatePlatformNotificationInput {
   recipientId: string | Types.ObjectId;
@@ -120,6 +119,6 @@ export async function notifyFounders(input: Omit<CreatePlatformNotificationInput
     [recipient.id],
     recipient.isFounder
       ? input
-      : { ...input, href: getAdminBasePath() + "/notifications", actionLabel: "View notification details" }
+      : { ...input, href: "/workforce/notifications", actionLabel: "View notification details" }
   )));
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { AIAgent, AITask } from "@/models/AIWorkforce";
+import { AIMemory } from "@/models/AIKnowledge";
 import AIAutomationSchedule from "@/models/AIAutomationSchedule";
 import { runProviderCompletionWithFallback } from "@/lib/ai/provider-runtime";
 import { notifyFounders } from "@/lib/platform/notifications";
@@ -62,6 +63,25 @@ export async function GET(request: NextRequest) {
       continue;
     }
 
+    const sharedScopes = agent.memoryConfig?.sharedMemoryScopes?.length ? agent.memoryConfig.sharedMemoryScopes : ["company-approved"];
+    const memoryScope = agent.workspaceId
+      ? { $or: [{ workspaceId: agent.workspaceId }, { workspaceId: { $exists: false } }] }
+      : { workspaceId: { $exists: false } };
+    const memories = agent.memoryConfig?.enabled
+      ? await AIMemory.find({
+          active: true,
+          $and: [
+            { $or: [{ expiresAt: { $exists: false } }, { expiresAt: { $gt: now } }] },
+            { $or: [
+              { scope: "agent", agentId: agent._id },
+              ...(agent.memoryConfig.identityKey ? [{ scope: "agent", agentMemoryKey: agent.memoryConfig.identityKey }] : []),
+              { scope: "shared", ...memoryScope, $or: [{ tags: { $in: sharedScopes } }, { tags: { $size: 0 } }] },
+            ] },
+          ],
+        }).sort({ updatedAt: -1 }).limit(20).select("title content scope tags").lean()
+      : [];
+    const memoryContext = memories.map((memory, index) => "MEMORY " + (index + 1) + " — " + memory.title + "\n" + String(memory.content).slice(0, 2500)).join("\n\n").slice(0, 14000);
+
     const task = await AITask.create({
       agentId: agent._id,
       agentMemoryKey: agent.memoryConfig?.identityKey || agent.memoryKey || undefined,
@@ -78,6 +98,7 @@ export async function GET(request: NextRequest) {
     try {
       const safeSystem = [
         agent.systemInstructions || "",
+        memoryContext ? "APPROVED ROLE MEMORY CONTEXT:\n" + memoryContext : "",
         "AUTOMATED SCHEDULED RUN: You are performing a recurring, text-only monitoring/reporting task.",
         "Do not claim to have inspected live systems, websites, databases, inboxes, analytics, files, or external services unless their data is included in the task prompt.",
         "Do not send messages, publish content, spend money, modify records, change permissions, deploy code, or perform external actions.",

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { authorizePlatformCron } from "@/lib/platform/cronAuth";
 import { connectToDatabase } from "@/lib/db";
 import PageView from "@/models/PageView";
 import { captureAnalyticsSnapshot } from "@/lib/push/analyticsSnapshot";
@@ -7,24 +8,8 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
-  const secret = process.env.PLATFORM_AUTOMATION_CRON_SECRET || process.env.CRON_SECRET;
-
-  if (!secret) {
-    return NextResponse.json(
-      { error: "Scheduled analytics is not configured." },
-      { status: 503 }
-    );
-  }
-
-  if (request.headers.get("authorization") !== `Bearer ${secret}`) {
-    return NextResponse.json(
-      { error: "Unauthorized." },
-      { status: 401 }
-    );
-  }
-
-  try {
-    await connectToDatabase();
+  if (!(await authorizePlatformCron(request))) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  await connectToDatabase();
 
     const trustedTrafficFilter = {
       isInternal: { $ne: true },

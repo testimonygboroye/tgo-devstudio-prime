@@ -73,7 +73,7 @@ export async function runProviderCompletion(providerId: string, model: string, s
         // unsupported model endpoint from taking an otherwise healthy Gemini
         // provider offline for every TGO chatbot and AI employee.
         if ([400, 404, 405, 501].includes(response.status)) {
-          const legacyResponse = await fetch(base + "/models/" + encodeURIComponent(candidate.replace(/^models\\//, "")) + ":generateContent", {
+          const legacyResponse = await fetch(base + "/models/" + encodeURIComponent(candidate.replace("models/", "")) + ":generateContent", {
             method: "POST",
             headers,
             signal: AbortSignal.timeout(timeoutMs),

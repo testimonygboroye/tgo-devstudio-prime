@@ -103,7 +103,7 @@ function modelQualityScore(model: string): number {
   // availability gate; a failed model is skipped for the next ranked candidate.
   let score = 50;
   if (/opus|gpt-5|o3|o1|gemini.*pro|deepseek-r1|qwen.*max/i.test(id)) score += 45;
-  if (/sonnet|gpt-4\\.1(?!-mini|-nano)|gpt-4o(?!-mini)|deepseek-v3/i.test(id)) score += 30;
+  if (/sonnet|gpt-4[.]1(?!-mini|-nano)|gpt-4o(?!-mini)|deepseek-v3/i.test(id)) score += 30;
   if (/haiku|mini|nano|lite|small|flash|fast/i.test(id)) score -= 12;
   if (/preview|experimental/i.test(id)) score -= 5;
   return score;

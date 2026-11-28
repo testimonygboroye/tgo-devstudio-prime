@@ -85,17 +85,16 @@ async function notifyUsersDirect(ids: Array<string | Types.ObjectId>, input: Omi
 
 /** Direct recipients plus founder and every active staff role granted View permission for the event's module. */
 export async function notifyUsers(ids: Array<string | Types.ObjectId>, input: Omit<CreatePlatformNotificationInput, "recipientId">) {
-  const moduleRecipients = await roleRecipients(input.category);
-  return notifyUsersDirect([...ids, ...moduleRecipients], input);
+  return notifyUsersDirect(ids, input);
 }
 
 export async function createPlatformNotification(input: CreatePlatformNotificationInput) {
   const { recipientId, ...rest } = input;
-  return notifyUsers([recipientId], rest);
+  return notifyUsersDirect([recipientId], rest);
 }
 
 export async function notifyUser(id: string | Types.ObjectId, input: Omit<CreatePlatformNotificationInput, "recipientId">) {
-  return notifyUsers([id], input);
+  return notifyUsersDirect([id], input);
 }
 
 export async function notifyRole(roleSlug: string, input: Omit<CreatePlatformNotificationInput, "recipientId">) {
@@ -103,7 +102,7 @@ export async function notifyRole(roleSlug: string, input: Omit<CreatePlatformNot
   const role = await Role.findOne({ slug: roleSlug }).select("_id").lean();
   if (!role) return [];
   const users = await User.find({ role: role._id, accountType: "staff", isBanned: false }).select("_id").lean();
-  return notifyUsers(users.map((user) => user._id), input);
+  return notifyUsersDirect(users.map((user) => user._id), input);
 }
 
 export async function notifyAccountType(accountType: "staff" | "client", input: Omit<CreatePlatformNotificationInput, "recipientId">) {

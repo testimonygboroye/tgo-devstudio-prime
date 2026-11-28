@@ -32,8 +32,8 @@ export async function GET(request: NextRequest) {
     await schedule.save();
 
     const agent = await AIAgent.findById(schedule.agentId);
-    if (!agent || !agent.enabled || agent.operationalStatus !== "ready" || !agent.executionConfig?.scheduleEnabled || !agent.providerId || !agent.modelName) {
-      const reason = "Employee is disabled, not readiness-verified, or missing its exact provider/model assignment.";
+    if (!agent || !agent.enabled || agent.operationalStatus !== "ready" || !agent.executionConfig?.scheduleEnabled) {
+      const reason = "Employee is disabled, not readiness-verified, or not enabled for scheduled execution.";
       schedule.lastError = reason; await schedule.save();
       await notifyFounders({ category: "ai-task-failed", title: "Scheduled AI employee is not ready", body: (agent?.name || "An AI employee") + ": " + reason, href: getAdminBasePath() + "/ai-workforce", actionLabel: "Review employee readiness", priority: "high", requiresAction: true, sourceType: "AIAutomationSchedule", sourceId: String(schedule._id) }).catch(() => undefined);
       results.push({ scheduleId: String(schedule._id), status: "skipped", reason });
@@ -106,8 +106,8 @@ export async function GET(request: NextRequest) {
         "Produce a concise, evidence-aware report. Clearly label missing data and decisions requiring founder approval.",
       ].filter(Boolean).join("\n\n");
       const completion = await runProviderCompletionWithFallback(
-        String(agent.providerId),
-        agent.modelName,
+        "",
+        "",
         safeSystem,
         "SCHEDULED TASK: " + schedule.title + "\n\nINSTRUCTIONS:\n" + schedule.prompt + "\n\nRun timestamp (UTC): " + now.toISOString(),
         "admin"

@@ -19,6 +19,8 @@ export const MANAGED_CONTENT_TYPES = [
   { key: "projectChanges", label: "Project Change Requests" },
   { key: "aiWorkforce", label: "AI Workforce & Feedback" },
   { key: "finance", label: "Finance & Payment Events" },
+  { key: "projects", label: "Projects, Deliverables & Milestones" },
+  { key: "commercial", label: "Proposals, Quotes, Contracts & Orders" },
   { key: "newsletterSubscribers", label: "Newsletter Subscribers" },
   { key: "faqItems", label: "FAQ Items" },
 ] as const;

@@ -55,14 +55,24 @@ jobs:
           )
           for endpoint in "${endpoints[@]}"; do
             echo "::group::${endpoint}"
-            if curl --fail-with-body --silent --show-error --max-time 60 \
+            if body=$(curl --fail-with-body --silent --show-error --max-time 60 \
               --header "Authorization: Bearer ${PLATFORM_AUTOMATION_TOKEN}" \
               --header "User-Agent: TGO-GitHub-Automation/1.0" \
-              "${base}${endpoint}"; then
-              echo
-              echo "Completed: ${endpoint}"
+              "${base}${endpoint}"); then
+              printf '%s\n' "$body"
+              if printf '%s' "$body" | jq -e '
+                type == "object"
+                and (.error? == null)
+                and (.status? != "error")
+                and (.success? != false)
+                and ([.results[]? | select(.status == "failed" or .status == "error")] | length == 0)
+              ' >/dev/null; then
+                echo "Completed and response-validated: ${endpoint}"
+              else
+                echo "::error::Automation endpoint returned an application-level failure: ${endpoint}"
+                failed=1
+              fi
             else
-              echo
               echo "::error::Automation endpoint failed: ${endpoint}"
               failed=1
             fi

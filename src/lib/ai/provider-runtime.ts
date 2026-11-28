@@ -5,13 +5,8 @@ import type { AIChatbotScope } from "@/models/AIChatbot";
 import { randomUUID } from "node:crypto";
 import { connectToDatabase } from "@/lib/db";
 import AIExecutionLog from "@/models/AIExecutionLog";
+import { isProviderWideFailure } from "@/lib/ai/provider-failure";
 
-
-export function isProviderWideFailure(httpStatus?: number): boolean {
-  // Authentication/permission failures invalidate the provider credential or access.
-  // Quota, model and server failures can be model-specific, so sibling models must still be tried.
-  return httpStatus === 401 || httpStatus === 403;
-}
 
 export interface AICompletion {
   text: string;

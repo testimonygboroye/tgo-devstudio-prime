@@ -36,7 +36,7 @@ export function evaluateAgentReadiness(agent: AgentReadinessInput): AgentReadine
   if (!agent.executionConfig?.maxConcurrentTasks || !agent.executionConfig.timeoutSeconds || !agent.executionConfig.maxDailyTokens) issues.push("Execution limits are incomplete.");
   if (!agent.approvalRequirements?.length) issues.push("Approval requirements are not defined.");
   if (!agent.performanceTargets?.length) issues.push("Performance monitoring targets are not defined.");
-  if (!agent.modelName?.trim()) issues.push("No preferred model is configured.");
+  // TGO global routing selects the model; individual agents are not pinned to one.
   if (agent.providerVerified !== true) issues.push("No connection-tested AI provider is available for this employee.");
   if (!agent.permissions?.length || !agent.toolAllowlist?.length) issues.push("No role-specific operational tools and permissions are configured.");
   const notConfigured = !agent.jobTitle && !agent.department && !agent.description;

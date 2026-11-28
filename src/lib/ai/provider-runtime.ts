@@ -67,6 +67,38 @@ export async function runProviderCompletion(providerId: string, model: string, s
           const text = Array.isArray(data.steps) ? data.steps.filter((step: any) => step.type === "model_output").flatMap((step: any) => step.content || []).filter((part: any) => part.type === "text").map((part: any) => part.text || "").join("") : String(data.output_text || "");
           if (text.trim()) return { text, inputTokens: Number(data.usage?.total_input_tokens || data.usage?.input_tokens || 0), outputTokens: Number(data.usage?.total_output_tokens || data.usage?.output_tokens || 0), providerRequestId: data.id, model: candidate, fallbackUsed: candidate !== model };
         }
+        // Keep the recommended Interactions API as the primary path, but retain
+        // generateContent compatibility for older/preview catalogue entries or
+        // temporary Interactions API model incompatibilities. This prevents one
+        // unsupported model endpoint from taking an otherwise healthy Gemini
+        // provider offline for every TGO chatbot and AI employee.
+        if ([400, 404, 405, 501].includes(response.status)) {
+          const legacyResponse = await fetch(base + "/models/" + encodeURIComponent(candidate.replace(/^models\\//, "")) + ":generateContent", {
+            method: "POST",
+            headers,
+            signal: AbortSignal.timeout(timeoutMs),
+            cache: "no-store",
+            body: JSON.stringify({
+              systemInstruction: { parts: [{ text: system }] },
+              contents: [{ role: "user", parts: [{ text: prompt }] }],
+              generationConfig: { temperature: 0.2, maxOutputTokens: 4096 },
+            }),
+          });
+          const legacyData = await legacyResponse.json().catch(() => ({}));
+          if (legacyResponse.ok) {
+            const legacyText = (legacyData.candidates?.[0]?.content?.parts || []).map((part: any) => String(part.text || "")).join("");
+            if (legacyText.trim()) return {
+              text: legacyText,
+              inputTokens: Number(legacyData.usageMetadata?.promptTokenCount || 0),
+              outputTokens: Number(legacyData.usageMetadata?.candidatesTokenCount || 0),
+              providerRequestId: legacyData.responseId,
+              model: candidate,
+              fallbackUsed: candidate !== model,
+            };
+          }
+          failures.push(candidate + " (Interactions HTTP " + response.status + "; generateContent HTTP " + legacyResponse.status + "): " + String(legacyData?.error?.message || data?.error?.message || "Both Gemini generation endpoints failed.").slice(0, 260));
+          continue;
+        }
       } else if (provider.provider === "anthropic") {
         response = await fetch(base + "/messages", { method: "POST", headers, signal: AbortSignal.timeout(timeoutMs), cache: "no-store", body: JSON.stringify({ model: candidate, system, max_tokens: 4096, temperature: 0.2, messages: [{ role: "user", content: prompt }] }) });
         data = await response.json().catch(() => ({}));

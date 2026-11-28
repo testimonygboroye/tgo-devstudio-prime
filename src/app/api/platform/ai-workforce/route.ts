@@ -896,7 +896,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ status: "ok", permissions: agent.permissions, message: "Agent tool permissions updated." });
     }
     if (body.action === "agent.enable_text_only_all") {
-      return NextResponse.json({ status: "error", message: "Bulk activation is disabled. Every AI employee must pass an individual provider, model, memory, permissions, approval and operational-readiness review before activation." }, { status: 409 });
+      return NextResponse.json({ status: "error", message: "Bulk activation is disabled. Every AI employee must pass an individual global-provider, memory, permissions, approval and operational-readiness review before activation. TGO selects the model automatically." }, { status: 409 });
     }
     if (body.action === "agent.enable" || body.action === "agent.disable") {
       const agent = await AIAgent.findById(body.agentId);

@@ -6,7 +6,7 @@ import { connectToDatabase } from "@/lib/db";
 import SupportTicket from "@/models/SupportTicket";
 import { writePlatformAuditEvent } from "@/lib/platform/audit";
 import ClientActivity from "@/models/ClientActivity";
-import SupportSettings from "@/models/SupportSettings";
+import SupportSettings from "@/models/SupportSettings";\nimport { resumeSupportResolutionClock } from "@/lib/support/sla";
 import {sendSupportNotification} from "@/lib/support/notifications";
 import { notifyFounders } from "@/lib/platform/notifications";
 import { getAdminBasePath } from "@/lib/adminPath";

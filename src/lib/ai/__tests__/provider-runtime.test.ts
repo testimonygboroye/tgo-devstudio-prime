@@ -1,5 +1,5 @@
 import { buildProviderAttempts } from "@/lib/ai/provider-attempts";
-import { isProviderWideFailure } from "@/lib/ai/provider-runtime";
+import { isProviderWideFailure } from "@/lib/ai/provider-failure";
 
 describe("AI employee provider fallback order", () => {
   it("tries the agent's assigned provider before the admin chatbot chain", () => {

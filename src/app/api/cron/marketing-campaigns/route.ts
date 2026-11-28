@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { authorizePlatformCron } from "@/lib/platform/cronAuth";
 import { connectToDatabase } from "@/lib/db";
 import MarketingCampaign from "@/models/MarketingCampaign";
 import MarketingCampaignDelivery from "@/models/MarketingCampaignDelivery";
@@ -12,11 +13,8 @@ export const dynamic = "force-dynamic";
 function escapeHtml(value: string) { return value.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] || c); }
 
 export async function GET(request: NextRequest) {
-  const secret = process.env.PLATFORM_AUTOMATION_CRON_SECRET || process.env.CRON_SECRET;
-  if (!secret) return NextResponse.json({ error: "Campaign worker is not configured." }, { status: 503 });
-  if (request.headers.get("authorization") !== "Bearer " + secret) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-  const base = (process.env.APP_BASE_URL || process.env.SITE_URL || "").replace(/\/$/, "");
-  if (!base) return NextResponse.json({ error: "APP_BASE_URL or SITE_URL is required for unsubscribe links." }, { status: 503 });
+  if (!(await authorizePlatformCron(request))) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  const base = (process.env.APP_BASE_URL || process.env.SITE_URL || "https://tgo-devstudio-prime.onrender.com").replace(/\/$/, "");
   await connectToDatabase();
   const campaigns = await MarketingCampaign.find({ status: { $in: ["queued", "sending"] }, channel: "email", audience: "newsletter_subscribers", $or: [{ scheduledAt: { $exists: false } }, { scheduledAt: null }, { scheduledAt: { $lte: new Date() } }] }).sort({ updatedAt: 1 }).limit(10);
   let sent = 0, failed = 0, processed = 0;

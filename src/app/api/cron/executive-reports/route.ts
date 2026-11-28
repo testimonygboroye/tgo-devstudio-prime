@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { authorizePlatformCron } from "@/lib/platform/cronAuth";
 import { Types } from "mongoose";
 import { connectToDatabase } from "@/lib/db";
 import { getExecutiveSnapshot } from "@/lib/analytics/executive";
@@ -18,9 +19,7 @@ function nextRun(frequency: string, from: Date) {
   return date;
 }
 export async function GET(request: NextRequest) {
-  const secret = process.env.PLATFORM_AUTOMATION_CRON_SECRET || process.env.CRON_SECRET;
-  if (!secret) return NextResponse.json({ error: "Executive report scheduler is not configured." }, { status: 503 });
-  if (request.headers.get("authorization") !== "Bearer " + secret) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!(await authorizePlatformCron(request))) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   await connectToDatabase();
   const due = await ExecutiveReportSchedule.find({ active: true, nextRunAt: { $lte: new Date() } }).sort({ nextRunAt: 1 }).limit(20);
   let generated = 0, failed = 0;

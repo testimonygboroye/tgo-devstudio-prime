@@ -277,7 +277,9 @@ export async function runProviderCompletionWithFallback(
   }
   const candidates = catalogues.flatMap(({ provider, models }) => models
     .filter((modelName) => supportsTextGenerationModel(provider.provider, modelName))
-    .map((modelName) => ({ provider, modelName, score: modelQualityScore(modelName) })))
+    // Prefer each provider’s exact live-tested model as the first known-good candidate;
+    // if it is now unavailable, the router continues through the quality-ranked sibling models.
+    .map((modelName) => ({ provider, modelName, score: modelQualityScore(modelName) + (modelName === provider.lastTestedModel ? 100 : 0) })))
     .sort((a, b) => b.score - a.score || a.modelName.localeCompare(b.modelName));
   const seen = new Set<string>();
   const providerAttempts = new Map<string, number>();

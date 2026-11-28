@@ -22,9 +22,12 @@ export function pauseSupportResolutionClock(ticket: SlaTicket, now = new Date())
  * the most recent staff/AI response rather than charging the client-wait time.
  */
 export function resumeSupportResolutionClock(ticket: SlaTicket, now = new Date()) {
-  const inferredPause = [...(ticket.messages || [])]
+  const latestConversationMessage = [...(ticket.messages || [])]
     .reverse()
-    .find((message) => message.senderType === "staff" || message.senderType === "ai")?.createdAt;
+    .find((message) => message.senderType !== "system");
+  const inferredPause = latestConversationMessage?.senderType === "staff" || latestConversationMessage?.senderType === "ai"
+    ? latestConversationMessage.createdAt
+    : undefined;
   const pauseStart = ticket.slaPausedAt || (inferredPause ? (inferredPause instanceof Date ? inferredPause : new Date(inferredPause)) : undefined);
 
   if (pauseStart && Number.isFinite(pauseStart.getTime())) {

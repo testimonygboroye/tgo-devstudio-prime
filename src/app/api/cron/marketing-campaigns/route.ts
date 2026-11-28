@@ -14,8 +14,7 @@ function escapeHtml(value: string) { return value.replace(/[&<>"']/g, (c) => ({ 
 
 export async function GET(request: NextRequest) {
   if (!(await authorizePlatformCron(request))) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-  const base = (process.env.APP_BASE_URL || process.env.SITE_URL || "").replace(/\/$/, "");
-  if (!base) return NextResponse.json({ error: "APP_BASE_URL or SITE_URL is required for unsubscribe links." }, { status: 503 });
+  const base = (process.env.APP_BASE_URL || process.env.SITE_URL || "https://tgo-devstudio-prime.onrender.com").replace(/\/$/, "");
   await connectToDatabase();
   const campaigns = await MarketingCampaign.find({ status: { $in: ["queued", "sending"] }, channel: "email", audience: "newsletter_subscribers", $or: [{ scheduledAt: { $exists: false } }, { scheduledAt: null }, { scheduledAt: { $lte: new Date() } }] }).sort({ updatedAt: 1 }).limit(10);
   let sent = 0, failed = 0, processed = 0;

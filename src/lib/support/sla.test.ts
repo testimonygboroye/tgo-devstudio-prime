@@ -3,7 +3,7 @@ import { pauseSupportResolutionClock, resumeSupportResolutionClock, isSupportTic
 describe("support resolution SLA clock", () => {
   it("pauses once while waiting for the client", () => {
     const now = new Date("2026-11-28T10:00:00.000Z");
-    const ticket = { resolutionDueAt: new Date("2026-11-29T10:00:00.000Z") };
+    const ticket: { resolutionDueAt: Date; slaPausedAt?: Date } = { resolutionDueAt: new Date("2026-11-29T10:00:00.000Z") };
     pauseSupportResolutionClock(ticket, now);
     pauseSupportResolutionClock(ticket, new Date("2026-11-28T11:00:00.000Z"));
     expect(ticket.slaPausedAt).toEqual(now);

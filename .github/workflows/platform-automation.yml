@@ -59,7 +59,7 @@ jobs:
               --header "Authorization: Bearer ${PLATFORM_AUTOMATION_TOKEN}" \
               --header "User-Agent: TGO-GitHub-Automation/1.0" \
               "${base}${endpoint}"); then
-              printf '%s\\n' "$body"
+              printf '%s\n' "$body"
               if printf '%s' "$body" | jq -e '
                 type == "object"
                 and (.error? == null)

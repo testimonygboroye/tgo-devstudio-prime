@@ -1,40 +1,7 @@
 import { Schema, model, models, Document, Model, Types } from "mongoose";
-
-export interface IPlatformNotification extends Document {
-  recipientId: Types.ObjectId;
-  category: string;
-  title: string;
-  body: string;
-  href?: string;
-  readAt?: Date;
-  dedupeKey?: string;
-  metadata: Record<string, unknown>;
-  createdAt: Date;
-}
-
-const PlatformNotificationSchema = new Schema<IPlatformNotification>(
-  {
-    recipientId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    category: { type: String, required: true, maxlength: 80 },
-    title: { type: String, required: true, trim: true, maxlength: 180 },
-    body: { type: String, required: true, trim: true, maxlength: 1200 },
-    href: { type: String, maxlength: 500 },
-    readAt: Date,
-    dedupeKey: { type: String, maxlength: 200 },
-    metadata: { type: Schema.Types.Mixed, default: {} },
-  },
-  { timestamps: { createdAt: true, updatedAt: false } }
-);
-
-PlatformNotificationSchema.index({ recipientId: 1, createdAt: -1 });
-PlatformNotificationSchema.index({ recipientId: 1, readAt: 1, createdAt: -1 });
-PlatformNotificationSchema.index(
-  { recipientId: 1, dedupeKey: 1 },
-  { unique: true, partialFilterExpression: { dedupeKey: { $type: "string" } } }
-);
-
-const PlatformNotification: Model<IPlatformNotification> =
-  models.PlatformNotification ||
-  model<IPlatformNotification>("PlatformNotification", PlatformNotificationSchema);
-
-export default PlatformNotification;
+export type NotificationStatus = "open" | "resolved" | "dismissed";
+export type NotificationPriority = "low" | "normal" | "high" | "urgent";
+export interface IPlatformNotification extends Document { recipientId: Types.ObjectId; category: string; title: string; body: string; href?: string; actionLabel?: string; priority: NotificationPriority; requiresAction: boolean; status: NotificationStatus; readAt?: Date; resolvedAt?: Date; resolvedBy?: string; dedupeKey?: string; sourceType?: string; sourceId?: string; metadata: Record<string, unknown>; createdAt: Date; }
+const S = new Schema<IPlatformNotification>({ recipientId:{type:Schema.Types.ObjectId,ref:"User",required:true}, category:{type:String,required:true,maxlength:80,index:true}, title:{type:String,required:true,trim:true,maxlength:180}, body:{type:String,required:true,trim:true,maxlength:1200}, href:{type:String,maxlength:500}, actionLabel:{type:String,maxlength:60}, priority:{type:String,enum:["low","normal","high","urgent"],default:"normal"}, requiresAction:{type:Boolean,default:false}, status:{type:String,enum:["open","resolved","dismissed"],default:"open"}, readAt:Date,resolvedAt:Date,resolvedBy:{type:String,maxlength:160},dedupeKey:{type:String,maxlength:200},sourceType:{type:String,maxlength:100},sourceId:{type:String,maxlength:160},metadata:{type:Schema.Types.Mixed,default:{}} },{timestamps:{createdAt:true,updatedAt:false}});
+S.index({recipientId:1,createdAt:-1}); S.index({recipientId:1,readAt:1,createdAt:-1}); S.index({recipientId:1,status:1,requiresAction:1,createdAt:-1}); S.index({recipientId:1,dedupeKey:1},{unique:true,partialFilterExpression:{dedupeKey:{$type:"string"}}});
+const M:Model<IPlatformNotification>=models.PlatformNotification||model<IPlatformNotification>("PlatformNotification",S); export default M;

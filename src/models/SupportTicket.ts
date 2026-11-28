@@ -6,7 +6,8 @@ export interface ISupportMessage { _id?: Types.ObjectId; senderId: Types.ObjectI
 export interface ISupportTicket extends Document {
   reference: string; clientId: Types.ObjectId; subject: string; description: string; category: string;
   status: SupportTicketStatus; priority: SupportTicketPriority; assignedTo?: Types.ObjectId;
-  escalationLevel: number; firstResponseDueAt: Date; resolutionDueAt: Date; firstRespondedAt?: Date;\n  slaPausedAt?: Date; slaPausedDurationMs?: number;
+  escalationLevel: number; firstResponseDueAt: Date; resolutionDueAt: Date; firstRespondedAt?: Date;
+  slaPausedAt?: Date; slaPausedDurationMs?: number;
   resolvedAt?: Date; closedAt?: Date; lastEscalatedAt?: Date; messages: ISupportMessage[];
   satisfaction?: { rating: number; feedback?: string; submittedAt: Date };
   createdAt: Date; updatedAt: Date;
@@ -30,7 +31,9 @@ const TicketSchema = new Schema<ISupportTicket>({
   escalationLevel:{type:Number,default:0,min:0,max:5},
   firstResponseDueAt:{type:Date,required:true,index:true},
   resolutionDueAt:{type:Date,required:true,index:true},
-  firstRespondedAt:{type:Date},\n  slaPausedAt:{type:Date,index:true},\n  slaPausedDurationMs:{type:Number,default:0,min:0},
+  firstRespondedAt:{type:Date},
+  slaPausedAt:{type:Date,index:true},
+  slaPausedDurationMs:{type:Number,default:0,min:0},
   resolvedAt:{type:Date},
   closedAt:{type:Date},
   lastEscalatedAt:{type:Date,index:true},

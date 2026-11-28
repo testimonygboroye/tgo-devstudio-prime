@@ -242,14 +242,21 @@ export async function runProviderCompletionWithFallback(
     .map((modelName) => ({ provider, modelName, score: modelQualityScore(modelName) })))
     .sort((a, b) => b.score - a.score || a.modelName.localeCompare(b.modelName));
   const seen = new Set<string>();
+  const providerAttempts = new Map<string, number>();
+  const unavailableProviders = new Set<string>();
   let attempt = 0;
   const routingDeadline = Date.now() + 42000;
   const maximumAttempts = 8;
+  const perProviderAttemptLimit = Math.max(2, Math.ceil(maximumAttempts / Math.max(1, providers.length)));
   for (const candidate of candidates) {
     if (attempt >= maximumAttempts || routingDeadline - Date.now() < 1800) break;
-    const identity = String(candidate.provider._id) + ":" + candidate.modelName;
+    const providerKey = String(candidate.provider._id);
+    if (unavailableProviders.has(providerKey)) continue;
+    if ((providerAttempts.get(providerKey) || 0) >= perProviderAttemptLimit) continue;
+    const identity = providerKey + ":" + candidate.modelName;
     if (seen.has(identity)) continue;
     seen.add(identity);
+    providerAttempts.set(providerKey, (providerAttempts.get(providerKey) || 0) + 1);
     attempt += 1;
     const startedAt = Date.now();
     try {
@@ -262,6 +269,7 @@ export async function runProviderCompletionWithFallback(
       const match = message.match(/HTTP\s+(\d{3})/i);
       const httpStatus = match ? Number(match[1]) : undefined;
       const errorCode = httpStatus === 429 ? "rate_limit" : httpStatus === 401 || httpStatus === 403 ? "authentication_or_permission" : httpStatus && httpStatus >= 500 ? "provider_server_error" : /timeout|abort/i.test(message) ? "timeout" : "model_unavailable_or_request_failed";
+      if (httpStatus === 429 || httpStatus === 401 || httpStatus === 403 || (httpStatus !== undefined && httpStatus >= 500)) unavailableProviders.add(providerKey);
       failures.push(candidate.provider.name + "/" + candidate.modelName + ": " + message);
       await AIExecutionLog.create({ traceId, feature: "ai_completion", ...(String(candidate.provider._id) === "__gemini_environment__" ? {} : { providerId: String(candidate.provider._id) }), providerName: candidate.provider.name, providerType: candidate.provider.provider, model: candidate.modelName, status: "failure", durationMs: Date.now() - startedAt, httpStatus, errorCode, errorMessage: message.slice(0, 1900) }).catch(() => undefined);
     }

@@ -33,6 +33,9 @@ jobs:
             exit 1
           fi
           echo "::add-mask::$token"
+          payload=$(printf '%s' "$token" | cut -d. -f2 | tr '_-' '/+' | base64 -d)
+          echo "Verified OIDC token claims (non-secret diagnostics):"
+          printf '%s' "$payload" | jq '{iss, aud, repository, repository_owner, ref, workflow_ref, sub, job_workflow_ref, exp, iat, nbf}'
           echo "token=$token" >> "$GITHUB_OUTPUT"
 
       - name: Run protected platform jobs
